@@ -58,27 +58,41 @@ export async function generateSchedule(
       
       ${previousContentSection}
       
-      Generate entries for multiple platforms (Instagram, Facebook, TikTok, LinkedIn, Twitter) based on the project's target audience and objectives.
+      Actúa como un Experto en Marketing Digital y Creación de Contenido optimizado por IA. Genera contenido para múltiples plataformas (Instagram, Facebook, TikTok, LinkedIn, Twitter) basado en el público objetivo y los objetivos del proyecto.
+
+      Sigue estos pasos para cada entrada:
+      1. Comprende el proyecto: Objetivos, metas y audiencia
+      2. Adapta el contenido a cada plataforma específica
+      3. Crea contenido impactante y persuasivo
+      4. Integra emojis estratégicamente
+      5. Asegura que el mensaje se alinee con la voz y valores de la marca
+
+      Para cada pieza de contenido incluye:
+      1. Un título/encabezado impactante
+      2. Descripción breve del contenido
+      3. Texto principal - Para mensajería general
+      4. Copy In - Texto integrado en el diseño (corto, impactante, con emojis estratégicos)
+      5. Copy Out - Texto para descripción/caption (adaptado a cada plataforma, con llamada a la acción clara)
+      6. Instrucciones de diseño - Guía detallada para crear visuales
+      7. Plataforma - Red social específica y sus mejores prácticas
+      8. Fecha de publicación (formato YYYY-MM-DD)
+      9. Hora de publicación (formato HH:MM)
+      10. Hashtags relevantes (5-10 hashtags específicos por post)
+      11. Prompt detallado para generar imagen de referencia con IA
       
-      For each content piece include:
-      1. A title/headline
-      2. Brief description of content
-      3. Main content text - This will be used for general messaging
-      4. Copy In - Text that will be integrated inside the design itself
-      5. Copy Out - Text that will be used for post description/caption
-      6. Design Instructions - Specific instructions for the design department on how to create visuals
-      7. Platform - Be specific about which social network
-      8. Posting date (YYYY-MM-DD format)
-      9. Posting time (HH:MM format)
-      10. Relevant hashtags (at least 5-10 hashtags for each post)
-      11. A detailed reference image prompt that will be used to generate an AI image
-      
-      Platform-specific guidelines:
-      - Instagram: Visual-focused with shorter captions, use of stories highlights, and Reels.
-      - Facebook: More detailed text, link sharing, events, and community engagement.
-      - TikTok: Very short, trendy, entertaining content with trending audio.
-      - LinkedIn: Professional tone, industry insights, long-form content.
-      - Twitter: Short, concise messages, trending topics, quick engagement.
+      Guías específicas por plataforma:
+      - Instagram: Enfoque visual, textos cortos y atractivos, uso estratégico de emojis, stories y Reels. Tono cercano y aspiracional.
+      - Facebook: Textos más detallados, contenido que genere comunidad, llamadas a la acción claras. Tono conversacional y empático.
+      - TikTok: Contenido breve, entretenido y tendencia. Uso de audio viral y engagement rápido. Tono divertido y auténtico.
+      - LinkedIn: Tono profesional pero cercano, insights de industria, contenido de valor. Enfoque en credibilidad y expertise.
+      - Twitter: Mensajes concisos e ingeniosos, temas tendencia, interacción rápida. Tono directo y memorable.
+
+      Consideraciones importantes:
+      - Adapta el tono y estilo a cada plataforma
+      - Usa emojis estratégicamente para reforzar el mensaje
+      - Incluye llamadas a la acción claras y específicas
+      - Mantén la coherencia con la voz de la marca
+      - Optimiza el contenido según las limitaciones de cada plataforma
       
       Return the schedule in the following JSON format:
       {
