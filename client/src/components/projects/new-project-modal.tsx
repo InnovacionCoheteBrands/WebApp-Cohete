@@ -49,13 +49,14 @@ const projectSchema = z.object({
   endDate: z.string().optional(),
   status: z.enum(["active", "planning", "completed", "on_hold"]).default("planning"),
   analysisResults: z.object({
+    communicationObjectives: z.string().optional(),
+    buyerPersona: z.string().optional(),
+    marketingStrategies: z.string().optional(), 
+    brandCommunicationStyle: z.string().optional(),
     mission: z.string().optional(),
     vision: z.string().optional(),
-    objectives: z.string().optional(),
-    targetAudience: z.string().optional(),
-    brandTone: z.string().optional(),
-    keywords: z.string().optional(),
-    coreValues: z.string().optional()
+    coreValues: z.string().optional(),
+    responsePolicy: z.string().optional()
   }).optional()
 });
 
@@ -79,13 +80,14 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
       endDate: "",
       status: "planning",
       analysisResults: {
+        communicationObjectives: "",
+        buyerPersona: "",
+        marketingStrategies: "",
+        brandCommunicationStyle: "",
         mission: "",
         vision: "",
-        objectives: "",
-        targetAudience: "",
-        brandTone: "",
-        keywords: "",
-        coreValues: ""
+        coreValues: "",
+        responsePolicy: ""
       }
     }
   });
@@ -258,44 +260,17 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                   Initial Project Analysis (Optional)
                 </AccordionTrigger>
                 <AccordionContent className="border-t px-4 py-3 space-y-3">
+                  {/* 1. Objetivos generales de comunicación */}
                   <FormField
                     control={form.control}
-                    name="analysisResults.mission"
+                    name="analysisResults.communicationObjectives"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Mission</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter brand mission" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="analysisResults.vision"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Vision</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter brand vision" {...field} value={field.value || ""} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="analysisResults.objectives"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Objectives</FormLabel>
+                        <FormLabel>Objetivos generales de comunicación</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Enter marketing objectives" 
-                            rows={2} 
+                            placeholder="Describe los objetivos generales de comunicación" 
+                            rows={3} 
                             {...field} 
                             value={field.value || ""}
                           />
@@ -305,16 +280,17 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                     )}
                   />
                   
+                  {/* 2. Buyer Persona, Arquetipos y perfiles de consumidores */}
                   <FormField
                     control={form.control}
-                    name="analysisResults.targetAudience"
+                    name="analysisResults.buyerPersona"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Target Audience</FormLabel>
+                        <FormLabel>Buyer Persona, Arquetipos y perfiles de consumidores</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Describe the target audience" 
-                            rows={2} 
+                            placeholder="Describe el buyer persona, arquetipos y perfiles de consumidores" 
+                            rows={3} 
                             {...field} 
                             value={field.value || ""}
                           />
@@ -324,58 +300,108 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                     )}
                   />
                   
+                  {/* 3. Estrategias de marketing de contenido y medios digitales */}
                   <FormField
                     control={form.control}
-                    name="analysisResults.brandTone"
+                    name="analysisResults.marketingStrategies"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Brand Tone</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormLabel>Estrategias de marketing de contenido y medios digitales</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe las estrategias de marketing de contenido y medios digitales" 
+                            rows={3} 
+                            {...field} 
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* 4. Líneas y estilo de comunicación de la marca */}
+                  <FormField
+                    control={form.control}
+                    name="analysisResults.brandCommunicationStyle"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Líneas y estilo de comunicación de la marca</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Describe las líneas y estilo de comunicación de la marca" 
+                            rows={3} 
+                            {...field} 
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {/* 5. Misión, visión y valores */}
+                  <div className="space-y-3 border rounded-md p-3">
+                    <h3 className="font-medium">Misión, visión y valores</h3>
+                    
+                    <FormField
+                      control={form.control}
+                      name="analysisResults.mission"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Misión</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select brand tone" />
-                            </SelectTrigger>
+                            <Input placeholder="Ingresa la misión de la marca" {...field} value={field.value || ""} />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="professional">Professional</SelectItem>
-                            <SelectItem value="casual">Casual</SelectItem>
-                            <SelectItem value="funny">Funny/Humorous</SelectItem>
-                            <SelectItem value="serious">Serious</SelectItem>
-                            <SelectItem value="inspirational">Inspirational</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="analysisResults.vision"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Visión</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ingresa la visión de la marca" {...field} value={field.value || ""} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="analysisResults.coreValues"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Valores</FormLabel>
+                          <FormControl>
+                            <Input 
+                              placeholder="Ingresa los valores fundamentales de la marca" 
+                              {...field} 
+                              value={field.value || ""}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                   
+                  {/* 6. Políticas de respuesta positiva y negativa (Opcional) */}
                   <FormField
                     control={form.control}
-                    name="analysisResults.keywords"
+                    name="analysisResults.responsePolicy"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Keywords</FormLabel>
+                        <FormLabel>Políticas de respuesta positiva y negativa (Opcional)</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="Enter comma-separated keywords" 
-                            {...field} 
-                            value={field.value || ""}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="analysisResults.coreValues"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Core Values</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter core brand values" 
+                          <Textarea 
+                            placeholder="Describe las políticas de respuesta positiva y negativa" 
+                            rows={3} 
                             {...field} 
                             value={field.value || ""}
                           />
