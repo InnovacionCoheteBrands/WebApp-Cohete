@@ -197,66 +197,75 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
           )}
 
           <div className="space-y-4">
-            {selectedSchedule.entries.map((entry) => (
-              <Card key={entry.id} className="overflow-hidden">
-                <CardHeader className="bg-muted/50 pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{entry.title}</CardTitle>
-                    {getPlatformBadge(entry.platform)}
-                  </div>
-                  <CardDescription>
-                    {format(parseISO(entry.postDate), "EEEE, MMMM d, yyyy")} at {entry.postTime}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-4 pb-2">
-                  {entry.description && (
-                    <div className="mb-3">
-                      <h4 className="text-sm font-medium mb-1">Description</h4>
-                      <p className="text-sm text-muted-foreground">{entry.description}</p>
+            {selectedSchedule.entries && selectedSchedule.entries.length > 0 ? (
+              selectedSchedule.entries.map((entry) => (
+                <Card key={entry.id} className="overflow-hidden">
+                  <CardHeader className="bg-muted/50 pb-3">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{entry.title}</CardTitle>
+                      {getPlatformBadge(entry.platform)}
                     </div>
-                  )}
-                  <div className="mb-3">
-                    <h4 className="text-sm font-medium mb-1">Content</h4>
-                    <div className="p-3 bg-muted/30 rounded-md text-sm">
-                      {entry.content}
-                    </div>
-                  </div>
-                  {entry.hashtags && (
+                    <CardDescription>
+                      {format(parseISO(entry.postDate), "EEEE, MMMM d, yyyy")} at {entry.postTime}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4 pb-2">
+                    {entry.description && (
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium mb-1">Description</h4>
+                        <p className="text-sm text-muted-foreground">{entry.description}</p>
+                      </div>
+                    )}
                     <div className="mb-3">
-                      <h4 className="text-sm font-medium mb-1">Hashtags</h4>
-                      <div className="flex flex-wrap gap-1">
-                        {entry.hashtags.split(/[\s,]+/).filter(Boolean).map((tag, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {tag.startsWith('#') ? tag : `#${tag}`}
-                          </Badge>
-                        ))}
+                      <h4 className="text-sm font-medium mb-1">Content</h4>
+                      <div className="p-3 bg-muted/30 rounded-md text-sm">
+                        {entry.content}
                       </div>
                     </div>
-                  )}
-                </CardContent>
-                <CardFooter className="flex justify-end gap-2 border-t p-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="gap-2"
-                    disabled={isGeneratingImage === entry.id}
-                    onClick={() => handleGenerateImage(entry)}
-                  >
-                    {isGeneratingImage === entry.id ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Generating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <ImageIcon className="h-4 w-4" />
-                        <span>{entry.referenceImageUrl ? "View Image" : "Generate Image"}</span>
-                      </>
+                    {entry.hashtags && (
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium mb-1">Hashtags</h4>
+                        <div className="flex flex-wrap gap-1">
+                          {entry.hashtags.split(/[\s,]+/).filter(Boolean).map((tag, index) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {tag.startsWith('#') ? tag : `#${tag}`}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
                     )}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  </CardContent>
+                  <CardFooter className="flex justify-end gap-2 border-t p-3">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="gap-2"
+                      disabled={isGeneratingImage === entry.id}
+                      onClick={() => handleGenerateImage(entry)}
+                    >
+                      {isGeneratingImage === entry.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="h-4 w-4" />
+                          <span>{entry.referenceImageUrl ? "View Image" : "Generate Image"}</span>
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center p-8 border rounded-md">
+                <h3 className="text-lg font-medium mb-2">No Entries Available</h3>
+                <p className="text-muted-foreground mb-2">
+                  This schedule doesn't have any entries yet.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -271,25 +280,36 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
               </CardHeader>
               <CardContent className="pb-0">
                 <div className="text-sm text-muted-foreground mb-4">
-                  {schedule.entries.length} content items
+                  {schedule.entries && Array.isArray(schedule.entries) ? 
+                    `${schedule.entries.length} content items` : 
+                    "No content items yet"}
                 </div>
                 <div className="space-y-3">
-                  {schedule.entries.slice(0, 2).map((entry) => (
-                    <div key={entry.id} className="flex items-start gap-3 rounded-md border p-3">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Calendar className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <div className="font-medium">{entry.title}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {format(parseISO(entry.postDate), "MMM d, yyyy")} • {entry.platform}
+                  {schedule.entries && Array.isArray(schedule.entries) && schedule.entries.length > 0 ? (
+                    <>
+                      {schedule.entries.slice(0, 2).map((entry) => (
+                        <div key={entry.id} className="flex items-start gap-3 rounded-md border p-3">
+                          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <Calendar className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{entry.title}</div>
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {format(parseISO(entry.postDate), "MMM d, yyyy")} • {entry.platform}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                  {schedule.entries.length > 2 && (
-                    <div className="text-center py-2 text-sm text-muted-foreground">
-                      +{schedule.entries.length - 2} more items
+                      ))}
+                      {schedule.entries.length > 2 && (
+                        <div className="text-center py-2 text-sm text-muted-foreground">
+                          +{schedule.entries.length - 2} more items
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-6 text-sm text-muted-foreground">
+                      <MessageSquare className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                      <p>No entries available</p>
                     </div>
                   )}
                 </div>
