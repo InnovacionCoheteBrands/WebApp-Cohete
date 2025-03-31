@@ -411,20 +411,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.user.id
       });
       
-      // Save schedule entries
-      for (const entry of generatedSchedule.entries) {
-        await global.storage.createScheduleEntry({
+      // Save schedule entries and generate images
+      const entryPromises = generatedSchedule.entries.map(async (entry) => {
+        // 1. Crear la entrada en la base de datos
+        const savedEntry = await global.storage.createScheduleEntry({
           scheduleId: schedule.id,
           title: entry.title,
           description: entry.description,
           content: entry.content,
+          copyIn: entry.copyIn,
+          copyOut: entry.copyOut,
+          designInstructions: entry.designInstructions,
           platform: entry.platform,
           postDate: new Date(entry.postDate),
           postTime: entry.postTime,
           hashtags: entry.hashtags,
           referenceImagePrompt: entry.referenceImagePrompt
         });
-      }
+        
+        // 2. Generar imagen automáticamente si hay un prompt
+        if (savedEntry.referenceImagePrompt) {
+          try {
+            console.log(`Generating image for entry ${savedEntry.id}: ${savedEntry.title}`);
+            const imageUrl = await generateReferenceImage(savedEntry.referenceImagePrompt);
+            
+            // 3. Actualizar la entrada con la URL de la imagen
+            await global.storage.updateScheduleEntry(savedEntry.id, {
+              referenceImageUrl: imageUrl
+            });
+          } catch (imgError) {
+            console.error(`Error generating image for entry ${savedEntry.id}:`, imgError);
+            // Continuamos con el proceso incluso si falla la generación de imagen
+          }
+        }
+        
+        return savedEntry;
+      });
+      
+      // Esperar a que se completen todas las operaciones
+      await Promise.all(entryPromises);
       
       // Get complete schedule with entries
       const completeSchedule = await global.storage.getScheduleWithEntries(schedule.id);
