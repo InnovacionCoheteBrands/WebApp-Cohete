@@ -71,8 +71,8 @@ export async function generateSchedule(
       1. Un título/encabezado impactante
       2. Descripción breve del contenido
       3. Texto principal - Para mensajería general
-      4. Copy In - Texto integrado en el diseño (corto, impactante, con emojis estratégicos)
-      5. Copy Out - Texto para descripción/caption (adaptado a cada plataforma, con llamada a la acción clara)
+      4. Copy In - Texto integrado en el diseño (corto e impactante, sin emojis)
+      5. Copy Out - Texto para descripción/caption (adaptado a cada plataforma, con llamada a la acción clara y emojis estratégicos)
       6. Instrucciones de diseño - Guía detallada para crear visuales
       7. Plataforma - Red social específica y sus mejores prácticas
       8. Fecha de publicación (formato YYYY-MM-DD)
