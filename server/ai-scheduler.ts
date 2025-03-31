@@ -94,34 +94,34 @@ export async function generateSchedule(
       - Mantén la coherencia con la voz de la marca
       - Optimiza el contenido según las limitaciones de cada plataforma
       
-      Return the schedule in the following JSON format:
+      Devuelve el cronograma en el siguiente formato JSON, con todo el contenido en español EXCEPTO el "referenceImagePrompt" que debe mantenerse en inglés:
       {
-        "name": "Name of the schedule",
+        "name": "Nombre del cronograma",
         "entries": [
           {
-            "title": "string",
-            "description": "string",
-            "content": "string",
-            "copyIn": "string",
-            "copyOut": "string",
-            "designInstructions": "string",
-            "platform": "string",
+            "title": "Título en español",
+            "description": "Descripción en español",
+            "content": "Contenido principal en español",
+            "copyIn": "Texto integrado en español",
+            "copyOut": "Texto para descripción en español",
+            "designInstructions": "Instrucciones de diseño en español",
+            "platform": "Nombre de la plataforma",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "string",
-            "referenceImagePrompt": "string"
+            "hashtags": "Hashtags en español cuando sea posible",
+            "referenceImagePrompt": "Image prompt in English"
           }
         ]
       }
       
-      IMPORTANT REQUIREMENTS:
-      - Ensure a good mix of content types (educational, promotional, engaging, etc.)
-      - Vary posting times strategically based on each platform's best practices
-      - Make each entry specific to its platform in format and style
-      - Provide very detailed design instructions that a designer could follow
-      - Design reference image prompts that will produce high-quality, professional-looking visualizations
-      - The schedules should make sense as a cohesive campaign
-      - DO NOT repeat or closely mimic any of the previously used content
+      REQUERIMIENTOS IMPORTANTES:
+      - Asegura una buena mezcla de tipos de contenido (educativo, promocional, engagement, etc.)
+      - Varía los horarios de publicación estratégicamente según las mejores prácticas de cada plataforma
+      - Haz que cada entrada sea específica para su plataforma en formato y estilo
+      - Proporciona instrucciones de diseño muy detalladas que un diseñador pueda seguir
+      - Los prompts de referencia para imágenes deben mantenerse en inglés y estar diseñados para producir visualizaciones profesionales de alta calidad
+      - El cronograma debe tener sentido como una campaña cohesiva
+      - NO repitas ni imites de cerca ningún contenido utilizado previamente
     `;
 
     const response = await openai.chat.completions.create({
