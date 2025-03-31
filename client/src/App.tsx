@@ -7,6 +7,7 @@ import AuthPage from "@/pages/auth-page";
 import Dashboard from "@/pages/dashboard";
 import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
+import ScheduleDetail from "@/pages/schedule-detail";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -36,6 +37,16 @@ function App() {
               <ProtectedRoute>
                 <MainLayout>
                   <ProjectDetail id={parseInt(params.id)} />
+                </MainLayout>
+              </ProtectedRoute>
+            )}
+          </Route>
+
+          <Route path="/schedules/:id">
+            {(params) => (
+              <ProtectedRoute>
+                <MainLayout>
+                  <ScheduleDetail id={parseInt(params.id)} />
                 </MainLayout>
               </ProtectedRoute>
             )}

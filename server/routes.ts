@@ -11,6 +11,7 @@ import { generateSchedule, generateReferenceImage } from "./ai-scheduler";
 import { processChatMessage } from "./ai-analyzer";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import ExcelJS from 'exceljs';
 import {
   insertProjectSchema,
   insertAnalysisResultsSchema,
@@ -440,7 +441,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await global.storage.createContentHistory({
             projectId,
             content: entry.content,
-            title: entry.title
+            contentType: "schedule",
+            platform: entry.platform
           });
         } catch (historyError) {
           console.error(`Error saving content history for entry ${savedEntry.id}:`, historyError);
@@ -553,6 +555,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching schedule:", error);
       res.status(500).json({ message: "Failed to fetch schedule" });
+    }
+  });
+
+  app.get("/api/schedules/:id/download", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const scheduleId = parseInt(req.params.id);
+      if (isNaN(scheduleId)) {
+        return res.status(400).json({ message: "Invalid schedule ID" });
+      }
+      
+      const schedule = await global.storage.getScheduleWithEntries(scheduleId);
+      if (!schedule) {
+        return res.status(404).json({ message: "Schedule not found" });
+      }
+      
+      // Check if user has access to the project this schedule belongs to
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        schedule.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this schedule" });
+      }
+      
+      // Create Excel file
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Cronograma');
+      
+      // Formatear encabezados
+      worksheet.columns = [
+        { header: 'Fecha', key: 'date', width: 15 },
+        { header: 'Hora', key: 'time', width: 10 },
+        { header: 'Plataforma', key: 'platform', width: 15 },
+        { header: 'Título', key: 'title', width: 30 },
+        { header: 'Texto en Diseño', key: 'copyIn', width: 40 },
+        { header: 'Texto Descripción', key: 'copyOut', width: 40 },
+        { header: 'Instrucciones Diseño', key: 'designInstructions', width: 40 },
+        { header: 'Hashtags', key: 'hashtags', width: 20 },
+        { header: 'Imagen Referencia', key: 'imageUrl', width: 50 }
+      ];
+      
+      // Estilo de encabezados
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4B5563' } // Gris oscuro
+      };
+      
+      // Formato para fechas
+      const formatDate = (dateString: string) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('es-ES', { 
+          day: '2-digit', 
+          month: '2-digit', 
+          year: 'numeric'
+        });
+      };
+      
+      // Añadir datos de entradas
+      schedule.entries.forEach((entry) => {
+        worksheet.addRow({
+          date: formatDate(entry.postDate.toString()),
+          time: entry.postTime,
+          platform: entry.platform,
+          title: entry.title,
+          copyIn: entry.copyIn,
+          copyOut: entry.copyOut,
+          designInstructions: entry.designInstructions,
+          hashtags: entry.hashtags,
+          imageUrl: entry.referenceImageUrl || 'No disponible'
+        });
+      });
+      
+      // Aplicar estilos a las celdas
+      worksheet.eachRow((row, rowNumber) => {
+        if (rowNumber > 1) { // Excluir encabezados
+          row.eachCell((cell) => {
+            cell.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+          });
+          
+          // Alternar colores de fondo para filas
+          if (rowNumber % 2 === 0) {
+            row.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF9FAFB' } // Gris muy claro
+            };
+          }
+        }
+      });
+      
+      // Configurar respuesta para descargar archivo
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      res.setHeader('Content-Disposition', `attachment; filename=cronograma_${schedule.name.replace(/\s+/g, '_')}.xlsx`);
+      
+      // Escribir archivo a response
+      await workbook.xlsx.write(res);
+      res.end();
+      
+    } catch (error) {
+      console.error("Error generating Excel:", error);
+      res.status(500).json({ message: "Failed to generate Excel file" });
     }
   });
 
