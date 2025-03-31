@@ -75,7 +75,7 @@ export default function ProjectDocuments({ projectId }: ProjectDocumentsProps) {
     staleTime: 30000,
     refetchInterval: (data) => {
       // Refetch while any document is processing
-      if (data?.some(doc => doc.analysisStatus === 'processing')) {
+      if (data && Array.isArray(data) && data.some(doc => doc.analysisStatus === 'processing')) {
         return 5000;
       }
       return false;
