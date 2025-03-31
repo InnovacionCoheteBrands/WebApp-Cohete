@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { z } from "zod";
@@ -19,7 +19,8 @@ import {
   FormField,
   FormItem,
   FormLabel,
-  FormMessage
+  FormMessage,
+  FormDescription
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,12 +45,34 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { FileText, Users, Megaphone, Palette, Target, MessageSquare } from "lucide-react";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { FileText, Users, Megaphone, Palette, Target, MessageSquare, Plus, Trash2, Facebook, Instagram, Twitter, Youtube, Linkedin } from "lucide-react";
+
+// Definición de tipos para arquetipos
+interface Archetype {
+  name: string;
+  profile: string;
+}
+
+// Definición de tipos para redes sociales
+interface SocialNetwork {
+  name: string;
+  selected: boolean;
+  contentTypes: string[];
+}
+
+// Definición de tipos para políticas de respuesta
+interface ResponsePolicies {
+  positive: string;
+  negative: string;
+}
 
 // Create schema for the form
 const projectSchema = z.object({
-  name: z.string().min(1, "Project name is required"),
-  client: z.string().min(1, "Client name is required"),
+  name: z.string().min(1, "El nombre del proyecto es requerido"),
+  client: z.string().min(1, "El nombre del cliente es requerido"),
   description: z.string().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
@@ -57,14 +80,62 @@ const projectSchema = z.object({
   analysisResults: z.object({
     communicationObjectives: z.string().optional(),
     buyerPersona: z.string().optional(),
+    archetypes: z.array(
+      z.object({
+        name: z.string().optional(),
+        profile: z.string().optional(),
+      })
+    ).optional(),
+    socialNetworks: z.array(
+      z.object({
+        name: z.string(),
+        selected: z.boolean().optional(),
+        contentTypes: z.array(z.string()).optional(),
+      })
+    ).optional(),
     marketingStrategies: z.string().optional(), 
     brandCommunicationStyle: z.string().optional(),
     mission: z.string().optional(),
     vision: z.string().optional(),
     coreValues: z.string().optional(),
-    responsePolicy: z.string().optional()
+    responsePolicyPositive: z.string().optional(),
+    responsePolicyNegative: z.string().optional()
   }).optional()
 });
+
+// Lista predefinida de redes sociales y sus tipos de contenido
+const socialNetworksOptions = [
+  { 
+    name: "Facebook", 
+    icon: <Facebook className="h-4 w-4 mr-2" />,
+    contentTypes: ["Publicaciones de texto", "Imágenes", "Videos", "Historias", "Transmisiones en vivo", "Eventos", "Grupos"]
+  },
+  { 
+    name: "Instagram", 
+    icon: <Instagram className="h-4 w-4 mr-2" />,
+    contentTypes: ["Publicaciones en Feed", "Stories", "Reels", "IGTV", "Transmisiones en vivo", "Guías"]
+  },
+  { 
+    name: "Twitter", 
+    icon: <Twitter className="h-4 w-4 mr-2" />,
+    contentTypes: ["Tweets", "Hilos", "Espacios", "Momentos", "Encuestas"]
+  },
+  { 
+    name: "YouTube", 
+    icon: <Youtube className="h-4 w-4 mr-2" />,
+    contentTypes: ["Videos largos", "Shorts", "Transmisiones en vivo", "Comunidad", "Playlists"]
+  },
+  { 
+    name: "LinkedIn", 
+    icon: <Linkedin className="h-4 w-4 mr-2" />,
+    contentTypes: ["Publicaciones de texto", "Artículos", "Documentos", "Videos", "Eventos", "Encuestas"]
+  },
+  { 
+    name: "TikTok", 
+    icon: <Megaphone className="h-4 w-4 mr-2" />,
+    contentTypes: ["Videos cortos", "Transmisiones en vivo", "Duetos", "Stitch", "Efectos"]
+  }
+];
 
 interface NewProjectModalProps {
   isOpen: boolean;
@@ -88,14 +159,27 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
       analysisResults: {
         communicationObjectives: "",
         buyerPersona: "",
+        archetypes: [{ name: "", profile: "" }],
+        socialNetworks: socialNetworksOptions.map(network => ({
+          name: network.name,
+          selected: false,
+          contentTypes: []
+        })),
         marketingStrategies: "",
         brandCommunicationStyle: "",
         mission: "",
         vision: "",
         coreValues: "",
-        responsePolicy: ""
+        responsePolicyPositive: "",
+        responsePolicyNegative: ""
       }
     }
+  });
+  
+  // Setup field arrays for arquetipos
+  const archetypesFieldArray = useFieldArray({
+    control: form.control,
+    name: "analysisResults.archetypes"
   });
 
   // Create project mutation
@@ -333,20 +417,94 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                     name="analysisResults.buyerPersona"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Buyer Persona, Arquetipos y perfiles de consumidores</FormLabel>
+                        <FormLabel>Descripción General del Buyer Persona</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Describe detalladamente los buyer personas, arquetipos y perfiles de consumidores objetivo" 
-                            rows={6} 
+                            placeholder="Describe la visión general del buyer persona objetivo" 
+                            rows={4} 
                             {...field} 
                             value={field.value || ""}
-                            className="min-h-[200px]"
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  
+                  <div className="space-y-4 border rounded-md p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-md font-medium">Arquetipos</h3>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => archetypesFieldArray.append({ name: "", profile: "" })}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Agregar Arquetipo</span>
+                      </Button>
+                    </div>
+                    
+                    <FormDescription>
+                      Agrega aquí los diferentes arquetipos de consumidores, con su nombre y descripción del perfil.
+                    </FormDescription>
+                    
+                    {archetypesFieldArray.fields.map((field, index) => (
+                      <Card key={field.id} className="mb-4">
+                        <CardHeader className="py-3">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-sm font-medium">Arquetipo {index + 1}</CardTitle>
+                            {archetypesFieldArray.fields.length > 1 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => archetypesFieldArray.remove(index)}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        </CardHeader>
+                        <CardContent className="py-0 space-y-3">
+                          <FormField
+                            control={form.control}
+                            name={`analysisResults.archetypes.${index}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nombre del Arquetipo</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="ej. Madre Protectora, Héroe, etc." {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`analysisResults.archetypes.${index}.profile`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Perfil</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Describe este perfil de consumidor" 
+                                    rows={3}
+                                    {...field}
+                                    value={field.value || ""}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               </TabsContent>
 
@@ -361,20 +519,91 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                     name="analysisResults.marketingStrategies"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Estrategias de marketing de contenido y medios digitales</FormLabel>
+                        <FormLabel>Estrategias de marketing de contenido</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Define las estrategias de marketing de contenido y cómo se implementarán en medios digitales" 
-                            rows={6} 
+                            placeholder="Define las estrategias de marketing de contenido" 
+                            rows={4} 
                             {...field} 
                             value={field.value || ""}
-                            className="min-h-[200px]"
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+                  
+                  <div className="space-y-4 border rounded-md p-4">
+                    <h3 className="text-md font-medium">Redes Sociales y Tipos de Contenido</h3>
+                    <FormDescription>
+                      Selecciona las redes sociales que utilizarás en este proyecto y los tipos de contenido para cada una.
+                    </FormDescription>
+                    
+                    <div className="space-y-6">
+                      {socialNetworksOptions.map((network, networkIndex) => (
+                        <div key={network.name} className="space-y-3 p-3 border rounded-md">
+                          <div className="flex items-center space-x-2">
+                            <FormField
+                              control={form.control}
+                              name={`analysisResults.socialNetworks.${networkIndex}.selected`}
+                              render={({ field }) => (
+                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                  <FormControl>
+                                    <Checkbox 
+                                      checked={field.value}
+                                      onCheckedChange={field.onChange}
+                                    />
+                                  </FormControl>
+                                  <div className="flex items-center">
+                                    {network.icon}
+                                    <FormLabel className="font-medium">{network.name}</FormLabel>
+                                  </div>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="pl-6">
+                            <FormField
+                              control={form.control}
+                              name={`analysisResults.socialNetworks.${networkIndex}.contentTypes`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {network.contentTypes.map((contentType) => (
+                                      <FormItem
+                                        key={contentType}
+                                        className="flex flex-row items-start space-x-2 space-y-0"
+                                      >
+                                        <FormControl>
+                                          <Checkbox
+                                            checked={field.value?.includes(contentType)}
+                                            onCheckedChange={(checked) => {
+                                              const currentValue = field.value || [];
+                                              if (checked) {
+                                                field.onChange([...currentValue, contentType]);
+                                              } else {
+                                                field.onChange(currentValue.filter(v => v !== contentType));
+                                              }
+                                            }}
+                                            disabled={!form.watch(`analysisResults.socialNetworks.${networkIndex}.selected`)}
+                                          />
+                                        </FormControl>
+                                        <FormLabel className="text-sm font-normal">
+                                          {contentType}
+                                        </FormLabel>
+                                      </FormItem>
+                                    ))}
+                                  </div>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
 
@@ -479,17 +708,35 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                   
                   <FormField
                     control={form.control}
-                    name="analysisResults.responsePolicy"
+                    name="analysisResults.responsePolicyPositive"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Políticas de respuesta positiva y negativa</FormLabel>
+                        <FormLabel>Política de respuesta positiva</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Define las políticas para manejar respuestas positivas y negativas en redes sociales y otros canales" 
-                            rows={6} 
+                            placeholder="Define las políticas para manejar respuestas positivas en redes sociales y otros canales" 
+                            rows={4} 
                             {...field} 
                             value={field.value || ""}
-                            className="min-h-[200px]"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="analysisResults.responsePolicyNegative"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Política de respuesta negativa</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            placeholder="Define las políticas para manejar respuestas negativas o críticas en redes sociales y otros canales" 
+                            rows={4} 
+                            {...field} 
+                            value={field.value || ""}
                           />
                         </FormControl>
                         <FormMessage />
