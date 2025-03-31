@@ -832,45 +832,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Recent Schedules API
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      try {
-        const recentSchedules = await global.storage.listRecentSchedules();
-        
-        if (!recentSchedules || !Array.isArray(recentSchedules)) {
-          return res.json([]);
-        }
-        
-        // Filter out schedules the user doesn't have access to
-        const accessibleSchedules = [];
-        for (const schedule of recentSchedules) {
-          if (!schedule?.projectId) continue;
+      // Obtener los schedules recientes
+      const recentSchedules = await global.storage.listRecentSchedules();
+      
+      if (!recentSchedules || !Array.isArray(recentSchedules)) {
+        return res.json([]);
+      }
+      
+      // Preparar array para los schedules accesibles
+      const accessibleSchedules = [];
+      
+      // Procesar cada schedule
+      for (const schedule of recentSchedules) {
+        try {
+          // Verificar que el schedule tenga los campos necesarios
+          if (!schedule || !schedule.projectId || !schedule.id) {
+            console.warn("Schedule missing required fields:", schedule);
+            continue;
+          }
           
+          // Verificar acceso del usuario al proyecto
           const hasAccess = await global.storage.checkUserProjectAccess(
-            req.user!.id,
+            req.user.id,
             schedule.projectId,
-            req.user!.isPrimary
+            req.user.isPrimary
           );
           
           if (hasAccess) {
             try {
-              const fullSchedule = await global.storage.getScheduleWithEntries(schedule.id);
-              if (fullSchedule) {
-                accessibleSchedules.push(fullSchedule);
-              }
-            } catch (err) {
-              console.error(`Error getting schedule ${schedule.id}:`, err);
+              // Obtener entradas para este schedule directamente de la base de datos
+              const entries = await db.select()
+                .from(scheduleEntries)
+                .where(eq(scheduleEntries.scheduleId, schedule.id))
+                .orderBy(asc(scheduleEntries.postDate));
+              
+              // Añadir el schedule con sus entradas
+              accessibleSchedules.push({
+                ...schedule,
+                entries: entries || []
+              });
+            } catch (entriesError) {
+              console.error(`Error getting entries for schedule ${schedule.id}:`, entriesError);
+              // Añadir el schedule sin entradas
               accessibleSchedules.push({
                 ...schedule,
                 entries: []
               });
             }
           }
+        } catch (scheduleError) {
+          console.error(`Error processing schedule ${schedule.id}:`, scheduleError);
+          // Continuar con el siguiente schedule
+          continue;
         }
-        
-        res.json(accessibleSchedules);
-      } catch (error) {
-        console.error("Error fetching recent schedules:", error);
-        res.status(500).json({ message: "Failed to fetch recent schedules" });
       }
+      
+      res.json(accessibleSchedules);
+    } catch (error) {
+      console.error("Error fetching recent schedules:", error);
+      res.status(500).json({ message: "Failed to fetch recent schedules" });
+    }
   });
 
   // Create HTTP server
