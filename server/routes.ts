@@ -865,12 +865,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         }
-      
-      res.json(accessibleSchedules);
-    } catch (error) {
-      console.error("Error fetching recent schedules:", error);
-      res.status(500).json({ message: "Failed to fetch recent schedules" });
-    }
+        
+        res.json(accessibleSchedules);
+      } catch (error) {
+        console.error("Error fetching recent schedules:", error);
+        res.status(500).json({ message: "Failed to fetch recent schedules" });
+      }
   });
 
   // Create HTTP server
