@@ -1,8 +1,7 @@
 import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
-import type { Session } from "express-session";
-import type { SessionStore } from "express-session";
+import type { Store } from "express-session";
 import {
   User,
   InsertUser,
@@ -23,7 +22,7 @@ import {
 
 export interface IStorage {
   // Session management
-  sessionStore: SessionStore;
+  sessionStore: Store;
 
   // User methods
   getUser(id: number): Promise<User | undefined>;
@@ -82,9 +81,9 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: SessionStore;
+  sessionStore: Store;
 
-  constructor(store: SessionStore) {
+  constructor(store: Store) {
     this.sessionStore = store;
   }
 
@@ -370,14 +369,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listRecentSchedules(limit: number = 5): Promise<(Schedule & { project: Project })[]> {
-    const results = await db.query.schedules.findMany({
-      limit: limit,
-      orderBy: [desc(schedules.createdAt)],
-      with: {
-        project: true,
-      },
-    });
-    return results;
+    try {
+      const results = await db.query.schedules.findMany({
+        limit: limit,
+        orderBy: [desc(schedules.createdAt)],
+        with: {
+          project: true,
+        },
+      });
+      return results || [];
+    } catch (error) {
+      console.error("Error in listRecentSchedules:", error);
+      return []; // Return empty array instead of throwing error
+    }
   }
 
   // Schedule Entry methods

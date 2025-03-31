@@ -656,14 +656,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter out schedules the user doesn't have access to
       const accessibleSchedules = [];
       for (const schedule of recentSchedules) {
-        const hasAccess = await global.storage.checkUserProjectAccess(
-          req.user.id,
-          schedule.projectId,
-          req.user.isPrimary
-        );
+        if (!schedule || !schedule.projectId) {
+          console.warn("Invalid schedule found:", schedule);
+          continue;
+        }
         
-        if (hasAccess) {
-          accessibleSchedules.push(schedule);
+        try {
+          const hasAccess = await global.storage.checkUserProjectAccess(
+            req.user.id,
+            schedule.projectId,
+            req.user.isPrimary
+          );
+          
+          if (hasAccess) {
+            accessibleSchedules.push(schedule);
+          }
+        } catch (accessError) {
+          console.error("Error checking access for schedule:", accessError);
+          // Continue with next schedule instead of failing entire request
+          continue;
         }
       }
       
