@@ -8,6 +8,9 @@ export interface ContentScheduleEntry {
   title: string;
   description: string;
   content: string;
+  copyIn: string;      // Texto integrado dentro del diseño
+  copyOut: string;     // Texto para la descripción del post
+  designInstructions: string; // Indicaciones para el departamento de diseño
   platform: string;
   postDate: string; // ISO string format
   postTime: string; // HH:MM format
@@ -51,12 +54,22 @@ export async function generateSchedule(
       For each content piece include:
       1. A title/headline
       2. Brief description of content
-      3. Actual suggested content/caption
-      4. Platform
-      5. Posting date (YYYY-MM-DD format)
-      6. Posting time (HH:MM format)
-      7. Relevant hashtags
-      8. A reference image prompt that could be used to generate an image for the post
+      3. Main content text - This will be used for general messaging
+      4. Copy In - Text that will be integrated inside the design itself
+      5. Copy Out - Text that will be used for post description/caption
+      6. Design Instructions - Specific instructions for the design department on how to create visuals
+      7. Platform - Be specific about which social network
+      8. Posting date (YYYY-MM-DD format)
+      9. Posting time (HH:MM format)
+      10. Relevant hashtags (at least 5-10 hashtags for each post)
+      11. A detailed reference image prompt that will be used to generate an AI image
+      
+      Platform-specific guidelines:
+      - Instagram: Visual-focused with shorter captions, use of stories highlights, and Reels.
+      - Facebook: More detailed text, link sharing, events, and community engagement.
+      - TikTok: Very short, trendy, entertaining content with trending audio.
+      - LinkedIn: Professional tone, industry insights, long-form content.
+      - Twitter: Short, concise messages, trending topics, quick engagement.
       
       Return the schedule in the following JSON format:
       {
@@ -66,6 +79,9 @@ export async function generateSchedule(
             "title": "string",
             "description": "string",
             "content": "string",
+            "copyIn": "string",
+            "copyOut": "string",
+            "designInstructions": "string",
             "platform": "string",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
@@ -75,7 +91,13 @@ export async function generateSchedule(
         ]
       }
       
-      Ensure a good mix of content types (educational, promotional, engaging, etc.) and vary posting times strategically.
+      IMPORTANT REQUIREMENTS:
+      - Ensure a good mix of content types (educational, promotional, engaging, etc.)
+      - Vary posting times strategically based on each platform's best practices
+      - Make each entry specific to its platform in format and style
+      - Provide very detailed design instructions that a designer could follow
+      - Design reference image prompts that will produce high-quality, professional-looking visualizations
+      - The schedules should make sense as a cohesive campaign
     `;
 
     const response = await openai.chat.completions.create({

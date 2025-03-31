@@ -34,6 +34,9 @@ interface ScheduleEntry {
   title: string;
   description: string;
   content: string;
+  copyIn?: string;      // Texto integrado dentro del diseño
+  copyOut?: string;     // Texto para la descripción del post
+  designInstructions?: string; // Indicaciones para el departamento de diseño
   platform: string;
   postDate: string;
   postTime: string;
@@ -222,6 +225,36 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
                         {entry.content}
                       </div>
                     </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                      {entry.copyIn && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Copy In (Texto en Diseño)</h4>
+                          <div className="p-3 bg-purple-50 dark:bg-purple-950/30 rounded-md text-sm border border-purple-200 dark:border-purple-800">
+                            {entry.copyIn}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {entry.copyOut && (
+                        <div>
+                          <h4 className="text-sm font-medium mb-1">Copy Out (Descripción)</h4>
+                          <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-md text-sm border border-blue-200 dark:border-blue-800">
+                            {entry.copyOut}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {entry.designInstructions && (
+                      <div className="mb-3">
+                        <h4 className="text-sm font-medium mb-1">Instrucciones de Diseño</h4>
+                        <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-md text-sm border border-amber-200 dark:border-amber-800">
+                          {entry.designInstructions}
+                        </div>
+                      </div>
+                    )}
+                    
                     {entry.hashtags && (
                       <div className="mb-3">
                         <h4 className="text-sm font-medium mb-1">Hashtags</h4>
