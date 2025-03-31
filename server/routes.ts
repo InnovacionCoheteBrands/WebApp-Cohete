@@ -18,8 +18,13 @@ import {
   insertChatMessageSchema
 } from "@shared/schema";
 
+// Global declaration for storage
+declare global {
+  var storage: DatabaseStorage;
+}
+
 // Set up storage for file uploads
-const storage = multer.diskStorage({
+const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '..', 'uploads');
     if (!fs.existsSync(uploadDir)) {
@@ -35,7 +40,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ 
-  storage,
+  storage: multerStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
     // Accept PDF, DOCX, and TXT files
@@ -675,7 +680,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
   return httpServer;
 }
 
-// Extend global type with storage
-declare global {
-  var storage: any;
-}
+

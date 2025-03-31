@@ -9,49 +9,46 @@ import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
-
-function Router() {
-  return (
-    <Switch>
-      {/* Protected routes */}
-      <Route path="/">
-        <ProtectedRoute>
-          <MainLayout>
-            <Dashboard />
-          </MainLayout>
-        </ProtectedRoute>
-      </Route>
-      <Route path="/projects">
-        <ProtectedRoute>
-          <MainLayout>
-            <Projects />
-          </MainLayout>
-        </ProtectedRoute>
-      </Route>
-      <Route path="/projects/:id">
-        {(params) => (
-          <ProtectedRoute>
-            <MainLayout>
-              <ProjectDetail id={parseInt(params.id)} />
-            </MainLayout>
-          </ProtectedRoute>
-        )}
-      </Route>
-      
-      {/* Public routes */}
-      <Route path="/auth" component={AuthPage} />
-      
-      {/* Fallback to 404 */}
-      <Route component={NotFound} />
-    </Switch>
-  );
-}
+import { AuthProvider } from "./hooks/use-auth";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router />
-      <Toaster />
+      <AuthProvider>
+        <Switch>
+          {/* Protected routes */}
+          <Route path="/">
+            <ProtectedRoute>
+              <MainLayout>
+                <Dashboard />
+              </MainLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/projects">
+            <ProtectedRoute>
+              <MainLayout>
+                <Projects />
+              </MainLayout>
+            </ProtectedRoute>
+          </Route>
+          <Route path="/projects/:id">
+            {(params) => (
+              <ProtectedRoute>
+                <MainLayout>
+                  <ProjectDetail id={parseInt(params.id)} />
+                </MainLayout>
+              </ProtectedRoute>
+            )}
+          </Route>
+          
+          {/* Public routes */}
+          <Route path="/auth" component={AuthPage} />
+          
+          {/* Fallback to 404 */}
+          <Route component={NotFound} />
+        </Switch>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

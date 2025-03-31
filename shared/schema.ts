@@ -109,88 +109,42 @@ export const chatMessages = pgTable("chat_messages", {
 
 // Define table relations
 export const usersRelations = relations(users, ({ many }) => ({
-  createdProjects: many(projects, { relationName: "userProjects" }),
-  projectAssignments: many(projectAssignments, { relationName: "userAssignments" }),
-  documents: many(documents, { relationName: "userDocuments" }),
-  schedules: many(schedules, { relationName: "userSchedules" }),
+  createdProjects: many(projects),
+  projectAssignments: many(projectAssignments),
+  documents: many(documents),
+  schedules: many(schedules),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
-  creator: one(users, {
-    fields: [projects.createdBy],
-    references: [users.id],
-    relationName: "userProjects",
-  }),
-  analysis: one(analysisResults, {
-    relationName: "projectAnalysis",
-  }),
-  assignments: many(projectAssignments, {
-    relationName: "projectAssignments",
-  }),
-  documents: many(documents, {
-    relationName: "projectDocuments",
-  }),
-  schedules: many(schedules, {
-    relationName: "projectSchedules",
-  }),
+  creator: one(users, { fields: [projects.createdBy], references: [users.id] }),
+  analysis: one(analysisResults),
+  assignments: many(projectAssignments),
+  documents: many(documents),
+  schedules: many(schedules),
 }));
 
 export const analysisResultsRelations = relations(analysisResults, ({ one }) => ({
-  project: one(projects, {
-    fields: [analysisResults.projectId],
-    references: [projects.id],
-    relationName: "projectAnalysis",
-  }),
+  project: one(projects, { fields: [analysisResults.projectId], references: [projects.id] }),
 }));
 
 export const projectAssignmentsRelations = relations(projectAssignments, ({ one }) => ({
-  project: one(projects, {
-    fields: [projectAssignments.projectId],
-    references: [projects.id],
-    relationName: "projectAssignments",
-  }),
-  user: one(users, {
-    fields: [projectAssignments.userId],
-    references: [users.id],
-    relationName: "userAssignments",
-  }),
+  project: one(projects, { fields: [projectAssignments.projectId], references: [projects.id] }),
+  user: one(users, { fields: [projectAssignments.userId], references: [users.id] }),
 }));
 
 export const documentsRelations = relations(documents, ({ one }) => ({
-  project: one(projects, {
-    fields: [documents.projectId],
-    references: [projects.id],
-    relationName: "projectDocuments",
-  }),
-  uploader: one(users, {
-    fields: [documents.uploadedBy],
-    references: [users.id],
-    relationName: "userDocuments",
-  }),
+  project: one(projects, { fields: [documents.projectId], references: [projects.id] }),
+  uploader: one(users, { fields: [documents.uploadedBy], references: [users.id] }),
 }));
 
 export const schedulesRelations = relations(schedules, ({ one, many }) => ({
-  project: one(projects, {
-    fields: [schedules.projectId],
-    references: [projects.id],
-    relationName: "projectSchedules",
-  }),
-  creator: one(users, {
-    fields: [schedules.createdBy],
-    references: [users.id],
-    relationName: "userSchedules",
-  }),
-  entries: many(scheduleEntries, {
-    relationName: "scheduleEntries",
-  }),
+  project: one(projects, { fields: [schedules.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [schedules.createdBy], references: [users.id] }),
+  entries: many(scheduleEntries),
 }));
 
 export const scheduleEntriesRelations = relations(scheduleEntries, ({ one }) => ({
-  schedule: one(schedules, {
-    fields: [scheduleEntries.scheduleId],
-    references: [schedules.id],
-    relationName: "scheduleEntries",
-  }),
+  schedule: one(schedules, { fields: [scheduleEntries.scheduleId], references: [schedules.id] }),
 }));
 
 // Zod schemas for validation

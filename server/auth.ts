@@ -5,14 +5,30 @@ import session from "express-session";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import connectPgSimple from "connect-pg-simple";
-import { storage } from "./storage";
-import { User, InsertUser, loginSchema, insertUserSchema } from "@shared/schema";
+import { DatabaseStorage } from "./storage";
+import { User as SchemaUser, InsertUser, loginSchema, insertUserSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
+// This will be set in routes.ts
+declare global {
+  var storage: DatabaseStorage;
+}
+
+// Define our own type for Express.User
+type AppUser = {
+  id: number;
+  username: string;
+  password: string;
+  fullName: string;
+  isPrimary: boolean;
+  createdAt: Date;
+};
+
+// Extend Express namespace with our user type
 declare global {
   namespace Express {
-    interface User extends User {}
+    interface User extends AppUser {}
   }
 }
 
@@ -63,7 +79,7 @@ export function setupAuth(app: Express) {
         if (!user || !(await comparePasswords(password, user.password))) {
           return done(null, false, { message: "Invalid username or password" });
         } else {
-          return done(null, user);
+          return done(null, user as unknown as Express.User);
         }
       } catch (error) {
         return done(error);
@@ -75,7 +91,7 @@ export function setupAuth(app: Express) {
   passport.deserializeUser(async (id: number, done) => {
     try {
       const user = await storage.getUser(id);
-      done(null, user);
+      done(null, user as unknown as Express.User);
     } catch (error) {
       done(error);
     }
@@ -99,7 +115,7 @@ export function setupAuth(app: Express) {
       // Remove password from response
       const { password, ...userWithoutPassword } = newUser;
 
-      req.login(newUser, (err) => {
+      req.login(newUser as unknown as Express.User, (err) => {
         if (err) return next(err);
         return res.status(201).json(userWithoutPassword);
       });
@@ -116,7 +132,7 @@ export function setupAuth(app: Express) {
     try {
       loginSchema.parse(req.body);
       
-      passport.authenticate("local", (err: Error, user: User) => {
+      passport.authenticate("local", (err: Error, user: Express.User) => {
         if (err) return next(err);
         if (!user) {
           return res.status(401).json({ message: "Invalid username or password" });
