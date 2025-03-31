@@ -830,12 +830,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const recentSchedules = await global.storage.listRecentSchedules();
+      console.log("Recent schedules:", JSON.stringify(recentSchedules, null, 2));
       
       // Filter out schedules the user doesn't have access to
       const accessibleSchedules = [];
       for (const schedule of recentSchedules) {
         if (!schedule || !schedule.projectId || !schedule.id) {
-          console.warn("Invalid schedule found:", schedule);
+          console.warn("Invalid schedule found:", JSON.stringify(schedule, null, 2));
           continue;
         }
         
