@@ -1,0 +1,106 @@
+**I. Objetivo General y Usuario Principal**
+
+Desarrolla una WebApp llamada "**Cohete Workflow**" para la agencia de marketing digital **Cohete Brands**. El objetivo principal es gestionar proyectos de marketing y generar cronogramas de contenido detallados para redes sociales usando IA (OpenAI). Los usuarios principales son miembros del equipo de la agencia (con roles diferenciados).
+
+**II. Stack Tecnológico Requerido**
+
+* **Frontend:** React con Vite, TypeScript, Tailwind CSS, Shadcn/ui (para componentes UI pre-construidos), `wouter` (para enrutamiento), `react-hook-form` (para formularios), `@tanstack/react-query` (para gestión de estado del servidor), `recharts` (para posibles gráficos futuros), `clsx`, `tailwind-merge`, `lucide-react`.
+* **Backend:** Node.js con Express, TypeScript.
+* **Base de Datos:** PostgreSQL (utilizando Neon como proveedor si es posible en Replit, o la opción por defecto de Replit si Neon no es directo).
+* **ORM:** Drizzle ORM (`drizzle-orm`, `drizzle-kit`).
+* **Autenticación:** Passport.js con estrategia Local (`passport-local`), `express-session`, `bcryptjs`, almacenamiento de sesiones en PostgreSQL usando `connect-pg-simple`.
+* **IA:** Biblioteca oficial `openai` para Node.js. Usar modelo `gpt-4o` para análisis de texto y generación de cronogramas, y `dall-e-3` para generación de imágenes.
+* **Manejo de Archivos:** `multer` para subidas, `pdf-parse` para extracción de texto de PDFs en el backend.
+* **Estilos:** Tailwind CSS configurado con `tailwindcss-animate` y `@tailwindcss/typography`. Usar el archivo `theme.json` proporcionado (o configurar uno similar) para la configuración inicial de Shadcn/ui.
+* **Otros:** `date-fns`, `zod`, `drizzle-zod`, `zod-validation-error`.
+
+**III. Funcionalidades Clave y Flujos de Usuario (Detallado)**
+
+1.  **Autenticación y Usuarios:**
+    * Registro de usuarios (nombre completo, nombre de usuario, contraseña). Contraseña hasheada (`bcryptjs`).
+    * Inicio de sesión (username/password).
+    * Cierre de sesión.
+    * **Roles y Permisos:**
+        * Implementar un campo booleano `isPrimary` en la tabla `users`.
+        * **Usuarios Primary (`isPrimary = true`):** Tienen acceso completo. Pueden gestionar usuarios (crear/editar/ver/eliminar - excepto a sí mismos), **crear nuevos proyectos, editar todos los aspectos de cualquier proyecto**, eliminar proyectos, generar cronogramas, subir documentos, y usar todas las funciones de IA.
+        * **Usuarios Secundarios/Regular (`isPrimary = false`):** Tienen acceso limitado. Pueden ver la lista de proyectos a los que están asignados o que crearon (si se implementa la asignación). **NO pueden crear nuevos proyectos ni editar la información principal de un proyecto (nombre, cliente, descripción, análisis).** Su función principal es **seleccionar un proyecto existente (al que tengan acceso) y generar cronogramas para él.** Pueden subir documentos a los proyectos a los que tienen acceso. Pueden usar el chat con contexto de los proyectos a los que tienen acceso.
+    * Gestión de sesiones segura (`express-session`, `connect-pg-simple`, PostgreSQL).
+    * **REQUERIMIENTO IMPORTANTE:** NO implementar usuarios "demo" codificados que omitan la verificación de contraseña o la consulta a la base de datos.
+
+2.  **Gestión de Proyectos:**
+    * **Página Principal/Dashboard:** Resumen y acceso a proyectos. Área "Crear Cronograma Rápido" (ver punto 5).
+    * **Página "Proyectos":**
+        * Mostrar lista/tabla de proyectos. Usuarios Primary ven todos. Usuarios Secundarios ven solo los asignados/creados por ellos (implementar lógica de asignación o basarse solo en `createdBy` si es más simple inicialmente).
+        * Botón "Nuevo Proyecto" (**visible y funcional SOLO para usuarios Primary**).
+    * **Creación de Proyecto (Modal/Página - Acceso solo Primary):**
+        * Formulario (`react-hook-form`, `zod`). Campos: Nombre, Cliente, Descripción, Fechas (opcionales).
+        * Sección "Análisis Inicial" (opcional): Inputs/Textareas para datos clave (Misión, Visión, Objetivos, Público, Tono, Keywords, etc.).
+        * Al guardar (`POST /api/projects`): **Verificar en backend que `req.user.isPrimary === true`. Si no, devolver error 403 Forbidden.** Crear registro del proyecto, guardar `analysisResults` si se proporcionaron, establecer `createdBy`.
+    * **Vista Detallada del Proyecto (Página dedicada):**
+        * Mostrar info básica. Acceso permitido si el usuario es Primary O si es Secundario y tiene acceso (asignado/creador).
+        * Pestañas: "Project Analysis", "Workflows", "Documents", "Chat".
+
+3.  **Project Analysis:**
+    * **Pestaña "Project Analysis":** Mostrar info de `analysisResults`.
+    * **Edición:** Incluir un botón/modo "Editar Análisis" **visible y funcional SOLO para usuarios Primary**. La acción de guardar (`PATCH /api/projects/:id`) también debe verificar `req.user.isPrimary === true` en el backend antes de permitir la actualización de `analysisResults` u otros campos principales del proyecto.
+    * **Visualización:** Usuarios Secundarios pueden ver esta pestaña si tienen acceso al proyecto, pero no pueden editarla.
+    * **Requerimiento:** Mostrar datos reales de la BD. Si está vacío, indicar "Análisis no disponible" o similar.
+
+4.  **Gestión de Documentos y Análisis por IA:**
+    * **Pestaña "Documents":**
+        * Formulario para subir archivos (PDF, DOCX, TXT). **Habilitado si el usuario (Primary o Secundario) tiene acceso al proyecto.**
+        * Mostrar lista de documentos.
+    * **Procesamiento Backend (`POST /api/projects/:projectId/documents`):**
+        * **Verificar acceso:** Asegurarse de que `req.user` tiene permiso para ver/interactuar con `projectId`.
+        * **Requerimiento CRÍTICO:** Implementar extracción de texto (PDF con `pdf-parse`, opcional DOCX/TXT).
+        * Guardar metadatos y texto extraído en tabla `documents`.
+        * Llamar a IA (`analyzeDocument`, `gpt-4o`) sobre el texto extraído.
+        * Guardar resultados de IA en el registro del *documento*.
+    * **Interfaz de Usuario (Documentos):**
+        * Mostrar estado de análisis. Ver resultados del documento.
+        * Botón "Usar este análisis para el Proyecto" (**visible y funcional SOLO para usuarios Primary**). Acción debe verificar `req.user.isPrimary` en backend antes de actualizar el `analysisResults` del *proyecto*.
+
+5.  **Generación de Cronogramas por IA (Workflows):**
+    * **Área "Crear Cronograma Rápido" (Dashboard/Página Proyectos):**
+        * Componente Select para elegir Proyecto (**mostrar solo proyectos a los que el usuario actual, sea Primary o Secundario, tiene acceso**).
+        * DatePicker para Fecha de Inicio.
+        * Textarea para "Especificaciones Especiales".
+        * Botón "Generar Cronograma" (**funcional para ambos tipos de usuario**, siempre que tengan acceso al proyecto seleccionado).
+    * **Backend (`POST /api/projects/:projectId/schedule`):**
+        * **Verificar acceso:** Asegurarse de que `req.user` tiene permiso para ver/interactuar con `projectId`.
+        * Obtener datos del proyecto (incl. `analysisResults`).
+        * Llamar a `generateSchedule` (`ai-scheduler.ts`).
+    * **Función `generateSchedule` (`ai-scheduler.ts`):**
+        * Usar `gpt-4o`. Contexto detallado (datos del proyecto, festivos, etc.).
+        * Solicitar JSON (`Schedule`, `ScheduleEntry`).
+        * **Guardado Automático:** Guardar `schedules` y `scheduleEntries` en BD.
+    * **Generación de Imágenes:** Botón por entrada. Backend llama a `generateReferenceImage` (`dall-e-3`). Guarda URL. **Acción habilitada para ambos tipos de usuario** (si tienen acceso al proyecto).
+    * **Pestaña "Workflows":** Mostrar cronogramas guardados. **Visible para ambos tipos de usuario** (si tienen acceso al proyecto).
+
+6.  **Chat Contextual:**
+    * **Pestaña "Chat":** Interfaz de chat.
+    * **Backend (`POST /api/chat`):**
+        * **Verificar acceso:** Si se envía `projectId`, asegurar que `req.user` tiene permiso para verlo.
+        * Construir prompt con contexto del proyecto. Llamar a `gpt-4o`.
+    * **Acceso:** Funcionalidad disponible para **ambos tipos de usuario** (si tienen acceso al proyecto para el contexto).
+
+**IV. Base de Datos**
+
+* Usar esquema de `shared/schema.ts`.
+* **Migraciones:** Configurar `drizzle-kit`. **REQUERIMIENTO:** Usar flujo `drizzle-kit generate` + `drizzle-kit migrate` (o similar). **NO usar `drizzle-kit push` para despliegues.**
+
+**V. UI/UX General**
+
+* Interfaz limpia, moderna, profesional (dashboard).
+* Buena organización visual. Responsiva.
+* Usar componentes Shadcn/ui consistentemente.
+* Feedback claro al usuario (toasts).
+* **Importante:** Ocultar o deshabilitar botones/acciones en el frontend según el rol (`isPrimary`) del usuario logueado.
+
+**VI. Calidad del Código y Errores**
+
+* TypeScript limpio y tipado.
+* Manejo de errores robusto. Backend debe devolver códigos de estado correctos (ej. 403 Forbidden para acciones no permitidas).
+* **REQUERIMIENTO: NO hardcodear usuarios/contraseñas/datos.**
+* Manejar `async/await` correctamente. Logs útiles.
+* Validación de entradas (`zod`, `react-hook-form`).
