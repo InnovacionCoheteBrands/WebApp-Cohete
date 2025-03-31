@@ -12,11 +12,14 @@ import { processChatMessage } from "./ai-analyzer";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
+import { db } from "./db";
+import { eq, asc } from "drizzle-orm";
 import {
   insertProjectSchema,
   insertAnalysisResultsSchema,
   insertScheduleSchema,
-  insertChatMessageSchema
+  insertChatMessageSchema,
+  scheduleEntries
 } from "@shared/schema";
 
 // Global declaration for storage
@@ -838,7 +841,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Filter out schedules the user doesn't have access to
       const accessibleSchedules = [];
       for (const schedule of recentSchedules) {
+        // Validación de datos
         if (!schedule || !schedule.projectId || !schedule.id) {
+          console.warn("Schedule missing required fields:", schedule);
           continue;
         }
         
@@ -850,24 +855,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           if (hasAccess) {
-            // Get full details with entries
+            // Obtener entradas directamente de la base de datos en lugar de usar getScheduleWithEntries
             try {
-              const fullSchedule = await global.storage.getScheduleWithEntries(schedule.id);
-              if (fullSchedule) {
-                accessibleSchedules.push({
-                  ...fullSchedule,
-                  project: schedule.project
-                });
-              } else {
-                // If no entries found, use the base schedule
-                accessibleSchedules.push({
-                  ...schedule,
-                  entries: []
-                });
-              }
+              const entriesResult = await db.select().from(scheduleEntries)
+                .where(eq(scheduleEntries.scheduleId, schedule.id))
+                .orderBy(asc(scheduleEntries.postDate));
+              
+              // Crear objeto completo con entradas
+              accessibleSchedules.push({
+                ...schedule,
+                entries: entriesResult || []
+              });
             } catch (err) {
               console.error(`Error getting entries for schedule ${schedule.id}:`, err);
-              // Include the schedule without entries if there's an error
+              // Si no se pueden obtener las entradas, añadimos el schedule con un array vacío
               accessibleSchedules.push({
                 ...schedule,
                 entries: []
@@ -875,9 +876,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
         } catch (accessError) {
-          console.error("Error checking access for schedule:", accessError);
-          // Continue with next schedule instead of failing entire request
-          continue;
+          console.error(`Error checking access for schedule ${schedule.id}:`, accessError);
+          continue; // Continuar con el siguiente schedule
         }
       }
       
