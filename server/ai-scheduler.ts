@@ -46,82 +46,104 @@ export async function generateSchedule(
       : "No previous content history available.";
     
     const prompt = `
-      Create a detailed social media content schedule for a project named "${projectName}".
+      Crea un cronograma detallado de contenido para redes sociales para el proyecto "${projectName}".
       
-      Project details:
+      DETALLES DEL PROYECTO:
       ${JSON.stringify(projectDetails, null, 2)}
       
-      Schedule requirements:
-      - Start date: ${formattedDate}
-      - Duration: ${durationDays} days (until ${endDate})
-      - Special specifications: ${specifications || "None provided"}
+      REQUISITOS DEL CRONOGRAMA:
+      - Fecha de inicio: ${formattedDate}
+      - Duración: ${durationDays} días (hasta ${endDate})
+      - Especificaciones adicionales: ${specifications || "No proporcionadas"}
       
       ${previousContentSection}
       
-      Actúa como un Experto en Marketing Digital y Creación de Contenido optimizado por IA. Genera contenido para múltiples plataformas (Instagram, Facebook, TikTok, LinkedIn, Twitter) basado en el público objetivo y los objetivos del proyecto.
+      INSTRUCCIONES MAESTRAS:
+      Actúa como un Director de Marketing Digital con 15 años de experiencia en Creación de Contenido de Alto Rendimiento. Tu misión es crear un cronograma de contenido que verdaderamente impulse los objetivos comerciales mientras resuena con la audiencia objetivo del proyecto.
 
-      Sigue estos pasos para cada entrada:
-      1. Comprende el proyecto: Objetivos, metas y audiencia
-      2. Adapta el contenido a cada plataforma específica
-      3. Crea contenido impactante y persuasivo
-      4. Integra emojis estratégicamente
-      5. Asegura que el mensaje se alinee con la voz y valores de la marca
+      METODOLOGÍA AVANZADA PARA CADA PUBLICACIÓN:
+      1. Analiza profundamente: Objetivos comerciales, insights del mercado y psicología de la audiencia
+      2. Personaliza estratégicamente: Adapta cada pieza a las particularidades y algoritmos de cada plataforma
+      3. Optimiza para conversión: Utiliza principios de psicología persuasiva y storytelling emocional
+      4. Diseña para impacto visual: Crea instrucciones que resulten en diseños memorables y alineados con la marca
+      5. Secuencia estratégicamente: Asegura que cada pieza construya sobre las anteriores para crear una narrativa cohesiva
 
-      Para cada pieza de contenido incluye:
-      1. Un título/encabezado impactante
-      2. Descripción breve del contenido
-      3. Texto principal - Para mensajería general
-      4. Copy In - Texto integrado en el diseño (corto e impactante, sin emojis)
-      5. Copy Out - Texto para descripción/caption (adaptado a cada plataforma, con llamada a la acción clara y emojis estratégicos)
-      6. Instrucciones de diseño - Guía detallada para crear visuales
-      7. Plataforma - Red social específica y sus mejores prácticas
-      8. Fecha de publicación (formato YYYY-MM-DD)
-      9. Hora de publicación (formato HH:MM)
-      10. Hashtags relevantes (5-10 hashtags específicos por post)
-      11. Prompt detallado para generar imagen de referencia con IA
+      ELEMENTOS CLAVE POR PIEZA DE CONTENIDO:
+      1. Título: Altamente específico, evocativo e intrigante (máx. 60 caracteres)
+      2. Descripción: Resumen conciso orientado a beneficios (máx. 150 caracteres)
+      3. Contenido principal: Mensaje completo estructurado para engagement máximo
+      4. Copy In: Texto integrado en el diseño - impactante, directo, sin emojis (máx. 60 caracteres)
+      5. Copy Out: Texto para caption - persuasivo, estructurado en párrafos, con llamada a la acción clara y emojis estratégicos
+      6. Instrucciones de diseño: Extraordinariamente detalladas, incluyendo composición, paleta de colores, tipografía, jerarquía visual y elementos específicos
+      7. Plataforma: Red social específica con formato adaptado a sus particularidades
+      8. Fecha y hora: Optimizadas según métricas actuales de engagement por plataforma
+      9. Hashtags: Combinación estratégica de hashtags populares, nicho y marca
+      10. Prompt para imagen: Detallado y técnico, diseñado para generar referencias visuales profesionales
+
+      ESPECIFICIDADES POR PLATAFORMA:
+      - Instagram: 
+         * Feed: Visuales impactantes, máximo 2250 caracteres en caption, 3-5 párrafos con espaciado
+         * Stories: Copy mínimo, diseño inmersivo, incluir elementos interactivos
+         * Reels: Energía alta, tendencia, guión con gancho en primeros 3 segundos
       
-      Guías específicas por plataforma:
-      - Instagram: Enfoque visual, textos cortos y atractivos, uso estratégico de emojis, stories y Reels. Tono cercano y aspiracional.
-      - Facebook: Textos más detallados, contenido que genere comunidad, llamadas a la acción claras. Tono conversacional y empático.
-      - TikTok: Contenido breve, entretenido y tendencia. Uso de audio viral y engagement rápido. Tono divertido y auténtico.
-      - LinkedIn: Tono profesional pero cercano, insights de industria, contenido de valor. Enfoque en credibilidad y expertise.
-      - Twitter: Mensajes concisos e ingeniosos, temas tendencia, interacción rápida. Tono directo y memorable.
-
-      Consideraciones importantes:
-      - Adapta el tono y estilo a cada plataforma
-      - Usa emojis estratégicamente para reforzar el mensaje
-      - Incluye llamadas a la acción claras y específicas
-      - Mantén la coherencia con la voz de la marca
-      - Optimiza el contenido según las limitaciones de cada plataforma
+      - Facebook: 
+         * Posts estándar: Hasta 400 caracteres para mejor engagement, incluir elemento visual
+         * Videos: Optimizados para visualización sin sonido, subtítulos incluidos
+         * Artículos/Notas: Contenido valioso y detallado, estructura clara
       
-      Devuelve el cronograma en el siguiente formato JSON, con todo el contenido en español EXCEPTO el "referenceImagePrompt" que debe mantenerse en inglés:
+      - TikTok: 
+         * Estructura: Gancho (3s) + Contenido principal (20-25s) + CTA (2-3s)
+         * Estilo: Auténtico, entretenido, uso de trending sounds
+         * Descripción: Concisa, con pregunta o intriga
+      
+      - LinkedIn: 
+         * Estructura: Gancho inicial + Valor principal + Insight profesional + CTA
+         * Tono: Profesional pero conversacional, enfocado en expertise
+         * Formato: Párrafos cortos, espaciados, uso de bullet points para escaneabilidad
+      
+      - Twitter: 
+         * Tweets principales: 240-250 caracteres máximo para permitir engagement
+         * Hilos: 4-6 tweets conectados, cada uno auto-contenido
+         * Elementos: Pregunta provocativa o estadística sorprendente + insight + CTA
+      
+      TÉCNICAS AVANZADAS DE COPYWRITING:
+      - Utiliza la estructura AIDA (Atención, Interés, Deseo, Acción) para copyOut
+      - Implementa principios de escasez y exclusividad cuando sea relevante
+      - Incorpora storytelling micro-narrativo para crear conexión emocional
+      - Usa gatillos psicológicos específicos según la plataforma y audiencia
+      - Evita absolutamente frases genéricas como "¡No te lo pierdas!" o "Más información en nuestro link"
+      
+      FORMATO DE ENTREGA:
+      Devuelve el cronograma en formato JSON, con todo el contenido en español EXCEPTO el "referenceImagePrompt" que DEBE estar en inglés:
       {
-        "name": "Nombre del cronograma",
+        "name": "Nombre del cronograma - creativo y específico al proyecto",
         "entries": [
           {
-            "title": "Título en español",
-            "description": "Descripción en español",
-            "content": "Contenido principal en español",
-            "copyIn": "Texto integrado en español",
-            "copyOut": "Texto para descripción en español",
-            "designInstructions": "Instrucciones de diseño en español",
-            "platform": "Nombre de la plataforma",
+            "title": "Título impactante en español",
+            "description": "Descripción persuasiva en español",
+            "content": "Contenido principal detallado en español",
+            "copyIn": "Texto integrado conciso e impactante en español",
+            "copyOut": "Texto estructurado para descripción en español con emojis estratégicos",
+            "designInstructions": "Instrucciones ultra-detalladas de diseño en español",
+            "platform": "Plataforma específica",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "Hashtags en español cuando sea posible",
-            "referenceImagePrompt": "Image prompt in English"
+            "hashtags": "Mezcla estratégica de hashtags en español",
+            "referenceImagePrompt": "DETAILED IMAGE PROMPT IN ENGLISH with specific art direction, composition, lighting, style, and technical specifications"
           }
         ]
       }
       
-      REQUERIMIENTOS IMPORTANTES:
-      - Asegura una buena mezcla de tipos de contenido (educativo, promocional, engagement, etc.)
-      - Varía los horarios de publicación estratégicamente según las mejores prácticas de cada plataforma
-      - Haz que cada entrada sea específica para su plataforma en formato y estilo
-      - Proporciona instrucciones de diseño muy detalladas que un diseñador pueda seguir
-      - Los prompts de referencia para imágenes deben mantenerse en inglés y estar diseñados para producir visualizaciones profesionales de alta calidad
-      - El cronograma debe tener sentido como una campaña cohesiva
-      - NO repitas ni imites de cerca ningún contenido utilizado previamente
+      REQUERIMIENTOS CRÍTICOS:
+      - Crea un balance estratégico entre contenido educativo (30%), inspiracional (25%), promocional (25%) y de engagement (20%)
+      - Optimiza los horarios según métricas actuales de engagement por plataforma y segmento
+      - Asegura variedad visual en el feed al alternar formatos y composiciones
+      - Proporciona instrucciones de diseño extraordinariamente detalladas y ejecutables
+      - Desarrolla prompts de imágenes en inglés técnicamente sofisticados para generar visuales profesionales
+      - Diseña el cronograma como una campaña estratégica integrada, no como publicaciones aisladas
+      - Absolutamente EVITA repetir contenido, temas o enfoques utilizados previamente
+      - Los copyIn deben ser concisos e impactantes, adecuados para superponerse en imágenes
+      - Los copyOut deben usar estructura de párrafos y ser persuasivos con llamadas a la acción específicas
     `;
 
     const response = await openai.chat.completions.create({
@@ -144,25 +166,37 @@ export async function generateSchedule(
 }
 
 /**
- * Generates a reference image prompt for a social media post
+ * Genera una imagen de referencia para publicaciones en redes sociales usando Mistral AI
+ * Como la biblioteca cliente de Mistral no soporta directamente la generación de imágenes,
+ * usamos la API de OpenAI como fallback pero con el prompt preparado para ser de alta calidad
  */
 export async function generateReferenceImage(prompt: string): Promise<string> {
   try {
+    console.log(`Generando imagen con prompt: ${prompt}`);
+    
+    // Mejorar el prompt para obtener mejores resultados
+    const enhancedPrompt = `Professional marketing image for social media: ${prompt}. High quality, professional lighting, brand appropriate, suitable for advertising, photorealistic, detailed.`;
+    
+    // Usar OpenAI mientras la integración con Mistral se completa
     const response = await openai.images.generate({
       model: "dall-e-3",
-      prompt: prompt,
+      prompt: enhancedPrompt,
       n: 1,
       size: "1024x1024",
       quality: "standard",
     });
 
     if (!response.data[0]?.url) {
-      throw new Error("No image URL returned from DALL-E");
+      throw new Error("No image URL returned from image generation");
     }
 
     return response.data[0].url;
   } catch (error) {
-    console.error("Error generating reference image:", error);
-    throw new Error(`Failed to generate reference image: ${(error as Error).message}`);
+    console.error("Error al generar imagen de referencia:", error);
+    // Proporcionar información detallada del error para facilitar la depuración
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Error desconocido';
+    throw new Error(`Error al generar imagen de referencia: ${errorMessage}`);
   }
 }
