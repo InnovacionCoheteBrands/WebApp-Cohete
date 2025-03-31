@@ -453,8 +453,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
       
-      const schedules = await global.storage.listSchedulesByProject(projectId);
-      res.json(schedules);
+      // Get basic schedule info first
+      const basicSchedules = await global.storage.listSchedulesByProject(projectId);
+      
+      // Then get full details with entries for each schedule
+      const schedulesWithEntries = await Promise.all(
+        basicSchedules.map(async (schedule) => {
+          try {
+            const fullSchedule = await global.storage.getScheduleWithEntries(schedule.id);
+            return fullSchedule || {
+              ...schedule,
+              entries: []
+            };
+          } catch (err) {
+            console.error(`Error getting entries for schedule ${schedule.id}:`, err);
+            // Return the schedule without entries if there's an error
+            return {
+              ...schedule,
+              entries: []
+            };
+          }
+        })
+      );
+      
+      res.json(schedulesWithEntries);
     } catch (error) {
       console.error("Error listing schedules:", error);
       res.status(500).json({ message: "Failed to list schedules" });
@@ -669,7 +691,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           if (hasAccess) {
-            accessibleSchedules.push(schedule);
+            // Get full details with entries
+            try {
+              const fullSchedule = await global.storage.getScheduleWithEntries(schedule.id);
+              if (fullSchedule) {
+                accessibleSchedules.push({
+                  ...fullSchedule,
+                  project: schedule.project
+                });
+              } else {
+                // If no entries found, use the base schedule
+                accessibleSchedules.push({
+                  ...schedule,
+                  entries: []
+                });
+              }
+            } catch (err) {
+              console.error(`Error getting entries for schedule ${schedule.id}:`, err);
+              // Include the schedule without entries if there's an error
+              accessibleSchedules.push({
+                ...schedule,
+                entries: []
+              });
+            }
           }
         } catch (accessError) {
           console.error("Error checking access for schedule:", accessError);
