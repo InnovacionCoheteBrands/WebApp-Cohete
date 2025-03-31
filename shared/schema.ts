@@ -110,6 +110,16 @@ export const chatMessages = pgTable("chat_messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Content History Table - Para evitar repeticiones en cronogramas
+export const contentHistory = pgTable("content_history", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  contentType: text("content_type").notNull(), // 'title', 'description', 'content', 'theme'
+  content: text("content").notNull(), 
+  platform: text("platform"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Define table relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdProjects: many(projects),
@@ -124,6 +134,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   assignments: many(projectAssignments),
   documents: many(documents),
   schedules: many(schedules),
+  contentHistory: many(contentHistory),
 }));
 
 export const analysisResultsRelations = relations(analysisResults, ({ one }) => ({
@@ -148,6 +159,10 @@ export const schedulesRelations = relations(schedules, ({ one, many }) => ({
 
 export const scheduleEntriesRelations = relations(scheduleEntries, ({ one }) => ({
   schedule: one(schedules, { fields: [scheduleEntries.scheduleId], references: [schedules.id] }),
+}));
+
+export const contentHistoryRelations = relations(contentHistory, ({ one }) => ({
+  project: one(projects, { fields: [contentHistory.projectId], references: [projects.id] }),
 }));
 
 // Zod schemas for validation
@@ -201,6 +216,11 @@ export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
   createdAt: true,
 });
 
+export const insertContentHistorySchema = createInsertSchema(contentHistory).omit({
+  id: true,
+  createdAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -225,3 +245,6 @@ export type InsertScheduleEntry = z.infer<typeof insertScheduleEntrySchema>;
 
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+export type ContentHistory = typeof contentHistory.$inferSelect;
+export type InsertContentHistory = z.infer<typeof insertContentHistorySchema>;

@@ -1,4 +1,4 @@
-import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages } from "@shared/schema";
+import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
 import type { Store } from "express-session";
@@ -17,7 +17,9 @@ import {
   InsertScheduleEntry,
   ChatMessage,
   InsertChatMessage,
-  ProjectAssignment
+  ProjectAssignment,
+  ContentHistory,
+  InsertContentHistory
 } from "@shared/schema";
 
 export interface IStorage {
@@ -78,6 +80,11 @@ export interface IStorage {
   // Chat methods
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   listChatMessagesByProject(projectId: number): Promise<ChatMessage[]>;
+  
+  // Content History methods
+  createContentHistory(entry: InsertContentHistory): Promise<ContentHistory>;
+  getContentHistoryByProjectAndContent(projectId: number, content: string): Promise<ContentHistory | undefined>;
+  listContentHistoryByProject(projectId: number): Promise<ContentHistory[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -438,6 +445,36 @@ export class DatabaseStorage implements IStorage {
       .from(chatMessages)
       .where(eq(chatMessages.projectId, projectId))
       .orderBy(asc(chatMessages.createdAt));
+  }
+  
+  // Content History methods
+  async createContentHistory(entry: InsertContentHistory): Promise<ContentHistory> {
+    const [newEntry] = await db
+      .insert(contentHistory)
+      .values(entry)
+      .returning();
+    return newEntry;
+  }
+  
+  async getContentHistoryByProjectAndContent(projectId: number, content: string): Promise<ContentHistory | undefined> {
+    const [entry] = await db
+      .select()
+      .from(contentHistory)
+      .where(
+        and(
+          eq(contentHistory.projectId, projectId),
+          eq(contentHistory.content, content)
+        )
+      );
+    return entry;
+  }
+  
+  async listContentHistoryByProject(projectId: number): Promise<ContentHistory[]> {
+    return await db
+      .select()
+      .from(contentHistory)
+      .where(eq(contentHistory.projectId, projectId))
+      .orderBy(desc(contentHistory.createdAt));
   }
 }
 

@@ -31,12 +31,19 @@ export async function generateSchedule(
   projectDetails: any,
   startDate: string,
   specifications?: string,
-  durationDays: number = 14
+  durationDays: number = 14,
+  previousContent: string[] = []
 ): Promise<ContentSchedule> {
   try {
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
+    
+    // Prepare previous content section
+    const previousContentSection = previousContent.length > 0
+      ? `Previously used content (AVOID REPEATING THESE TOPICS AND IDEAS):
+        ${previousContent.join('\n')}`
+      : "No previous content history available.";
     
     const prompt = `
       Create a detailed social media content schedule for a project named "${projectName}".
@@ -48,6 +55,8 @@ export async function generateSchedule(
       - Start date: ${formattedDate}
       - Duration: ${durationDays} days (until ${endDate})
       - Special specifications: ${specifications || "None provided"}
+      
+      ${previousContentSection}
       
       Generate entries for multiple platforms (Instagram, Facebook, TikTok, LinkedIn, Twitter) based on the project's target audience and objectives.
       
@@ -98,6 +107,7 @@ export async function generateSchedule(
       - Provide very detailed design instructions that a designer could follow
       - Design reference image prompts that will produce high-quality, professional-looking visualizations
       - The schedules should make sense as a cohesive campaign
+      - DO NOT repeat or closely mimic any of the previously used content
     `;
 
     const response = await openai.chat.completions.create({

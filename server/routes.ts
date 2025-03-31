@@ -390,7 +390,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      // Generate schedule using AI
+      // Get content history for this project to avoid repetition
+      const contentHistory = await global.storage.listContentHistoryByProject(projectId);
+      const previousContent = contentHistory.map(entry => entry.content);
+      
+      // Generate schedule using AI, passing previous content
       const generatedSchedule = await generateSchedule(
         project.name,
         {
@@ -399,7 +403,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...project.analysis
         },
         startDate,
-        specifications
+        specifications,
+        14, // Default duration days
+        previousContent
       );
       
       // Save schedule to database
@@ -429,13 +435,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           referenceImagePrompt: entry.referenceImagePrompt
         });
         
-        // 2. Generar imagen automáticamente si hay un prompt
+        // 2. Guardar el contenido en el historial para evitar repeticiones
+        try {
+          await global.storage.createContentHistory({
+            projectId,
+            content: entry.content,
+            title: entry.title
+          });
+        } catch (historyError) {
+          console.error(`Error saving content history for entry ${savedEntry.id}:`, historyError);
+          // Continuamos aunque no se pueda guardar el historial
+        }
+        
+        // 3. Generar imagen automáticamente si hay un prompt
         if (savedEntry.referenceImagePrompt) {
           try {
             console.log(`Generating image for entry ${savedEntry.id}: ${savedEntry.title}`);
             const imageUrl = await generateReferenceImage(savedEntry.referenceImagePrompt);
             
-            // 3. Actualizar la entrada con la URL de la imagen
+            // 4. Actualizar la entrada con la URL de la imagen
             await global.storage.updateScheduleEntry(savedEntry.id, {
               referenceImageUrl: imageUrl
             });
