@@ -116,6 +116,7 @@ export const contentHistory = pgTable("content_history", {
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
   contentType: text("content_type").notNull(), // 'title', 'description', 'content', 'theme'
   content: text("content").notNull(), 
+  title: text("title"),
   platform: text("platform"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

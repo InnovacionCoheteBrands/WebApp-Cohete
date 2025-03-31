@@ -442,6 +442,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             projectId,
             content: entry.content,
             contentType: "schedule",
+            title: entry.title,
             platform: entry.platform
           });
         } catch (historyError) {
