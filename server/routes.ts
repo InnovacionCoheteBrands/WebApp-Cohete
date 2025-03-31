@@ -832,22 +832,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Recent Schedules API
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const recentSchedules = await global.storage.listRecentSchedules();
-      
-      if (!recentSchedules || !Array.isArray(recentSchedules)) {
-        return res.json([]);
-      }
-      
-      // Filter out schedules the user doesn't have access to
-      const accessibleSchedules = [];
-      for (const schedule of recentSchedules) {
-        // Validación de datos
-        if (!schedule || !schedule.projectId || !schedule.id) {
-          console.warn("Schedule missing required fields:", schedule);
-          continue;
+      try {
+        const recentSchedules = await global.storage.listRecentSchedules();
+        
+        if (!recentSchedules || !Array.isArray(recentSchedules)) {
+          return res.json([]);
         }
         
-        try {
+        // Filter out schedules the user doesn't have access to
+        const accessibleSchedules = [];
+        for (const schedule of recentSchedules) {
+          if (!schedule?.projectId) continue;
+          
           const hasAccess = await global.storage.checkUserProjectAccess(
             req.user!.id,
             schedule.projectId,
@@ -855,31 +851,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           if (hasAccess) {
-            // Obtener entradas directamente de la base de datos en lugar de usar getScheduleWithEntries
             try {
-              const entriesResult = await db.select().from(scheduleEntries)
-                .where(eq(scheduleEntries.scheduleId, schedule.id))
-                .orderBy(asc(scheduleEntries.postDate));
-              
-              // Crear objeto completo con entradas
-              accessibleSchedules.push({
-                ...schedule,
-                entries: entriesResult || []
-              });
+              const fullSchedule = await global.storage.getScheduleWithEntries(schedule.id);
+              if (fullSchedule) {
+                accessibleSchedules.push(fullSchedule);
+              }
             } catch (err) {
-              console.error(`Error getting entries for schedule ${schedule.id}:`, err);
-              // Si no se pueden obtener las entradas, añadimos el schedule con un array vacío
+              console.error(`Error getting schedule ${schedule.id}:`, err);
               accessibleSchedules.push({
                 ...schedule,
                 entries: []
               });
             }
           }
-        } catch (accessError) {
-          console.error(`Error checking access for schedule ${schedule.id}:`, accessError);
-          continue; // Continuar con el siguiente schedule
         }
-      }
       
       res.json(accessibleSchedules);
     } catch (error) {
