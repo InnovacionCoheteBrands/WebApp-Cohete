@@ -159,7 +159,7 @@ interface NavItemProps {
 function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
   return (
     <Link href={href}>
-      <a
+      <div
         className={cn(
           "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium",
           isActive
@@ -170,7 +170,7 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
       >
         {icon}
         {label}
-      </a>
+      </div>
     </Link>
   );
 }
