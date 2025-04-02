@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, ImageIcon } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, ImageIcon, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -185,9 +185,20 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
                 Created on {format(parseISO(selectedSchedule.createdAt), "MMMM d, yyyy")}
               </p>
             </div>
-            <Button variant="outline" onClick={() => setSelectedSchedule(null)}>
-              Back to All Schedules
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={() => window.open(`/api/schedules/${selectedSchedule.id}/download`, '_blank')}
+              >
+                <Download className="h-4 w-4" />
+                Descargar Excel
+              </Button>
+              <Button variant="outline" onClick={() => setSelectedSchedule(null)}>
+                Back to All Schedules
+              </Button>
+            </div>
           </div>
 
           {selectedSchedule.specifications && (
@@ -347,9 +358,18 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="flex justify-end p-3 border-t mt-4">
+              <CardFooter className="flex justify-between p-3 border-t mt-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => window.open(`/api/schedules/${schedule.id}/download`, '_blank')}
+                >
+                  <Download className="h-4 w-4" />
+                  Excel
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => handleViewSchedule(schedule)}>
-                  View Schedule
+                  Ver Detalles
                 </Button>
               </CardFooter>
             </Card>

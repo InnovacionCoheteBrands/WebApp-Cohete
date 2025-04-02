@@ -4,7 +4,7 @@ import { format, parseISO } from "date-fns";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
+import { Calendar, Download } from "lucide-react";
 
 interface ScheduleEntry {
   id: number;
@@ -109,12 +109,23 @@ export default function RecentSchedules() {
             </div>
             
             <CardFooter className="flex items-center justify-between border-t p-4">
-              <span className="text-xs text-muted-foreground">
-                Generated {format(parseISO(schedule.createdAt), "MMM d, yyyy")}
-              </span>
-              <Link href={`/projects/${schedule.project.id}?tab=workflows`}>
-                <Button variant="secondary" size="sm">View All</Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                onClick={() => window.open(`/api/schedules/${schedule.id}/download`, '_blank')}
+              >
+                <Download className="h-4 w-4" />
+                <span className="text-xs">Excel</span>
+              </Button>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground hidden sm:inline">
+                  {format(parseISO(schedule.createdAt), "MMM d, yyyy")}
+                </span>
+                <Link href={`/projects/${schedule.project.id}?tab=workflows`}>
+                  <Button variant="secondary" size="sm">Ver</Button>
+                </Link>
+              </div>
             </CardFooter>
           </Card>
         ))}
