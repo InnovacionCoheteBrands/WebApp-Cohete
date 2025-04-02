@@ -587,7 +587,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create Excel file
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Cronograma');
+      const worksheet = workbook.addWorksheet('Cronograma', {
+        properties: {
+          tabColor: { argb: '1E40AF' },
+          defaultRowHeight: 25
+        }
+      });
       
       // Configurar propiedades del libro
       workbook.creator = 'Cohete Workflow';
@@ -597,27 +602,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Formatear encabezados
       worksheet.columns = [
-        { header: 'Fecha', key: 'date', width: 15 },
-        { header: 'Hora', key: 'time', width: 10 },
-        { header: 'Plataforma', key: 'platform', width: 15 },
-        { header: 'Título', key: 'title', width: 30 },
-        { header: 'Descripción', key: 'description', width: 40 },
-        { header: 'Texto en Diseño', key: 'copyIn', width: 40 },
-        { header: 'Texto Descripción', key: 'copyOut', width: 40 },
-        { header: 'Instrucciones Diseño', key: 'designInstructions', width: 40 },
-        { header: 'Hashtags', key: 'hashtags', width: 30 },
-        { header: 'URL Imagen', key: 'imageUrl', width: 50 },
-        { header: 'Prompt Imagen', key: 'imagePrompt', width: 50 }
+        { header: '📅 Fecha', key: 'date', width: 15 },
+        { header: '⏰ Hora', key: 'time', width: 10 },
+        { header: '📱 Plataforma', key: 'platform', width: 15 },
+        { header: '📝 Título', key: 'title', width: 30 },
+        { header: '📋 Descripción', key: 'description', width: 40 },
+        { header: '🎨 Texto en Diseño', key: 'copyIn', width: 40 },
+        { header: '📢 Texto Descripción', key: 'copyOut', width: 40 },
+        { header: '🎯 Instrucciones Diseño', key: 'designInstructions', width: 40 },
+        { header: '#️⃣ Hashtags', key: 'hashtags', width: 30 },
+        { header: '🖼️ URL Imagen', key: 'imageUrl', width: 50 },
+        { header: '🤖 Prompt Imagen', key: 'imagePrompt', width: 50 }
       ];
       
-      // Estilo de encabezados
-      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
-      worksheet.getRow(1).fill = {
+      // Añadir logo o título decorativo
+      worksheet.mergeCells('A1:K1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = '📊 Cronograma de Contenido - Cohete Workflow';
+      titleCell.font = {
+        size: 20,
+        bold: true,
+        color: { argb: 'FF1E40AF' }
+      };
+      titleCell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle'
+      };
+      titleCell.fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF1E40AF' } // Azul corporativo
+        fgColor: { argb: 'FFF8FAFC' }
       };
-      worksheet.getRow(1).height = 30; // Altura del encabezado
+      
+      // Ajustar el inicio de los datos
+      worksheet.insertRow(2, []);
+      
+      // Estilo de encabezados
+      worksheet.getRow(3).font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' }, 
+        size: 12,
+        name: 'Arial'
+      };
+      worksheet.getRow(3).fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E40AF' }
+      };
+      worksheet.getRow(3).height = 35;
+      
+      // Bordes para encabezados
+      worksheet.getRow(3).eachCell((cell) => {
+        cell.border = {
+          top: { style: 'medium', color: { argb: 'FF1E40AF' } },
+          left: { style: 'thin', color: { argb: 'FF1E40AF' } },
+          bottom: { style: 'medium', color: { argb: 'FF1E40AF' } },
+          right: { style: 'thin', color: { argb: 'FF1E40AF' } }
+        };
+        cell.alignment = {
+          horizontal: 'center',
+          vertical: 'middle'
+        };
+      });
       
       // Formato para fechas
       const formatDate = (dateString: string) => {
@@ -629,7 +675,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       };
       
-      // Añadir datos de entradas
+      // Añadir datos de entradas (empezando desde la fila 4 por el título)
+      let rowIndex = 4;
       schedule.entries.forEach((entry) => {
         const row = worksheet.addRow({
           date: formatDate(entry.postDate.toString()),
@@ -664,7 +711,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Aplicar estilos a las celdas
       worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 1) { // Excluir encabezados
+        if (rowNumber > 3) { // Excluir título y encabezados
           row.eachCell((cell) => {
             // Bordes más estilizados
             cell.border = {
