@@ -2,14 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Project } from "@shared/schema";
-import { Bot, SendHorizontal, Loader2 } from "lucide-react";
+import { Bot, SendHorizontal, Loader2, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 interface ChatMessage {
   id?: number;
@@ -114,14 +114,32 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
     });
   };
 
+  if (!isOpen) return null;
+
   return (
-    <Drawer open={isOpen} onOpenChange={onClose} direction="right" dismissible>
-      <DrawerContent className="w-[400px] max-w-full h-[85vh] rounded-l-lg">
-        <DrawerHeader className="border-b pb-4">
-          <DrawerTitle className="flex items-center gap-2">
-            <Bot className="h-5 w-5" />
-            <span>Cohete Copilot</span>
-          </DrawerTitle>
+    <>
+      {/* Backdrop */}
+      <div 
+        className="fixed inset-0 bg-black/20 z-40"
+        onClick={onClose}
+      />
+      
+      {/* Sidebar */}
+      <div className={cn(
+        "fixed right-0 top-0 z-50 h-full w-[400px] max-w-[90vw] bg-background shadow-xl transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "translate-x-full"
+      )}>
+        {/* Header */}
+        <div className="border-b p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              <h2 className="text-lg font-semibold">Cohete Copilot</h2>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
           
           <div className="mt-4">
             <Select value={selectedProject?.toString()} onValueChange={handleProjectChange}>
@@ -137,10 +155,11 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
               </SelectContent>
             </Select>
           </div>
-        </DrawerHeader>
+        </div>
 
+        {/* Content */}
         {selectedProject ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-[calc(100%-72px)]">
             <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
               {isChatHistoryLoading ? (
                 <div className="flex justify-center items-center h-full">
@@ -201,7 +220,7 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center text-center h-[50vh] p-6">
+          <div className="flex flex-col items-center justify-center text-center h-[calc(100%-72px)] p-6">
             <Bot className="h-16 w-16 mb-4 text-primary opacity-50" />
             <h3 className="text-lg font-medium mb-2">Selecciona un proyecto</h3>
             <p className="text-muted-foreground">
@@ -209,7 +228,7 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
             </p>
           </div>
         )}
-      </DrawerContent>
-    </Drawer>
+      </div>
+    </>
   );
 }
