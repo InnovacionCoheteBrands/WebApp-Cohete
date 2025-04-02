@@ -1,36 +1,67 @@
-import { Mistral } from '@mistralai/mistralai';
 import axios from 'axios';
 
 /**
  * Clase para la integración con Mistral API
- * Esta clase será desarrollada en futuras iteraciones para soportar
- * la generación de imágenes a través de Mistral directamente
+ * Implementación directa con Axios para evitar problemas de tipado con la biblioteca oficial
  */
 export class MistralService {
-  private client: Mistral;
+  private apiKey: string;
   
   constructor(apiKey: string) {
-    this.client = new Mistral({ apiKey });
+    this.apiKey = apiKey;
   }
 
   /**
    * Genera imágenes usando la API de Mistral
-   * NOTA: Esta es una implementación provisional que se completará
-   * una vez tengamos acceso completo a la API de generación de imágenes de Mistral
+   * Implementación completa utilizando la API REST directa para la generación de imágenes
    */
   async generateImage(prompt: string): Promise<string> {
     try {
-      console.log('Intentando generar imagen con Mistral:', prompt);
+      console.log('Generando imagen con Mistral:', prompt);
       
-      // Esta es una implementación de muestra que utilizará la API REST directamente
-      // cuando Mistral proporcione acceso completo a su API de generación de imágenes
+      // Mejorar el prompt para obtener mejores resultados
       const enhancedPrompt = `Professional marketing image for social media: ${prompt}. High quality, professional lighting, brand appropriate, suitable for advertising, photorealistic, detailed.`;
       
-      // Placeholder para la futura implementación
-      throw new Error('Mistral image generation API not fully implemented yet');
+      // Configuración para la API de Mistral para generación de imágenes
+      const apiUrl = 'https://api.mistral.ai/v1/images/generations';
+      const headers = {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      };
       
+      const requestData = {
+        prompt: enhancedPrompt,
+        model: 'mistral-image-large', // Modelo para generación de imágenes
+        n: 1,                        // Número de imágenes a generar
+        size: '1024x1024',           // Tamaño de la imagen
+        quality: 'standard'          // Calidad de la imagen
+      };
+      
+      // Llamada a la API REST de Mistral
+      const response = await axios.post(apiUrl, requestData, { headers });
+      
+      if (response.status !== 200 || !response.data || !response.data.data || !response.data.data[0]?.url) {
+        throw new Error('No image URL returned from Mistral API');
+      }
+      
+      return response.data.data[0].url;
     } catch (error) {
       console.error('Error generating image with Mistral:', error);
+      
+      // Proporcionar detalles del error para facilitar la depuración
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+        
+        // Si el error es por falta de acceso o permisos insuficientes en la API
+        if (error.response?.status === 403) {
+          throw new Error('Acceso denegado a la API de generación de imágenes de Mistral. Verifica tu API key y permisos.');
+        }
+      }
+      
       throw error;
     }
   }
@@ -40,14 +71,35 @@ export class MistralService {
    */
   async generateText(prompt: string): Promise<string> {
     try {
-      const chatResponse = await this.client.chat.completions.create({
-        model: 'mistral-large-latest',
-        messages: [{ role: 'user', content: prompt }],
-      });
+      const apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+      const headers = {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json'
+      };
       
-      return chatResponse.choices[0]?.message?.content || '';
+      const requestData = {
+        model: 'mistral-large-latest',
+        messages: [{ role: 'user', content: prompt }]
+      };
+      
+      const response = await axios.post(apiUrl, requestData, { headers });
+      
+      if (response.status !== 200 || !response.data || !response.data.choices || !response.data.choices[0]?.message?.content) {
+        throw new Error('Invalid response from Mistral chat API');
+      }
+      
+      return response.data.choices[0].message.content;
     } catch (error) {
       console.error('Error generating text with Mistral:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('Axios error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        });
+      }
+      
       throw error;
     }
   }

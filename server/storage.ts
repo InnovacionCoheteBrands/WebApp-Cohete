@@ -342,15 +342,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getScheduleWithEntries(id: number): Promise<(Schedule & { entries: ScheduleEntry[] }) | undefined> {
-    const result = await db.query.schedules.findFirst({
-      where: eq(schedules.id, id),
-      with: {
-        entries: {
-          orderBy: [asc(scheduleEntries.postDate)],
-        },
-      },
-    });
-    return result;
+    try {
+      // Obtener primero el schedule
+      const [schedule] = await db
+        .select()
+        .from(schedules)
+        .where(eq(schedules.id, id));
+      
+      if (!schedule) {
+        return undefined;
+      }
+      
+      // Obtener las entradas relacionadas
+      const entriesList = await db
+        .select()
+        .from(scheduleEntries)
+        .where(eq(scheduleEntries.scheduleId, id))
+        .orderBy(asc(scheduleEntries.postDate));
+      
+      // Combinar los resultados
+      return {
+        ...schedule,
+        entries: entriesList
+      };
+    } catch (error) {
+      console.error(`Error in getScheduleWithEntries for schedule ID ${id}:`, error);
+      throw error;
+    }
   }
 
   async updateSchedule(id: number, scheduleData: Partial<Schedule>): Promise<Schedule | undefined> {
@@ -377,14 +395,37 @@ export class DatabaseStorage implements IStorage {
 
   async listRecentSchedules(limit: number = 5): Promise<(Schedule & { project: Project })[]> {
     try {
-      const results = await db.query.schedules.findMany({
-        limit: limit,
-        orderBy: [desc(schedules.createdAt)],
-        with: {
-          project: true,
-        },
-      });
-      return results || [];
+      // Obtener schedules recientes
+      const schedulesResult = await db
+        .select()
+        .from(schedules)
+        .orderBy(desc(schedules.createdAt))
+        .limit(limit);
+      
+      // Para cada schedule, obtener su proyecto relacionado
+      const results: (Schedule & { project: Project })[] = [];
+      
+      for (const schedule of schedulesResult) {
+        try {
+          // Obtener el proyecto relacionado
+          const [project] = await db
+            .select()
+            .from(projects)
+            .where(eq(projects.id, schedule.projectId));
+          
+          if (project) {
+            results.push({
+              ...schedule,
+              project
+            });
+          }
+        } catch (err) {
+          console.error(`Error getting project for schedule ${schedule.id}:`, err);
+          // Si falla obtener el proyecto, saltamos este schedule
+        }
+      }
+      
+      return results;
     } catch (error) {
       console.error("Error in listRecentSchedules:", error);
       return []; // Return empty array instead of throwing error

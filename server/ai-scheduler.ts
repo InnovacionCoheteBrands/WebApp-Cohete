@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { format, parseISO, addDays } from "date-fns";
+import { mistralService } from "./mistral-integration";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
@@ -167,36 +168,44 @@ export async function generateSchedule(
 
 /**
  * Genera una imagen de referencia para publicaciones en redes sociales usando Mistral AI
- * Como la biblioteca cliente de Mistral no soporta directamente la generación de imágenes,
- * usamos la API de OpenAI como fallback pero con el prompt preparado para ser de alta calidad
+ * Implementación actualizada para usar la API de Mistral directamente
  */
 export async function generateReferenceImage(prompt: string): Promise<string> {
   try {
     console.log(`Generando imagen con prompt: ${prompt}`);
     
-    // Mejorar el prompt para obtener mejores resultados
-    const enhancedPrompt = `Professional marketing image for social media: ${prompt}. High quality, professional lighting, brand appropriate, suitable for advertising, photorealistic, detailed.`;
+    // Utilizar el servicio de Mistral para generar la imagen
+    return await mistralService.generateImage(prompt);
+  } catch (mistralError) {
+    console.error("Error al generar imagen con Mistral:", mistralError);
     
-    // Usar OpenAI mientras la integración con Mistral se completa
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: enhancedPrompt,
-      n: 1,
-      size: "1024x1024",
-      quality: "standard",
-    });
+    try {
+      console.log("Fallback: Intentando generar imagen con OpenAI");
+      
+      // Mejorar el prompt para obtener mejores resultados
+      const enhancedPrompt = `Professional marketing image for social media: ${prompt}. High quality, professional lighting, brand appropriate, suitable for advertising, photorealistic, detailed.`;
+      
+      // Usar OpenAI como fallback si Mistral falla
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt: enhancedPrompt,
+        n: 1,
+        size: "1024x1024",
+        quality: "standard",
+      });
 
-    if (!response.data[0]?.url) {
-      throw new Error("No image URL returned from image generation");
+      if (!response.data[0]?.url) {
+        throw new Error("No image URL returned from OpenAI image generation");
+      }
+
+      return response.data[0].url;
+    } catch (openaiError) {
+      console.error("Error al generar imagen con OpenAI:", openaiError);
+      // Proporcionar información detallada del error para facilitar la depuración
+      const errorMessage = openaiError instanceof Error 
+        ? openaiError.message 
+        : 'Error desconocido';
+      throw new Error(`Error al generar imagen de referencia: ${errorMessage}`);
     }
-
-    return response.data[0].url;
-  } catch (error) {
-    console.error("Error al generar imagen de referencia:", error);
-    // Proporcionar información detallada del error para facilitar la depuración
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Error desconocido';
-    throw new Error(`Error al generar imagen de referencia: ${errorMessage}`);
   }
 }

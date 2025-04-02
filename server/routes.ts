@@ -900,11 +900,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (hasAccess) {
             try {
-              // Obtener entradas para este schedule directamente de la base de datos
-              const entries = await db.select()
-                .from(scheduleEntries)
-                .where(eq(scheduleEntries.scheduleId, schedule.id))
-                .orderBy(asc(scheduleEntries.postDate));
+              // Obtener entradas para este schedule con manejo explícito de errores
+              const entries = await global.storage.listEntriesBySchedule(schedule.id);
               
               // Añadir el schedule con sus entradas
               accessibleSchedules.push({
