@@ -74,7 +74,20 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
         }
         
         // Realizar la solicitud de chat
-        const response = await apiRequest("POST", "/api/chat", data);
+        const response = await fetch("/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          credentials: "include",
+          body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Error del servidor: ${response.status} - ${await response.text()}`);
+        }
+        
         return await response.json();
       } catch (error) {
         console.error("Error en mutationFn:", error);

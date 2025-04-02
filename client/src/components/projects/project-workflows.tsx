@@ -75,12 +75,26 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
   // Generate image mutation
   const generateImageMutation = useMutation({
     mutationFn: async (entryId: number) => {
-      const res = await apiRequest(
-        "POST",
-        `/api/schedule-entries/${entryId}/generate-image`,
-        {}
-      );
-      return await res.json();
+      try {
+        const res = await fetch(`/api/schedule-entries/${entryId}/generate-image`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          credentials: "include"
+        });
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Error: ${res.status} - ${errorText}`);
+        }
+        
+        return await res.json();
+      } catch (error) {
+        console.error("Error generando imagen:", error);
+        throw error;
+      }
     },
     onMutate: (entryId) => {
       setIsGeneratingImage(entryId);
@@ -145,6 +159,7 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
     if (!entry.referenceImageUrl) {
       generateImageMutation.mutate(entry.id);
     } else {
+      // Abre el diálogo con la imagen existente
       setImageDialogOpen(true);
     }
   };
