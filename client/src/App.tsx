@@ -11,6 +11,7 @@ import ScheduleDetail from "@/pages/schedule-detail";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
+import CopilotButton from "@/components/copilot/copilot-button";
 
 function App() {
   return (
@@ -59,6 +60,14 @@ function App() {
           <Route component={NotFound} />
         </Switch>
         <Toaster />
+        {/* Copilot Button (visible on all protected routes) */}
+        <Route path="*">
+          {(params) => {
+            // Don't show on auth page or not found
+            if (params["*"] === "auth") return null;
+            return <CopilotButton />;
+          }}
+        </Route>
       </AuthProvider>
     </QueryClientProvider>
   );
