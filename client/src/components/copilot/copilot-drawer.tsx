@@ -38,10 +38,14 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
   });
 
   // Fetch chat history for selected project
-  // Note: Using string template directly in queryKey for proper URL formatting
-  const { data: chatHistory = [], isLoading: isChatHistoryLoading } = useQuery<ChatMessage[]>({
-    queryKey: [`/api/projects/${selectedProject}/chat`],
+  // Note: Using array format in queryKey for proper cache invalidation
+  const { data: chatHistory, isLoading: isChatHistoryLoading } = useQuery({
+    queryKey: ['/api/projects', selectedProject, 'chat'],
     enabled: isOpen && selectedProject !== null,
+    retry: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: false,
+    placeholderData: [] as ChatMessage[]
   });
 
   // Update messages when chat history loads
@@ -62,21 +66,45 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
   // Mutation for sending chat messages
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { message: string; projectId: number }) => {
-      const response = await apiRequest("POST", "/api/chat", data);
-      return await response.json();
+      try {
+        // Verificamos primero el estado de autenticación
+        const authCheck = await fetch("/api/user", { credentials: "include" });
+        if (!authCheck.ok) {
+          throw new Error("No se ha iniciado sesión. Por favor, inicia sesión para continuar.");
+        }
+        
+        // Realizar la solicitud de chat
+        const response = await apiRequest("POST", "/api/chat", data);
+        return await response.json();
+      } catch (error) {
+        console.error("Error en mutationFn:", error);
+        throw error;
+      }
     },
     onSuccess: (responseData: ChatMessage) => {
       // Invalidate chat history query to trigger a refetch
       queryClient.invalidateQueries({ 
-        queryKey: [`/api/projects/${selectedProject}/chat`] 
+        queryKey: ['/api/projects', selectedProject, 'chat'] 
       });
     },
     onError: (error) => {
-      toast({
-        title: "Error al enviar mensaje",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
+      console.error("Error al enviar mensaje:", error);
+      
+      // Mostrar un mensaje más específico según el error
+      const errorMessage = (error as Error).message;
+      if (errorMessage.includes("401") || errorMessage.includes("Unauthorized")) {
+        toast({
+          title: "Error de autenticación",
+          description: "Por favor, vuelve a iniciar sesión para continuar",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error al enviar mensaje",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
     }
   });
 

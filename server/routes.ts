@@ -933,39 +933,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const schedule of recentSchedules) {
         try {
           // Verificar que el schedule tenga los campos necesarios
-          if (!schedule || !schedule.projectId || !schedule.id) {
-            console.warn("Schedule missing required fields:", schedule);
+          if (!schedule || !schedule.projectId) {
+            console.warn("Schedule missing projectId:", schedule);
+            continue;
+          }
+          
+          // Verificar que el schedule tenga ID
+          if (!schedule.id) {
+            console.warn("Schedule missing ID:", schedule);
             continue;
           }
           
           // Verificar acceso del usuario al proyecto
-          const hasAccess = await global.storage.checkUserProjectAccess(
-            req.user.id,
-            schedule.projectId,
-            req.user.isPrimary
-          );
-          
-          if (hasAccess) {
-            try {
-              // Obtener entradas para este schedule con manejo explícito de errores
-              const entries = await global.storage.listEntriesBySchedule(schedule.id);
-              
-              // Añadir el schedule con sus entradas
-              accessibleSchedules.push({
-                ...schedule,
-                entries: entries || []
-              });
-            } catch (entriesError) {
-              console.error(`Error getting entries for schedule ${schedule.id}:`, entriesError);
-              // Añadir el schedule sin entradas
-              accessibleSchedules.push({
-                ...schedule,
-                entries: []
-              });
+          try {
+            const hasAccess = await global.storage.checkUserProjectAccess(
+              req.user.id,
+              schedule.projectId,
+              req.user.isPrimary
+            );
+            
+            if (hasAccess) {
+              try {
+                // Obtener entradas para este schedule con manejo explícito de errores
+                const entries = await global.storage.listEntriesBySchedule(schedule.id);
+                
+                // Añadir el schedule con sus entradas
+                accessibleSchedules.push({
+                  ...schedule,
+                  entries: entries || []
+                });
+              } catch (entriesError) {
+                console.error(`Error getting entries for schedule ${schedule.id}:`, entriesError);
+                // Añadir el schedule sin entradas
+                accessibleSchedules.push({
+                  ...schedule,
+                  entries: []
+                });
+              }
             }
+          } catch (accessError) {
+            console.error(`Error checking access for schedule ${schedule.id}:`, accessError);
+            continue;
           }
         } catch (scheduleError) {
-          console.error(`Error processing schedule ${schedule.id}:`, scheduleError);
+          console.error(`Error processing schedule:`, scheduleError);
           // Continuar con el siguiente schedule
           continue;
         }
