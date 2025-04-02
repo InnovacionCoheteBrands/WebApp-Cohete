@@ -642,43 +642,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           designInstructions: entry.designInstructions,
           hashtags: entry.hashtags,
           imageUrl: entry.referenceImageUrl || 'No disponible',
-
-  // Analytics API
-  app.get("/api/analytics", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      // Get analytics data for the user
-      const projects = await global.storage.listProjectsByUser(req.user.id, req.user.isPrimary);
-      const schedules = await global.storage.listAllSchedules();
-      
-      // Get recent activity (last 7 days)
-      const startDate = new Date();
-      startDate.setDate(startDate.getDate() - 7);
-      
-      const recentActivity = await global.storage.getRecentActivity(startDate);
-      
-      res.json({
-        totalProjects: projects.length,
-        totalSchedules: schedules.length,
-        totalImages: await global.storage.countGeneratedImages(),
-        recentActivity
-      });
-    } catch (error) {
-      console.error("Error fetching analytics:", error);
-      res.status(500).json({ message: "Failed to fetch analytics data" });
-    }
-  });
-
-  // Images API
-  app.get("/api/images", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const images = await global.storage.listGeneratedImages(req.user.id, req.user.isPrimary);
-      res.json(images);
-    } catch (error) {
-      console.error("Error fetching images:", error);
-      res.status(500).json({ message: "Failed to fetch images" });
-    }
-  });
-
           imagePrompt: entry.referenceImagePrompt || 'No disponible'
         });
         

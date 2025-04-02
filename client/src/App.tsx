@@ -12,10 +12,6 @@ import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
 
-// Placeholder components
-const GeneratedImages = () => <div>Generated Images Page</div>;
-const Analytics = () => <div>Analytics Page</div>;
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -55,25 +51,10 @@ function App() {
               </ProtectedRoute>
             )}
           </Route>
-
-          <Route path="/images">
-            <ProtectedRoute>
-              <MainLayout>
-                <GeneratedImages />
-              </MainLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/analytics">
-            <ProtectedRoute>
-              <MainLayout>
-                <Analytics />
-              </MainLayout>
-            </ProtectedRoute>
-          </Route>
-
+          
           {/* Public routes */}
           <Route path="/auth" component={AuthPage} />
-
+          
           {/* Fallback to 404 */}
           <Route component={NotFound} />
         </Switch>
