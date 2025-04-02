@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Bot, X } from "lucide-react";
-import CopilotDrawer from "./copilot-drawer";
+// Importación relativa del componente Drawer
+import CopilotDrawer from "@/components/copilot/copilot-drawer";
 
 export default function CopilotButton() {
   const [isOpen, setIsOpen] = useState(false);

@@ -38,8 +38,9 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
   });
 
   // Fetch chat history for selected project
+  // Note: Using string template directly in queryKey for proper URL formatting
   const { data: chatHistory = [], isLoading: isChatHistoryLoading } = useQuery<ChatMessage[]>({
-    queryKey: ["/api/projects", selectedProject, "chat"],
+    queryKey: [`/api/projects/${selectedProject}/chat`],
     enabled: isOpen && selectedProject !== null,
   });
 
@@ -67,7 +68,7 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
     onSuccess: (responseData: ChatMessage) => {
       // Invalidate chat history query to trigger a refetch
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProject, "chat"] 
+        queryKey: [`/api/projects/${selectedProject}/chat`] 
       });
     },
     onError: (error) => {
@@ -176,11 +177,12 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
                           : "mr-auto bg-muted"
                       }`}
                     >
-                      {msg.content.split("\n").map((line, i) => (
+                      {msg.content && msg.content.split("\n").map((line, i) => (
                         <p key={i} className={i > 0 ? "mt-2" : ""}>
                           {line}
                         </p>
                       ))}
+                      {!msg.content && <p>No se pudo cargar el mensaje</p>}
                     </Card>
                   ))}
                   {sendMessageMutation.isPending && (

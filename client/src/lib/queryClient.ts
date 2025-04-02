@@ -29,7 +29,28 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Convert queryKey to a URL string
+    let url: string;
+    
+    if (typeof queryKey[0] === 'string' && queryKey[0].startsWith('/api/')) {
+      // Already a direct URL
+      url = queryKey[0] as string;
+    } else if (Array.isArray(queryKey)) {
+      // Convert array path segments to URL string
+      url = queryKey.map(segment => 
+        segment !== undefined && segment !== null ? segment.toString() : ''
+      ).join('/');
+      
+      // Ensure we have a leading slash
+      if (!url.startsWith('/')) {
+        url = '/' + url;
+      }
+    } else {
+      // Just use first element as string
+      url = String(queryKey[0]);
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 
