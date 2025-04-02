@@ -61,6 +61,7 @@ interface SocialNetwork {
   name: string;
   selected: boolean;
   contentTypes: string[];
+  postsPerMonth: number;
 }
 
 // Definición de tipos para políticas de respuesta
@@ -91,6 +92,7 @@ const projectSchema = z.object({
         name: z.string(),
         selected: z.boolean().optional(),
         contentTypes: z.array(z.string()).optional(),
+        postsPerMonth: z.number().int().min(0).optional(),
       })
     ).optional(),
     marketingStrategies: z.string().optional(), 
@@ -163,7 +165,8 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         socialNetworks: socialNetworksOptions.map(network => ({
           name: network.name,
           selected: false,
-          contentTypes: []
+          contentTypes: [],
+          postsPerMonth: 0
         })),
         marketingStrategies: "",
         brandCommunicationStyle: "",
@@ -542,22 +545,49 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                     <div className="space-y-6">
                       {socialNetworksOptions.map((network, networkIndex) => (
                         <div key={network.name} className="space-y-3 p-3 border rounded-md">
-                          <div className="flex items-center space-x-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center space-x-2">
+                              <FormField
+                                control={form.control}
+                                name={`analysisResults.socialNetworks.${networkIndex}.selected`}
+                                render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                    <FormControl>
+                                      <Checkbox 
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                      />
+                                    </FormControl>
+                                    <div className="flex items-center">
+                                      {network.icon}
+                                      <FormLabel className="font-medium">{network.name}</FormLabel>
+                                    </div>
+                                  </FormItem>
+                                )}
+                              />
+                            </div>
+
                             <FormField
                               control={form.control}
-                              name={`analysisResults.socialNetworks.${networkIndex}.selected`}
+                              name={`analysisResults.socialNetworks.${networkIndex}.postsPerMonth`}
                               render={({ field }) => (
-                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
+                                <FormItem className="flex flex-row items-center gap-2 space-y-0">
+                                  <FormLabel className="text-sm whitespace-nowrap">
+                                    Publicaciones por mes:
+                                  </FormLabel>
                                   <FormControl>
-                                    <Checkbox 
-                                      checked={field.value}
-                                      onCheckedChange={field.onChange}
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      className="w-20"
+                                      disabled={!form.watch(`analysisResults.socialNetworks.${networkIndex}.selected`)}
+                                      {...field}
+                                      onChange={(e) => {
+                                        const value = parseInt(e.target.value);
+                                        field.onChange(isNaN(value) ? 0 : value);
+                                      }}
                                     />
                                   </FormControl>
-                                  <div className="flex items-center">
-                                    {network.icon}
-                                    <FormLabel className="font-medium">{network.name}</FormLabel>
-                                  </div>
                                 </FormItem>
                               )}
                             />

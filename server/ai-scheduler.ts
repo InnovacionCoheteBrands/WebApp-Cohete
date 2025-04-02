@@ -26,6 +26,7 @@ export interface ContentSchedule {
 
 /**
  * Generates a content schedule for social media using GPT-4o
+ * Takes into account the monthly frequency of posts defined for each social network
  */
 export async function generateSchedule(
   projectName: string,
@@ -39,6 +40,38 @@ export async function generateSchedule(
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
+    
+    // Extract social networks with monthly post frequency data
+    let socialNetworksSection = "";
+    try {
+      const socialNetworks = projectDetails?.analysisResults?.socialNetworks || [];
+      const selectedNetworks = socialNetworks
+        .filter((network: any) => network.selected && typeof network.postsPerMonth === 'number')
+        .map((network: any) => {
+          // Calculate posts per two weeks based on monthly frequency
+          // For a 14-day period (2 weeks), we multiply the monthly rate by (14/30)
+          const postsPerTwoWeeks = Math.ceil(network.postsPerMonth * (durationDays / 30));
+          
+          return {
+            name: network.name,
+            postsPerMonth: network.postsPerMonth,
+            postsForPeriod: postsPerTwoWeeks,
+            contentTypes: network.contentTypes || []
+          };
+        });
+      
+      if (selectedNetworks.length > 0) {
+        socialNetworksSection = `
+        DISTRIBUCIÓN DE PUBLICACIONES:
+        ${JSON.stringify(selectedNetworks, null, 2)}
+        
+        IMPORTANTE: Respeta la cantidad de publicaciones por red social indicada en "postsForPeriod".
+        `;
+      }
+    } catch (error) {
+      console.warn("Error processing social networks frequency data:", error);
+      socialNetworksSection = "No hay información específica sobre la frecuencia de publicaciones.";
+    }
     
     // Prepare previous content section
     const previousContentSection = previousContent.length > 0
@@ -56,6 +89,8 @@ export async function generateSchedule(
       - Fecha de inicio: ${formattedDate}
       - Duración: ${durationDays} días (hasta ${endDate})
       - Especificaciones adicionales: ${specifications || "No proporcionadas"}
+      
+      ${socialNetworksSection}
       
       ${previousContentSection}
       
@@ -136,6 +171,7 @@ export async function generateSchedule(
       }
       
       REQUERIMIENTOS CRÍTICOS:
+      - IMPORTANTE: Respeta ESTRICTAMENTE el número de publicaciones solicitado para cada red social según el valor "postsForPeriod" indicado en la distribución de publicaciones
       - Crea un balance estratégico entre contenido educativo (30%), inspiracional (25%), promocional (25%) y de engagement (20%)
       - Optimiza los horarios según métricas actuales de engagement por plataforma y segmento
       - Asegura variedad visual en el feed al alternar formatos y composiciones
