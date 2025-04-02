@@ -610,6 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { header: '🎨 Texto en Diseño', key: 'copyIn', width: 40 },
         { header: '📢 Texto Descripción', key: 'copyOut', width: 40 },
         { header: '🎯 Instrucciones Diseño', key: 'designInstructions', width: 40 },
+        { header: '📏 Formato', key: 'format', width: 20 },
         { header: '#️⃣ Hashtags', key: 'hashtags', width: 30 },
         { header: '🖼️ URL Imagen', key: 'imageUrl', width: 50 },
         { header: '🤖 Prompt Imagen', key: 'imagePrompt', width: 50 }
@@ -678,6 +679,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Añadir datos de entradas (empezando desde la fila 4 por el título)
       let rowIndex = 4;
       schedule.entries.forEach((entry) => {
+        // Determinar formato según la plataforma
+        let format;
+        switch(entry.platform.toLowerCase()) {
+          case 'instagram':
+            format = 'Feed: 1080x1080px\nStories: 1080x1920px\nReels: 1080x1920px';
+            break;
+          case 'facebook':
+            format = 'Feed: 1200x630px\nStories: 1080x1920px\nReels: 1080x1920px';
+            break;
+          case 'twitter':
+            format = 'Post: 1600x900px';
+            break;
+          case 'linkedin':
+            format = 'Post: 1200x627px';
+            break;
+          case 'tiktok':
+            format = 'Video: 1080x1920px';
+            break;
+          default:
+            format = 'Formato estándar';
+        }
+        
         const row = worksheet.addRow({
           date: formatDate(entry.postDate.toString()),
           time: entry.postTime,
@@ -687,6 +710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           copyIn: entry.copyIn,
           copyOut: entry.copyOut,
           designInstructions: entry.designInstructions,
+          format: format,
           hashtags: entry.hashtags,
           imageUrl: entry.referenceImageUrl || 'No disponible',
           imagePrompt: entry.referenceImagePrompt || 'No disponible'
