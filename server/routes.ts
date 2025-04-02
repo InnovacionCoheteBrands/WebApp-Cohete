@@ -589,26 +589,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Cronograma');
       
+      // Configurar propiedades del libro
+      workbook.creator = 'Cohete Workflow';
+      workbook.lastModifiedBy = 'Cohete Workflow';
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      
       // Formatear encabezados
       worksheet.columns = [
         { header: 'Fecha', key: 'date', width: 15 },
         { header: 'Hora', key: 'time', width: 10 },
         { header: 'Plataforma', key: 'platform', width: 15 },
         { header: 'Título', key: 'title', width: 30 },
+        { header: 'Descripción', key: 'description', width: 40 },
         { header: 'Texto en Diseño', key: 'copyIn', width: 40 },
         { header: 'Texto Descripción', key: 'copyOut', width: 40 },
         { header: 'Instrucciones Diseño', key: 'designInstructions', width: 40 },
-        { header: 'Hashtags', key: 'hashtags', width: 20 },
-        { header: 'Imagen Referencia', key: 'imageUrl', width: 50 }
+        { header: 'Hashtags', key: 'hashtags', width: 30 },
+        { header: 'URL Imagen', key: 'imageUrl', width: 50 },
+        { header: 'Prompt Imagen', key: 'imagePrompt', width: 50 }
       ];
       
       // Estilo de encabezados
-      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
       worksheet.getRow(1).fill = {
         type: 'pattern',
         pattern: 'solid',
-        fgColor: { argb: 'FF4B5563' } // Gris oscuro
+        fgColor: { argb: 'FF1E40AF' } // Azul corporativo
       };
+      worksheet.getRow(1).height = 30; // Altura del encabezado
       
       // Formato para fechas
       const formatDate = (dateString: string) => {
@@ -622,16 +631,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Añadir datos de entradas
       schedule.entries.forEach((entry) => {
-        worksheet.addRow({
+        const row = worksheet.addRow({
           date: formatDate(entry.postDate.toString()),
           time: entry.postTime,
           platform: entry.platform,
           title: entry.title,
+          description: entry.description,
           copyIn: entry.copyIn,
           copyOut: entry.copyOut,
           designInstructions: entry.designInstructions,
           hashtags: entry.hashtags,
-          imageUrl: entry.referenceImageUrl || 'No disponible'
+          imageUrl: entry.referenceImageUrl || 'No disponible',
+          imagePrompt: entry.referenceImagePrompt || 'No disponible'
+        });
+        
+        // Ajustar altura de fila según el contenido
+        row.height = 40;
+        
+        // Aplicar estilos específicos a ciertas columnas
+        row.getCell('platform').font = { bold: true };
+        row.getCell('title').font = { bold: true, color: { argb: 'FF1E40AF' } };
+        
+        // Ajustar el texto para que sea visible
+        row.eachCell((cell) => {
+          cell.alignment = { 
+            vertical: 'middle', 
+            horizontal: 'left',
+            wrapText: true 
+          };
         });
       });
       
@@ -639,11 +666,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber > 1) { // Excluir encabezados
           row.eachCell((cell) => {
+            // Bordes más estilizados
             cell.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
+              top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+              left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+              bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
+              right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+            };
+            
+            // Fuente base para todas las celdas
+            cell.font = { 
+              ...cell.font, // Mantener estilos específicos si existen
+              name: 'Arial',
+              size: 11
             };
           });
           
@@ -652,11 +687,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             row.fill = {
               type: 'pattern',
               pattern: 'solid',
-              fgColor: { argb: 'FFF9FAFB' } // Gris muy claro
+              fgColor: { argb: 'FFF8FAFC' } // Azul muy claro
             };
           }
         }
       });
+      
+      // Congelar la primera fila
+      worksheet.views = [
+        { state: 'frozen', xSplit: 0, ySplit: 1 }
+      ];
       
       // Configurar respuesta para descargar archivo
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
