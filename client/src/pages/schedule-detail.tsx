@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 import { Schedule, ScheduleEntry } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Components
-import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock } from "lucide-react";
+import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,14 +13,47 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 export default function ScheduleDetail({ id }: { id: number }) {
   const { toast } = useToast();
   const [selectedEntry, setSelectedEntry] = useState<ScheduleEntry | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState<number | null>(null);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
   
   // Fetch schedule data
   const { data: schedule, isLoading, error } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
     queryKey: [`/api/schedules/${id}`],
+  });
+  
+  // Mutation para generar imagen
+  const generateImageMutation = useMutation({
+    mutationFn: async (entryId: number) => {
+      setIsGeneratingImage(entryId);
+      const response = await apiRequest("POST", `/api/schedule-entries/${entryId}/generate-image`, {});
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Actualiza la caché para reflejar la nueva imagen
+      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+      
+      toast({
+        title: "Imagen generada",
+        description: "La imagen de referencia ha sido generada correctamente",
+      });
+      
+      setImageDialogOpen(true);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al generar imagen",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsGeneratingImage(null);
+    }
   });
 
   // Formatear fecha
@@ -69,6 +103,23 @@ export default function ScheduleDetail({ id }: { id: number }) {
           variant: "destructive"
         });
       });
+  };
+  
+  // Manejar la generación o visualización de la imagen
+  const handleImageAction = (entry: ScheduleEntry) => {
+    setSelectedEntry(entry);
+    if (!entry.referenceImageUrl) {
+      generateImageMutation.mutate(entry.id);
+    } else {
+      setImageDialogOpen(true);
+    }
+  };
+  
+  // Regenerar una imagen existente
+  const handleRegenerateImage = () => {
+    if (selectedEntry) {
+      generateImageMutation.mutate(selectedEntry.id);
+    }
   };
 
   if (isLoading) {
@@ -258,9 +309,31 @@ export default function ScheduleDetail({ id }: { id: number }) {
                   </TabsContent>
                 </Tabs>
                 
-                {selectedEntry.referenceImageUrl && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-2">Imagen Referencia</h3>
+                <div className="mt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-lg font-medium">Imagen Referencia</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      disabled={isGeneratingImage === selectedEntry.id}
+                      onClick={handleRegenerateImage}
+                    >
+                      {isGeneratingImage === selectedEntry.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Generando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <ImageIcon className="h-4 w-4" />
+                          <span>Regenerar Imagen</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  
+                  {selectedEntry.referenceImageUrl ? (
                     <div className="w-full flex justify-center">
                       <img 
                         src={selectedEntry.referenceImageUrl} 
@@ -268,14 +341,40 @@ export default function ScheduleDetail({ id }: { id: number }) {
                         className="max-h-[300px] object-contain rounded-lg"
                       />
                     </div>
+                  ) : (
+                    <div className="w-full flex flex-col items-center justify-center bg-muted/30 border border-dashed rounded-lg h-[200px]">
+                      <p className="text-muted-foreground mb-4">No hay imagen de referencia disponible</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        disabled={isGeneratingImage === selectedEntry.id}
+                        onClick={handleRegenerateImage}
+                      >
+                        {isGeneratingImage === selectedEntry.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Generando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <ImageIcon className="h-4 w-4" />
+                            <span>Generar Imagen</span>
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {selectedEntry.referenceImagePrompt && (
                     <div className="mt-4">
                       <h4 className="text-sm font-medium mb-1">Prompt Generación</h4>
                       <div className="p-3 bg-muted rounded-lg text-sm">
                         <p className="whitespace-pre-wrap">{selectedEntry.referenceImagePrompt}</p>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </CardContent>
             </Card>
           ) : (
@@ -289,6 +388,56 @@ export default function ScheduleDetail({ id }: { id: number }) {
           )}
         </div>
       </div>
+      
+      {/* Diálogo para mostrar imagen a pantalla completa */}
+      {selectedEntry && (
+        <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{selectedEntry.title}</DialogTitle>
+            </DialogHeader>
+            
+            {selectedEntry.referenceImageUrl ? (
+              <div className="flex flex-col items-center">
+                <img 
+                  src={selectedEntry.referenceImageUrl}
+                  alt={selectedEntry.title}
+                  className="max-h-[500px] object-contain rounded-lg"
+                />
+                <div className="mt-4 w-full">
+                  <h4 className="text-sm font-medium mb-1">Prompt de Generación</h4>
+                  <div className="p-3 bg-muted rounded-lg text-sm">
+                    <p className="whitespace-pre-wrap">{selectedEntry.referenceImagePrompt}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8">
+                <p className="text-center text-muted-foreground mb-4">
+                  No hay imagen disponible para esta entrada.
+                </p>
+              </div>
+            )}
+            
+            <DialogFooter className="gap-2">
+              {selectedEntry.referenceImageUrl && (
+                <Button 
+                  onClick={() => downloadImage(selectedEntry.referenceImageUrl!, selectedEntry.title)}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Descargar Imagen
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={() => setImageDialogOpen(false)}
+              >
+                Cerrar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
