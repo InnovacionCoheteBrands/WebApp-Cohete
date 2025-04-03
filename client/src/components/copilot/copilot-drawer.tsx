@@ -29,7 +29,7 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [message, setMessage] = useState("");
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   
   // Fetch all projects
   const { data: projects = [] } = useQuery<Project[]>({
@@ -104,8 +104,8 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current;
+    if (viewportRef.current) {
+      const scrollContainer = viewportRef.current;
       scrollContainer.scrollTop = scrollContainer.scrollHeight;
     }
   }, [chatMessages]);
@@ -183,40 +183,42 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
         {/* Content */}
         {selectedProject ? (
           <div className="flex flex-col h-[calc(100%-72px)]">
-            <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-              {isChatHistoryLoading ? (
-                <div className="flex justify-center items-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-              ) : (
-                <>
-                  {chatMessages.map((msg, index) => (
-                    <Card
-                      key={index}
-                      className={`mb-3 p-3 max-w-[85%] ${
-                        msg.role === "user"
-                          ? "ml-auto bg-primary text-primary-foreground"
-                          : "mr-auto bg-muted"
-                      }`}
-                    >
-                      {msg.content && msg.content.split("\n").map((line, i) => (
-                        <p key={i} className={i > 0 ? "mt-2" : ""}>
-                          {line}
-                        </p>
-                      ))}
-                      {!msg.content && <p>No se pudo cargar el mensaje</p>}
-                    </Card>
-                  ))}
-                  {sendMessageMutation.isPending && (
-                    <Card className="mb-3 p-3 max-w-[85%] mr-auto bg-muted">
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        <span>Pensando...</span>
-                      </div>
-                    </Card>
-                  )}
-                </>
-              )}
+            <ScrollArea className="flex-1 p-4">
+              <div ref={viewportRef} className="h-full">
+                {isChatHistoryLoading ? (
+                  <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <>
+                    {chatMessages.map((msg, index) => (
+                      <Card
+                        key={index}
+                        className={`mb-3 p-3 max-w-[85%] ${
+                          msg.role === "user"
+                            ? "ml-auto bg-primary text-primary-foreground"
+                            : "mr-auto bg-muted"
+                        }`}
+                      >
+                        {msg.content && msg.content.split("\n").map((line, i) => (
+                          <p key={i} className={i > 0 ? "mt-2" : ""}>
+                            {line}
+                          </p>
+                        ))}
+                        {!msg.content && <p>No se pudo cargar el mensaje</p>}
+                      </Card>
+                    ))}
+                    {sendMessageMutation.isPending && (
+                      <Card className="mb-3 p-3 max-w-[85%] mr-auto bg-muted">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Pensando...</span>
+                        </div>
+                      </Card>
+                    )}
+                  </>
+                )}
+              </div>
             </ScrollArea>
 
             <div className="p-4 border-t">
