@@ -9,6 +9,8 @@ import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import ScheduleDetail from "@/pages/schedule-detail";
 import TaskManager from "@/pages/task-manager";
+import UserManagement from "@/pages/user-management";
+import CreateAccount from "@/pages/create-account";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -61,9 +63,18 @@ function App() {
               </MainLayout>
             </ProtectedRoute>
           </Route>
+
+          <Route path="/users">
+            <ProtectedRoute>
+              <MainLayout>
+                <UserManagement />
+              </MainLayout>
+            </ProtectedRoute>
+          </Route>
           
           {/* Public routes */}
           <Route path="/auth" component={AuthPage} />
+          <Route path="/create-account" component={CreateAccount} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />

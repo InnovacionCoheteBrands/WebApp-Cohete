@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth } from "./auth";
 import { DatabaseStorage } from "./storage";
@@ -6,22 +6,24 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import pdfParse from "pdf-parse";
-import { analyzeDocument } from "./ai-analyzer";
+import { analyzeDocument, processChatMessage } from "./ai-analyzer";
 import { generateSchedule, generateReferenceImage } from "./ai-scheduler";
-import { processChatMessage } from "./ai-analyzer";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
+import { hashPassword } from "./auth";
 import {
   insertProjectSchema,
   insertAnalysisResultsSchema,
   insertScheduleSchema,
   insertChatMessageSchema,
   insertTaskSchema,
+  insertUserSchema,
   scheduleEntries
 } from "@shared/schema";
+import { WebSocketServer } from "ws";
 
 // Global declaration for storage
 declare global {
@@ -69,6 +71,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Initialize storage with session store
   global.storage = new DatabaseStorage(sessionStore);
+
+  // User Management API
+  
+  // Endpoint para la ruta secreta de creación de cuenta de administrador principal
+  const PRIMARY_ACCOUNT_SECRET = process.env.PRIMARY_ACCOUNT_SECRET || 'cohete-workflow-secret';
+  
+  app.post("/api/create-primary-account", async (req: Request, res: Response) => {
+    try {
+      const { fullName, username, password, secretKey } = req.body;
+      
+      // Validar datos
+      if (!fullName || !username || !password || !secretKey) {
+        return res.status(400).json({ message: "Todos los campos son requeridos" });
+      }
+      
+      // Verificar clave secreta
+      if (secretKey !== PRIMARY_ACCOUNT_SECRET) {
+        return res.status(403).json({ message: "Clave secreta incorrecta" });
+      }
+      
+      // Verificar si el usuario ya existe
+      const existingUser = await global.storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "El nombre de usuario ya existe" });
+      }
+      
+      // Crear usuario primario
+      const hashedPassword = await hashPassword(password);
+      const newUser = await global.storage.createUser({
+        fullName,
+        username,
+        password: hashedPassword,
+        isPrimary: true,
+      });
+      
+      // Eliminar password del response
+      const { password: _, ...userWithoutPassword } = newUser;
+      
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating primary account:", error);
+      res.status(500).json({ message: "Error al crear cuenta primaria" });
+    }
+  });
+  
+  // Endpoint para listar usuarios (solo para usuarios primarios)
+  app.get("/api/admin/users", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
+    try {
+      const users = await global.storage.listUsers();
+      
+      // Eliminar contraseñas del resultado
+      const sanitizedUsers = users.map(user => {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+      });
+      
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error("Error listing users:", error);
+      res.status(500).json({ message: "Error al listar usuarios" });
+    }
+  });
+  
+  // Endpoint para crear usuarios (solo para usuarios primarios)
+  app.post("/api/admin/users", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Verificar si el usuario ya existe
+      const existingUser = await global.storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "El nombre de usuario ya existe" });
+      }
+      
+      // Establecer como usuario secundario por defecto
+      userData.isPrimary = false;
+      
+      // Crear usuario
+      const hashedPassword = await hashPassword(userData.password);
+      const newUser = await global.storage.createUser({
+        ...userData,
+        password: hashedPassword,
+      });
+      
+      // Eliminar password del response
+      const { password, ...userWithoutPassword } = newUser;
+      
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Error al crear usuario" });
+    }
+  });
+  
+  // Endpoint para eliminar usuarios (solo para usuarios primarios)
+  app.delete("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+      
+      // No permitir eliminar el propio usuario
+      if (userId === req.user.id) {
+        return res.status(400).json({ message: "No puedes eliminar tu propia cuenta" });
+      }
+      
+      // Verificar que el usuario existe
+      const user = await global.storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Si es un usuario primario, verificar que no sea el último
+      if (user.isPrimary) {
+        const allUsers = await global.storage.listUsers();
+        const primaryUsers = allUsers.filter(u => u.isPrimary);
+        
+        if (primaryUsers.length <= 1) {
+          return res.status(400).json({ message: "No se puede eliminar el último usuario administrador" });
+        }
+      }
+      
+      // Eliminar usuario
+      await global.storage.deleteUser(userId);
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Error al eliminar usuario" });
+    }
+  });
+
+  // Endpoint para obtener todos los usuarios (para asignación de tareas)
+  app.get("/api/users", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const users = await global.storage.listUsers();
+      
+      // Incluir solo información básica de usuario para seguridad
+      const safeUsers = users.map(user => ({
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        isPrimary: user.isPrimary
+      }));
+      
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error listing users:", error);
+      res.status(500).json({ message: "Error al listar usuarios" });
+    }
+  });
 
   // Projects API
   app.post("/api/projects", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
@@ -473,15 +631,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return savedEntry;
       });
       
-      // Esperar a que se completen todas las operaciones
+      // Wait for all entries to be processed
       await Promise.all(entryPromises);
       
-      // Get complete schedule with entries
-      const completeSchedule = await global.storage.getScheduleWithEntries(schedule.id);
-      res.status(201).json(completeSchedule);
+      // Get the schedule with all its entries
+      const scheduleWithEntries = await global.storage.getScheduleWithEntries(schedule.id);
+      
+      res.status(201).json(scheduleWithEntries);
     } catch (error) {
-      console.error("Error generating schedule:", error);
-      res.status(500).json({ message: "Failed to generate schedule" });
+      console.error("Error creating schedule:", error);
+      res.status(500).json({ message: "Failed to create schedule", error: error.message });
     }
   });
 
@@ -503,30 +662,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
       
-      // Get basic schedule info first
-      const basicSchedules = await global.storage.listSchedulesByProject(projectId);
-      
-      // Then get full details with entries for each schedule
-      const schedulesWithEntries = await Promise.all(
-        basicSchedules.map(async (schedule) => {
-          try {
-            const fullSchedule = await global.storage.getScheduleWithEntries(schedule.id);
-            return fullSchedule || {
-              ...schedule,
-              entries: []
-            };
-          } catch (err) {
-            console.error(`Error getting entries for schedule ${schedule.id}:`, err);
-            // Return the schedule without entries if there's an error
-            return {
-              ...schedule,
-              entries: []
-            };
-          }
-        })
-      );
-      
-      res.json(schedulesWithEntries);
+      const schedules = await global.storage.listSchedulesByProject(projectId);
+      res.json(schedules);
     } catch (error) {
       console.error("Error listing schedules:", error);
       res.status(500).json({ message: "Failed to list schedules" });
@@ -566,6 +703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules/:id/download", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const scheduleId = parseInt(req.params.id);
+      const format = req.query.format || 'excel';
+      
       if (isNaN(scheduleId)) {
         return res.status(400).json({ message: "Invalid schedule ID" });
       }
@@ -586,201 +725,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have access to this schedule" });
       }
       
-      // Create Excel file
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Cronograma', {
-        properties: {
-          tabColor: { argb: '1E40AF' },
-          defaultRowHeight: 25
-        }
+      // Sort entries by date
+      const sortedEntries = [...schedule.entries].sort((a, b) => {
+        return new Date(a.postDate).getTime() - new Date(b.postDate).getTime();
       });
       
-      // Configurar propiedades del libro
-      workbook.creator = 'Cohete Workflow';
-      workbook.lastModifiedBy = 'Cohete Workflow';
-      workbook.created = new Date();
-      workbook.modified = new Date();
-      
-      // Formatear encabezados
-      worksheet.columns = [
-        { header: '📅 Fecha', key: 'date', width: 15 },
-        { header: '⏰ Hora', key: 'time', width: 10 },
-        { header: '📱 Plataforma', key: 'platform', width: 15 },
-        { header: '📝 Título', key: 'title', width: 30 },
-        { header: '📋 Descripción', key: 'description', width: 40 },
-        { header: '🎨 Texto en Diseño', key: 'copyIn', width: 40 },
-        { header: '📢 Texto Descripción', key: 'copyOut', width: 40 },
-        { header: '🎯 Instrucciones Diseño', key: 'designInstructions', width: 40 },
-        { header: '📏 Formato', key: 'format', width: 20 },
-        { header: '#️⃣ Hashtags', key: 'hashtags', width: 30 },
-        { header: '🖼️ URL Imagen', key: 'imageUrl', width: 50 },
-        { header: '🤖 Prompt Imagen', key: 'imagePrompt', width: 50 }
-      ];
-      
-      // Añadir logo o título decorativo
-      worksheet.mergeCells('A1:K1');
-      const titleCell = worksheet.getCell('A1');
-      titleCell.value = '📊 Cronograma de Contenido - Cohete Workflow';
-      titleCell.font = {
-        size: 20,
-        bold: true,
-        color: { argb: 'FF1E40AF' }
-      };
-      titleCell.alignment = {
-        horizontal: 'center',
-        vertical: 'middle'
-      };
-      titleCell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFF8FAFC' }
-      };
-      
-      // Ajustar el inicio de los datos
-      worksheet.insertRow(2, []);
-      
-      // Estilo de encabezados
-      worksheet.getRow(3).font = { 
-        bold: true, 
-        color: { argb: 'FFFFFFFF' }, 
-        size: 12,
-        name: 'Arial'
-      };
-      worksheet.getRow(3).fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF1E40AF' }
-      };
-      worksheet.getRow(3).height = 35;
-      
-      // Bordes para encabezados
-      worksheet.getRow(3).eachCell((cell) => {
-        cell.border = {
-          top: { style: 'medium', color: { argb: 'FF1E40AF' } },
-          left: { style: 'thin', color: { argb: 'FF1E40AF' } },
-          bottom: { style: 'medium', color: { argb: 'FF1E40AF' } },
-          right: { style: 'thin', color: { argb: 'FF1E40AF' } }
-        };
-        cell.alignment = {
-          horizontal: 'center',
-          vertical: 'middle'
-        };
-      });
-      
-      // Formato para fechas
-      const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('es-ES', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric'
-        });
-      };
-      
-      // Añadir datos de entradas (empezando desde la fila 4 por el título)
-      let rowIndex = 4;
-      schedule.entries.forEach((entry) => {
-        // Determinar formato según la plataforma
-        let format;
-        switch(entry.platform.toLowerCase()) {
-          case 'instagram':
-            format = 'Feed: 1080x1080px\nStories: 1080x1920px\nReels: 1080x1920px';
-            break;
-          case 'facebook':
-            format = 'Feed: 1200x630px\nStories: 1080x1920px\nReels: 1080x1920px';
-            break;
-          case 'twitter':
-            format = 'Post: 1600x900px';
-            break;
-          case 'linkedin':
-            format = 'Post: 1200x627px';
-            break;
-          case 'tiktok':
-            format = 'Video: 1080x1920px';
-            break;
-          default:
-            format = 'Formato estándar';
-        }
+      if (format === 'excel') {
+        // Generate Excel file
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'Cohete Workflow';
+        workbook.created = new Date();
         
-        const row = worksheet.addRow({
-          date: formatDate(entry.postDate.toString()),
-          time: entry.postTime,
-          platform: entry.platform,
-          title: entry.title,
-          description: entry.description,
-          copyIn: entry.copyIn,
-          copyOut: entry.copyOut,
-          designInstructions: entry.designInstructions,
-          format: format,
-          hashtags: entry.hashtags,
-          imageUrl: entry.referenceImageUrl || 'No disponible',
-          imagePrompt: entry.referenceImagePrompt || 'No disponible'
-        });
+        const worksheet = workbook.addWorksheet(schedule.name);
         
-        // Ajustar altura de fila según el contenido
-        row.height = 40;
+        // Define columns
+        worksheet.columns = [
+          { header: 'Fecha', key: 'postDate', width: 12 },
+          { header: 'Hora', key: 'postTime', width: 8 },
+          { header: 'Plataforma', key: 'platform', width: 12 },
+          { header: 'Título', key: 'title', width: 20 },
+          { header: 'Descripción', key: 'description', width: 20 },
+          { header: 'Copy In', key: 'copyIn', width: 30 },
+          { header: 'Copy Out', key: 'copyOut', width: 30 },
+          { header: 'Hashtags', key: 'hashtags', width: 20 },
+          { header: 'Instrucciones de Diseño', key: 'designInstructions', width: 30 },
+          { header: 'URL de Imagen', key: 'referenceImageUrl', width: 50 }
+        ];
         
-        // Aplicar estilos específicos a ciertas columnas
-        row.getCell('platform').font = { bold: true };
-        row.getCell('title').font = { bold: true, color: { argb: 'FF1E40AF' } };
-        
-        // Ajustar el texto para que sea visible
-        row.eachCell((cell) => {
-          cell.alignment = { 
-            vertical: 'middle', 
-            horizontal: 'left',
-            wrapText: true 
-          };
-        });
-      });
-      
-      // Aplicar estilos a las celdas
-      worksheet.eachRow((row, rowNumber) => {
-        if (rowNumber > 3) { // Excluir título y encabezados
-          row.eachCell((cell) => {
-            // Bordes más estilizados
-            cell.border = {
-              top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-              left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-              bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-              right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
-            };
-            
-            // Fuente base para todas las celdas
-            cell.font = { 
-              ...cell.font, // Mantener estilos específicos si existen
-              name: 'Arial',
-              size: 11
-            };
+        // Add rows
+        sortedEntries.forEach((entry) => {
+          worksheet.addRow({
+            postDate: new Date(entry.postDate).toLocaleDateString(),
+            postTime: entry.postTime,
+            platform: entry.platform,
+            title: entry.title,
+            description: entry.description,
+            copyIn: entry.copyIn,
+            copyOut: entry.copyOut,
+            hashtags: entry.hashtags,
+            designInstructions: entry.designInstructions,
+            referenceImageUrl: entry.referenceImageUrl || 'Sin imagen'
           });
-          
-          // Alternar colores de fondo para filas
-          if (rowNumber % 2 === 0) {
-            row.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF8FAFC' } // Azul muy claro
-            };
-          }
-        }
-      });
-      
-      // Congelar la primera fila
-      worksheet.views = [
-        { state: 'frozen', xSplit: 0, ySplit: 1 }
-      ];
-      
-      // Configurar respuesta para descargar archivo
-      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-      res.setHeader('Content-Disposition', `attachment; filename=cronograma_${schedule.name.replace(/\s+/g, '_')}.xlsx`);
-      
-      // Escribir archivo a response
-      await workbook.xlsx.write(res);
-      res.end();
-      
+        });
+        
+        // Apply some styling
+        worksheet.getRow(1).font = { bold: true };
+        
+        // Generate file and send
+        const buffer = await workbook.xlsx.writeBuffer();
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.setHeader('Content-Disposition', `attachment; filename="${schedule.name.replace(/[^a-z0-9]/gi, '_')}.xlsx"`);
+        res.send(buffer);
+      } else {
+        // Format not supported
+        return res.status(400).json({ message: "Format not supported" });
+      }
     } catch (error) {
-      console.error("Error generating Excel:", error);
-      res.status(500).json({ message: "Failed to generate Excel file" });
+      console.error("Error downloading schedule:", error);
+      res.status(500).json({ message: "Failed to download schedule" });
     }
   });
 
@@ -793,16 +795,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const entry = await global.storage.getScheduleEntry(entryId);
       if (!entry) {
-        return res.status(404).json({ message: "Schedule entry not found" });
+        return res.status(404).json({ message: "Entry not found" });
       }
       
-      // Get the schedule to check project access
+      // Get schedule to check project access
       const schedule = await global.storage.getSchedule(entry.scheduleId);
       if (!schedule) {
         return res.status(404).json({ message: "Schedule not found" });
       }
       
-      // Check if user has access to the project this schedule belongs to
+      // Check if user has access to the project
       const hasAccess = await global.storage.checkUserProjectAccess(
         req.user.id,
         schedule.projectId,
@@ -810,23 +812,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       if (!hasAccess) {
-        return res.status(403).json({ message: "You don't have access to this project" });
+        return res.status(403).json({ message: "You don't have access to this entry" });
       }
       
-      // Check if entry has an image prompt
-      if (!entry.referenceImagePrompt) {
-        return res.status(400).json({ message: "No image prompt available for this entry" });
+      // Check if entry has a prompt
+      const prompt = entry.referenceImagePrompt || req.body.prompt;
+      if (!prompt) {
+        return res.status(400).json({ message: "No prompt available for image generation" });
       }
       
-      // Generate image using DALL-E
-      const imageUrl = await generateReferenceImage(entry.referenceImagePrompt);
+      // Generate image
+      const imageUrl = await generateReferenceImage(prompt);
       
-      // Update entry with image URL
-      const updatedEntry = await global.storage.updateScheduleEntry(entryId, {
+      // Update entry with new image URL
+      await global.storage.updateScheduleEntry(entryId, {
         referenceImageUrl: imageUrl
       });
       
-      res.json(updatedEntry);
+      res.json({ referenceImageUrl: imageUrl });
     } catch (error) {
       console.error("Error generating image:", error);
       res.status(500).json({ message: "Failed to generate image" });
@@ -842,19 +845,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message is required" });
       }
       
-      let projectContext = null;
-      
-      // If projectId is provided, check access and get project data
       if (projectId) {
-        const parsedId = parseInt(projectId);
-        if (isNaN(parsedId)) {
-          return res.status(400).json({ message: "Invalid project ID" });
-        }
-        
         // Check if user has access to project
         const hasAccess = await global.storage.checkUserProjectAccess(
           req.user.id,
-          parsedId,
+          projectId,
           req.user.isPrimary
         );
         
@@ -862,55 +857,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(403).json({ message: "You don't have access to this project" });
         }
         
-        // Get project with analysis for context
-        const project = await global.storage.getProjectWithAnalysis(parsedId);
-        if (project) {
-          projectContext = {
-            ...project,
-            analysis: project.analysis
-          };
+        // Get project with analysis
+        const project = await global.storage.getProjectWithAnalysis(projectId);
+        if (!project) {
+          return res.status(404).json({ message: "Project not found" });
         }
         
-        // Get previous chat messages for context
-        const previousMessages = await global.storage.listChatMessagesByProject(parsedId);
-        const chatHistory = previousMessages.map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }));
+        // Get context from previous messages
+        const previousMessages = await global.storage.listChatMessagesByProject(projectId);
+        
+        // Use AI to process message with project context
+        const response = await processChatMessage(
+          message,
+          {
+            client: project.client,
+            description: project.description,
+            ...project.analysis
+          },
+          previousMessages.map(msg => ({ role: msg.sender, content: msg.content }))
+        );
         
         // Save user message
         await global.storage.createChatMessage({
-          projectId: parsedId,
-          userId: req.user.id,
+          projectId,
           content: message,
-          role: 'user'
+          sender: 'user',
+          timestamp: new Date()
         });
-        
-        // Process message with AI
-        const aiResponse = await processChatMessage(message, projectContext, chatHistory);
         
         // Save AI response
         const savedResponse = await global.storage.createChatMessage({
-          projectId: parsedId,
-          content: aiResponse,
-          role: 'assistant'
+          projectId,
+          content: response,
+          sender: 'assistant',
+          timestamp: new Date()
         });
         
         res.json(savedResponse);
       } else {
         // General chat without project context
-        
-        // Process message with AI
-        const aiResponse = await processChatMessage(message);
+        // Use AI to process message
+        const response = await processChatMessage(message, {}, []);
         
         res.json({
-          content: aiResponse,
-          role: 'assistant',
-          createdAt: new Date()
+          content: response,
+          sender: 'assistant',
+          timestamp: new Date()
         });
       }
     } catch (error) {
-      console.error("Error processing chat:", error);
+      console.error("Error processing chat message:", error);
       res.status(500).json({ message: "Failed to process chat message" });
     }
   });
@@ -936,14 +932,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const messages = await global.storage.listChatMessagesByProject(projectId);
       res.json(messages);
     } catch (error) {
-      console.error("Error fetching chat messages:", error);
-      res.status(500).json({ message: "Failed to fetch chat messages" });
+      console.error("Error listing chat messages:", error);
+      res.status(500).json({ message: "Failed to list chat messages" });
     }
   });
 
-  // Recent Schedules API
   // Tasks API
-  // Get tasks by project
   app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
@@ -970,7 +964,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create task
   app.post("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
@@ -990,9 +983,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const taskData = insertTaskSchema.parse({
-        ...req.body,
         projectId,
-        createdById: req.user.id
+        ...req.body,
+        createdBy: req.user.id
       });
       
       const task = await global.storage.createTask(taskData);
@@ -1006,7 +999,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get task by id
   app.get("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const taskId = parseInt(req.params.id);
@@ -1019,7 +1011,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Task not found" });
       }
       
-      // Check if user has access to project
+      // Check if user has access to the project this task belongs to
       const hasAccess = await global.storage.checkUserProjectAccess(
         req.user.id,
         task.projectId,
@@ -1037,7 +1029,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update task
   app.patch("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const taskId = parseInt(req.params.id);
@@ -1050,7 +1041,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Task not found" });
       }
       
-      // Check if user has access to project
+      // Check if user has access to the project this task belongs to
       const hasAccess = await global.storage.checkUserProjectAccess(
         req.user.id,
         task.projectId,
@@ -1061,24 +1052,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have access to this task" });
       }
       
-      // If marking as completed, set completedAt
-      const updateData = { ...req.body };
-      if (updateData.status === 'completed' && task.status !== 'completed') {
-        updateData.completedAt = new Date();
-      }
+      // Update task (only certain fields can be updated)
+      const updatedTask = await global.storage.updateTask(taskId, req.body);
       
-      const updatedTask = await global.storage.updateTask(taskId, updateData);
       res.json(updatedTask);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: fromZodError(error).message });
-      }
       console.error("Error updating task:", error);
       res.status(500).json({ message: "Failed to update task" });
     }
   });
 
-  // Delete task
   app.delete("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const taskId = parseInt(req.params.id);
@@ -1091,20 +1074,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Task not found" });
       }
       
-      // Only primary users or the task creator can delete
-      if (!req.user.isPrimary && task.createdById !== req.user.id) {
-        return res.status(403).json({ message: "You don't have permission to delete this task" });
+      // Check if user has access to the project this task belongs to
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
       }
       
+      // Delete task
       await global.storage.deleteTask(taskId);
+      
       res.status(204).end();
     } catch (error) {
       console.error("Error deleting task:", error);
       res.status(500).json({ message: "Failed to delete task" });
     }
   });
-  
-  // Generate AI tasks
+
   app.post("/api/projects/:projectId/generate-tasks", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
@@ -1129,52 +1119,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Project not found" });
       }
       
-      // TODO: Implementar la generación de tareas con IA
-      // Por ahora, crear tareas de ejemplo
+      // Get all users who can be assigned to tasks
+      const users = await global.storage.listUsers();
+      
+      // Use AI to generate tasks (to be implemented in another file)
+      // For now, create a few sample tasks
       const sampleTasks = [
         {
-          projectId,
-          createdById: req.user.id,
-          title: "Planificar estrategia de contenido",
-          description: "Definir los tipos de contenido para cada red social según los objetivos del proyecto",
-          priority: "high" as const,
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 días después
+          title: "Crear contenido para Instagram",
+          description: "Desarrollar contenido visual y textual para la próxima campaña en Instagram",
+          priority: "high",
+          status: "pending",
+          tags: ["contenido", "instagram", "marketing"],
+          taskGroup: "content",
           aiGenerated: true
         },
         {
-          projectId,
-          createdById: req.user.id,
-          title: "Diseñar plantillas para redes sociales",
-          description: "Crear plantillas base para cada red social manteniendo la identidad visual del cliente",
-          priority: "medium" as const,
-          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 días después
+          title: "Diseñar publicaciones para Facebook",
+          description: "Crear diseños para las próximas publicaciones en Facebook siguiendo la guía de estilo",
+          priority: "medium",
+          status: "pending",
+          tags: ["diseño", "facebook", "marketing"],
+          taskGroup: "design",
           aiGenerated: true
         },
         {
-          projectId,
-          createdById: req.user.id,
-          title: "Calendarizar publicaciones",
-          description: "Organizar el cronograma de publicaciones según la frecuencia definida para cada red social",
-          priority: "medium" as const,
-          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 días después
+          title: "Revisar métricas de campaña anterior",
+          description: "Analizar el rendimiento de la campaña anterior y preparar informe",
+          priority: "low",
+          status: "pending",
+          tags: ["análisis", "métricas", "informe"],
+          taskGroup: "analysis",
           aiGenerated: true
         }
       ];
       
-      const createdTasks = [];
-      for (const taskData of sampleTasks) {
-        const task = await global.storage.createTask(taskData);
-        createdTasks.push(task);
-      }
+      // Save tasks to database
+      const createdTasks = await Promise.all(
+        sampleTasks.map(async (taskData) => {
+          return await global.storage.createTask({
+            ...taskData,
+            projectId,
+            createdBy: req.user.id
+          });
+        })
+      );
       
       res.status(201).json(createdTasks);
     } catch (error) {
-      console.error("Error generating AI tasks:", error);
+      console.error("Error generating tasks:", error);
       res.status(500).json({ message: "Failed to generate tasks" });
     }
   });
 
-  // Get user's assigned tasks
   app.get("/api/users/me/tasks", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const tasks = await global.storage.listTasksByAssignee(req.user.id);
@@ -1185,82 +1182,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all recent schedules
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // Obtener los schedules recientes
-      const recentSchedules = await global.storage.listRecentSchedules();
-      
-      if (!recentSchedules || !Array.isArray(recentSchedules)) {
-        return res.json([]);
-      }
-      
-      // Preparar array para los schedules accesibles
-      const accessibleSchedules = [];
-      
-      // Procesar cada schedule
-      for (const schedule of recentSchedules) {
-        try {
-          // Verificar que el schedule tenga los campos necesarios
-          if (!schedule || !schedule.projectId) {
-            console.warn("Schedule missing projectId:", schedule);
-            continue;
-          }
-          
-          // Verificar que el schedule tenga ID
-          if (!schedule.id) {
-            console.warn("Schedule missing ID:", schedule);
-            continue;
-          }
-          
-          // Verificar acceso del usuario al proyecto
-          try {
-            const hasAccess = await global.storage.checkUserProjectAccess(
-              req.user.id,
-              schedule.projectId,
-              req.user.isPrimary
-            );
-            
-            if (hasAccess) {
-              try {
-                // Obtener entradas para este schedule con manejo explícito de errores
-                const entries = await global.storage.listEntriesBySchedule(schedule.id);
-                
-                // Añadir el schedule con sus entradas
-                accessibleSchedules.push({
-                  ...schedule,
-                  entries: entries || []
-                });
-              } catch (entriesError) {
-                console.error(`Error getting entries for schedule ${schedule.id}:`, entriesError);
-                // Añadir el schedule sin entradas
-                accessibleSchedules.push({
-                  ...schedule,
-                  entries: []
-                });
-              }
-            }
-          } catch (accessError) {
-            console.error(`Error checking access for schedule ${schedule.id}:`, accessError);
-            continue;
-          }
-        } catch (scheduleError) {
-          console.error(`Error processing schedule:`, scheduleError);
-          // Continuar con el siguiente schedule
-          continue;
-        }
-      }
-      
-      res.json(accessibleSchedules);
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      const schedules = await global.storage.listRecentSchedules(limit);
+      res.json(schedules);
     } catch (error) {
-      console.error("Error fetching recent schedules:", error);
-      res.status(500).json({ message: "Failed to fetch recent schedules" });
+      console.error("Error getting recent schedules:", error);
+      res.status(500).json({ message: "Failed to get recent schedules" });
     }
   });
 
-  // Create HTTP server
+  // Set up WebSocket for real-time task updates
   const httpServer = createServer(app);
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    ws.on('message', (message) => {
+      try {
+        const data = JSON.parse(message.toString());
+        
+        // Handle different message types
+        if (data.type === 'subscribe') {
+          // Could store subscription info to know which clients to notify
+          console.log(`Client subscribed to ${data.entity} updates`);
+        }
+      } catch (error) {
+        console.error('Error handling WebSocket message:', error);
+      }
+    });
+    
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+    });
+  });
+  
+  // Function to broadcast updates to all connected clients
+  const broadcastUpdate = (data: any) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocketServer.OPEN) {
+        client.send(JSON.stringify(data));
+      }
+    });
+  };
 
   return httpServer;
 }
-
-
