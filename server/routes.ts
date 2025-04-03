@@ -866,31 +866,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get context from previous messages
         const previousMessages = await global.storage.listChatMessagesByProject(projectId);
         
+        // Convertir los mensajes anteriores al formato requerido por OpenAI
+        const formattedMessages = previousMessages.map(msg => {
+          // En el schema tenemos 'role' pero la API necesita 'user' o 'assistant'
+          return {
+            role: msg.role === 'user' ? 'user' : 'assistant',
+            content: msg.content
+          };
+        });
+        
         // Use AI to process message with project context
         const response = await processChatMessage(
           message,
           {
+            name: project.name,
             client: project.client,
             description: project.description,
-            ...project.analysis
+            ...(project.analysis || {})
           },
-          previousMessages.map(msg => ({ role: msg.sender, content: msg.content }))
+          formattedMessages
         );
         
         // Save user message
         await global.storage.createChatMessage({
           projectId,
+          userId: req.user.id,
           content: message,
-          sender: 'user',
-          timestamp: new Date()
+          role: 'user'
         });
         
         // Save AI response
         const savedResponse = await global.storage.createChatMessage({
           projectId,
           content: response,
-          sender: 'assistant',
-          timestamp: new Date()
+          role: 'assistant'
         });
         
         res.json(savedResponse);
@@ -901,8 +910,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         res.json({
           content: response,
-          sender: 'assistant',
-          timestamp: new Date()
+          role: 'assistant',
+          createdAt: new Date()
         });
       }
     } catch (error) {
