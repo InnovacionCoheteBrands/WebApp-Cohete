@@ -67,27 +67,8 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { message: string; projectId: number }) => {
       try {
-        // Verificamos primero el estado de autenticación
-        const authCheck = await fetch("/api/user", { credentials: "include" });
-        if (!authCheck.ok) {
-          throw new Error("No se ha iniciado sesión. Por favor, inicia sesión para continuar.");
-        }
-        
-        // Realizar la solicitud de chat
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          credentials: "include",
-          body: JSON.stringify(data)
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Error del servidor: ${response.status} - ${await response.text()}`);
-        }
-        
+        // Usar apiRequest en lugar de fetch directo
+        const response = await apiRequest("POST", "/api/chat", data);
         return await response.json();
       } catch (error) {
         console.error("Error en mutationFn:", error);
