@@ -19,6 +19,7 @@ import {
   insertAnalysisResultsSchema,
   insertScheduleSchema,
   insertChatMessageSchema,
+  insertTaskSchema,
   scheduleEntries
 } from "@shared/schema";
 
@@ -941,6 +942,249 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Recent Schedules API
+  // Tasks API
+  // Get tasks by project
+  app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this project" });
+      }
+      
+      const tasks = await global.storage.listTasksByProject(projectId);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error listing tasks:", error);
+      res.status(500).json({ message: "Failed to list tasks" });
+    }
+  });
+
+  // Create task
+  app.post("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this project" });
+      }
+      
+      const taskData = insertTaskSchema.parse({
+        ...req.body,
+        projectId,
+        createdById: req.user.id
+      });
+      
+      const task = await global.storage.createTask(taskData);
+      res.status(201).json(task);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error creating task:", error);
+      res.status(500).json({ message: "Failed to create task" });
+    }
+  });
+
+  // Get task by id
+  app.get("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
+      }
+      
+      res.json(task);
+    } catch (error) {
+      console.error("Error fetching task:", error);
+      res.status(500).json({ message: "Failed to fetch task" });
+    }
+  });
+
+  // Update task
+  app.patch("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
+      }
+      
+      // If marking as completed, set completedAt
+      const updateData = { ...req.body };
+      if (updateData.status === 'completed' && task.status !== 'completed') {
+        updateData.completedAt = new Date();
+      }
+      
+      const updatedTask = await global.storage.updateTask(taskId, updateData);
+      res.json(updatedTask);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error updating task:", error);
+      res.status(500).json({ message: "Failed to update task" });
+    }
+  });
+
+  // Delete task
+  app.delete("/api/tasks/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.id);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Only primary users or the task creator can delete
+      if (!req.user.isPrimary && task.createdById !== req.user.id) {
+        return res.status(403).json({ message: "You don't have permission to delete this task" });
+      }
+      
+      await global.storage.deleteTask(taskId);
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting task:", error);
+      res.status(500).json({ message: "Failed to delete task" });
+    }
+  });
+  
+  // Generate AI tasks
+  app.post("/api/projects/:projectId/generate-tasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this project" });
+      }
+      
+      // Get project with analysis
+      const project = await global.storage.getProjectWithAnalysis(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // TODO: Implementar la generación de tareas con IA
+      // Por ahora, crear tareas de ejemplo
+      const sampleTasks = [
+        {
+          projectId,
+          createdById: req.user.id,
+          title: "Planificar estrategia de contenido",
+          description: "Definir los tipos de contenido para cada red social según los objetivos del proyecto",
+          priority: "high" as const,
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 días después
+          aiGenerated: true
+        },
+        {
+          projectId,
+          createdById: req.user.id,
+          title: "Diseñar plantillas para redes sociales",
+          description: "Crear plantillas base para cada red social manteniendo la identidad visual del cliente",
+          priority: "medium" as const,
+          dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 días después
+          aiGenerated: true
+        },
+        {
+          projectId,
+          createdById: req.user.id,
+          title: "Calendarizar publicaciones",
+          description: "Organizar el cronograma de publicaciones según la frecuencia definida para cada red social",
+          priority: "medium" as const,
+          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 días después
+          aiGenerated: true
+        }
+      ];
+      
+      const createdTasks = [];
+      for (const taskData of sampleTasks) {
+        const task = await global.storage.createTask(taskData);
+        createdTasks.push(task);
+      }
+      
+      res.status(201).json(createdTasks);
+    } catch (error) {
+      console.error("Error generating AI tasks:", error);
+      res.status(500).json({ message: "Failed to generate tasks" });
+    }
+  });
+
+  // Get user's assigned tasks
+  app.get("/api/users/me/tasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const tasks = await global.storage.listTasksByAssignee(req.user.id);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error listing user tasks:", error);
+      res.status(500).json({ message: "Failed to list user tasks" });
+    }
+  });
+
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
       // Obtener los schedules recientes

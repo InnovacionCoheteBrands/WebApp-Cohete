@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import ScheduleDetail from "@/pages/schedule-detail";
+import TaskManager from "@/pages/task-manager";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -51,6 +52,14 @@ function App() {
                 </MainLayout>
               </ProtectedRoute>
             )}
+          </Route>
+
+          <Route path="/tasks">
+            <ProtectedRoute>
+              <MainLayout>
+                <TaskManager />
+              </MainLayout>
+            </ProtectedRoute>
           </Route>
           
           {/* Public routes */}

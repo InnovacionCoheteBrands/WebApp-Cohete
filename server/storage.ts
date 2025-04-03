@@ -1,4 +1,4 @@
-import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory } from "@shared/schema";
+import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
 import type { Store } from "express-session";
@@ -19,7 +19,9 @@ import {
   InsertChatMessage,
   ProjectAssignment,
   ContentHistory,
-  InsertContentHistory
+  InsertContentHistory,
+  Task,
+  InsertTask
 } from "@shared/schema";
 
 export interface IStorage {
@@ -85,6 +87,14 @@ export interface IStorage {
   createContentHistory(entry: InsertContentHistory): Promise<ContentHistory>;
   getContentHistoryByProjectAndContent(projectId: number, content: string): Promise<ContentHistory | undefined>;
   listContentHistoryByProject(projectId: number): Promise<ContentHistory[]>;
+  
+  // Task methods
+  createTask(task: InsertTask): Promise<Task>;
+  getTask(id: number): Promise<Task | undefined>;
+  updateTask(id: number, taskData: Partial<Task>): Promise<Task | undefined>;
+  deleteTask(id: number): Promise<boolean>;
+  listTasksByProject(projectId: number): Promise<Task[]>;
+  listTasksByAssignee(userId: number): Promise<Task[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -516,6 +526,53 @@ export class DatabaseStorage implements IStorage {
       .from(contentHistory)
       .where(eq(contentHistory.projectId, projectId))
       .orderBy(desc(contentHistory.createdAt));
+  }
+  
+  // Task methods
+  async createTask(task: InsertTask): Promise<Task> {
+    const [newTask] = await db
+      .insert(tasks)
+      .values(task)
+      .returning();
+    return newTask;
+  }
+  
+  async getTask(id: number): Promise<Task | undefined> {
+    const [task] = await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.id, id));
+    return task;
+  }
+  
+  async updateTask(id: number, taskData: Partial<Task>): Promise<Task | undefined> {
+    const [updatedTask] = await db
+      .update(tasks)
+      .set({ ...taskData, updatedAt: new Date() })
+      .where(eq(tasks.id, id))
+      .returning();
+    return updatedTask;
+  }
+  
+  async deleteTask(id: number): Promise<boolean> {
+    await db.delete(tasks).where(eq(tasks.id, id));
+    return true;
+  }
+  
+  async listTasksByProject(projectId: number): Promise<Task[]> {
+    return await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.projectId, projectId))
+      .orderBy(asc(tasks.dueDate), desc(tasks.priority));
+  }
+  
+  async listTasksByAssignee(userId: number): Promise<Task[]> {
+    return await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.assignedToId, userId))
+      .orderBy(asc(tasks.dueDate), desc(tasks.priority));
   }
 }
 

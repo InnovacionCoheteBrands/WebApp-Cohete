@@ -9,7 +9,8 @@ import {
   Users,
   Settings,
   LogOut,
-  X
+  X,
+  ListChecks
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -93,6 +94,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               icon={<LineChart className="mr-2 h-5 w-5" />} 
               label="Analytics" 
               isActive={location === "/analytics"} 
+              onClick={onClose}
+            />
+            <NavItem 
+              href="/tasks" 
+              icon={<ListChecks className="mr-2 h-5 w-5" />} 
+              label="Task Manager" 
+              isActive={location === "/tasks"} 
               onClick={onClose}
             />
 

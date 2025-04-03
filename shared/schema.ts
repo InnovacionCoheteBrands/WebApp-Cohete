@@ -5,6 +5,8 @@ import { relations } from "drizzle-orm";
 
 // Enums
 export const projectStatusEnum = pgEnum('project_status', ['active', 'planning', 'completed', 'on_hold']);
+export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'completed', 'cancelled']);
+export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -121,12 +123,32 @@ export const contentHistory = pgTable("content_history", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Tasks Table - Para el gestor de tareas con IA
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  assignedToId: integer("assigned_to_id").references(() => users.id, { onDelete: 'set null' }),
+  createdById: integer("created_by_id").references(() => users.id, { onDelete: 'set null' }),
+  title: text("title").notNull(),
+  description: text("description"),
+  status: taskStatusEnum("status").default('pending').notNull(),
+  priority: taskPriorityEnum("priority").default('medium').notNull(),
+  aiGenerated: boolean("ai_generated").default(false),
+  aiSuggestion: text("ai_suggestion"),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Define table relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdProjects: many(projects),
   projectAssignments: many(projectAssignments),
   documents: many(documents),
   schedules: many(schedules),
+  createdTasks: many(tasks, { relationName: "createdTasks" }),
+  assignedTasks: many(tasks, { relationName: "assignedTasks" }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -136,6 +158,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   documents: many(documents),
   schedules: many(schedules),
   contentHistory: many(contentHistory),
+  tasks: many(tasks),
 }));
 
 export const analysisResultsRelations = relations(analysisResults, ({ one }) => ({
@@ -164,6 +187,12 @@ export const scheduleEntriesRelations = relations(scheduleEntries, ({ one }) => 
 
 export const contentHistoryRelations = relations(contentHistory, ({ one }) => ({
   project: one(projects, { fields: [contentHistory.projectId], references: [projects.id] }),
+}));
+
+export const tasksRelations = relations(tasks, ({ one }) => ({
+  project: one(projects, { fields: [tasks.projectId], references: [projects.id] }),
+  assignedTo: one(users, { fields: [tasks.assignedToId], references: [users.id] }),
+  createdBy: one(users, { fields: [tasks.createdById], references: [users.id] }),
 }));
 
 // Zod schemas for validation
@@ -222,6 +251,13 @@ export const insertContentHistorySchema = createInsertSchema(contentHistory).omi
   createdAt: true,
 });
 
+export const insertTaskSchema = createInsertSchema(tasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  completedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -249,3 +285,6 @@ export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
 export type ContentHistory = typeof contentHistory.$inferSelect;
 export type InsertContentHistory = z.infer<typeof insertContentHistorySchema>;
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;
