@@ -74,7 +74,7 @@ function App() {
           
           {/* Public routes */}
           <Route path="/auth" component={AuthPage} />
-          <Route path="/create-account" component={CreateAccount} />
+          <Route path="/cohete_account" component={CreateAccount} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />

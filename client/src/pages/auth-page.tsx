@@ -26,7 +26,6 @@ const registerSchema = z.object({
     .max(20, "Username must be at most 20 characters")
     .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  isPrimary: z.boolean().default(false),
 });
 
 export default function AuthPage() {
@@ -48,7 +47,6 @@ export default function AuthPage() {
       fullName: "",
       username: "",
       password: "",
-      isPrimary: false,
     },
   });
 
@@ -171,26 +169,7 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={registerForm.control}
-                      name="isPrimary"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                          <FormControl>
-                            <Checkbox
-                              checked={field.value}
-                              onCheckedChange={field.onChange}
-                            />
-                          </FormControl>
-                          <div className="space-y-1 leading-none">
-                            <FormLabel>Primary User</FormLabel>
-                            <p className="text-sm text-muted-foreground">
-                              Primary users can create and manage projects and other users
-                            </p>
-                          </div>
-                        </FormItem>
-                      )}
-                    />
+
                     <Button 
                       type="submit" 
                       className="w-full" 
