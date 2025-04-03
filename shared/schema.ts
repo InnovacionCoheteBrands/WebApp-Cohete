@@ -5,8 +5,9 @@ import { relations } from "drizzle-orm";
 
 // Enums
 export const projectStatusEnum = pgEnum('project_status', ['active', 'planning', 'completed', 'on_hold']);
-export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'completed', 'cancelled']);
+export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'review', 'completed', 'cancelled']);
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent']);
+export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -123,7 +124,7 @@ export const contentHistory = pgTable("content_history", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Tasks Table - Para el gestor de tareas con IA
+// Tasks Table - Para el gestor de tareas con IA estilo Monday
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
@@ -133,10 +134,15 @@ export const tasks = pgTable("tasks", {
   description: text("description"),
   status: taskStatusEnum("status").default('pending').notNull(),
   priority: taskPriorityEnum("priority").default('medium').notNull(),
+  group: taskGroupEnum("group").default('backlog'),  // Grupo para organización estilo Monday
+  position: integer("position").default(0), // Para ordenar dentro del grupo
   aiGenerated: boolean("ai_generated").default(false),
   aiSuggestion: text("ai_suggestion"),
+  tags: text("tags").array(), // Etiquetas para categorizar tareas
   dueDate: timestamp("due_date"),
   completedAt: timestamp("completed_at"),
+  estimatedHours: integer("estimated_hours"),
+  dependencies: integer("dependencies").array(), // IDs de tareas de las que depende
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

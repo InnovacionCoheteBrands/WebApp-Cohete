@@ -1,8 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { Calendar, Clock, PlusCircle, ListChecks, AlertCircle } from 'lucide-react';
+import { 
+  Calendar, 
+  Clock, 
+  PlusCircle, 
+  ListChecks, 
+  AlertCircle, 
+  Layout,
+  BarChart4,
+  Table,
+  KanbanSquare,
+  GanttChartSquare,
+  Tag,
+  ListFilter,
+  Users,
+  SlidersHorizontal,
+  Search
+} from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +31,9 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -42,12 +60,38 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+// Importaciones específicas para DnD (arrastrar y soltar)
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragStartEvent,
+  DragOverEvent,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 // Definir el esquema de validación para crear/editar tareas
 const taskSchema = z.object({
@@ -70,8 +114,23 @@ const TaskManager = () => {
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const [isEditTaskDialogOpen, setIsEditTaskDialogOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
+  const [activeView, setActiveView] = useState<'kanban' | 'list' | 'table'>('kanban');
+  const [groupBy, setGroupBy] = useState<'status' | 'assignee' | 'priority'>('status');
+  const [draggedTask, setDraggedTask] = useState<any>(null);
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  
+  // Configuración de sensores para drag and drop
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Consultar proyectos
   const { data: projects = [], isLoading: isLoadingProjects } = useQuery<any[]>({
@@ -285,6 +344,59 @@ const TaskManager = () => {
     }
   };
 
+  // Manejadores para las funcionalidades de arrastrar y soltar
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const taskId = parseInt(active.id.toString().split('-')[1]);
+    const draggedTask = tasks.find((task: any) => task.id === taskId);
+    setDraggedTask(draggedTask);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    // Manejo opcional para efectos visuales durante el arrastre
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+    
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+    
+    // Si no ha cambiado la columna, no hacemos nada
+    if (activeId === overId) return;
+    
+    const taskId = parseInt(activeId.split('-')[1]);
+    let newStatus;
+    let newAssigneeId;
+    let newPriority;
+    
+    // Determinar qué propiedad actualizar según el groupBy
+    if (groupBy === 'status') {
+      newStatus = overId;
+    } else if (groupBy === 'assignee') {
+      if (overId === 'unassigned') {
+        newAssigneeId = null;
+      } else {
+        newAssigneeId = parseInt(overId.split('-')[1]);
+      }
+    } else if (groupBy === 'priority') {
+      newPriority = overId;
+    }
+    
+    const updateData: any = { id: taskId };
+    
+    if (newStatus) updateData.status = newStatus;
+    if (newAssigneeId !== undefined) updateData.assignedToId = newAssigneeId;
+    if (newPriority) updateData.priority = newPriority;
+    
+    // Actualizar la tarea en el servidor
+    updateTaskMutation.mutate(updateData);
+    
+    setDraggedTask(null);
+  };
+  
   // Filtrar tareas por estado
   const pendingTasks = tasks.filter((task: any) => task.status === 'pending');
   const inProgressTasks = tasks.filter((task: any) => task.status === 'in_progress');
@@ -297,44 +409,145 @@ const TaskManager = () => {
         Administra las tareas de tus proyectos y mejora la productividad del equipo
       </p>
 
-      <div className="flex items-center gap-4 mb-6">
-        <Select 
-          value={selectedProject?.toString() || ""}
-          onValueChange={(value) => setSelectedProject(parseInt(value))}
-        >
-          <SelectTrigger className="w-[300px]">
-            <SelectValue placeholder="Selecciona un proyecto" />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project: any) => (
-              <SelectItem key={project.id} value={project.id.toString()}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Button
-          variant="default"
-          onClick={() => setIsNewTaskDialogOpen(true)}
-          disabled={!selectedProject}
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Nueva Tarea
-        </Button>
-
-        <Button
-          variant="outline"
-          onClick={() => {
-            if (selectedProject) {
-              generateTasksMutation.mutate(selectedProject);
-            }
-          }}
-          disabled={!selectedProject || generateTasksMutation.isPending}
-        >
-          <span className="mr-2">🧠</span>
-          Generar Tareas con IA
-        </Button>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Select 
+              value={selectedProject?.toString() || ""}
+              onValueChange={(value) => setSelectedProject(parseInt(value))}
+            >
+              <SelectTrigger className="w-[300px]">
+                <SelectValue placeholder="Selecciona un proyecto" />
+              </SelectTrigger>
+              <SelectContent>
+                {projects.map((project: any) => (
+                  <SelectItem key={project.id} value={project.id.toString()}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+  
+            <Button
+              variant="default"
+              onClick={() => setIsNewTaskDialogOpen(true)}
+              disabled={!selectedProject}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Nueva Tarea
+            </Button>
+  
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (selectedProject) {
+                  generateTasksMutation.mutate(selectedProject);
+                }
+              }}
+              disabled={!selectedProject || generateTasksMutation.isPending}
+            >
+              <span className="mr-2">🧠</span>
+              Generar Tareas con IA
+            </Button>
+          </div>
+          
+          {/* Controles de vista estilo Monday */}
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={activeView === 'kanban' ? 'default' : 'outline'} 
+                    size="icon" 
+                    onClick={() => setActiveView('kanban')}
+                  >
+                    <KanbanSquare className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Vista Kanban</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={activeView === 'list' ? 'default' : 'outline'} 
+                    size="icon" 
+                    onClick={() => setActiveView('list')}
+                  >
+                    <ListChecks className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Vista Lista</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant={activeView === 'table' ? 'default' : 'outline'} 
+                    size="icon" 
+                    onClick={() => setActiveView('table')}
+                  >
+                    <Table className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Vista Tabla</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            
+            <Separator orientation="vertical" className="h-6 mx-1" />
+            
+            <Select
+              value={groupBy}
+              onValueChange={(value: 'status' | 'assignee' | 'priority') => setGroupBy(value)}
+            >
+              <SelectTrigger className="w-[140px]">
+                <div className="flex items-center">
+                  <ListFilter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Agrupar por" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="status">Estado</SelectItem>
+                <SelectItem value="assignee">Asignado a</SelectItem>
+                <SelectItem value="priority">Prioridad</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        {tasks.length > 0 && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline" className="px-3 py-1">
+              <Users className="h-3 w-3 mr-1" />
+              {users.filter(u => tasks.some((t: any) => t.assignedToId === u.id)).length} asignados
+            </Badge>
+            
+            <Badge variant="outline" className="px-3 py-1">
+              <Clock className="h-3 w-3 mr-1" />
+              {tasks.filter((t: any) => t.dueDate).length} con fecha límite
+            </Badge>
+            
+            <Badge variant="outline" className="px-3 py-1 bg-blue-50">
+              <span className="mr-1">🧠</span>
+              {tasks.filter((t: any) => t.aiGenerated).length} generadas por IA
+            </Badge>
+            
+            <Badge variant="outline" className="px-3 py-1">
+              <Tag className="h-3 w-3 mr-1" />
+              {tasks.filter((t: any) => t.tags?.length).length} con etiquetas
+            </Badge>
+          </div>
+        )}
       </div>
 
       {!selectedProject ? (
@@ -350,88 +563,330 @@ const TaskManager = () => {
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <Tabs defaultValue="pending" className="w-full">
-          <TabsList className="mb-6">
-            <TabsTrigger value="pending">
-              Pendientes <Badge variant="outline" className="ml-2">{pendingTasks.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="in-progress">
-              En Progreso <Badge variant="outline" className="ml-2">{inProgressTasks.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="completed">
-              Completadas <Badge variant="outline" className="ml-2">{completedTasks.length}</Badge>
-            </TabsTrigger>
-          </TabsList>
+        <div className="w-full">
+          {/* Vista Kanban */}
+          {activeView === 'kanban' && (
+            <div className="kanban-board">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {groupBy === 'status' && (
+                    <>
+                      <KanbanColumn 
+                        id="pending" 
+                        title="Pendientes" 
+                        tasks={tasks.filter((task: any) => task.status === 'pending')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderPriorityBadge={renderPriorityBadge}
+                        users={users}
+                        className="bg-gray-50"
+                      />
+                      <KanbanColumn 
+                        id="in_progress" 
+                        title="En Progreso" 
+                        tasks={tasks.filter((task: any) => task.status === 'in_progress')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderPriorityBadge={renderPriorityBadge}
+                        users={users}
+                        className="bg-blue-50"
+                      />
+                      <KanbanColumn 
+                        id="review" 
+                        title="En Revisión" 
+                        tasks={tasks.filter((task: any) => task.status === 'review')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderPriorityBadge={renderPriorityBadge}
+                        users={users}
+                        className="bg-yellow-50"
+                      />
+                      <KanbanColumn 
+                        id="completed" 
+                        title="Completadas" 
+                        tasks={tasks.filter((task: any) => task.status === 'completed')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderPriorityBadge={renderPriorityBadge}
+                        users={users}
+                        className="bg-green-50"
+                      />
+                    </>
+                  )}
+                  
+                  {groupBy === 'priority' && (
+                    <>
+                      <KanbanColumn 
+                        id="urgent" 
+                        title="Urgente" 
+                        tasks={tasks.filter((task: any) => task.priority === 'urgent')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                        className="bg-red-50"
+                      />
+                      <KanbanColumn 
+                        id="high" 
+                        title="Alta" 
+                        tasks={tasks.filter((task: any) => task.priority === 'high')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                        className="bg-orange-50"
+                      />
+                      <KanbanColumn 
+                        id="medium" 
+                        title="Media" 
+                        tasks={tasks.filter((task: any) => task.priority === 'medium')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                        className="bg-yellow-50"
+                      />
+                      <KanbanColumn 
+                        id="low" 
+                        title="Baja" 
+                        tasks={tasks.filter((task: any) => task.priority === 'low')}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                        className="bg-green-50"
+                      />
+                    </>
+                  )}
+                  
+                  {groupBy === 'assignee' && (
+                    <>
+                      <KanbanColumn 
+                        id="unassigned" 
+                        title="Sin asignar" 
+                        tasks={tasks.filter((task: any) => !task.assignedToId)}
+                        onEdit={handleEditTask}
+                        onDelete={(id) => deleteTaskMutation.mutate(id)}
+                        renderPriorityBadge={renderPriorityBadge}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                        className="bg-gray-50"
+                      />
+                      {users.filter(user => tasks.some((task: any) => task.assignedToId === user.id)).map(user => (
+                        <KanbanColumn 
+                          key={user.id}
+                          id={`user-${user.id}`} 
+                          title={user.fullName} 
+                          tasks={tasks.filter((task: any) => task.assignedToId === user.id)}
+                          onEdit={handleEditTask}
+                          onDelete={(id) => deleteTaskMutation.mutate(id)}
+                          renderPriorityBadge={renderPriorityBadge}
+                          renderStatusBadge={renderStatusBadge}
+                          users={users}
+                          className="bg-indigo-50"
+                        />
+                      ))}
+                    </>
+                  )}
+                </div>
+                
+                <DragOverlay>
+                  {draggedTask ? (
+                    <div className="opacity-80">
+                      <DraggableTaskCard
+                        task={draggedTask}
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        renderPriorityBadge={renderPriorityBadge}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                        isDragging
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
+          )}
+          
+          {/* Vista Lista */}
+          {activeView === 'list' && (
+            <Tabs defaultValue="pending" className="w-full">
+              <TabsList className="mb-6">
+                <TabsTrigger value="pending">
+                  Pendientes <Badge variant="outline" className="ml-2">{pendingTasks.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="in-progress">
+                  En Progreso <Badge variant="outline" className="ml-2">{inProgressTasks.length}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="completed">
+                  Completadas <Badge variant="outline" className="ml-2">{completedTasks.length}</Badge>
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="pending" className="space-y-4">
-            {pendingTasks.length === 0 ? (
-              <div className="text-center p-12 border rounded-lg bg-gray-50">
-                <p className="text-muted-foreground">No hay tareas pendientes</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {pendingTasks.map((task: any) => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={task} 
-                    onEdit={handleEditTask} 
-                    onDelete={() => deleteTaskMutation.mutate(task.id)}
-                    onStatusChange={handleStatusChange}
-                    renderPriorityBadge={renderPriorityBadge}
-                    renderStatusBadge={renderStatusBadge}
-                    users={users}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
+              <TabsContent value="pending" className="space-y-4">
+                {pendingTasks.length === 0 ? (
+                  <div className="text-center p-12 border rounded-lg bg-gray-50">
+                    <p className="text-muted-foreground">No hay tareas pendientes</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {pendingTasks.map((task: any) => (
+                      <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onEdit={handleEditTask} 
+                        onDelete={() => deleteTaskMutation.mutate(task.id)}
+                        onStatusChange={handleStatusChange}
+                        renderPriorityBadge={renderPriorityBadge}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
-          <TabsContent value="in-progress" className="space-y-4">
-            {inProgressTasks.length === 0 ? (
-              <div className="text-center p-12 border rounded-lg bg-gray-50">
-                <p className="text-muted-foreground">No hay tareas en progreso</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {inProgressTasks.map((task: any) => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={task} 
-                    onEdit={handleEditTask} 
-                    onDelete={() => deleteTaskMutation.mutate(task.id)}
-                    onStatusChange={handleStatusChange}
-                    renderPriorityBadge={renderPriorityBadge}
-                    renderStatusBadge={renderStatusBadge}
-                    users={users}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
+              <TabsContent value="in-progress" className="space-y-4">
+                {inProgressTasks.length === 0 ? (
+                  <div className="text-center p-12 border rounded-lg bg-gray-50">
+                    <p className="text-muted-foreground">No hay tareas en progreso</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {inProgressTasks.map((task: any) => (
+                      <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onEdit={handleEditTask} 
+                        onDelete={() => deleteTaskMutation.mutate(task.id)}
+                        onStatusChange={handleStatusChange}
+                        renderPriorityBadge={renderPriorityBadge}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
 
-          <TabsContent value="completed" className="space-y-4">
-            {completedTasks.length === 0 ? (
-              <div className="text-center p-12 border rounded-lg bg-gray-50">
-                <p className="text-muted-foreground">No hay tareas completadas</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {completedTasks.map((task: any) => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={task} 
-                    onEdit={handleEditTask} 
-                    onDelete={() => deleteTaskMutation.mutate(task.id)}
-                    onStatusChange={handleStatusChange}
-                    renderPriorityBadge={renderPriorityBadge}
-                    renderStatusBadge={renderStatusBadge}
-                    users={users}
-                  />
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+              <TabsContent value="completed" className="space-y-4">
+                {completedTasks.length === 0 ? (
+                  <div className="text-center p-12 border rounded-lg bg-gray-50">
+                    <p className="text-muted-foreground">No hay tareas completadas</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {completedTasks.map((task: any) => (
+                      <TaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onEdit={handleEditTask} 
+                        onDelete={() => deleteTaskMutation.mutate(task.id)}
+                        onStatusChange={handleStatusChange}
+                        renderPriorityBadge={renderPriorityBadge}
+                        renderStatusBadge={renderStatusBadge}
+                        users={users}
+                      />
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+          
+          {/* Vista Tabla */}
+          {activeView === 'table' && (
+            <div className="overflow-auto rounded-md border">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">#</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Título</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Estado</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Prioridad</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Asignado a</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Fecha límite</th>
+                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="p-4 text-center text-muted-foreground">
+                        No hay tareas disponibles
+                      </td>
+                    </tr>
+                  ) : (
+                    tasks.map((task: any, index: number) => {
+                      const assignedUser = users.find(user => user.id === task.assignedToId);
+                      return (
+                        <tr key={task.id} className={index % 2 === 0 ? "bg-white" : "bg-muted/10"}>
+                          <td className="p-2 align-middle">{index + 1}</td>
+                          <td className="p-2 align-middle font-medium">
+                            <div className="flex items-center gap-2">
+                              {task.title}
+                              {task.aiGenerated && (
+                                <div className="text-xs font-medium text-blue-600 flex items-center gap-1">
+                                  <span>🧠</span>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-2 align-middle">{renderStatusBadge(task.status)}</td>
+                          <td className="p-2 align-middle">{renderPriorityBadge(task.priority)}</td>
+                          <td className="p-2 align-middle">
+                            {assignedUser ? (
+                              <div className="flex items-center gap-2">
+                                <Avatar className="h-6 w-6">
+                                  <AvatarFallback>{assignedUser.fullName.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm">{assignedUser.fullName}</span>
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">No asignado</span>
+                            )}
+                          </td>
+                          <td className="p-2 align-middle">
+                            {task.dueDate ? (
+                              <div className="flex items-center text-sm">
+                                <Calendar className="h-3 w-3 mr-1" />
+                                {format(new Date(task.dueDate), "d 'de' MMM, yyyy", { locale: es })}
+                              </div>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Sin fecha</span>
+                            )}
+                          </td>
+                          <td className="p-2 align-middle">
+                            <div className="flex items-center gap-2">
+                              <Button size="sm" variant="ghost" onClick={() => handleEditTask(task)}>
+                                Editar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="text-destructive" 
+                                onClick={() => deleteTaskMutation.mutate(task.id)}
+                              >
+                                Eliminar
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Diálogo para crear nueva tarea */}
