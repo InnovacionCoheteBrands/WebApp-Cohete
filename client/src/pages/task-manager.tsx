@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useAuth } from '@/hooks/use-auth';
 import { 
   Calendar, 
   Clock, 
@@ -70,28 +71,24 @@ import * as z from "zod";
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
-// Importaciones específicas para DnD (arrastrar y soltar)
-import {
-  DndContext,
-  DragOverlay,
-  closestCorners,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
+// Importaciones para los componentes de Kanban
+import { TaskForm } from '@/components/tasks/task-form';
+import { 
+  DndContext, 
+  DragOverlay, 
+  closestCorners, 
+  KeyboardSensor, 
+  PointerSensor, 
+  useSensor, 
   useSensors,
   DragStartEvent,
-  DragOverEvent,
   DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  horizontalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+  DragOverEvent
+} from '@dnd-kit/core';
+import { 
+  sortableKeyboardCoordinates
+} from '@dnd-kit/sortable';
+import { KanbanBoard } from '@/components/tasks/kanban-board';
 
 // Definir el esquema de validación para crear/editar tareas
 const taskSchema = z.object({
@@ -566,152 +563,26 @@ const TaskManager = () => {
         <div className="w-full">
           {/* Vista Kanban */}
           {activeView === 'kanban' && (
-            <div className="kanban-board">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={handleDragStart}
-                onDragOver={handleDragOver}
-                onDragEnd={handleDragEnd}
-              >
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {groupBy === 'status' && (
-                    <>
-                      <KanbanColumn 
-                        id="pending" 
-                        title="Pendientes" 
-                        tasks={tasks.filter((task: any) => task.status === 'pending')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderPriorityBadge={renderPriorityBadge}
-                        users={users}
-                        className="bg-gray-50"
-                      />
-                      <KanbanColumn 
-                        id="in_progress" 
-                        title="En Progreso" 
-                        tasks={tasks.filter((task: any) => task.status === 'in_progress')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderPriorityBadge={renderPriorityBadge}
-                        users={users}
-                        className="bg-blue-50"
-                      />
-                      <KanbanColumn 
-                        id="review" 
-                        title="En Revisión" 
-                        tasks={tasks.filter((task: any) => task.status === 'review')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderPriorityBadge={renderPriorityBadge}
-                        users={users}
-                        className="bg-yellow-50"
-                      />
-                      <KanbanColumn 
-                        id="completed" 
-                        title="Completadas" 
-                        tasks={tasks.filter((task: any) => task.status === 'completed')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderPriorityBadge={renderPriorityBadge}
-                        users={users}
-                        className="bg-green-50"
-                      />
-                    </>
-                  )}
+            <div className="kanban-board h-[calc(100vh-250px)]">
+              <KanbanBoard
+                tasks={tasks}
+                users={users}
+                onTaskMove={(taskId: number, newStatus: string, newGroup: string) => {
+                  const updateData: any = { id: taskId };
                   
-                  {groupBy === 'priority' && (
-                    <>
-                      <KanbanColumn 
-                        id="urgent" 
-                        title="Urgente" 
-                        tasks={tasks.filter((task: any) => task.priority === 'urgent')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderStatusBadge={renderStatusBadge}
-                        users={users}
-                        className="bg-red-50"
-                      />
-                      <KanbanColumn 
-                        id="high" 
-                        title="Alta" 
-                        tasks={tasks.filter((task: any) => task.priority === 'high')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderStatusBadge={renderStatusBadge}
-                        users={users}
-                        className="bg-orange-50"
-                      />
-                      <KanbanColumn 
-                        id="medium" 
-                        title="Media" 
-                        tasks={tasks.filter((task: any) => task.priority === 'medium')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderStatusBadge={renderStatusBadge}
-                        users={users}
-                        className="bg-yellow-50"
-                      />
-                      <KanbanColumn 
-                        id="low" 
-                        title="Baja" 
-                        tasks={tasks.filter((task: any) => task.priority === 'low')}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderStatusBadge={renderStatusBadge}
-                        users={users}
-                        className="bg-green-50"
-                      />
-                    </>
-                  )}
+                  if (newStatus) updateData.status = newStatus;
+                  if (newGroup) updateData.taskGroup = newGroup;
                   
-                  {groupBy === 'assignee' && (
-                    <>
-                      <KanbanColumn 
-                        id="unassigned" 
-                        title="Sin asignar" 
-                        tasks={tasks.filter((task: any) => !task.assignedToId)}
-                        onEdit={handleEditTask}
-                        onDelete={(id) => deleteTaskMutation.mutate(id)}
-                        renderPriorityBadge={renderPriorityBadge}
-                        renderStatusBadge={renderStatusBadge}
-                        users={users}
-                        className="bg-gray-50"
-                      />
-                      {users.filter(user => tasks.some((task: any) => task.assignedToId === user.id)).map(user => (
-                        <KanbanColumn 
-                          key={user.id}
-                          id={`user-${user.id}`} 
-                          title={user.fullName} 
-                          tasks={tasks.filter((task: any) => task.assignedToId === user.id)}
-                          onEdit={handleEditTask}
-                          onDelete={(id) => deleteTaskMutation.mutate(id)}
-                          renderPriorityBadge={renderPriorityBadge}
-                          renderStatusBadge={renderStatusBadge}
-                          users={users}
-                          className="bg-indigo-50"
-                        />
-                      ))}
-                    </>
-                  )}
-                </div>
-                
-                <DragOverlay>
-                  {draggedTask ? (
-                    <div className="opacity-80">
-                      <DraggableTaskCard
-                        task={draggedTask}
-                        onEdit={() => {}}
-                        onDelete={() => {}}
-                        renderPriorityBadge={renderPriorityBadge}
-                        renderStatusBadge={renderStatusBadge}
-                        users={users}
-                        isDragging
-                      />
-                    </div>
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+                  updateTaskMutation.mutate(updateData);
+                }}
+                onEditTask={handleEditTask}
+                onDeleteTask={(id: number) => {
+                  if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
+                    deleteTaskMutation.mutate(id);
+                  }
+                }}
+                groupBy={groupBy === 'assignee' ? 'assignee' : (groupBy === 'priority' ? 'priority' : 'status')}
+              />
             </div>
           )}
           

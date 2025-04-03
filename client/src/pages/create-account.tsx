@@ -50,9 +50,22 @@ const CreateAccount = () => {
   // Redirigir si el usuario ya está autenticado
   useEffect(() => {
     if (user) {
+      console.log("Usuario ya autenticado, redirigiendo al dashboard");
       setLocation('/');
     }
   }, [user, setLocation]);
+  
+  // Si el usuario está autenticado, no renderizamos nada mientras se redirige
+  if (user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Redirigiendo al dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Formulario para nuevo usuario primario
   const form = useForm<PrimaryUserFormValues>({
