@@ -24,6 +24,8 @@ export default function ScheduleDetail({ id }: { id: number }) {
   // Fetch schedule data
   const { data: schedule, isLoading, error } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
     queryKey: [`/api/schedules/${id}`],
+    refetchOnMount: true,
+    // Aseguramos que se carguen los datos cada vez que se monta el componente
   });
   
   // Mutation para generar imagen

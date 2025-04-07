@@ -363,21 +363,28 @@ export class DatabaseStorage implements IStorage {
         return undefined;
       }
       
-      // Obtener las entradas relacionadas
+      // Obtener las entradas relacionadas y asegurarnos que existan
+      console.log(`Buscando entradas para el cronograma ID ${id}`);
       const entriesList = await db
         .select()
         .from(scheduleEntries)
         .where(eq(scheduleEntries.scheduleId, id))
         .orderBy(asc(scheduleEntries.postDate));
       
+      console.log(`Se encontraron ${entriesList.length} entradas para el cronograma ID ${id}`);
+      
       // Combinar los resultados
       return {
         ...schedule,
-        entries: entriesList
+        entries: entriesList || [] // Asegurarnos que siempre devolvemos un array, incluso si es vacío
       };
     } catch (error) {
       console.error(`Error in getScheduleWithEntries for schedule ID ${id}:`, error);
-      throw error;
+      // En lugar de lanzar un error, devolvemos el cronograma con un array vacío de entradas
+      return {
+        ...(await this.getSchedule(id)),
+        entries: []
+      };
     }
   }
 
