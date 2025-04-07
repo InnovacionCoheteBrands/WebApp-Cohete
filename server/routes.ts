@@ -713,6 +713,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You don't have access to this schedule" });
       }
       
+      // Get project info for headers
+      const project = await global.storage.getProject(schedule.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
       // Sort entries by date
       const sortedEntries = [...schedule.entries].sort((a, b) => {
         return new Date(a.postDate).getTime() - new Date(b.postDate).getTime();
@@ -763,11 +769,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         subtitleCell.font = { size: 12, color: { argb: '6B7280' } };
         subtitleCell.alignment = { horizontal: 'center' };
         
-        // Espaciado
-        worksheet.mergeCells('A3:J3');
+        // Agregar información del proyecto y detalles del cronograma
+        worksheet.mergeCells('A3:B3');
+        worksheet.getCell('A3').value = 'Proyecto:';
+        worksheet.getCell('A3').font = { bold: true };
+        worksheet.getCell('A3').alignment = { horizontal: 'right' };
         
-        // Fila de encabezados empieza en la fila 4
-        const headerRowIndex = 4;
+        worksheet.mergeCells('C3:D3');
+        worksheet.getCell('C3').value = project.name;
+        worksheet.getCell('C3').font = { bold: true, color: { argb: '4F46E5' } };
+        
+        worksheet.mergeCells('E3:F3');
+        worksheet.getCell('E3').value = 'Cliente:';
+        worksheet.getCell('E3').font = { bold: true };
+        worksheet.getCell('E3').alignment = { horizontal: 'right' };
+        
+        worksheet.mergeCells('G3:H3');
+        worksheet.getCell('G3').value = project.client;
+        
+        worksheet.mergeCells('I3:J3');
+        worksheet.getCell('I3').value = `Total de publicaciones: ${sortedEntries.length}`;
+        worksheet.getCell('I3').font = { bold: true };
+        worksheet.getCell('I3').alignment = { horizontal: 'right' };
+        
+        // Agregar fecha de generación y notas
+        worksheet.mergeCells('A4:B4');
+        worksheet.getCell('A4').value = 'Fecha de inicio:';
+        worksheet.getCell('A4').font = { bold: true };
+        worksheet.getCell('A4').alignment = { horizontal: 'right' };
+        
+        worksheet.mergeCells('C4:D4');
+        worksheet.getCell('C4').value = new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', { 
+          day: '2-digit', month: '2-digit', year: 'numeric' 
+        });
+        
+        worksheet.mergeCells('E4:F4');
+        worksheet.getCell('E4').value = 'Generado el:';
+        worksheet.getCell('E4').font = { bold: true };
+        worksheet.getCell('E4').alignment = { horizontal: 'right' };
+        
+        worksheet.mergeCells('G4:J4');
+        worksheet.getCell('G4').value = new Date().toLocaleDateString('es-ES', { 
+          day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+        
+        // Espaciado
+        worksheet.mergeCells('A5:J5');
+        
+        // Fila de encabezados empieza en la fila 6
+        const headerRowIndex = 6;
         
         // Define columns
         worksheet.columns = [
@@ -1077,19 +1127,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
               
               <div class="info-row">
                 <div class="info-item">
-                  <strong>Proyecto:</strong> ${schedule.projectId}
+                  <strong>Proyecto:</strong> ${project.name}
                 </div>
                 <div class="info-item">
-                  <strong>Fecha de Inicio:</strong> ${new Date(schedule.startDate).toLocaleDateString('es-ES', { 
+                  <strong>Cliente:</strong> ${project.client}
+                </div>
+                <div class="info-item">
+                  <strong>Fecha de Inicio:</strong> ${new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', { 
                     day: '2-digit', month: '2-digit', year: 'numeric' 
                   })}
                 </div>
                 <div class="info-item">
                   <strong>Total de Publicaciones:</strong> ${sortedEntries.length}
                 </div>
-                <div class="info-item">
+              </div>
+              <div class="info-row">
+                <div class="info-item" style="width: 100%;">
                   <strong>Generado el:</strong> ${new Date().toLocaleDateString('es-ES', { 
-                    day: '2-digit', month: '2-digit', year: 'numeric' 
+                    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
                   })}
                 </div>
               </div>
