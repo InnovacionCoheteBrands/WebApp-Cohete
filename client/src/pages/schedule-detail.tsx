@@ -153,10 +153,17 @@ export default function ScheduleDetail({ id }: { id: number }) {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
-            onClick={() => window.open(`/api/schedules/${id}/download`, '_blank')}
+            onClick={() => window.open(`/api/schedules/${id}/download?format=excel`, '_blank')}
           >
             <Download className="w-4 h-4 mr-2" />
             Descargar Excel
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={() => window.open(`/api/schedules/${id}/download?format=pdf`, '_blank')}
+          >
+            <Download className="w-4 h-4 mr-2" />
+            Descargar PDF
           </Button>
         </div>
       </div>

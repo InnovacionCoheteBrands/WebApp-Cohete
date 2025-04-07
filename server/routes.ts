@@ -776,9 +776,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', `attachment; filename="${schedule.name.replace(/[^a-z0-9]/gi, '_')}.xlsx"`);
         res.send(buffer);
+      } else if (format === 'pdf') {
+        // Generar archivo PDF con html-pdf-node
+        const pdf = require('html-pdf-node');
+        
+        // Crear tabla HTML para el PDF
+        let htmlContent = `
+          <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; }
+                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+                th { background-color: #f2f2f2; font-weight: bold; text-align: left; }
+                th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+                .image-cell { width: 100px; height: 100px; text-align: center; }
+                .image-container { width: 100px; height: 100px; overflow: hidden; display: inline-block; }
+                .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                h1 { font-size: 18px; margin-bottom: 5px; }
+                .subtitle { font-size: 14px; color: #666; margin-top: 0; }
+                @page { size: A4 landscape; margin: 1cm; }
+              </style>
+            </head>
+            <body>
+              <h1>${schedule.name}</h1>
+              <p class="subtitle">Cohete Workflow - Cronograma de Contenido</p>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha/Hora</th>
+                    <th>Plataforma</th>
+                    <th>Título</th>
+                    <th>Copy In</th>
+                    <th>Copy Out</th>
+                    <th>Hashtags</th>
+                    <th>Imagen</th>
+                  </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        // Agregar filas a la tabla
+        sortedEntries.forEach((entry) => {
+          const dateFormatted = new Date(entry.postDate).toLocaleDateString();
+          const imageHtml = entry.referenceImageUrl 
+            ? `<div class="image-container"><img src="${entry.referenceImageUrl}" alt="${entry.title}"></div>` 
+            : 'Sin imagen';
+          
+          htmlContent += `
+            <tr>
+              <td>${dateFormatted} ${entry.postTime || ''}</td>
+              <td>${entry.platform}</td>
+              <td>${entry.title}</td>
+              <td>${entry.copyIn ? entry.copyIn.substring(0, 150) + (entry.copyIn.length > 150 ? '...' : '') : ''}</td>
+              <td>${entry.copyOut ? entry.copyOut.substring(0, 150) + (entry.copyOut.length > 150 ? '...' : '') : ''}</td>
+              <td>${entry.hashtags || ''}</td>
+              <td class="image-cell">${imageHtml}</td>
+            </tr>
+          `;
+        });
+        
+        // Cerrar la tabla y el HTML
+        htmlContent += `
+                </tbody>
+              </table>
+            </body>
+          </html>
+        `;
+        
+        // Opciones para la generación del PDF
+        const options = { 
+          format: 'A4',
+          landscape: true,
+          margin: { top: '1cm', bottom: '1cm', left: '1cm', right: '1cm' },
+          printBackground: true,
+          preferCSSPageSize: true,
+        };
+        
+        // Generar el PDF
+        const file = { content: htmlContent };
+        
+        try {
+          const pdfBuffer = await pdf.generatePdf(file, options);
+          
+          // Enviar el archivo al cliente
+          res.setHeader('Content-Type', 'application/pdf');
+          res.setHeader('Content-Disposition', `attachment; filename="${schedule.name.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
+          res.send(pdfBuffer);
+        } catch (pdfError) {
+          console.error("Error generating PDF:", pdfError);
+          res.status(500).json({ message: "Failed to generate PDF" });
+        }
       } else {
         // Format not supported
-        return res.status(400).json({ message: "Format not supported" });
+        return res.status(400).json({ message: "Format not supported. Use 'excel' or 'pdf'." });
       }
     } catch (error) {
       console.error("Error downloading schedule:", error);
