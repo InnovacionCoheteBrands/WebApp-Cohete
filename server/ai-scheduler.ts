@@ -2,7 +2,7 @@ import OpenAI from "openai";
 import { format, parseISO, addDays } from "date-fns";
 import { mistralService } from "./mistral-integration";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+// Mantenemos OpenAI como fallback, pero usamos principalmente Mistral AI
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 export interface ContentScheduleEntry {
@@ -25,7 +25,7 @@ export interface ContentSchedule {
 }
 
 /**
- * Generates a content schedule for social media using GPT-4o
+ * Generates a content schedule for social media using Mistral AI
  * Takes into account the monthly frequency of posts defined for each social network
  */
 export async function generateSchedule(
@@ -240,19 +240,48 @@ export async function generateSchedule(
       - Los copyOut deben usar estructura de párrafos y ser persuasivos con llamadas a la acción específicas
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      response_format: { type: "json_object" }
-    });
-
-    const scheduleText = response.choices[0].message.content;
-    if (!scheduleText) {
-      throw new Error("Empty response from OpenAI");
+    // Usar la API de Mistral para generar el cronograma
+    console.log("Generando cronograma con Mistral AI");
+    const scheduleText = await mistralService.generateText(prompt);
+    
+    // Intentar parsear el resultado como JSON
+    try {
+      // Para asegurarnos que obtenemos sólo el JSON, extraemos cualquier parte JSON de la respuesta
+      const jsonRegex = /{[\s\S]*}/;
+      const jsonMatch = scheduleText.match(jsonRegex);
+      
+      if (!jsonMatch) {
+        throw new Error("No se encontró un objeto JSON válido en la respuesta de Mistral");
+      }
+      
+      const jsonContent = jsonMatch[0];
+      return JSON.parse(jsonContent) as ContentSchedule;
+    } catch (parseError) {
+      console.error("Error al parsear la respuesta de Mistral como JSON:", parseError);
+      console.log("Respuesta original:", scheduleText);
+      
+      // Crear un cronograma mínimo como fallback (en caso de emergencia)
+      const fallbackSchedule: ContentSchedule = {
+        name: `Cronograma para ${projectName}`,
+        entries: [
+          {
+            title: "Publicación de ejemplo",
+            description: "Este es un cronograma básico de ejemplo generado como fallback.",
+            content: "Contenido generado como fallback debido a un error en la generación del cronograma completo.",
+            copyIn: "Texto de ejemplo",
+            copyOut: "Texto de descripción de ejemplo",
+            designInstructions: "Instrucciones de diseño básicas",
+            platform: "Instagram",
+            postDate: formattedDate,
+            postTime: "12:00",
+            hashtags: "#ejemplo #cronograma #marketing",
+            referenceImagePrompt: "Marketing content calendar example image, professional design"
+          }
+        ]
+      };
+      
+      throw new Error("Error al parsear la respuesta de Mistral como JSON. Verifica los registros del servidor para más detalles.");
     }
-
-    return JSON.parse(scheduleText) as ContentSchedule;
   } catch (error) {
     console.error("Error generating schedule:", error);
     throw new Error(`Failed to generate schedule: ${(error as Error).message}`);
