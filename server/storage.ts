@@ -419,7 +419,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(schedules.createdAt))
         .limit(limit);
       
-      // Para cada schedule, obtener su proyecto relacionado
+      // Para cada schedule, obtener su proyecto relacionado y las entradas
       const results: (Schedule & { project: Project })[] = [];
       
       for (const schedule of schedulesResult) {
@@ -431,9 +431,13 @@ export class DatabaseStorage implements IStorage {
             .where(eq(projects.id, schedule.projectId));
           
           if (project) {
+            // También obtener las entradas para este cronograma
+            const entries = await this.listEntriesBySchedule(schedule.id);
+            
             results.push({
               ...schedule,
-              project
+              project,
+              entries // Incluir las entradas en el resultado
             });
           }
         } catch (err) {

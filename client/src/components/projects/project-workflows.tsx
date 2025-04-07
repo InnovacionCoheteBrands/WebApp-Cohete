@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, MessageSquare, ImageIcon, Download } from "lucide-react";
+import { Loader2, Calendar, MessageSquare, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -41,8 +41,9 @@ interface ScheduleEntry {
   postDate: string;
   postTime: string;
   hashtags: string;
-  referenceImagePrompt?: string;
-  referenceImageUrl?: string;
+  // Las propiedades relacionadas con imágenes ya no se utilizan
+  // referenceImagePrompt?: string;
+  // referenceImageUrl?: string;
 }
 
 interface Schedule {
@@ -63,8 +64,7 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
   const { toast } = useToast();
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<ScheduleEntry | null>(null);
-  const [isGeneratingImage, setIsGeneratingImage] = useState<number | null>(null);
-  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  // Estado para las acciones en la interfaz
 
   // Fetch schedules for the project
   const { data: schedules, isLoading, error } = useQuery<Schedule[]>({
@@ -72,53 +72,7 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
     staleTime: 60000,
   });
 
-  // Generate image mutation
-  const generateImageMutation = useMutation({
-    mutationFn: async (entryId: number) => {
-      try {
-        const res = await fetch(`/api/schedule-entries/${entryId}/generate-image`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          credentials: "include"
-        });
-        
-        if (!res.ok) {
-          const errorText = await res.text();
-          throw new Error(`Error: ${res.status} - ${errorText}`);
-        }
-        
-        return await res.json();
-      } catch (error) {
-        console.error("Error generando imagen:", error);
-        throw error;
-      }
-    },
-    onMutate: (entryId) => {
-      setIsGeneratingImage(entryId);
-    },
-    onSuccess: (data) => {
-      toast({
-        title: "Image Generated",
-        description: "Reference image has been created successfully",
-      });
-      queryClient.invalidateQueries({ queryKey: [`/api/projects/${projectId}/schedules`] });
-      setSelectedEntry(data);
-      setImageDialogOpen(true);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error generating image",
-        description: (error as Error).message,
-        variant: "destructive",
-      });
-    },
-    onSettled: () => {
-      setIsGeneratingImage(null);
-    }
-  });
+  // Ya no hay funcionalidad de generación de imágenes
 
   if (isLoading) {
     return (
@@ -154,15 +108,7 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
     setSelectedSchedule(schedule);
   };
 
-  const handleGenerateImage = (entry: ScheduleEntry) => {
-    setSelectedEntry(entry);
-    if (!entry.referenceImageUrl) {
-      generateImageMutation.mutate(entry.id);
-    } else {
-      // Abre el diálogo con la imagen existente
-      setImageDialogOpen(true);
-    }
-  };
+  // Ya no hay funcionalidad para generar o ver imágenes
 
   // Platform badges
   const getPlatformBadge = (platform: string) => {
@@ -294,27 +240,7 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
                       </div>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-end gap-2 border-t p-3">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="gap-2"
-                      disabled={isGeneratingImage === entry.id}
-                      onClick={() => handleGenerateImage(entry)}
-                    >
-                      {isGeneratingImage === entry.id ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Generating...</span>
-                        </>
-                      ) : (
-                        <>
-                          <ImageIcon className="h-4 w-4" />
-                          <span>{entry.referenceImageUrl ? "View Image" : "Generate Image"}</span>
-                        </>
-                      )}
-                    </Button>
-                  </CardFooter>
+                  {/* Ya no hay botón para generar imágenes - Funcionalidad eliminada */}
                 </Card>
               ))
             ) : (
@@ -392,39 +318,7 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
         </div>
       )}
 
-      {/* Image Dialog */}
-      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Reference Image</DialogTitle>
-            {selectedEntry?.referenceImagePrompt && (
-              <DialogDescription>
-                {selectedEntry.referenceImagePrompt}
-              </DialogDescription>
-            )}
-          </DialogHeader>
-          
-          {selectedEntry?.referenceImageUrl ? (
-            <div className="flex justify-center">
-              <img 
-                src={selectedEntry.referenceImageUrl} 
-                alt={selectedEntry.title} 
-                className="max-h-[400px] rounded-md object-contain" 
-              />
-            </div>
-          ) : (
-            <div className="h-[300px] flex items-center justify-center bg-muted rounded-md">
-              <p className="text-muted-foreground">No image available</p>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setImageDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Ya no hay diálogo de imágenes de referencia - Funcionalidad eliminada */}
     </div>
   );
 }
