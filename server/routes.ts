@@ -819,22 +819,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Fila de encabezados empieza en la fila 6
         const headerRowIndex = 6;
         
-        // Define columns
+        // Define columns with their properties but without adding headers yet
+        // (we'll manually add the headers to the specific row)
         worksheet.columns = [
-          { header: 'Fecha', key: 'postDate', width: 12 },
-          { header: 'Hora', key: 'postTime', width: 10 },
-          { header: 'Plataforma', key: 'platform', width: 15 },
-          { header: 'Formato', key: 'format', width: 25 },
-          { header: 'Título', key: 'title', width: 25 },
-          { header: 'Copy In (texto en diseño)', key: 'copyIn', width: 40 },
-          { header: 'Copy Out (descripción)', key: 'copyOut', width: 40 },
-          { header: 'Hashtags', key: 'hashtags', width: 25 },
-          { header: 'Instrucciones de Diseño', key: 'designInstructions', width: 40 },
-          { header: 'URL de Imagen', key: 'referenceImageUrl', width: 15 }
+          { key: 'postDate', width: 12 },
+          { key: 'postTime', width: 10 },
+          { key: 'platform', width: 15 },
+          { key: 'format', width: 25 },
+          { key: 'title', width: 25 },
+          { key: 'copyIn', width: 40 },
+          { key: 'copyOut', width: 40 },
+          { key: 'hashtags', width: 25 },
+          { key: 'designInstructions', width: 40 },
+          { key: 'referenceImageUrl', width: 15 }
+        ];
+        
+        // Agregar encabezados manualmente a la fila correspondiente
+        const headerRow = worksheet.getRow(headerRowIndex);
+        headerRow.values = [
+          'Fecha', 'Hora', 'Plataforma', 'Formato', 'Título', 
+          'Copy In (texto en diseño)', 'Copy Out (descripción)', 
+          'Hashtags', 'Instrucciones de Diseño', 'URL de Imagen'
         ];
         
         // Estilo para los encabezados
-        const headerRow = worksheet.getRow(headerRowIndex);
         headerRow.height = 24;
         headerRow.eachCell((cell) => {
           cell.font = { bold: true, color: { argb: 'FFFFFF' } };
