@@ -109,15 +109,26 @@ export default function RecentSchedules() {
             </div>
             
             <CardFooter className="flex items-center justify-between border-t p-4">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                onClick={() => window.open(`/api/schedules/${schedule.id}/download`, '_blank')}
-              >
-                <Download className="h-4 w-4" />
-                <span className="text-xs">Excel</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=excel`, '_blank')}
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="text-xs">Excel</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                  onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=pdf`, '_blank')}
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="text-xs">PDF</span>
+                </Button>
+              </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   {format(parseISO(schedule.createdAt), "MMM d, yyyy")}

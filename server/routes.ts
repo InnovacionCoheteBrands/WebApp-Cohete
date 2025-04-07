@@ -1224,8 +1224,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
-      const schedules = await global.storage.listRecentSchedules(limit);
-      res.json(schedules);
+      const recentSchedules = await global.storage.listRecentSchedules(limit);
+      
+      // Verificar que el usuario tenga acceso a los proyectos de los schedules
+      const accessibleSchedules = [];
+      for (const schedule of recentSchedules) {
+        const hasAccess = await global.storage.checkUserProjectAccess(
+          req.user!.id,
+          schedule.projectId,
+          req.user!.isPrimary
+        );
+        
+        if (hasAccess) {
+          accessibleSchedules.push(schedule);
+        }
+      }
+      
+      res.json(accessibleSchedules);
     } catch (error) {
       console.error("Error getting recent schedules:", error);
       res.status(500).json({ message: "Failed to get recent schedules" });

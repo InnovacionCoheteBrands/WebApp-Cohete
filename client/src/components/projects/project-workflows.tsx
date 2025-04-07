@@ -151,10 +151,19 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
                 variant="outline" 
                 size="sm"
                 className="gap-2"
-                onClick={() => window.open(`/api/schedules/${selectedSchedule.id}/download`, '_blank')}
+                onClick={() => window.open(`/api/schedules/${selectedSchedule.id}/download?format=excel`, '_blank')}
               >
                 <Download className="h-4 w-4" />
-                Descargar Excel
+                Excel
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={() => window.open(`/api/schedules/${selectedSchedule.id}/download?format=pdf`, '_blank')}
+              >
+                <Download className="h-4 w-4" />
+                PDF
               </Button>
               <Button variant="outline" onClick={() => setSelectedSchedule(null)}>
                 Back to All Schedules
@@ -300,15 +309,26 @@ export default function ProjectWorkflows({ projectId }: ProjectWorkflowsProps) {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-between p-3 border-t mt-4">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => window.open(`/api/schedules/${schedule.id}/download`, '_blank')}
-                >
-                  <Download className="h-4 w-4" />
-                  Excel
-                </Button>
+                <div className="flex gap-1">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=excel`, '_blank')}
+                  >
+                    <Download className="h-3 w-3" />
+                    Excel
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=pdf`, '_blank')}
+                  >
+                    <Download className="h-3 w-3" />
+                    PDF
+                  </Button>
+                </div>
                 <Button variant="outline" size="sm" onClick={() => handleViewSchedule(schedule)}>
                   Ver Detalles
                 </Button>

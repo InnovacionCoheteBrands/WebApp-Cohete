@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock, Share2 } from "lucide-react";
+import { CalendarIcon, Clock, Share2, Download } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 
@@ -240,9 +240,20 @@ export default function CreateScheduleSection() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => window.open(`/api/schedules/${generatedSchedule.id}/download`, '_blank')}
+                  className="gap-1"
+                  onClick={() => window.open(`/api/schedules/${generatedSchedule.id}/download?format=excel`, '_blank')}
                 >
-                  Descargar
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Excel
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="gap-1" 
+                  onClick={() => window.open(`/api/schedules/${generatedSchedule.id}/download?format=pdf`, '_blank')}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  PDF
                 </Button>
                 <Badge variant="outline" className="px-3 py-1">
                   <CalendarIcon className="w-3.5 h-3.5 mr-1" />
