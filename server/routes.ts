@@ -822,16 +822,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Define columns with their properties but without adding headers yet
         // (we'll manually add the headers to the specific row)
         worksheet.columns = [
-          { key: 'postDate', width: 12 },
-          { key: 'postTime', width: 10 },
-          { key: 'platform', width: 15 },
-          { key: 'format', width: 25 },
-          { key: 'title', width: 25 },
-          { key: 'copyIn', width: 40 },
-          { key: 'copyOut', width: 40 },
-          { key: 'hashtags', width: 25 },
-          { key: 'designInstructions', width: 40 },
-          { key: 'referenceImageUrl', width: 15 }
+          { key: 'postDate', width: 15 },
+          { key: 'postTime', width: 12 },
+          { key: 'platform', width: 20 },
+          { key: 'format', width: 30 },
+          { key: 'title', width: 35 },
+          { key: 'copyIn', width: 60 },
+          { key: 'copyOut', width: 60 },
+          { key: 'hashtags', width: 40 },
+          { key: 'designInstructions', width: 60 },
+          { key: 'referenceImageUrl', width: 20 }
         ];
         
         // Agregar encabezados manualmente a la fila correspondiente
@@ -896,7 +896,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Ajustar texto para celdas con mucho contenido
             cell.alignment = { 
               vertical: 'top', 
-              wrapText: true 
+              wrapText: true,
+              shrinkToFit: false // Deshabilitar la reducción del tamaño de texto
             };
           });
           
@@ -946,14 +947,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             entry.designInstructions?.length || 0
           );
           
-          if (maxContentLength > 500) {
-            row.height = 120;
-          } else if (maxContentLength > 200) {
-            row.height = 80;
-          } else if (maxContentLength > 100) {
-            row.height = 60;
-          } else {
-            row.height = 40;
+          // Fórmula que calcula la altura de fila basada en la longitud del contenido 
+          // y ancho disponible para asegurar visibilidad completa
+          const contentWidth = 60; // Ancho de las columnas más largas (copyIn, copyOut, designInstructions)
+          const charsPerLine = contentWidth * 1.5; // Aproximadamente 1.5 caracteres por unidad de ancho
+          const estimatedLines = Math.max(1, Math.ceil(maxContentLength / charsPerLine));
+          const lineHeight = 15; // Altura aproximada por línea en puntos
+          const minHeight = 40; // Altura mínima de fila
+          const padding = 20; // Espacio extra para padding y bordes
+          
+          // Calcular altura final (con un tope máximo razonable)
+          const calculatedHeight = Math.min(300, (estimatedLines * lineHeight) + padding);
+          row.height = Math.max(minHeight, calculatedHeight);
+          
+          // Ajuste fino para contenido muy largo
+          if (maxContentLength > 1000) {
+            // Para contenido excepcionalmente largo, aumentar aún más
+            row.height = Math.max(row.height, 200);
           }
         });
         
