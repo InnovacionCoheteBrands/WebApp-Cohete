@@ -80,22 +80,79 @@ export async function generateSchedule(
       : "No previous content history available.";
     
     const prompt = `
-      Crea un cronograma detallado de contenido para redes sociales para el proyecto "${projectName}".
-      
-      DETALLES DEL PROYECTO:
-      ${JSON.stringify(projectDetails, null, 2)}
-      
-      REQUISITOS DEL CRONOGRAMA:
-      - Fecha de inicio: ${formattedDate}
-      - Duración: ${durationDays} días (hasta ${endDate})
-      - Especificaciones adicionales: ${specifications || "No proporcionadas"}
-      
-      ${socialNetworksSection}
-      
-      ${previousContentSection}
-      
-      INSTRUCCIONES MAESTRAS:
-      Actúa como un Director de Marketing Digital con 15 años de experiencia en Creación de Contenido de Alto Rendimiento. Tu misión es crear un cronograma de contenido que verdaderamente impulse los objetivos comerciales mientras resuena con la audiencia objetivo del proyecto.
+      Actúa como un **Director de Marketing Digital Estratégico y Creativo** con 15 años de experiencia, especializado en la creación de contenido de alto rendimiento basado en datos y enfocado en ROI para redes sociales. Eres experto en traducir objetivos de negocio en planes de contenido accionables, optimizar para cada plataforma y adaptarte a las tendencias del mercado.
+
+      Tu misión es generar un **CRONOGRAMA DE CONTENIDO DETALLADO Y ESTRUCTURADO** para el proyecto "${projectName}" que impulse sus objetivos comerciales y resuene profundamente con su audiencia objetivo, listo para ser implementado.
+
+      **I. DATOS DE ENTRADA DEL PROYECTO:**
+
+      1.  **Nombre del Proyecto:** ${projectName}
+      2.  **Detalles Clave del Proyecto (Formato JSON):**
+          \`\`\`json
+          ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
+          \`\`\`
+          *Interpretación Clave Requerida:* **Extrae y utiliza activamente** la siguiente información de este JSON para fundamentar TODO el cronograma:
+            - **Objetivos de Negocio/KPIs:** (ej. leads, ventas, engagement, awareness). Cada post debe alinearse a uno.
+            - **Audiencia Objetivo:** (ej. demografía, intereses, puntos de dolor, motivaciones). Adapta el contenido y tono a ellos.
+            - **Voz y Tono de Marca:** Mantén la coherencia estricta.
+            - **Pilares de Contenido/Temas Clave:** Úsalos como base para las ideas de posts.
+            - **Productos/Servicios a Promocionar:** Intégralos estratégicamente.
+
+      3.  **Periodo del Cronograma:**
+          - Fecha de Inicio: ${formattedDate}
+          - Duración: ${durationDays} días
+          - Fecha de Fin (Referencia): ${endDate}
+
+      4.  **Especificaciones Adicionales del Usuario:** ${specifications || "Ninguna especificación adicional proporcionada."}
+          *Interpretación Clave Requerida:* Incorpora estas especificaciones en el cronograma donde sea relevante.
+
+      5.  **Redes Sociales y Directrices Específicas:**
+          ${socialNetworksSection || "No se especificaron redes sociales. Basado en 'Detalles Clave del Proyecto', sugiere las 2-3 redes más relevantes y una cadencia óptima para cada una."}
+          *Interpretación Clave Requerida:* **Adapta el tipo de contenido, formato y frecuencia** a las mejores prácticas y directrices de CADA red social especificada o sugerida. Considera los formatos nativos (Reels, Stories, etc.).
+
+      6.  **Contexto de Contenido Previo (Opcional):**
+          ${previousContentSection || "No se proporcionó información sobre contenido previo. Enfócate en las mejores prácticas y los detalles del proyecto."}
+          *Interpretación Clave Requerida:* Si se proporciona, **analiza insights clave** (qué funcionó/no funcionó, temas/formatos exitosos) y úsalos activamente para informar las nuevas ideas. Evita repetir errores, potencia éxitos.
+
+      **II. INSTRUCCIONES DETALLADAS PARA LA GENERACIÓN DEL CRONOGRAMA:**
+
+      1.  **Estrategia de Contenido Clara:**
+          - Define una **mezcla estratégica de pilares de contenido** (ej. 60% Educativo, 20% Interactivo, 10% Promocional, 10% Comunitario) basada en los objetivos y la audiencia.
+          - Establece una **cadencia de publicación** y horarios sugeridos óptimos por red social, considerando la audiencia.
+
+      2.  **Generación de Entradas Detalladas por Post:**
+          - Para cada día y red social programada, crea una entrada detallada con:
+            - **Idea/Brief de Contenido:** Ángulo específico y mensaje clave
+            - **Sugerencia Visual/Copy:** Indicación útil y específica
+            - **Hashtags Estratégicos:** 3-5 hashtags relevantes
+            - **Objetivo Específico del Post (KPI):** Vinculado a objetivos definidos
+            - **Llamada a la Acción (CTA):** Clara y medible
+
+      3.  **Coherencia y Adaptación:**
+          - Mantén tono consistente con la marca
+          - Adapta el mensaje a la audiencia y plataforma
+
+      **III. FORMATO DE SALIDA OBLIGATORIO:**
+
+      Devuelve el cronograma en formato JSON, con todo el contenido en español EXCEPTO el "referenceImagePrompt" que DEBE estar en inglés:
+      {
+        "name": "Nombre del cronograma - creativo y específico al proyecto",
+        "entries": [
+          {
+            "title": "Título impactante en español",
+            "description": "Descripción persuasiva en español",
+            "content": "Contenido principal detallado en español",
+            "copyIn": "Texto integrado conciso e impactante en español",
+            "copyOut": "Texto estructurado para descripción en español con emojis estratégicos",
+            "designInstructions": "Instrucciones ultra-detalladas de diseño en español",
+            "platform": "Plataforma específica",
+            "postDate": "YYYY-MM-DD",
+            "postTime": "HH:MM",
+            "hashtags": "Mezcla estratégica de hashtags en español",
+            "referenceImagePrompt": "DETAILED IMAGE PROMPT IN ENGLISH with specific art direction, composition, lighting, style, and technical specifications"
+          }
+        ]
+      }
 
       METODOLOGÍA AVANZADA PARA CADA PUBLICACIÓN:
       1. Analiza profundamente: Objetivos comerciales, insights del mercado y psicología de la audiencia
