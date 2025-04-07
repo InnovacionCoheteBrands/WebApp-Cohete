@@ -298,6 +298,7 @@ export interface ContentScheduleEntry {
   postDate: string; // ISO string format
   postTime: string; // HH:MM format
   hashtags: string;
+  referenceImagePrompt?: string; // Prompt para generar imagen de referencia
 }
 
 export interface ContentSchedule {

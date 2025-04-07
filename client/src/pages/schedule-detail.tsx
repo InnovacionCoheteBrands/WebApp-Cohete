@@ -123,6 +123,23 @@ export default function ScheduleDetail({ id }: { id: number }) {
       generateImageMutation.mutate(selectedEntry.id);
     }
   };
+  
+  // Función para determinar el formato según la plataforma
+  const getFormatByPlatform = (platform: string | null): string => {
+    if (!platform) return 'Formato estándar';
+    const formats: Record<string, string> = {
+      'Instagram': 'Carrusel/Reels • 9:16 o 1:1',
+      'Facebook': 'Imagen/Video • 16:9 o 1:1',
+      'Twitter': 'Imagen/GIF • 16:9',
+      'LinkedIn': 'Imagen/Artículo • 16:9 o 1:1',
+      'TikTok': 'Video • 9:16 vertical',
+      'YouTube': 'Video • 16:9 horizontal',
+      'Pinterest': 'Pin • 2:3 vertical',
+      'WhatsApp': 'Imagen/Video • 1:1 o 9:16'
+    };
+    
+    return formats[platform] || 'Formato estándar';
+  };
 
   if (isLoading) {
     return (
@@ -195,7 +212,7 @@ export default function ScheduleDetail({ id }: { id: number }) {
                         <div className="flex justify-between items-start gap-2">
                           <div className="space-y-1">
                             <h3 className="font-semibold text-sm">{entry.title}</h3>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Badge variant="secondary" className="text-xs">
                                 <Share2 className="w-3 h-3 mr-1" />
                                 {entry.platform}
@@ -207,6 +224,11 @@ export default function ScheduleDetail({ id }: { id: number }) {
                               <span className="text-xs text-muted-foreground flex items-center">
                                 <Clock className="w-3 h-3 mr-1" />
                                 {entry.postTime}
+                              </span>
+                            </div>
+                            <div className="mt-1">
+                              <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 bg-muted/50 rounded-sm">
+                                {getFormatByPlatform(entry.platform)}
                               </span>
                             </div>
                           </div>
@@ -253,70 +275,82 @@ export default function ScheduleDetail({ id }: { id: number }) {
               </CardHeader>
               
               <CardContent>
-                <Tabs defaultValue="copyIn" className="w-full">
-                  <TabsList className="w-full grid grid-cols-4">
-                    <TabsTrigger value="copyIn">Texto en Diseño</TabsTrigger>
-                    <TabsTrigger value="copyOut">Texto Descripción</TabsTrigger>
-                    <TabsTrigger value="designInstructions">Instrucciones</TabsTrigger>
-                    <TabsTrigger value="hashtags">Hashtags</TabsTrigger>
-                  </TabsList>
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-medium">Formato de Publicación</h3>
+                      <Badge variant="outline">{getFormatByPlatform(selectedEntry.platform)}</Badge>
+                    </div>
+                  </div>
                   
-                  <TabsContent value="copyIn" className="space-y-4 mt-4">
-                    <div className="p-4 bg-muted rounded-lg relative">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-medium">Texto en Diseño</h3>
                       <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="absolute top-2 right-2"
+                        variant="outline" 
+                        size="sm"
                         onClick={() => copyToClipboard(selectedEntry.copyIn, "Texto en diseño")}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copiar
                       </Button>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
                       <p className="whitespace-pre-wrap">{selectedEntry.copyIn}</p>
                     </div>
-                  </TabsContent>
+                  </div>
                   
-                  <TabsContent value="copyOut" className="space-y-4 mt-4">
-                    <div className="p-4 bg-muted rounded-lg relative">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-medium">Texto Descripción</h3>
                       <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="absolute top-2 right-2"
+                        variant="outline" 
+                        size="sm"
                         onClick={() => copyToClipboard(selectedEntry.copyOut, "Texto descripción")}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copiar
                       </Button>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
                       <p className="whitespace-pre-wrap">{selectedEntry.copyOut}</p>
                     </div>
-                  </TabsContent>
+                  </div>
                   
-                  <TabsContent value="designInstructions" className="space-y-4 mt-4">
-                    <div className="p-4 bg-muted rounded-lg relative">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-medium">Instrucciones de Diseño</h3>
                       <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="absolute top-2 right-2"
+                        variant="outline" 
+                        size="sm"
                         onClick={() => copyToClipboard(selectedEntry.designInstructions, "Instrucciones de diseño")}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copiar
                       </Button>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
                       <p className="whitespace-pre-wrap">{selectedEntry.designInstructions}</p>
                     </div>
-                  </TabsContent>
+                  </div>
                   
-                  <TabsContent value="hashtags" className="space-y-4 mt-4">
-                    <div className="p-4 bg-muted rounded-lg relative">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="text-lg font-medium">Hashtags</h3>
                       <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="absolute top-2 right-2"
+                        variant="outline" 
+                        size="sm"
                         onClick={() => copyToClipboard(selectedEntry.hashtags, "Hashtags")}
                       >
-                        <Copy className="w-4 h-4" />
+                        <Copy className="w-4 h-4 mr-2" />
+                        Copiar
                       </Button>
+                    </div>
+                    <div className="p-4 bg-muted rounded-lg">
                       <p className="whitespace-pre-wrap">{selectedEntry.hashtags}</p>
                     </div>
-                  </TabsContent>
-                </Tabs>
+                  </div>
+                </div>
                 
                 <div className="mt-6">
                   <div className="flex justify-between items-center mb-2">

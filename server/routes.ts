@@ -13,6 +13,7 @@ import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
+import * as htmlPdf from 'html-pdf-node';
 import { hashPassword } from "./auth";
 import {
   insertProjectSchema,
@@ -764,8 +765,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Disposition', `attachment; filename="${schedule.name.replace(/[^a-z0-9]/gi, '_')}.xlsx"`);
         res.send(buffer);
       } else if (format === 'pdf') {
-        // Generar archivo PDF con html-pdf-node
-        const pdf = require('html-pdf-node');
+        // Generar archivo PDF
+        const pdf = htmlPdf;
         
         // Crear tabla HTML para el PDF
         let htmlContent = `
