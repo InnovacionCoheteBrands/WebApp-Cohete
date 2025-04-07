@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 import pdfParse from "pdf-parse";
 import { analyzeDocument, processChatMessage } from "./ai-analyzer";
-import { generateSchedule, generateReferenceImage } from "./ai-scheduler";
+import { generateSchedule } from "./ai-scheduler";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
@@ -863,55 +863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/schedule-entries/:id/generate-image", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const entryId = parseInt(req.params.id);
-      if (isNaN(entryId)) {
-        return res.status(400).json({ message: "Invalid entry ID" });
-      }
-      
-      const entry = await global.storage.getScheduleEntry(entryId);
-      if (!entry) {
-        return res.status(404).json({ message: "Entry not found" });
-      }
-      
-      // Get schedule to check project access
-      const schedule = await global.storage.getSchedule(entry.scheduleId);
-      if (!schedule) {
-        return res.status(404).json({ message: "Schedule not found" });
-      }
-      
-      // Check if user has access to the project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        schedule.projectId,
-        req.user.isPrimary
-      );
-      
-      if (!hasAccess) {
-        return res.status(403).json({ message: "You don't have access to this entry" });
-      }
-      
-      // Check if entry has a prompt
-      const prompt = entry.referenceImagePrompt || req.body.prompt;
-      if (!prompt) {
-        return res.status(400).json({ message: "No prompt available for image generation" });
-      }
-      
-      // Generate image
-      const imageUrl = await generateReferenceImage(prompt);
-      
-      // Update entry with new image URL
-      await global.storage.updateScheduleEntry(entryId, {
-        referenceImageUrl: imageUrl
-      });
-      
-      res.json({ referenceImageUrl: imageUrl });
-    } catch (error) {
-      console.error("Error generating image:", error);
-      res.status(500).json({ message: "Failed to generate image" });
-    }
-  });
+  // Endpoint para generar imágenes eliminado (ya no se generan imágenes)
 
   // Chat API
   app.post("/api/chat", isAuthenticated, async (req: Request, res: Response) => {

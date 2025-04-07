@@ -286,6 +286,25 @@ export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type ScheduleEntry = typeof scheduleEntries.$inferSelect;
 export type InsertScheduleEntry = z.infer<typeof insertScheduleEntrySchema>;
 
+// Definición de la interfaz para la respuesta de ContentSchedule desde Mistral
+export interface ContentScheduleEntry {
+  title: string;
+  description: string;
+  content: string;
+  copyIn: string;      // Texto integrado dentro del diseño
+  copyOut: string;     // Texto para la descripción del post
+  designInstructions: string; // Indicaciones para el departamento de diseño
+  platform: string;
+  postDate: string; // ISO string format
+  postTime: string; // HH:MM format
+  hashtags: string;
+}
+
+export interface ContentSchedule {
+  name: string;
+  entries: ContentScheduleEntry[];
+}
+
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 

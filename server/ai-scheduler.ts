@@ -16,7 +16,6 @@ export interface ContentScheduleEntry {
   postDate: string; // ISO string format
   postTime: string; // HH:MM format
   hashtags: string;
-  referenceImagePrompt?: string;
 }
 
 export interface ContentSchedule {
@@ -134,7 +133,7 @@ export async function generateSchedule(
 
       **III. FORMATO DE SALIDA OBLIGATORIO:**
 
-      Devuelve el cronograma en formato JSON, con todo el contenido en español EXCEPTO el "referenceImagePrompt" que DEBE estar en inglés:
+      Devuelve el cronograma en formato JSON, con todo el contenido en español:
       {
         "name": "Nombre del cronograma - creativo y específico al proyecto",
         "entries": [
@@ -148,8 +147,7 @@ export async function generateSchedule(
             "platform": "Plataforma específica",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "Mezcla estratégica de hashtags en español",
-            "referenceImagePrompt": "DETAILED IMAGE PROMPT IN ENGLISH with specific art direction, composition, lighting, style, and technical specifications"
+            "hashtags": "Mezcla estratégica de hashtags en español"
           }
         ]
       }
@@ -207,7 +205,7 @@ export async function generateSchedule(
       - Evita absolutamente frases genéricas como "¡No te lo pierdas!" o "Más información en nuestro link"
       
       FORMATO DE ENTREGA:
-      Devuelve el cronograma en formato JSON, con todo el contenido en español EXCEPTO el "referenceImagePrompt" que DEBE estar en inglés:
+      Devuelve el cronograma en formato JSON, con todo el contenido en español:
       {
         "name": "Nombre del cronograma - creativo y específico al proyecto",
         "entries": [
@@ -221,8 +219,7 @@ export async function generateSchedule(
             "platform": "Plataforma específica",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "Mezcla estratégica de hashtags en español",
-            "referenceImagePrompt": "DETAILED IMAGE PROMPT IN ENGLISH with specific art direction, composition, lighting, style, and technical specifications"
+            "hashtags": "Mezcla estratégica de hashtags en español"
           }
         ]
       }
@@ -233,7 +230,7 @@ export async function generateSchedule(
       - Optimiza los horarios según métricas actuales de engagement por plataforma y segmento
       - Asegura variedad visual en el feed al alternar formatos y composiciones
       - Proporciona instrucciones de diseño extraordinariamente detalladas y ejecutables
-      - Desarrolla prompts de imágenes en inglés técnicamente sofisticados para generar visuales profesionales
+      - Proporciona instrucciones de diseño detalladas y específicas para los diseñadores
       - Diseña el cronograma como una campaña estratégica integrada, no como publicaciones aisladas
       - Absolutamente EVITA repetir contenido, temas o enfoques utilizados previamente
       - Los copyIn deben ser concisos e impactantes, adecuados para superponerse en imágenes
@@ -298,8 +295,7 @@ export async function generateSchedule(
             platform: "Instagram",
             postDate: formattedDate,
             postTime: "12:00",
-            hashtags: "#ejemplo #cronograma #marketing",
-            referenceImagePrompt: "Marketing content calendar example image, professional design"
+            hashtags: "#ejemplo #cronograma #marketing"
           }
         ]
       };
@@ -310,46 +306,4 @@ export async function generateSchedule(
   }
 }
 
-/**
- * Genera una imagen de referencia para publicaciones en redes sociales usando Mistral AI
- * Implementación actualizada para usar la API de Mistral directamente
- */
-export async function generateReferenceImage(prompt: string): Promise<string> {
-  try {
-    console.log(`Generando imagen con prompt: ${prompt}`);
-    
-    // Utilizar el servicio de Mistral para generar la imagen
-    return await mistralService.generateImage(prompt);
-  } catch (mistralError) {
-    console.error("Error al generar imagen con Mistral:", mistralError);
-    
-    try {
-      console.log("Fallback: Intentando generar imagen con OpenAI");
-      
-      // Mejorar el prompt para obtener mejores resultados
-      const enhancedPrompt = `Professional marketing image for social media: ${prompt}. High quality, professional lighting, brand appropriate, suitable for advertising, photorealistic, detailed.`;
-      
-      // Usar OpenAI como fallback si Mistral falla
-      const response = await openai.images.generate({
-        model: "dall-e-3",
-        prompt: enhancedPrompt,
-        n: 1,
-        size: "1024x1024",
-        quality: "standard",
-      });
-
-      if (!response.data[0]?.url) {
-        throw new Error("No image URL returned from OpenAI image generation");
-      }
-
-      return response.data[0].url;
-    } catch (openaiError) {
-      console.error("Error al generar imagen con OpenAI:", openaiError);
-      // Proporcionar información detallada del error para facilitar la depuración
-      const errorMessage = openaiError instanceof Error 
-        ? openaiError.message 
-        : 'Error desconocido';
-      throw new Error(`Error al generar imagen de referencia: ${errorMessage}`);
-    }
-  }
-}
+// Función de generación de imágenes eliminada (ya no se generan imágenes)
