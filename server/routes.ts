@@ -719,45 +719,193 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       if (format === 'excel') {
+        // Obtener el formato según la plataforma para incluirlo en el Excel
+        const getFormatByPlatform = (platform: string): string => {
+          const formats: Record<string, string> = {
+            'Instagram': 'Carrusel/Reels • 9:16 o 1:1',
+            'Facebook': 'Imagen/Video • 16:9 o 1:1',
+            'Twitter': 'Imagen/GIF • 16:9',
+            'LinkedIn': 'Imagen/Artículo • 16:9 o 1:1',
+            'TikTok': 'Video • 9:16 vertical',
+            'YouTube': 'Video • 16:9 horizontal',
+            'Pinterest': 'Pin • 2:3 vertical',
+            'WhatsApp': 'Imagen/Video • 1:1 o 9:16'
+          };
+          
+          return formats[platform] || 'Formato estándar';
+        };
+        
         // Generate Excel file
         const workbook = new ExcelJS.Workbook();
         workbook.creator = 'Cohete Workflow';
         workbook.created = new Date();
         
-        const worksheet = workbook.addWorksheet(schedule.name);
+        const worksheet = workbook.addWorksheet(schedule.name, {
+          properties: {
+            tabColor: { argb: '4F46E5' }, // Color primario (indigo)
+            defaultRowHeight: 22
+          }
+        });
+        
+        // Agregar encabezado con información del cronograma
+        worksheet.mergeCells('A1:J1');
+        const titleCell = worksheet.getCell('A1');
+        titleCell.value = schedule.name;
+        titleCell.font = { size: 16, bold: true, color: { argb: '4F46E5' } };
+        titleCell.alignment = { horizontal: 'center' };
+        
+        worksheet.mergeCells('A2:J2');
+        const subtitleCell = worksheet.getCell('A2');
+        subtitleCell.value = 'Cohete Workflow - Cronograma de Contenido';
+        subtitleCell.font = { size: 12, color: { argb: '6B7280' } };
+        subtitleCell.alignment = { horizontal: 'center' };
+        
+        // Espaciado
+        worksheet.mergeCells('A3:J3');
+        
+        // Fila de encabezados empieza en la fila 4
+        const headerRowIndex = 4;
         
         // Define columns
         worksheet.columns = [
           { header: 'Fecha', key: 'postDate', width: 12 },
-          { header: 'Hora', key: 'postTime', width: 8 },
-          { header: 'Plataforma', key: 'platform', width: 12 },
-          { header: 'Título', key: 'title', width: 20 },
-          { header: 'Descripción', key: 'description', width: 20 },
-          { header: 'Copy In', key: 'copyIn', width: 30 },
-          { header: 'Copy Out', key: 'copyOut', width: 30 },
-          { header: 'Hashtags', key: 'hashtags', width: 20 },
-          { header: 'Instrucciones de Diseño', key: 'designInstructions', width: 30 },
-          { header: 'URL de Imagen', key: 'referenceImageUrl', width: 50 }
+          { header: 'Hora', key: 'postTime', width: 10 },
+          { header: 'Plataforma', key: 'platform', width: 15 },
+          { header: 'Formato', key: 'format', width: 25 },
+          { header: 'Título', key: 'title', width: 25 },
+          { header: 'Copy In (texto en diseño)', key: 'copyIn', width: 40 },
+          { header: 'Copy Out (descripción)', key: 'copyOut', width: 40 },
+          { header: 'Hashtags', key: 'hashtags', width: 25 },
+          { header: 'Instrucciones de Diseño', key: 'designInstructions', width: 40 },
+          { header: 'URL de Imagen', key: 'referenceImageUrl', width: 15 }
         ];
         
+        // Estilo para los encabezados
+        const headerRow = worksheet.getRow(headerRowIndex);
+        headerRow.height = 24;
+        headerRow.eachCell((cell) => {
+          cell.font = { bold: true, color: { argb: 'FFFFFF' } };
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: '4F46E5' }
+          };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+        });
+        
         // Add rows
-        sortedEntries.forEach((entry) => {
-          worksheet.addRow({
-            postDate: new Date(entry.postDate).toLocaleDateString(),
+        sortedEntries.forEach((entry, index) => {
+          const rowIndex = headerRowIndex + index + 1;
+          const row = worksheet.addRow({
+            postDate: new Date(entry.postDate).toLocaleDateString('es-ES', { 
+              day: '2-digit', month: '2-digit', year: 'numeric' 
+            }),
             postTime: entry.postTime,
             platform: entry.platform,
+            format: getFormatByPlatform(entry.platform),
             title: entry.title,
-            description: entry.description,
             copyIn: entry.copyIn,
             copyOut: entry.copyOut,
             hashtags: entry.hashtags,
             designInstructions: entry.designInstructions,
-            referenceImageUrl: entry.referenceImageUrl || 'Sin imagen'
+            referenceImageUrl: entry.referenceImageUrl ? 'Ver en plataforma' : 'Sin imagen'
           });
+          
+          // Aplicar estilos alternando colores para facilitar la lectura
+          const fillColor = index % 2 === 0 ? 'F9FAFB' : 'F3F4F6';
+          row.eachCell((cell) => {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: fillColor }
+            };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'E5E7EB' } },
+              left: { style: 'thin', color: { argb: 'E5E7EB' } },
+              bottom: { style: 'thin', color: { argb: 'E5E7EB' } },
+              right: { style: 'thin', color: { argb: 'E5E7EB' } }
+            };
+            
+            // Ajustar texto para celdas con mucho contenido
+            cell.alignment = { 
+              vertical: 'top', 
+              wrapText: true 
+            };
+          });
+          
+          // Destacar la celda de plataforma con un color según el tipo
+          const platformCell = row.getCell(3);
+          let platformColor = '4F46E5'; // Color por defecto (indigo)
+          
+          switch(entry.platform) {
+            case 'Instagram':
+              platformColor = 'E1306C'; // Rosa Instagram
+              break;
+            case 'Facebook':
+              platformColor = '1877F2'; // Azul Facebook
+              break;
+            case 'Twitter':
+              platformColor = '1DA1F2'; // Azul Twitter
+              break;
+            case 'LinkedIn':
+              platformColor = '0A66C2'; // Azul LinkedIn
+              break;
+            case 'TikTok':
+              platformColor = '000000'; // Negro TikTok
+              break;
+            case 'YouTube':
+              platformColor = 'FF0000'; // Rojo YouTube
+              break;
+            case 'Pinterest':
+              platformColor = 'BD081C'; // Rojo Pinterest
+              break;
+            case 'WhatsApp':
+              platformColor = '25D366'; // Verde WhatsApp
+              break;
+          }
+          
+          platformCell.font = { color: { argb: 'FFFFFF' }, bold: true };
+          platformCell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: platformColor }
+          };
+          platformCell.alignment = { horizontal: 'center', vertical: 'middle' };
+          
+          // Ajustar altura según el contenido
+          const maxContentLength = Math.max(
+            entry.copyIn?.length || 0,
+            entry.copyOut?.length || 0,
+            entry.designInstructions?.length || 0
+          );
+          
+          if (maxContentLength > 500) {
+            row.height = 120;
+          } else if (maxContentLength > 200) {
+            row.height = 80;
+          } else if (maxContentLength > 100) {
+            row.height = 60;
+          } else {
+            row.height = 40;
+          }
         });
         
-        // Apply some styling
-        worksheet.getRow(1).font = { bold: true };
+        // Agregar autofilters
+        worksheet.autoFilter = {
+          from: { row: headerRowIndex, column: 1 },
+          to: { row: headerRowIndex + sortedEntries.length, column: 10 }
+        };
+        
+        // Congelar paneles
+        worksheet.views = [
+          { state: 'frozen', xSplit: 4, ySplit: headerRowIndex }
+        ];
         
         // Generate file and send
         const buffer = await workbook.xlsx.writeBuffer();
@@ -768,36 +916,191 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Generar archivo PDF
         const pdf = htmlPdf;
         
+        // Obtener el formato según la plataforma
+        const getFormatByPlatform = (platform: string): string => {
+          const formats: Record<string, string> = {
+            'Instagram': 'Carrusel/Reels • 9:16 o 1:1',
+            'Facebook': 'Imagen/Video • 16:9 o 1:1',
+            'Twitter': 'Imagen/GIF • 16:9',
+            'LinkedIn': 'Imagen/Artículo • 16:9 o 1:1',
+            'TikTok': 'Video • 9:16 vertical',
+            'YouTube': 'Video • 16:9 horizontal',
+            'Pinterest': 'Pin • 2:3 vertical',
+            'WhatsApp': 'Imagen/Video • 1:1 o 9:16'
+          };
+          
+          return formats[platform] || 'Formato estándar';
+        };
+        
+        // Obtener color según la plataforma
+        const getPlatformColor = (platform: string): string => {
+          const colors: Record<string, string> = {
+            'Instagram': '#E1306C',
+            'Facebook': '#1877F2',
+            'Twitter': '#1DA1F2',
+            'LinkedIn': '#0A66C2',
+            'TikTok': '#000000',
+            'YouTube': '#FF0000',
+            'Pinterest': '#BD081C',
+            'WhatsApp': '#25D366'
+          };
+          
+          return colors[platform] || '#4F46E5';
+        };
+        
         // Crear tabla HTML para el PDF
         let htmlContent = `
           <html>
             <head>
               <style>
-                body { font-family: Arial, sans-serif; }
-                table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                th { background-color: #f2f2f2; font-weight: bold; text-align: left; }
-                th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-                .image-cell { width: 100px; height: 100px; text-align: center; }
-                .image-container { width: 100px; height: 100px; overflow: hidden; display: inline-block; }
-                .image-container img { max-width: 100%; max-height: 100%; object-fit: contain; }
-                h1 { font-size: 18px; margin-bottom: 5px; }
-                .subtitle { font-size: 14px; color: #666; margin-top: 0; }
-                @page { size: A4 landscape; margin: 1cm; }
+                body { 
+                  font-family: 'Helvetica', 'Arial', sans-serif; 
+                  margin: 0;
+                  padding: 20px;
+                  color: #333;
+                }
+                .header {
+                  text-align: center;
+                  margin-bottom: 30px;
+                  padding-bottom: 20px;
+                  border-bottom: 2px solid #4F46E5;
+                }
+                h1 { 
+                  font-size: 24px; 
+                  margin-bottom: 5px;
+                  color: #4F46E5;
+                  font-weight: bold;
+                }
+                .subtitle { 
+                  font-size: 16px; 
+                  color: #666; 
+                  margin-top: 0;
+                }
+                .info-row {
+                  display: flex;
+                  justify-content: space-between;
+                  margin-bottom: 20px;
+                  font-size: 14px;
+                }
+                .info-item {
+                  border: 1px solid #e5e7eb;
+                  border-radius: 8px;
+                  padding: 10px 15px;
+                  background-color: #f9fafb;
+                }
+                table { 
+                  width: 100%;
+                  border-collapse: collapse; 
+                  margin-top: 20px;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                  border-radius: 8px;
+                  overflow: hidden;
+                }
+                thead {
+                  background-color: #4F46E5;
+                  color: white;
+                }
+                th { 
+                  font-weight: bold; 
+                  text-align: left;
+                  padding: 12px 10px;
+                  font-size: 14px;
+                }
+                td { 
+                  padding: 12px 10px; 
+                  font-size: 13px;
+                  border-bottom: 1px solid #e5e7eb;
+                }
+                tr:nth-child(even) {
+                  background-color: #f9fafb;
+                }
+                tr:last-child td {
+                  border-bottom: none;
+                }
+                .platform-cell {
+                  text-align: center;
+                  font-weight: bold;
+                  color: white;
+                  padding: 10px;
+                  border-radius: 4px;
+                }
+                .format-cell {
+                  font-style: italic;
+                  color: #6b7280;
+                  font-size: 12px;
+                }
+                .image-cell { 
+                  width: 100px; 
+                  text-align: center;
+                }
+                .image-container { 
+                  width: 80px; 
+                  height: 80px; 
+                  overflow: hidden; 
+                  display: inline-block; 
+                  border-radius: 4px;
+                  border: 1px solid #e5e7eb;
+                }
+                .image-container img { 
+                  max-width: 100%; 
+                  max-height: 100%; 
+                  object-fit: contain;
+                }
+                .content-truncated {
+                  color: #6b7280;
+                  font-style: italic;
+                  font-size: 11px;
+                }
+                .footer {
+                  margin-top: 30px;
+                  text-align: center;
+                  font-size: 12px;
+                  color: #6b7280;
+                  border-top: 1px solid #e5e7eb;
+                  padding-top: 15px;
+                }
+                @page { 
+                  size: A4 landscape; 
+                  margin: 1cm;
+                }
               </style>
             </head>
             <body>
-              <h1>${schedule.name}</h1>
-              <p class="subtitle">Cohete Workflow - Cronograma de Contenido</p>
+              <div class="header">
+                <h1>${schedule.name}</h1>
+                <p class="subtitle">Cohete Workflow - Cronograma de Contenido</p>
+              </div>
+              
+              <div class="info-row">
+                <div class="info-item">
+                  <strong>Proyecto:</strong> ${schedule.projectId}
+                </div>
+                <div class="info-item">
+                  <strong>Fecha de Inicio:</strong> ${new Date(schedule.startDate).toLocaleDateString('es-ES', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric' 
+                  })}
+                </div>
+                <div class="info-item">
+                  <strong>Total de Publicaciones:</strong> ${sortedEntries.length}
+                </div>
+                <div class="info-item">
+                  <strong>Generado el:</strong> ${new Date().toLocaleDateString('es-ES', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric' 
+                  })}
+                </div>
+              </div>
+              
               <table>
                 <thead>
                   <tr>
-                    <th>Fecha/Hora</th>
-                    <th>Plataforma</th>
-                    <th>Título</th>
-                    <th>Copy In</th>
-                    <th>Copy Out</th>
-                    <th>Hashtags</th>
-                    <th>Imagen</th>
+                    <th style="width:10%">Fecha/Hora</th>
+                    <th style="width:10%">Plataforma</th>
+                    <th style="width:8%">Formato</th>
+                    <th style="width:12%">Título</th>
+                    <th style="width:17%">Copy In</th>
+                    <th style="width:17%">Copy Out</th>
+                    <th style="width:16%">Instrucciones</th>
+                    <th style="width:10%">Imagen</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -805,19 +1108,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Agregar filas a la tabla
         sortedEntries.forEach((entry) => {
-          const dateFormatted = new Date(entry.postDate).toLocaleDateString();
+          const dateFormatted = new Date(entry.postDate).toLocaleDateString('es-ES', { 
+            day: '2-digit', month: '2-digit', year: 'numeric' 
+          });
+          
+          const platformColor = getPlatformColor(entry.platform);
+          const formatText = getFormatByPlatform(entry.platform);
+          
           const imageHtml = entry.referenceImageUrl 
             ? `<div class="image-container"><img src="${entry.referenceImageUrl}" alt="${entry.title}"></div>` 
             : 'Sin imagen';
+            
+          const truncateText = (text: string | null, maxLength: number = 150) => {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return `${text.substring(0, maxLength)}... <div class="content-truncated">(contenido truncado)</div>`;
+          };
           
           htmlContent += `
             <tr>
-              <td>${dateFormatted} ${entry.postTime || ''}</td>
-              <td>${entry.platform}</td>
-              <td>${entry.title}</td>
-              <td>${entry.copyIn ? entry.copyIn.substring(0, 150) + (entry.copyIn.length > 150 ? '...' : '') : ''}</td>
-              <td>${entry.copyOut ? entry.copyOut.substring(0, 150) + (entry.copyOut.length > 150 ? '...' : '') : ''}</td>
-              <td>${entry.hashtags || ''}</td>
+              <td>${dateFormatted}<br>${entry.postTime || ''}</td>
+              <td>
+                <div class="platform-cell" style="background-color: ${platformColor}">
+                  ${entry.platform}
+                </div>
+              </td>
+              <td class="format-cell">${formatText}</td>
+              <td><strong>${entry.title}</strong></td>
+              <td>${truncateText(entry.copyIn, 150)}</td>
+              <td>${truncateText(entry.copyOut, 150)}</td>
+              <td>${truncateText(entry.designInstructions, 150)}</td>
               <td class="image-cell">${imageHtml}</td>
             </tr>
           `;
@@ -827,6 +1147,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         htmlContent += `
                 </tbody>
               </table>
+              
+              <div class="footer">
+                <p>Este cronograma fue generado automáticamente por Cohete Workflow. Las fechas y contenidos pueden estar sujetos a cambios.</p>
+              </div>
             </body>
           </html>
         `;
