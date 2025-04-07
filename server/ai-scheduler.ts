@@ -260,8 +260,32 @@ export async function generateSchedule(
       console.error("Error al parsear la respuesta de Mistral como JSON:", parseError);
       console.log("Respuesta original:", scheduleText);
       
-      // Crear un cronograma mínimo como fallback (en caso de emergencia)
-      const fallbackSchedule: ContentSchedule = {
+      // Intentar extraer la parte que parece JSON de la respuesta si es posible
+      try {
+        const jsonStart = scheduleText.indexOf('{');
+        const jsonEnd = scheduleText.lastIndexOf('}') + 1;
+        
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          const jsonPart = scheduleText.substring(jsonStart, jsonEnd);
+          console.log("Intentando parsear parte de la respuesta como JSON:", jsonPart);
+          
+          const partialParsed = JSON.parse(jsonPart);
+          
+          if (partialParsed && partialParsed.entries && Array.isArray(partialParsed.entries)) {
+            console.log("Se pudo recuperar parcialmente la respuesta JSON");
+            return {
+              name: partialParsed.name || `Cronograma para ${projectName}`,
+              entries: partialParsed.entries
+            };
+          }
+        }
+      } catch (recoveryError) {
+        console.error("No se pudo recuperar la respuesta JSON:", recoveryError);
+      }
+      
+      // Si no se pudo recuperar, crear un cronograma mínimo como fallback
+      console.log("Usando cronograma fallback debido a error de parseo");
+      return {
         name: `Cronograma para ${projectName}`,
         entries: [
           {
@@ -279,8 +303,6 @@ export async function generateSchedule(
           }
         ]
       };
-      
-      throw new Error("Error al parsear la respuesta de Mistral como JSON. Verifica los registros del servidor para más detalles.");
     }
   } catch (error) {
     console.error("Error generating schedule:", error);

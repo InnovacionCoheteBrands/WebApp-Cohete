@@ -580,7 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdBy: req.user.id
       });
       
-      // Save schedule entries and generate images
+      // Save schedule entries without generating images automatically
       const entryPromises = generatedSchedule.entries.map(async (entry) => {
         // 1. Crear la entrada en la base de datos
         const savedEntry = await global.storage.createScheduleEntry({
@@ -612,21 +612,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Continuamos aunque no se pueda guardar el historial
         }
         
-        // 3. Generar imagen automáticamente si hay un prompt
-        if (savedEntry.referenceImagePrompt) {
-          try {
-            console.log(`Generating image for entry ${savedEntry.id}: ${savedEntry.title}`);
-            const imageUrl = await generateReferenceImage(savedEntry.referenceImagePrompt);
-            
-            // 4. Actualizar la entrada con la URL de la imagen
-            await global.storage.updateScheduleEntry(savedEntry.id, {
-              referenceImageUrl: imageUrl
-            });
-          } catch (imgError) {
-            console.error(`Error generating image for entry ${savedEntry.id}:`, imgError);
-            // Continuamos con el proceso incluso si falla la generación de imagen
-          }
-        }
+        // Ya no generamos imágenes automáticamente para evitar problemas con las APIs
+        // El usuario podrá generar las imágenes manualmente desde la interfaz cuando sea necesario
         
         return savedEntry;
       });
