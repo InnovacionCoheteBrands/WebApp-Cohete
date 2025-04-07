@@ -740,7 +740,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         workbook.creator = 'Cohete Workflow';
         workbook.created = new Date();
         
-        const worksheet = workbook.addWorksheet(schedule.name, {
+        // Limpiar caracteres no permitidos en nombres de hojas de Excel: * ? : \ / [ ]
+        const safeWorksheetName = schedule.name.replace(/[\*\?\:\\/\[\]]/g, '-');
+        
+        const worksheet = workbook.addWorksheet(safeWorksheetName, {
           properties: {
             tabColor: { argb: '4F46E5' }, // Color primario (indigo)
             defaultRowHeight: 22
@@ -909,8 +912,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Generate file and send
         const buffer = await workbook.xlsx.writeBuffer();
+        const safeFileName = schedule.name.replace(/[^a-z0-9]/gi, '_');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', `attachment; filename="${schedule.name.replace(/[^a-z0-9]/gi, '_')}.xlsx"`);
+        res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}.xlsx"`);
         res.send(buffer);
       } else if (format === 'pdf') {
         // Generar archivo PDF
@@ -1171,8 +1175,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const pdfBuffer = await pdf.generatePdf(file, options);
           
           // Enviar el archivo al cliente
+          const safeFileName = schedule.name.replace(/[^a-z0-9]/gi, '_');
           res.setHeader('Content-Type', 'application/pdf');
-          res.setHeader('Content-Disposition', `attachment; filename="${schedule.name.replace(/[^a-z0-9]/gi, '_')}.pdf"`);
+          res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}.pdf"`);
           res.send(pdfBuffer);
         } catch (pdfError) {
           console.error("Error generating PDF:", pdfError);
