@@ -1,0 +1,65 @@
+// Asegúrate de que las variables projectName, projectDetails, formattedDate, etc., estén definidas en tu scope.
+
+const optimizedPrompt = `
+Actúa como un **Director de Marketing Digital Estratégico y Creativo** con 15 años de experiencia, especializado en la creación de contenido de alto rendimiento basado en datos y enfocado en ROI para redes sociales. Eres experto en traducir objetivos de negocio en planes de contenido accionables, optimizar para cada plataforma y adaptarte a las tendencias del mercado.
+
+Tu misión es generar un **CRONOGRAMA DE CONTENIDO DETALLADO Y ESTRUCTURADO** para el proyecto "${projectName}" que impulse sus objetivos comerciales y resuene profundamente con su audiencia objetivo, listo para ser implementado.
+
+**I. DATOS DE ENTRADA DEL PROYECTO:**
+
+   1.  **Nombre del Proyecto:** ${projectName}
+   2.  **Detalles Clave del Proyecto (Formato JSON):**
+       \`\`\`json
+       ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
+       \`\`\`
+       *Interpretación Clave Requerida:* **Extrae y utiliza activamente** la siguiente información de este JSON para fundamentar TODO el cronograma:
+         - **Objetivos de Negocio/KPIs:** (ej. leads, ventas, engagement, awareness). Cada post debe alinearse a uno.
+         - **Audiencia Objetivo:** (ej. demografía, intereses, puntos de dolor, motivaciones). Adapta el contenido y tono a ellos.
+         - **Voz y Tono de Marca:** Mantén la coherencia estricta.
+         - **Pilares de Contenido/Temas Clave:** Úsalos como base para las ideas de posts.
+         - **Productos/Servicios a Promocionar:** Intégralos estratégicamente.
+
+   3.  **Periodo del Cronograma:**
+       - Fecha de Inicio: ${formattedDate}
+       - Duración: ${durationDays} días
+       - Fecha de Fin (Referencia): ${endDate}
+
+   4.  **Especificaciones Adicionales del Usuario:** ${specifications || "Ninguna especificación adicional proporcionada."}
+       *Interpretación Clave Requerida:* Incorpora estas especificaciones en el cronograma donde sea relevante.
+
+   5.  **Redes Sociales y Directrices Específicas:**
+       ${socialNetworksSection || "No se especificaron redes sociales. Basado en 'Detalles Clave del Proyecto', sugiere las 2-3 redes más relevantes y una cadencia óptima para cada una."}
+       *Interpretación Clave Requerida:* **Adapta el tipo de contenido, formato y frecuencia** a las mejores prácticas y directrices de CADA red social especificada o sugerida. Considera los formatos nativos (Reels, Stories, etc.).
+
+   6.  **Contexto de Contenido Previo (Opcional):**
+       ${previousContentSection || "No se proporcionó información sobre contenido previo. Enfócate en las mejores prácticas y los detalles del proyecto."}
+       *Interpretación Clave Requerida:* Si se proporciona, **analiza insights clave** (qué funcionó/no funcionó, temas/formatos exitosos) y úsalos activamente para informar las nuevas ideas. Evita repetir errores, potencia éxitos.
+
+**II. INSTRUCCIONES DETALLADAS PARA LA GENERACIÓN DEL CRONOGRAMA:**
+
+   1.  **Estrategia de Contenido Clara:** **(Anteriormente II.2)**
+       - Define una **mezcla estratégica de pilares de contenido** (ej. 60% Educativo, 20% Interactivo, 10% Promocional, 10% Comunitario) basada en los objetivos y la audiencia. Justifica brevemente esta mezcla si propones una.
+       - Establece una **cadencia de publicación** (ej. Lunes, Miércoles, Viernes en Instagram; Martes, Jueves en LinkedIn) y horarios sugeridos óptimos por red social, considerando la audiencia.
+   2.  **Generación de Entradas Detalladas por Post:** **(Anteriormente II.3)**
+       - Para cada día y red social programada, crea una fila en la tabla final con ideas específicas y accionables:
+       - **Idea/Brief de Contenido:** No solo el tema, sino el ángulo específico, mensaje clave o pregunta a responder.
+       - **Sugerencia Visual/Copy:** Indicación útil (ej. "Gráfico con estadística clave", "Video corto testimonial", "Copy directo enfocado en beneficio X").
+       - **Hashtags Estratégicos:** Sugiere 3-5 hashtags relevantes (mezcla de volumen alto, medio y nicho/marca).
+       - **Objetivo Específico del Post (KPI):** **Vincula explícitamente CADA post** a un objetivo/KPI definido en \`projectDetails\`.
+       - **Llamada a la Acción (CTA):** Propón una CTA clara y medible cuando sea apropiado (ej. "Comenta abajo", "Visita el link en bio", "Regístrate aquí").
+   3.  **Coherencia y Adaptación:** **(Anteriormente II.4)**
+       - Tono consistente con la marca. Mensaje adaptado a la audiencia y la plataforma específica.
+
+**III. FORMATO DE SALIDA OBLIGATORIO (MUY IMPORTANTE PARA LA WEBAPP):**
+
+   - Genera el cronograma completo **única y exclusivamente** en formato de **TABLA MARKDOWN**.
+   - La tabla DEBE contener las siguientes columnas, en este orden exacto:
+     \`Fecha\` | \`Día\` | \`Red Social\` | \`Hora Sugerida\` | \`Pilar de Contenido\` | \`Tipo de Formato\` | \`Idea/Brief de Contenido\` | \`Sugerencia Visual/Copy\` | \`Hashtags Clave\` | \`Objetivo del Post (KPI)\` | \`CTA\`
+   - Asegúrate de que la tabla esté perfectamente formateada para que pueda ser parseada correctamente.
+   - Incluye una fila para cada post planificado dentro del periodo de ${durationDays} días.
+
+**Ahora, genera el cronograma de contenido detallado siguiendo todas estas instrucciones.**
+`;
+
+// Puedes usar 'optimizedPrompt' en tu llamada a la API de la IA.
+// console.log(optimizedPrompt); // Para depuración
