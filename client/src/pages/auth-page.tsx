@@ -14,18 +14,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 // Login form schema
 const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  identifier: z.string().min(1, "Usuario o correo electrónico requerido"),
+  password: z.string().min(1, "Contraseña requerida"),
 });
 
 // Registration form schema
 const registerSchema = z.object({
-  fullName: z.string().min(1, "Full name is required"),
+  fullName: z.string().min(1, "El nombre completo es obligatorio"),
   username: z.string()
-    .min(3, "Username must be at least 3 characters")
-    .max(20, "Username must be at most 20 characters")
-    .regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+    .min(3, "El nombre de usuario debe tener al menos 3 caracteres")
+    .max(20, "El nombre de usuario debe tener como máximo 20 caracteres")
+    .regex(/^[a-zA-Z0-9_]+$/, "El nombre de usuario solo puede contener letras, números y guiones bajos"),
+  email: z.string().email("Debe ser un correo electrónico válido").optional(),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
 });
 
 export default function AuthPage() {
@@ -36,7 +37,7 @@ export default function AuthPage() {
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "",
+      identifier: "",
       password: "",
     },
   });
@@ -46,6 +47,7 @@ export default function AuthPage() {
     defaultValues: {
       fullName: "",
       username: "",
+      email: "",
       password: "",
     },
   });
@@ -77,14 +79,14 @@ export default function AuthPage() {
             </div>
             <CardTitle className="text-2xl">Cohete Workflow</CardTitle>
             <CardDescription>
-              Sign in or create an account to manage your marketing projects
+              Inicia sesión o crea una cuenta para gestionar tus proyectos de marketing
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
               <TabsList className="grid w-full grid-cols-2 mb-6">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
+                <TabsTrigger value="register">Registrarse</TabsTrigger>
               </TabsList>
               
               <TabsContent value="login">
@@ -92,12 +94,12 @@ export default function AuthPage() {
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField
                       control={loginForm.control}
-                      name="username"
+                      name="identifier"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Usuario o Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="yourusername" {...field} />
+                            <Input placeholder="usuario o email" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -108,7 +110,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Contraseña</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="********" {...field} />
                           </FormControl>
@@ -121,7 +123,7 @@ export default function AuthPage() {
                       className="w-full" 
                       disabled={loginMutation.isPending}
                     >
-                      {loginMutation.isPending ? "Logging in..." : "Login"}
+                      {loginMutation.isPending ? "Iniciando sesión..." : "Iniciar sesión"}
                     </Button>
                   </form>
                 </Form>
@@ -135,9 +137,9 @@ export default function AuthPage() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel>Nombre completo</FormLabel>
                           <FormControl>
-                            <Input placeholder="John Doe" {...field} />
+                            <Input placeholder="Juan Pérez" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -148,9 +150,22 @@ export default function AuthPage() {
                       name="username"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Username</FormLabel>
+                          <FormLabel>Nombre de usuario</FormLabel>
                           <FormControl>
                             <Input placeholder="johndoe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Correo electrónico</FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="correo@ejemplo.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -161,7 +176,7 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <FormLabel>Contraseña</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="********" {...field} />
                           </FormControl>
@@ -175,7 +190,7 @@ export default function AuthPage() {
                       className="w-full" 
                       disabled={registerMutation.isPending}
                     >
-                      {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                      {registerMutation.isPending ? "Creando cuenta..." : "Crear cuenta"}
                     </Button>
                   </form>
                 </Form>
@@ -184,8 +199,7 @@ export default function AuthPage() {
           </CardContent>
           <CardFooter className="flex flex-col text-center text-sm text-muted-foreground">
             <p>
-              By continuing, you agree to Cohete Workflow's Terms of Service
-              and Privacy Policy.
+              Al continuar, aceptas los Términos de Servicio y la Política de Privacidad de Cohete Workflow.
             </p>
           </CardFooter>
         </Card>
@@ -194,12 +208,12 @@ export default function AuthPage() {
         <div className="hidden md:flex flex-col justify-center">
           <div className="space-y-6">
             <h1 className="text-3xl font-bold">
-              Marketing Workflow Management Powered by AI
+              Gestión de Flujos de Marketing con IA
             </h1>
             <p className="text-muted-foreground">
-              Cohete Workflow helps marketing agencies create and manage projects,
-              analyze marketing documents, and generate content schedules using
-              artificial intelligence.
+              Cohete Workflow ayuda a las agencias de marketing a crear y gestionar proyectos,
+              analizar documentos de marketing y generar calendarios de contenido utilizando
+              inteligencia artificial.
             </p>
             <div className="space-y-4">
               <div className="flex items-start gap-3">
@@ -220,10 +234,10 @@ export default function AuthPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-medium">AI-Powered Content Generation</h3>
+                  <h3 className="font-medium">Generación de Contenido con IA</h3>
                   <p className="text-sm text-muted-foreground">
-                    Generate content schedules, reference images, and analyze marketing
-                    documents with our advanced AI tools.
+                    Genera calendarios de contenido y analiza documentos de marketing
+                    con nuestras avanzadas herramientas de inteligencia artificial.
                   </p>
                 </div>
               </div>
@@ -245,10 +259,10 @@ export default function AuthPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-medium">Role-Based Access Control</h3>
+                  <h3 className="font-medium">Control de Acceso por Roles</h3>
                   <p className="text-sm text-muted-foreground">
-                    Manage team members with different permissions levels - primary users
-                    for full control and secondary users for specific tasks.
+                    Gestiona miembros del equipo con diferentes niveles de permisos - usuarios
+                    primarios para control total y usuarios secundarios para tareas específicas.
                   </p>
                 </div>
               </div>
@@ -270,10 +284,10 @@ export default function AuthPage() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="font-medium">Comprehensive Project Management</h3>
+                  <h3 className="font-medium">Gestión Integral de Proyectos</h3>
                   <p className="text-sm text-muted-foreground">
-                    Organize all your marketing projects with detailed analysis,
-                    document management, and content scheduling in one place.
+                    Organiza todos tus proyectos de marketing con análisis detallados,
+                    gestión de documentos y programación de contenido en un solo lugar.
                   </p>
                 </div>
               </div>

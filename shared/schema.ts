@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   fullName: text("full_name").notNull(),
   username: text("username").notNull().unique(),
+  email: text("email").unique(),  // Agregamos campo para correo electrónico
   password: text("password").notNull(),
   isPrimary: boolean("is_primary").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -205,6 +206,7 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
 export const insertUserSchema = createInsertSchema(users).pick({
   fullName: true,
   username: true,
+  email: true,
   password: true,
   isPrimary: true,
 }).refine(data => /^[a-zA-Z0-9_]{3,20}$/.test(data.username), {
@@ -212,9 +214,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   path: ["username"]
 });
 
+// Esquema para login que permite usar username o email
 export const loginSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
+  identifier: z.string().min(1, "Por favor, introduce tu nombre de usuario o correo electrónico"),
+  password: z.string().min(1, "La contraseña es obligatoria"),
 });
 
 export const insertProjectSchema = createInsertSchema(projects).omit({

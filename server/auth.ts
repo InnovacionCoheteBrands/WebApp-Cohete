@@ -74,19 +74,29 @@ export function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
+  // Configuramos passport para que acepte tanto username como email
   passport.use(
-    new LocalStrategy(async (username, password, done) => {
-      try {
-        const user = await storage.getUserByUsername(username);
-        if (!user || !(await comparePasswords(password, user.password))) {
-          return done(null, false, { message: "Invalid username or password" });
-        } else {
-          return done(null, user as unknown as Express.User);
+    new LocalStrategy(
+      {
+        // Cambiamos el campo por defecto 'username' por 'identifier'
+        usernameField: 'identifier',
+        passwordField: 'password'
+      },
+      async (identifier, password, done) => {
+        try {
+          // Buscar usuario por identificador (username o email)
+          const user = await storage.getUserByIdentifier(identifier);
+          
+          if (!user || !(await comparePasswords(password, user.password))) {
+            return done(null, false, { message: "Credenciales inválidas" });
+          } else {
+            return done(null, user as unknown as Express.User);
+          }
+        } catch (error) {
+          return done(error);
         }
-      } catch (error) {
-        return done(error);
       }
-    }),
+    ),
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
@@ -103,9 +113,18 @@ export function setupAuth(app: Express) {
     try {
       const validatedData = insertUserSchema.parse(req.body);
       
-      const existingUser = await storage.getUserByUsername(validatedData.username);
-      if (existingUser) {
-        return res.status(400).json({ message: "Username already exists" });
+      // Verificamos tanto el nombre de usuario como el correo electrónico
+      const existingUsername = await storage.getUserByUsername(validatedData.username);
+      if (existingUsername) {
+        return res.status(400).json({ message: "El nombre de usuario ya existe" });
+      }
+      
+      // Verificar si el correo electrónico ya existe (si se proporciona)
+      if (validatedData.email) {
+        const existingEmail = await storage.getUserByEmail(validatedData.email);
+        if (existingEmail) {
+          return res.status(400).json({ message: "El correo electrónico ya está registrado" });
+        }
       }
 
       const hashedPassword = await hashPassword(validatedData.password);
@@ -132,12 +151,23 @@ export function setupAuth(app: Express) {
 
   app.post("/api/login", (req, res, next) => {
     try {
-      loginSchema.parse(req.body);
+      // Modificamos el esquema de validación para usar 'identifier' en lugar de 'username'
+      const loginData = req.body;
+      
+      // Verificamos que el campo identifier esté presente
+      if (!loginData.identifier) {
+        return res.status(400).json({ message: "Se requiere nombre de usuario o correo electrónico" });
+      }
+      
+      // Verificamos que el campo password esté presente
+      if (!loginData.password) {
+        return res.status(400).json({ message: "Se requiere contraseña" });
+      }
       
       passport.authenticate("local", (err: Error, user: Express.User) => {
         if (err) return next(err);
         if (!user) {
-          return res.status(401).json({ message: "Invalid username or password" });
+          return res.status(401).json({ message: "Credenciales inválidas" });
         }
         
         req.login(user, (loginErr) => {
