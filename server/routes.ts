@@ -48,7 +48,8 @@ const multerStorage = multer.diskStorage({
   }
 });
 
-const upload = multer({ 
+// Configuración de multer para documentos (PDF, DOCX, TXT)
+const documentUpload = multer({ 
   storage: multerStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
@@ -63,6 +64,28 @@ const upload = multer({
       cb(null, true);
     } else {
       cb(new Error('Invalid file type. Only PDF, DOCX, and TXT files are allowed.') as any);
+    }
+  }
+});
+
+// Configuración de multer para imágenes (JPG, PNG, GIF, WEBP)
+const upload = multer({
+  storage: multerStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit para imágenes
+  fileFilter: (req, file, cb) => {
+    // Aceptar solo imágenes
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/gif',
+      'image/webp'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no válido. Solo se permiten imágenes JPG, PNG, GIF o WEBP.') as any);
     }
   }
 });
@@ -381,7 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Documents API
-  app.post("/api/projects/:projectId/documents", isAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
+  app.post("/api/projects/:projectId/documents", isAuthenticated, documentUpload.single('file'), async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
       if (isNaN(projectId)) {
@@ -1832,6 +1855,222 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting recent schedules:", error);
       res.status(500).json({ message: "Failed to get recent schedules" });
+    }
+  });
+
+  // Products API
+  app.post("/api/projects/:projectId/products", isAuthenticated, upload.single('image'), async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Verificar si el proyecto existe
+      const project = await global.storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Proyecto no encontrado" });
+      }
+      
+      // Verificar datos del producto
+      const { name, description, sku, price } = req.body;
+      if (!name) {
+        return res.status(400).json({ message: "El nombre del producto es requerido" });
+      }
+      
+      // Datos del producto
+      const productData = {
+        projectId,
+        createdBy: req.user.id,
+        name,
+        description: description || null,
+        sku: sku || null,
+        price: price ? parseFloat(price) : null,
+        imageUrl: req.file ? req.file.filename : null
+      };
+      
+      // Validar con Zod
+      const validatedData = insertProductSchema.parse(productData);
+      
+      // Crear producto
+      const newProduct = await global.storage.createProduct(validatedData);
+      
+      res.status(201).json(newProduct);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Error al crear el producto" });
+    }
+  });
+  
+  app.get("/api/projects/:projectId/products", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const products = await global.storage.listProductsByProject(projectId);
+      res.json(products);
+    } catch (error) {
+      console.error("Error listing products:", error);
+      res.status(500).json({ message: "Error al listar productos" });
+    }
+  });
+  
+  app.get("/api/products/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const productId = parseInt(req.params.id);
+      if (isNaN(productId)) {
+        return res.status(400).json({ message: "ID de producto inválido" });
+      }
+      
+      const product = await global.storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        product.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este producto" });
+      }
+      
+      res.json(product);
+    } catch (error) {
+      console.error("Error fetching product:", error);
+      res.status(500).json({ message: "Error al obtener el producto" });
+    }
+  });
+  
+  app.patch("/api/products/:id", isAuthenticated, upload.single('image'), async (req: Request, res: Response) => {
+    try {
+      const productId = parseInt(req.params.id);
+      if (isNaN(productId)) {
+        return res.status(400).json({ message: "ID de producto inválido" });
+      }
+      
+      // Obtener el producto actual
+      const product = await global.storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        product.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este producto" });
+      }
+      
+      // Preparar datos actualizados
+      const updateData: Partial<Product> = {};
+      
+      if (req.body.name) updateData.name = req.body.name;
+      if (req.body.description !== undefined) updateData.description = req.body.description || null;
+      if (req.body.sku !== undefined) updateData.sku = req.body.sku || null;
+      if (req.body.price !== undefined) updateData.price = req.body.price ? parseFloat(req.body.price) : null;
+      
+      // Si hay una nueva imagen
+      if (req.file) {
+        updateData.imageUrl = req.file.filename;
+        
+        // Eliminar la imagen anterior si existe
+        if (product.imageUrl) {
+          const oldImagePath = path.join(__dirname, '..', 'uploads', product.imageUrl);
+          try {
+            if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+            }
+          } catch (err) {
+            console.error("Error removing old product image:", err);
+          }
+        }
+      }
+      
+      const updatedProduct = await global.storage.updateProduct(productId, updateData);
+      res.json(updatedProduct);
+    } catch (error) {
+      console.error("Error updating product:", error);
+      res.status(500).json({ message: "Error al actualizar el producto" });
+    }
+  });
+  
+  app.delete("/api/products/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const productId = parseInt(req.params.id);
+      if (isNaN(productId)) {
+        return res.status(400).json({ message: "ID de producto inválido" });
+      }
+      
+      // Obtener el producto
+      const product = await global.storage.getProduct(productId);
+      if (!product) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      
+      // Verificar acceso al proyecto (solo usuarios primarios pueden eliminar)
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        product.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess || !req.user.isPrimary) {
+        return res.status(403).json({ message: "No tienes permisos para eliminar este producto" });
+      }
+      
+      // Eliminar la imagen asociada si existe
+      if (product.imageUrl) {
+        const imagePath = path.join(__dirname, '..', 'uploads', product.imageUrl);
+        try {
+          if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+          }
+        } catch (err) {
+          console.error("Error removing product image:", err);
+        }
+      }
+      
+      // Eliminar el producto
+      await global.storage.deleteProduct(productId);
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      res.status(500).json({ message: "Error al eliminar el producto" });
     }
   });
 
