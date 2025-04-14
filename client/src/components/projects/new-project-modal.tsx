@@ -645,21 +645,16 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                               render={({ field }) => (
                                 <FormItem className="flex flex-row items-center gap-2 space-y-0">
                                   <FormLabel className="text-sm whitespace-nowrap">
-                                    Publicaciones por mes:
+                                    Total publicaciones:
                                   </FormLabel>
-                                  <FormControl>
-                                    <Input
-                                      type="number"
-                                      min="0"
-                                      className="w-20"
-                                      disabled={!form.watch(`analysisResults.socialNetworks.${networkIndex}.selected`)}
-                                      {...field}
-                                      onChange={(e) => {
-                                        const value = parseInt(e.target.value);
-                                        field.onChange(isNaN(value) ? 0 : value);
-                                      }}
-                                    />
-                                  </FormControl>
+                                  <div className="flex items-center gap-3">
+                                    <Badge variant="outline" className="h-8 px-3">
+                                      <span className="text-lg font-semibold">{field.value || 0}</span>
+                                    </Badge>
+                                    <FormDescription className="text-xs mt-0 ml-1">
+                                      (actualización automática)
+                                    </FormDescription>
+                                  </div>
                                 </FormItem>
                               )}
                             />
@@ -671,30 +666,65 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                               name={`analysisResults.socialNetworks.${networkIndex}.contentTypes`}
                               render={({ field }) => (
                                 <FormItem>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {network.contentTypes.map((contentType) => (
-                                      <FormItem
-                                        key={contentType}
-                                        className="flex flex-row items-start space-x-2 space-y-0"
-                                      >
-                                        <FormControl>
-                                          <Checkbox
-                                            checked={field.value?.includes(contentType)}
-                                            onCheckedChange={(checked) => {
-                                              const currentValue = field.value || [];
-                                              if (checked) {
-                                                field.onChange([...currentValue, contentType]);
-                                              } else {
-                                                field.onChange(currentValue.filter(v => v !== contentType));
-                                              }
-                                            }}
-                                            disabled={!form.watch(`analysisResults.socialNetworks.${networkIndex}.selected`)}
+                                  <div className="grid grid-cols-2 gap-4">
+                                    {network.contentTypes.map((contentType, contentTypeIndex) => (
+                                      <div key={contentType} className="border rounded-md p-2">
+                                        <FormItem className="flex flex-row items-start space-x-2 space-y-0 mb-2">
+                                          <FormControl>
+                                            <Checkbox
+                                              checked={field.value?.includes(contentType)}
+                                              onCheckedChange={(checked) => {
+                                                const currentValue = field.value || [];
+                                                if (checked) {
+                                                  field.onChange([...currentValue, contentType]);
+                                                } else {
+                                                  field.onChange(currentValue.filter(v => v !== contentType));
+                                                }
+                                              }}
+                                              disabled={!form.watch(`analysisResults.socialNetworks.${networkIndex}.selected`)}
+                                            />
+                                          </FormControl>
+                                          <FormLabel className="text-sm font-medium">
+                                            {contentType}
+                                          </FormLabel>
+                                        </FormItem>
+                                        
+                                        {field.value?.includes(contentType) && (
+                                          <FormField
+                                            control={form.control}
+                                            name={`analysisResults.socialNetworks.${networkIndex}.contentTypeDetails.${contentTypeIndex}.count`}
+                                            render={({ field: countField }) => (
+                                              <FormItem className="flex flex-row items-center gap-2 space-y-0 mt-2">
+                                                <FormLabel className="text-xs whitespace-nowrap">
+                                                  Cantidad:
+                                                </FormLabel>
+                                                <FormControl>
+                                                  <Input
+                                                    type="number"
+                                                    min="0"
+                                                    className="w-16 h-7 text-sm"
+                                                    disabled={!form.watch(`analysisResults.socialNetworks.${networkIndex}.selected`)}
+                                                    {...countField}
+                                                    onChange={(e) => {
+                                                      const value = parseInt(e.target.value);
+                                                      countField.onChange(isNaN(value) ? 0 : value);
+                                                      
+                                                      // Calcula el total de publicaciones para esta red social
+                                                      const contentTypeDetails = form.getValues(`analysisResults.socialNetworks.${networkIndex}.contentTypeDetails`) || [];
+                                                      const total = Array.isArray(contentTypeDetails) 
+                                                        ? contentTypeDetails.reduce((sum, detail) => sum + (detail?.count || 0), 0)
+                                                        : 0;
+                                                      
+                                                      // Actualiza el total
+                                                      form.setValue(`analysisResults.socialNetworks.${networkIndex}.postsPerMonth`, total);
+                                                    }}
+                                                  />
+                                                </FormControl>
+                                              </FormItem>
+                                            )}
                                           />
-                                        </FormControl>
-                                        <FormLabel className="text-sm font-normal">
-                                          {contentType}
-                                        </FormLabel>
-                                      </FormItem>
+                                        )}
+                                      </div>
                                     ))}
                                   </div>
                                   <FormMessage />
