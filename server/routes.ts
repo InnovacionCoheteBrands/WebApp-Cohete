@@ -273,6 +273,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await global.storage.createAnalysisResult(analysisData);
       }
       
+      // Initial products will be created in a separate API call from the frontend
+      // using FormData to handle the image uploads
+      
       res.status(201).json(newProject);
     } catch (error) {
       if (error instanceof z.ZodError) {

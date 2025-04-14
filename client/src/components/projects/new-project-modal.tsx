@@ -238,7 +238,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
             formData.append('name', product.name);
             if (product.description) formData.append('description', product.description);
             if (product.sku) formData.append('sku', product.sku);
-            if (product.price !== null) formData.append('price', product.price.toString());
+            if (product.price !== null && product.price !== undefined) formData.append('price', product.price.toString());
             if (file) formData.append('image', file);
             
             // Crear producto con imagen
