@@ -145,6 +145,21 @@ export const tasks = pgTable("tasks", {
   completedAt: timestamp("completed_at"),
   estimatedHours: integer("estimated_hours"),
   dependencies: integer("dependencies").array(), // IDs de tareas de las que depende
+  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: 'set null' }), // Para subtareas
+  progress: integer("progress").default(0), // Progreso de la tarea en porcentaje (0-100)
+  attachments: json("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
+  reminderDate: timestamp("reminder_date"), // Fecha para enviar recordatorio
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+})
+
+// Tabla para comentarios de tareas
+export const taskComments = pgTable("task_comments", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'set null' }),
+  comment: text("comment").notNull(),
+  attachments: json("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -197,10 +212,18 @@ export const contentHistoryRelations = relations(contentHistory, ({ one }) => ({
   project: one(projects, { fields: [contentHistory.projectId], references: [projects.id] }),
 }));
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasks, ({ one, many }) => ({
   project: one(projects, { fields: [tasks.projectId], references: [projects.id] }),
   assignedTo: one(users, { fields: [tasks.assignedToId], references: [users.id] }),
   createdBy: one(users, { fields: [tasks.createdById], references: [users.id] }),
+  parentTask: one(tasks, { fields: [tasks.parentTaskId], references: [tasks.id] }),
+  subtasks: many(tasks, { relationName: "subtasks" }),
+  comments: many(taskComments),
+}));
+
+export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
+  task: one(tasks, { fields: [taskComments.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [taskComments.userId], references: [users.id] }),
 }));
 
 // Zod schemas for validation
@@ -268,6 +291,12 @@ export const insertTaskSchema = createInsertSchema(tasks).omit({
   createdAt: true,
   updatedAt: true,
   completedAt: true,
+});
+
+export const insertTaskCommentSchema = createInsertSchema(taskComments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
 });
 
 // Types
