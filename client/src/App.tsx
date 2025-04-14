@@ -11,6 +11,8 @@ import ScheduleDetail from "@/pages/schedule-detail";
 import TaskManager from "@/pages/task-manager";
 import UserManagement from "@/pages/user-management";
 import CreateAccount from "@/pages/create-account";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -75,6 +77,8 @@ function App() {
           {/* Public routes */}
           <Route path="/auth" component={AuthPage} />
           <Route path="/cohete_account" component={CreateAccount} />
+          <Route path="/forgot-password" component={ForgotPassword} />
+          <Route path="/reset-password" component={ResetPassword} />
           
           {/* Fallback to 404 */}
           <Route component={NotFound} />

@@ -202,6 +202,110 @@ export function setupAuth(app: Express) {
     res.json(userWithoutPassword);
   });
 
+  // Endpoints para recuperación de contraseña
+  
+  // 1. Solicitar restablecimiento de contraseña
+  app.post("/api/request-password-reset", async (req, res, next) => {
+    try {
+      const { identifier } = req.body;
+      
+      if (!identifier) {
+        return res.status(400).json({ message: "Se requiere nombre de usuario" });
+      }
+      
+      // Buscar usuario
+      const user = await global.storage.getUserByIdentifier(identifier);
+      
+      if (!user) {
+        // Por seguridad, no revelamos si el usuario existe o no
+        return res.status(200).json({ 
+          message: "Si el usuario existe, se ha enviado un correo con instrucciones para restablecer la contraseña" 
+        });
+      }
+      
+      // Generar token
+      const token = await global.storage.createPasswordResetToken(user.id);
+      
+      // En un entorno real, enviaríamos un correo electrónico
+      // Para nuestro caso de prueba, devolvemos el token en la respuesta
+      console.log(`Token de restablecimiento para ${identifier}: ${token.token}`);
+      
+      return res.status(200).json({ 
+        message: "Si el usuario existe, se ha enviado un correo con instrucciones para restablecer la contraseña",
+        // Solo para pruebas, en un entorno real no enviaríamos esto en la respuesta
+        debugToken: token.token 
+      });
+      
+    } catch (error) {
+      console.error("Error requesting password reset:", error);
+      next(error);
+    }
+  });
+  
+  // 2. Verificar token de restablecimiento
+  app.get("/api/verify-reset-token/:token", async (req, res, next) => {
+    try {
+      const { token } = req.params;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Token requerido" });
+      }
+      
+      // Verificar token
+      const tokenData = await global.storage.getPasswordResetToken(token);
+      
+      if (!tokenData) {
+        return res.status(400).json({ message: "Token inválido o expirado" });
+      }
+      
+      return res.status(200).json({ valid: true });
+      
+    } catch (error) {
+      console.error("Error verifying reset token:", error);
+      next(error);
+    }
+  });
+  
+  // 3. Restablecer contraseña
+  app.post("/api/reset-password", async (req, res, next) => {
+    try {
+      const { token, newPassword } = req.body;
+      
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: "Token y nueva contraseña son requeridos" });
+      }
+      
+      // Verificar token
+      const tokenData = await global.storage.getPasswordResetToken(token);
+      
+      if (!tokenData) {
+        return res.status(400).json({ message: "Token inválido o expirado" });
+      }
+      
+      // Obtener usuario
+      const user = await global.storage.getUser(tokenData.userId);
+      
+      if (!user) {
+        return res.status(400).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Hashear nueva contraseña
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Actualizar contraseña
+      await global.storage.updateUser(user.id, { password: hashedPassword });
+      
+      // Eliminar token
+      await global.storage.deletePasswordResetToken(token);
+      
+      return res.status(200).json({ message: "Contraseña restablecida con éxito" });
+      
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      next(error);
+    }
+  });
+
   // Middleware to check if user is authenticated
   function isAuthenticated(req: Request, res: any, next: any) {
     if (req.isAuthenticated()) {

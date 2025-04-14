@@ -118,6 +118,14 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
+                    <div className="flex justify-end mb-2">
+                      <a 
+                        href="/forgot-password" 
+                        className="text-sm text-primary hover:underline"
+                      >
+                        ¿Olvidaste tu contraseña?
+                      </a>
+                    </div>
                     <Button 
                       type="submit" 
                       className="w-full" 
