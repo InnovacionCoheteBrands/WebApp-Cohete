@@ -14,7 +14,8 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   fullName: text("full_name").notNull(),
   username: text("username").notNull().unique(),
-  email: text("email").unique(),  // Agregamos campo para correo electrónico
+  // Nota: el campo email no existe en la base de datos actualmente
+  // email: text("email").unique(),
   password: text("password").notNull(),
   isPrimary: boolean("is_primary").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -203,15 +204,17 @@ export const tasksRelations = relations(tasks, ({ one }) => ({
 }));
 
 // Zod schemas for validation
-export const insertUserSchema = createInsertSchema(users).pick({
-  fullName: true,
-  username: true,
-  email: true,
-  password: true,
-  isPrimary: true,
-}).refine(data => /^[a-zA-Z0-9_]{3,20}$/.test(data.username), {
-  message: "Username must be between 3-20 characters and can only contain letters, numbers, and underscores",
-  path: ["username"]
+// Adaptamos el schema para que coincida con la base de datos actual 
+// (sin campo email físicamente, pero manteniendo compatibilidad con el código)
+export const insertUserSchema = z.object({
+  fullName: z.string().min(1, "El nombre completo es obligatorio"),
+  username: z.string()
+    .min(3, "El nombre de usuario debe tener al menos 3 caracteres")
+    .max(20, "El nombre de usuario debe tener como máximo 20 caracteres")
+    .regex(/^[a-zA-Z0-9_]+$/, "El nombre de usuario solo puede contener letras, números y guiones bajos"),
+  email: z.string().email("Debe ser un correo electrónico válido").optional(),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  isPrimary: z.boolean().optional().default(false),
 });
 
 // Esquema para login que permite usar username o email
