@@ -120,6 +120,13 @@ export interface IStorage {
   getTaskComment(id: number): Promise<TaskComment | undefined>;
   deleteTaskComment(id: number): Promise<boolean>;
   listTaskComments(taskId: number): Promise<TaskComment[]>;
+  
+  // Product methods
+  createProduct(product: InsertProduct): Promise<Product>;
+  getProduct(id: number): Promise<Product | undefined>;
+  updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined>;
+  deleteProduct(id: number): Promise<boolean>;
+  listProductsByProject(projectId: number): Promise<Product[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -662,6 +669,45 @@ export class DatabaseStorage implements IStorage {
       .from(taskComments)
       .where(eq(taskComments.taskId, taskId))
       .orderBy(asc(taskComments.createdAt));
+  }
+  
+  // Product methods
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await db
+      .insert(products)
+      .values(product)
+      .returning();
+    return newProduct;
+  }
+  
+  async getProduct(id: number): Promise<Product | undefined> {
+    const [product] = await db
+      .select()
+      .from(products)
+      .where(eq(products.id, id));
+    return product;
+  }
+  
+  async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
+    const [updatedProduct] = await db
+      .update(products)
+      .set({ ...productData, updatedAt: new Date() })
+      .where(eq(products.id, id))
+      .returning();
+    return updatedProduct;
+  }
+  
+  async deleteProduct(id: number): Promise<boolean> {
+    await db.delete(products).where(eq(products.id, id));
+    return true;
+  }
+  
+  async listProductsByProject(projectId: number): Promise<Product[]> {
+    return await db
+      .select()
+      .from(products)
+      .where(eq(products.projectId, projectId))
+      .orderBy(desc(products.createdAt));
   }
 
   // Password reset methods usando memoria ya que no tenemos una tabla específica

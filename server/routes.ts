@@ -22,6 +22,7 @@ import {
   insertChatMessageSchema,
   insertTaskSchema,
   insertUserSchema,
+  insertProductSchema,
   scheduleEntries
 } from "@shared/schema";
 import { WebSocketServer } from "ws";
