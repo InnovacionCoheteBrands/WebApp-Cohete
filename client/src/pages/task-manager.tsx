@@ -4,7 +4,7 @@ import { useLocation } from 'wouter';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
 import { 
-  Calendar, 
+  CalendarIcon, 
   Clock, 
   PlusCircle, 
   ListChecks, 
@@ -59,6 +59,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -270,17 +272,17 @@ const TaskManager = () => {
   const handleEditTask = (task: any) => {
     setSelectedTask(task);
     
-    // Formatear la fecha para el input
-    const formattedDate = task.dueDate 
-      ? new Date(task.dueDate).toISOString().split('T')[0]
-      : undefined;
+    // Convertir la fecha a un objeto Date
+    const dueDateObj = task.dueDate 
+      ? new Date(task.dueDate)
+      : null;
     
     editForm.reset({
       title: task.title,
       description: task.description || "",
       priority: task.priority,
       status: task.status,
-      dueDate: formattedDate,
+      dueDate: dueDateObj,
       projectId: task.projectId,
       assignedToId: task.assignedToId,
     });
@@ -727,7 +729,7 @@ const TaskManager = () => {
                           <td className="p-2 align-middle">
                             {task.dueDate ? (
                               <div className="flex items-center text-sm">
-                                <Calendar className="h-3 w-3 mr-1" />
+                                <CalendarIcon className="h-3 w-3 mr-1" />
                                 {format(new Date(task.dueDate), "d 'de' MMM, yyyy", { locale: es })}
                               </div>
                             ) : (
@@ -1113,7 +1115,7 @@ const TaskCard = ({
         <CardTitle className="text-lg">{task.title}</CardTitle>
         {task.dueDate && (
           <div className="flex items-center text-xs text-muted-foreground mt-1">
-            <Calendar className="h-3 w-3 mr-1" />
+            <CalendarIcon className="h-3 w-3 mr-1" />
             {format(new Date(task.dueDate), "d 'de' MMMM, yyyy", { locale: es })}
           </div>
         )}
