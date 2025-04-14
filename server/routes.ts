@@ -1863,7 +1863,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Function to broadcast updates to all connected clients
   const broadcastUpdate = (data: any) => {
     wss.clients.forEach((client) => {
-      if (client.readyState === WebSocketServer.OPEN) {
+      if (client.readyState === WebSocket.OPEN) {
         client.send(JSON.stringify(data));
       }
     });

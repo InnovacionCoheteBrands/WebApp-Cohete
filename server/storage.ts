@@ -1,4 +1,4 @@
-import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks } from "@shared/schema";
+import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
 import type { Store } from "express-session";
@@ -21,7 +21,9 @@ import {
   ContentHistory,
   InsertContentHistory,
   Task,
-  InsertTask
+  InsertTask,
+  TaskComment,
+  InsertTaskComment
 } from "@shared/schema";
 
 // Interfaz para los tokens de recuperación
@@ -109,6 +111,13 @@ export interface IStorage {
   deleteTask(id: number): Promise<boolean>;
   listTasksByProject(projectId: number): Promise<Task[]>;
   listTasksByAssignee(userId: number): Promise<Task[]>;
+  listSubtasks(parentTaskId: number): Promise<Task[]>;
+  
+  // Task Comments methods
+  createTaskComment(comment: InsertTaskComment): Promise<TaskComment>;
+  getTaskComment(id: number): Promise<TaskComment | undefined>;
+  deleteTaskComment(id: number): Promise<boolean>;
+  listTaskComments(taskId: number): Promise<TaskComment[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -613,6 +622,44 @@ export class DatabaseStorage implements IStorage {
       .from(tasks)
       .where(eq(tasks.assignedToId, userId))
       .orderBy(asc(tasks.dueDate), desc(tasks.priority));
+  }
+  
+  async listSubtasks(parentTaskId: number): Promise<Task[]> {
+    return await db
+      .select()
+      .from(tasks)
+      .where(eq(tasks.parentTaskId, parentTaskId))
+      .orderBy(asc(tasks.position));
+  }
+  
+  // Task Comments methods
+  async createTaskComment(comment: InsertTaskComment): Promise<TaskComment> {
+    const [newComment] = await db
+      .insert(taskComments)
+      .values(comment)
+      .returning();
+    return newComment;
+  }
+  
+  async getTaskComment(id: number): Promise<TaskComment | undefined> {
+    const [comment] = await db
+      .select()
+      .from(taskComments)
+      .where(eq(taskComments.id, id));
+    return comment;
+  }
+  
+  async deleteTaskComment(id: number): Promise<boolean> {
+    await db.delete(taskComments).where(eq(taskComments.id, id));
+    return true;
+  }
+  
+  async listTaskComments(taskId: number): Promise<TaskComment[]> {
+    return await db
+      .select()
+      .from(taskComments)
+      .where(eq(taskComments.taskId, taskId))
+      .orderBy(asc(taskComments.createdAt));
   }
 
   // Password reset methods usando memoria ya que no tenemos una tabla específica
