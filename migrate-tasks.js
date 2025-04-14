@@ -68,6 +68,32 @@ async function runMigration() {
       console.log('La columna progress ya existe.');
     }
     
+    // 1.3 Verificar attachments
+    console.log('Verificando columna attachments en la tabla tasks...');
+    const checkAttachmentsSQL = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'tasks' 
+      AND column_name = 'attachments';
+    `;
+    
+    const { rows: columnsAttachments } = await pool.query(checkAttachmentsSQL);
+    
+    if (columnsAttachments.length === 0) {
+      console.log('La columna attachments no existe, agregándola...');
+      
+      // Agregar la columna attachments
+      const addAttachmentsSQL = `
+        ALTER TABLE tasks 
+        ADD COLUMN attachments JSONB DEFAULT '[]'::jsonb;
+      `;
+      
+      await pool.query(addAttachmentsSQL);
+      console.log('Columna attachments agregada exitosamente.');
+    } else {
+      console.log('La columna attachments ya existe.');
+    }
+    
     // Parte 2: Verificar si existe la tabla task_comments
     console.log('Verificando tabla task_comments...');
     const checkTableSQL = `
