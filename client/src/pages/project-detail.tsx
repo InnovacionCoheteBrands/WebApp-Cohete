@@ -15,6 +15,7 @@ import ProjectAnalysis from "@/components/projects/project-analysis";
 import ProjectWorkflows from "@/components/projects/project-workflows";
 import ProjectDocuments from "@/components/projects/project-documents";
 import ProjectChat from "@/components/projects/project-chat";
+import ProductList from "@/components/products/product-list";
 
 interface ProjectDetailProps {
   id: number;
@@ -124,6 +125,12 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
                 Documents
+              </TabsTrigger>
+              <TabsTrigger 
+                value="products" 
+                className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
+              >
+                Productos
               </TabsTrigger>
               <TabsTrigger 
                 value="chat" 

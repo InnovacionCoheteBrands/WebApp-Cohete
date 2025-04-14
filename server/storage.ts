@@ -457,7 +457,7 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(schedules.createdAt));
   }
 
-  async listRecentSchedules(limit: number = 5): Promise<(Schedule & { project: Project })[]> {
+  async listRecentSchedules(limit: number = 5): Promise<(Schedule & { project: Project, entries: ScheduleEntry[] })[]> {
     try {
       // Obtener schedules recientes
       const schedulesResult = await db
@@ -467,7 +467,7 @@ export class DatabaseStorage implements IStorage {
         .limit(limit);
       
       // Para cada schedule, obtener su proyecto relacionado y las entradas
-      const results: (Schedule & { project: Project })[] = [];
+      const results: (Schedule & { project: Project, entries: ScheduleEntry[] })[] = [];
       
       for (const schedule of schedulesResult) {
         try {
