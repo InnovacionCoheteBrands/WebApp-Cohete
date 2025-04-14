@@ -153,6 +153,10 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
             <ProjectDocuments projectId={id} />
           </TabsContent>
           
+          <TabsContent value="products" className="mt-0 pt-4">
+            <ProductList projectId={id} />
+          </TabsContent>
+          
           <TabsContent value="chat" className="mt-0 pt-4">
             <ProjectChat projectId={id} />
           </TabsContent>

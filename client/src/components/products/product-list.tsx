@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Product } from '../../../shared/schema';
+import type { Product } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import {
   Card,

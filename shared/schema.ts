@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, varchar, timestamp, pgEnum, json, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, varchar, timestamp, pgEnum, json, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
@@ -170,7 +170,9 @@ export const products = pgTable("products", {
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
-  imageUrl: text("image_url").notNull(), // URL de la imagen del producto
+  imageUrl: text("image_url"), // URL de la imagen del producto
+  sku: text("sku"), // SKU del producto (opcional)
+  price: numeric("price", { precision: 10, scale: 2 }), // Precio del producto (opcional)
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

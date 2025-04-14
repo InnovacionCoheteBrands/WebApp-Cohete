@@ -30,11 +30,20 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: { isFormData?: boolean },
 ): Promise<Response> {
+  const isFormData = options?.isFormData || false;
+  
+  // No establecer Content-Type para FormData, el navegador lo configurará automáticamente con boundary
+  const headers: HeadersInit = {};
+  if (data && !isFormData) {
+    headers["Content-Type"] = "application/json";
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers,
+    body: data ? (isFormData ? data as FormData : JSON.stringify(data)) : undefined,
     credentials: "include",
   });
 
