@@ -164,6 +164,18 @@ export const taskComments = pgTable("task_comments", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Tabla para productos de proyectos
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url").notNull(), // URL de la imagen del producto
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Define table relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdProjects: many(projects),
@@ -182,6 +194,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   schedules: many(schedules),
   contentHistory: many(contentHistory),
   tasks: many(tasks),
+  products: many(products),
 }));
 
 export const analysisResultsRelations = relations(analysisResults, ({ one }) => ({
@@ -224,6 +237,11 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
   task: one(tasks, { fields: [taskComments.taskId], references: [tasks.id] }),
   user: one(users, { fields: [taskComments.userId], references: [users.id] }),
+}));
+
+export const productsRelations = relations(products, ({ one }) => ({
+  project: one(projects, { fields: [products.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [products.createdBy], references: [users.id] }),
 }));
 
 // Zod schemas for validation
@@ -299,6 +317,12 @@ export const insertTaskCommentSchema = createInsertSchema(taskComments).omit({
   updatedAt: true,
 });
 
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true, 
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -352,3 +376,6 @@ export type InsertTask = z.infer<typeof insertTaskSchema>;
 
 export type TaskComment = typeof taskComments.$inferSelect;
 export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
+
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
