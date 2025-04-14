@@ -56,11 +56,18 @@ interface Archetype {
   profile: string;
 }
 
+// Definición de tipos para el detalle de cada formato de contenido
+interface ContentTypeDetail {
+  name: string;
+  count: number;
+}
+
 // Definición de tipos para redes sociales
 interface SocialNetwork {
   name: string;
   selected: boolean;
   contentTypes: string[];
+  contentTypeDetails: ContentTypeDetail[];
   postsPerMonth: number;
 }
 
@@ -100,6 +107,12 @@ const projectSchema = z.object({
         name: z.string(),
         selected: z.boolean().optional(),
         contentTypes: z.array(z.string()).optional(),
+        contentTypeDetails: z.array(
+          z.object({
+            name: z.string(),
+            count: z.number().int().min(0)
+          })
+        ).optional(),
         postsPerMonth: z.number().int().min(0).optional(),
       })
     ).optional(),
@@ -175,6 +188,10 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
           name: network.name,
           selected: false,
           contentTypes: [],
+          contentTypeDetails: network.contentTypes.map(type => ({
+            name: type,
+            count: 0
+          })),
           postsPerMonth: 0
         })),
         marketingStrategies: "",
