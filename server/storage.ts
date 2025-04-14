@@ -24,6 +24,13 @@ import {
   InsertTask
 } from "@shared/schema";
 
+// Interfaz para los tokens de recuperación
+export interface PasswordResetToken {
+  userId: number;
+  token: string;
+  expires: Date;
+}
+
 export interface IStorage {
   // Session management
   sessionStore: Store;
@@ -37,6 +44,11 @@ export interface IStorage {
   listUsers(): Promise<User[]>;
   updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
   deleteUser(id: number): Promise<boolean>;
+  
+  // Password reset methods
+  createPasswordResetToken(userId: number): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  deletePasswordResetToken(token: string): Promise<boolean>;
 
   // Project methods
   createProject(project: InsertProject): Promise<Project>;
@@ -601,6 +613,50 @@ export class DatabaseStorage implements IStorage {
       .from(tasks)
       .where(eq(tasks.assignedToId, userId))
       .orderBy(asc(tasks.dueDate), desc(tasks.priority));
+  }
+
+  // Password reset methods usando memoria ya que no tenemos una tabla específica
+  private passwordResetTokens: Map<string, PasswordResetToken> = new Map();
+
+  async createPasswordResetToken(userId: number): Promise<PasswordResetToken> {
+    // Generar un token único usando crypto
+    const tokenStr = Math.random().toString(36).substring(2, 15) + 
+                     Math.random().toString(36).substring(2, 15);
+    
+    // Establecer expiración a 1 hora
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1);
+    
+    const tokenData: PasswordResetToken = {
+      userId,
+      token: tokenStr,
+      expires
+    };
+    
+    // Almacenar el token
+    this.passwordResetTokens.set(tokenStr, tokenData);
+    
+    return tokenData;
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    const tokenData = this.passwordResetTokens.get(token);
+    
+    if (!tokenData) {
+      return undefined;
+    }
+    
+    // Verificar si expiró
+    if (new Date() > tokenData.expires) {
+      this.passwordResetTokens.delete(token);
+      return undefined;
+    }
+    
+    return tokenData;
+  }
+
+  async deletePasswordResetToken(token: string): Promise<boolean> {
+    return this.passwordResetTokens.delete(token);
   }
 }
 
