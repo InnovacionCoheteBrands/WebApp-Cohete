@@ -48,7 +48,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Users, Megaphone, Palette, Target, MessageSquare, Plus, Trash2, Facebook, Instagram, Twitter, Youtube, Linkedin } from "lucide-react";
+import { FileText, Users, Megaphone, Palette, Target, MessageSquare, Package, ShoppingBag, Plus, Trash2, Facebook, Instagram, Twitter, Youtube, Linkedin } from "lucide-react";
 
 // Definición de tipos para arquetipos
 interface Archetype {
@@ -70,6 +70,15 @@ interface ResponsePolicies {
   negative: string;
 }
 
+// Esquema para productos iniciales
+const initialProductSchema = z.object({
+  name: z.string().min(1, "El nombre del producto es requerido"),
+  description: z.string().optional(),
+  sku: z.string().optional(),
+  price: z.number().optional().nullable(),
+  file: z.any().optional(), // Para la imagen
+});
+
 // Create schema for the form
 const projectSchema = z.object({
   name: z.string().min(1, "El nombre del proyecto es requerido"),
@@ -78,6 +87,7 @@ const projectSchema = z.object({
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   status: z.enum(["active", "planning", "completed", "on_hold"]).default("planning"),
+  initialProducts: z.array(initialProductSchema).optional(),
   analysisResults: z.object({
     communicationObjectives: z.string().optional(),
     buyerPersona: z.string().optional(),
@@ -158,6 +168,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
       startDate: "",
       endDate: "",
       status: "planning",
+      initialProducts: [],
       analysisResults: {
         communicationObjectives: "",
         buyerPersona: "",
@@ -241,7 +252,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList className="grid w-full grid-cols-7 mb-4">
+              <TabsList className="grid w-full grid-cols-8 mb-4">
                 <TabsTrigger value="general" className="flex flex-col items-center gap-1">
                   <FileText className="h-4 w-4" />
                   <span className="text-xs">General</span>
@@ -269,6 +280,10 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                 <TabsTrigger value="politicas" className="flex flex-col items-center gap-1">
                   <MessageSquare className="h-4 w-4" />
                   <span className="text-xs">Políticas</span>
+                </TabsTrigger>
+                <TabsTrigger value="productos" className="flex flex-col items-center gap-1">
+                  <ShoppingBag className="h-4 w-4" />
+                  <span className="text-xs">Productos</span>
                 </TabsTrigger>
               </TabsList>
 
