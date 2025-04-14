@@ -118,23 +118,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.email, email));
-    return user;
+    // Email temporalmente deshabilitado - devolvemos null
+    return undefined;
   }
 
   async getUserByIdentifier(identifier: string): Promise<User | undefined> {
-    // Busca un usuario por nombre de usuario o correo electrónico
-    const [user] = await db.select().from(users).where(
-      or(
-        eq(users.username, identifier),
-        eq(users.email, identifier)
-      )
-    );
+    // Busca un usuario por nombre de usuario (email temporalmente deshabilitado)
+    const [user] = await db.select().from(users).where(eq(users.username, identifier));
     return user;
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const [newUser] = await db.insert(users).values(user).returning();
+    // Filtrar el campo email ya que no existe en la base de datos
+    const { email, ...filteredUser } = user as any;
+    const [newUser] = await db.insert(users).values(filteredUser).returning();
     return newUser;
   }
 
@@ -143,9 +140,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+    // Filtrar el campo email ya que no existe en la base de datos
+    const { email, ...filteredUserData } = userData as any;
     const [updatedUser] = await db
       .update(users)
-      .set(userData)
+      .set(filteredUserData)
       .where(eq(users.id, id))
       .returning();
     return updatedUser;
