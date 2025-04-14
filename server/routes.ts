@@ -1536,6 +1536,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Subtasks API
+  app.get("/api/tasks/:taskId/subtasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      // Get parent task to check permissions
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
+      }
+      
+      const subtasks = await global.storage.listSubtasks(taskId);
+      res.json(subtasks);
+    } catch (error) {
+      console.error("Error listing subtasks:", error);
+      res.status(500).json({ message: "Failed to list subtasks" });
+    }
+  });
+
+  app.post("/api/tasks/:taskId/subtasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      // Get parent task to check permissions and set project
+      const parentTask = await global.storage.getTask(taskId);
+      if (!parentTask) {
+        return res.status(404).json({ message: "Parent task not found" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        parentTask.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
+      }
+      
+      // Create subtask with parent task reference
+      const subtaskData = {
+        ...req.body,
+        projectId: parentTask.projectId,
+        parentTaskId: taskId,
+        createdById: req.user.id
+      };
+      
+      const newSubtask = await global.storage.createTask(subtaskData);
+      res.status(201).json(newSubtask);
+    } catch (error) {
+      console.error("Error creating subtask:", error);
+      res.status(500).json({ message: "Failed to create subtask" });
+    }
+  });
+
+  // Task Comments API
+  app.get("/api/tasks/:taskId/comments", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      // Get task to check permissions
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
+      }
+      
+      const comments = await global.storage.listTaskComments(taskId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error listing task comments:", error);
+      res.status(500).json({ message: "Failed to list task comments" });
+    }
+  });
+
+  app.post("/api/tasks/:taskId/comments", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "Invalid task ID" });
+      }
+      
+      // Get task to check permissions
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Task not found" });
+      }
+      
+      // Check if user has access to project
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this task" });
+      }
+      
+      const commentData = {
+        ...req.body,
+        taskId,
+        userId: req.user.id
+      };
+      
+      const newComment = await global.storage.createTaskComment(commentData);
+      res.status(201).json(newComment);
+    } catch (error) {
+      console.error("Error creating task comment:", error);
+      res.status(500).json({ message: "Failed to create task comment" });
+    }
+  });
+
+  app.delete("/api/tasks/comments/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const commentId = parseInt(req.params.id);
+      if (isNaN(commentId)) {
+        return res.status(400).json({ message: "Invalid comment ID" });
+      }
+      
+      // Get comment to check permissions
+      const comment = await global.storage.getTaskComment(commentId);
+      if (!comment) {
+        return res.status(404).json({ message: "Comment not found" });
+      }
+      
+      // Get task to check project access
+      const task = await global.storage.getTask(comment.taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Associated task not found" });
+      }
+      
+      // Check if user has access to project or is comment author
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      const isAuthor = comment.userId === req.user.id;
+      
+      if (!hasAccess && !isAuthor) {
+        return res.status(403).json({ message: "You don't have permission to delete this comment" });
+      }
+      
+      await global.storage.deleteTaskComment(commentId);
+      res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting task comment:", error);
+      res.status(500).json({ message: "Failed to delete comment" });
+    }
+  });
+
   app.post("/api/projects/:projectId/generate-tasks", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
