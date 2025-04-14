@@ -15,30 +15,57 @@ async function runMigration() {
   console.log('Iniciando migración de las tablas...');
   
   try {
-    // Parte 1: Verificar y actualizar parent_task_id en la tabla tasks
+    // Parte 1: Verificar y actualizar columnas en la tabla tasks
+    // 1.1 Verificar parent_task_id
     console.log('Verificando columna parent_task_id en la tabla tasks...');
-    const checkColumnSQL = `
+    const checkParentTaskIdSQL = `
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'tasks' 
       AND column_name = 'parent_task_id';
     `;
     
-    const { rows: columns } = await pool.query(checkColumnSQL);
+    const { rows: columnsParentTaskId } = await pool.query(checkParentTaskIdSQL);
     
-    if (columns.length === 0) {
+    if (columnsParentTaskId.length === 0) {
       console.log('La columna parent_task_id no existe, agregándola...');
       
       // Agregar la columna parent_task_id
-      const addColumnSQL = `
+      const addParentTaskIdSQL = `
         ALTER TABLE tasks 
         ADD COLUMN parent_task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL;
       `;
       
-      await pool.query(addColumnSQL);
+      await pool.query(addParentTaskIdSQL);
       console.log('Columna parent_task_id agregada exitosamente.');
     } else {
       console.log('La columna parent_task_id ya existe.');
+    }
+    
+    // 1.2 Verificar progress
+    console.log('Verificando columna progress en la tabla tasks...');
+    const checkProgressSQL = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'tasks' 
+      AND column_name = 'progress';
+    `;
+    
+    const { rows: columnsProgress } = await pool.query(checkProgressSQL);
+    
+    if (columnsProgress.length === 0) {
+      console.log('La columna progress no existe, agregándola...');
+      
+      // Agregar la columna progress
+      const addProgressSQL = `
+        ALTER TABLE tasks 
+        ADD COLUMN progress INTEGER DEFAULT 0;
+      `;
+      
+      await pool.query(addProgressSQL);
+      console.log('Columna progress agregada exitosamente.');
+    } else {
+      console.log('La columna progress ya existe.');
     }
     
     // Parte 2: Verificar si existe la tabla task_comments
