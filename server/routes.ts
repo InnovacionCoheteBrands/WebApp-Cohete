@@ -1887,7 +1887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Verificar datos del producto
-      const { name, description, sku, price } = req.body;
+      const { name, description } = req.body;
       if (!name) {
         return res.status(400).json({ message: "El nombre del producto es requerido" });
       }
@@ -1895,11 +1895,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Datos del producto
       const productData = {
         projectId,
-        createdBy: req.user.id,
+        createdBy: req.user!.id,
         name,
         description: description || null,
-        sku: sku || null,
-        price: price ? parseFloat(price) : null,
+        sku: null,
+        price: null,
         imageUrl: req.file ? req.file.filename : null
       };
       

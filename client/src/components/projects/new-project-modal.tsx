@@ -74,8 +74,6 @@ interface ResponsePolicies {
 const initialProductSchema = z.object({
   name: z.string().min(1, "El nombre del producto es requerido"),
   description: z.string().optional(),
-  sku: z.string().optional(),
-  price: z.number().optional().nullable(),
   file: z.any().optional(), // Para la imagen
 });
 
@@ -237,8 +235,6 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
             const formData = new FormData();
             formData.append('name', product.name);
             if (product.description) formData.append('description', product.description);
-            if (product.sku) formData.append('sku', product.sku);
-            if (product.price !== null && product.price !== undefined) formData.append('price', product.price.toString());
             if (file) formData.append('image', file);
             
             // Crear producto con imagen
@@ -851,9 +847,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                         className="flex items-center gap-1"
                         onClick={() => productsFieldArray.append({ 
                           name: "", 
-                          description: "",
-                          sku: "", 
-                          price: null
+                          description: ""
                         })}
                       >
                         <Plus className="h-3.5 w-3.5" />
@@ -922,41 +916,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                             )}
                           />
                           
-                          <div className="grid grid-cols-2 gap-3">
-                            <FormField
-                              control={form.control}
-                              name={`initialProducts.${index}.sku`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>SKU</FormLabel>
-                                  <FormControl>
-                                    <Input placeholder="Código de referencia" {...field} />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                            
-                            <FormField
-                              control={form.control}
-                              name={`initialProducts.${index}.price`}
-                              render={({ field }) => (
-                                <FormItem>
-                                  <FormLabel>Precio</FormLabel>
-                                  <FormControl>
-                                    <Input 
-                                      type="number" 
-                                      placeholder="0.00" 
-                                      step="0.01"
-                                      onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
-                                      value={field.value ?? ''} 
-                                    />
-                                  </FormControl>
-                                  <FormMessage />
-                                </FormItem>
-                              )}
-                            />
-                          </div>
+                          {/* Los campos de SKU y precio se han eliminado ya que no son necesarios para el contexto de la IA */}
                           
                           <FormItem>
                             <FormLabel>Imagen del Producto</FormLabel>
