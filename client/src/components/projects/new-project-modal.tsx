@@ -195,6 +195,15 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
     control: form.control,
     name: "analysisResults.archetypes"
   });
+  
+  // Setup field arrays for initial products
+  const productsFieldArray = useFieldArray({
+    control: form.control,
+    name: "initialProducts"
+  });
+  
+  // State for managing file inputs in each product form
+  const [productFiles, setProductFiles] = useState<Record<number, File | null>>({});
 
   // Create project mutation
   const createProjectMutation = useMutation({
@@ -204,10 +213,44 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         ...values,
         startDate: values.startDate ? new Date(values.startDate).toISOString() : undefined,
         endDate: values.endDate ? new Date(values.endDate).toISOString() : undefined,
+        // Remove the file objects from products since they'll be uploaded separately
+        initialProducts: values.initialProducts ? values.initialProducts.map(product => ({
+          ...product,
+          file: undefined
+        })) : undefined
       };
 
       const res = await apiRequest("POST", "/api/projects", formattedValues);
-      return await res.json();
+      const projectData = await res.json();
+      
+      // Si el proyecto se creó exitosamente y hay productos con imágenes, subir las imágenes
+      if (projectData && projectData.id && values.initialProducts?.length) {
+        const projectId = projectData.id;
+        
+        // Crear los productos uno por uno con sus imágenes
+        for (let i = 0; i < values.initialProducts.length; i++) {
+          const product = values.initialProducts[i];
+          const file = productFiles[i];
+          
+          if (product.name) {
+            // Crear FormData para enviar la imagen junto con los datos del producto
+            const formData = new FormData();
+            formData.append('name', product.name);
+            if (product.description) formData.append('description', product.description);
+            if (product.sku) formData.append('sku', product.sku);
+            if (product.price !== null) formData.append('price', product.price.toString());
+            if (file) formData.append('image', file);
+            
+            // Crear producto con imagen
+            await fetch(`/api/projects/${projectId}/products`, {
+              method: 'POST',
+              body: formData
+            });
+          }
+        }
+      }
+      
+      return projectData;
     },
     onSuccess: () => {
       toast({
@@ -218,6 +261,7 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       // Reset form and close modal
       form.reset();
+      setProductFiles({});
       onClose();
     },
     onError: (error) => {
@@ -790,13 +834,162 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
                   />
                 </div>
               </TabsContent>
+
+              {/* Tab 8: Productos */}
+              <TabsContent value="productos" className="space-y-4 pt-2">
+                <div className="space-y-4">
+                  <h2 className="text-lg font-medium">7. Productos</h2>
+                  <Separator />
+                  
+                  <div className="space-y-4 border rounded-md p-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-md font-medium">Productos Iniciales</h3>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="flex items-center gap-1"
+                        onClick={() => productsFieldArray.append({ 
+                          name: "", 
+                          description: "",
+                          sku: "", 
+                          price: null
+                        })}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>Agregar Producto</span>
+                      </Button>
+                    </div>
+                    
+                    <FormDescription>
+                      Agrega los productos iniciales relacionados con este proyecto.
+                    </FormDescription>
+                    
+                    {productsFieldArray.fields.map((field, index) => (
+                      <Card key={field.id} className="mb-4">
+                        <CardHeader className="py-3">
+                          <div className="flex justify-between items-center">
+                            <CardTitle className="text-sm font-medium">Producto {index + 1}</CardTitle>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => {
+                                productsFieldArray.remove(index);
+                                setProductFiles(prev => {
+                                  const newFiles = {...prev};
+                                  delete newFiles[index];
+                                  return newFiles;
+                                });
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                            </Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="py-0 space-y-3">
+                          <FormField
+                            control={form.control}
+                            name={`initialProducts.${index}.name`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nombre del Producto</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Nombre del producto" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={form.control}
+                            name={`initialProducts.${index}.description`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Descripción</FormLabel>
+                                <FormControl>
+                                  <Textarea 
+                                    placeholder="Descripción del producto" 
+                                    rows={3}
+                                    {...field}
+                                    value={field.value || ""}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name={`initialProducts.${index}.sku`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>SKU</FormLabel>
+                                  <FormControl>
+                                    <Input placeholder="Código de referencia" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            
+                            <FormField
+                              control={form.control}
+                              name={`initialProducts.${index}.price`}
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Precio</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      placeholder="0.00" 
+                                      step="0.01"
+                                      onChange={e => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                                      value={field.value ?? ''} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormItem>
+                            <FormLabel>Imagen del Producto</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0] || null;
+                                  setProductFiles(prev => ({
+                                    ...prev,
+                                    [index]: file
+                                  }));
+                                }}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Sube una imagen para este producto. La imagen se guardará cuando se cree el proyecto.
+                            </FormDescription>
+                          </FormItem>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
             </Tabs>
             
             <DialogFooter className="flex items-center justify-between gap-3 pt-4 border-t mt-6">
               <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                <span>{selectedTab === "general" ? "1" : selectedTab === "objetivos" ? "2" : selectedTab === "personas" ? "3" : selectedTab === "estrategias" ? "4" : selectedTab === "comunicacion" ? "5" : selectedTab === "mision" ? "6" : "7"}</span>
+                <span>{selectedTab === "general" ? "1" : selectedTab === "objetivos" ? "2" : selectedTab === "personas" ? "3" : selectedTab === "estrategias" ? "4" : selectedTab === "comunicacion" ? "5" : selectedTab === "mision" ? "6" : selectedTab === "politicas" ? "7" : "8"}</span>
                 <span>/</span>
-                <span>7</span>
+                <span>8</span>
               </div>
               <div className="flex items-center gap-3">
                 <DialogClose asChild>
