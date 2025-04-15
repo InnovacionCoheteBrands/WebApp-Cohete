@@ -6,6 +6,13 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
+// Define interfaces
+interface Project {
+  id: number;
+  name: string;
+  client: string;
+}
+
 // Components
 import {
   Card,
@@ -128,7 +135,7 @@ export default function CalendarCreator() {
   const [selectedTab, setSelectedTab] = useState("general");
   
   // Fetch projects
-  const { data: projects, isLoading: projectsLoading } = useQuery({
+  const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
     queryFn: async () => {
       const res = await fetch('/api/projects');
@@ -338,7 +345,7 @@ export default function CalendarCreator() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="dark:bg-[#1e293b] dark:border-[#3e4a6d]">
-                                {projects?.map((project) => (
+                                {projects?.map((project: Project) => (
                                   <SelectItem 
                                     key={project.id} 
                                     value={project.id.toString()}
