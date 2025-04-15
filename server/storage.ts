@@ -466,11 +466,20 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(schedules.createdAt))
         .limit(limit);
       
+      if (!schedulesResult || schedulesResult.length === 0) {
+        return []; // No hay schedules para procesar
+      }
+      
       // Para cada schedule, obtener su proyecto relacionado y las entradas
       const results: (Schedule & { project: Project, entries: ScheduleEntry[] })[] = [];
       
       for (const schedule of schedulesResult) {
         try {
+          if (!schedule || !schedule.id || !schedule.projectId) {
+            console.warn("Schedule incompleto encontrado:", schedule);
+            continue; // Saltamos schedules incompletos
+          }
+          
           // Obtener el proyecto relacionado
           const [project] = await db
             .select()
@@ -484,11 +493,11 @@ export class DatabaseStorage implements IStorage {
             results.push({
               ...schedule,
               project,
-              entries // Incluir las entradas en el resultado
+              entries: entries || [] // Incluir las entradas en el resultado, asegurando que nunca es null
             });
           }
         } catch (err) {
-          console.error(`Error getting project for schedule ${schedule.id}:`, err);
+          console.error(`Error getting project for schedule ${schedule?.id}:`, err);
           // Si falla obtener el proyecto, saltamos este schedule
         }
       }

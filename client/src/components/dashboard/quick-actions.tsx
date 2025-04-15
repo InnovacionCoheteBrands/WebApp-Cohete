@@ -49,7 +49,7 @@ export default function QuickActions() {
       </Card>
 
       {/* Calendarios recientes */}
-      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md border-t-[3px] border-t-blue-500 dark:border dark:border-[#2a3349] dark:shadow-none dark:hover:shadow-[0_5px_20px_rgba(0,0,0,0.3)] dark:bg-[#1a1d2d] dark-hover dark-card">
+      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md border-t-[3px] border-t-amber-500 dark:border-t-amber-500 dark:border dark:border-[#2a3349] dark:shadow-none dark:hover:shadow-[0_5px_20px_rgba(0,0,0,0.3)] dark:bg-[#1a1d2d]">
         <CardContent className="p-5">
           <div className="flex items-start justify-between">
             <div className="space-y-1.5">
@@ -58,15 +58,15 @@ export default function QuickActions() {
                 Calendarios de contenido generados recientemente
               </p>
             </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-300 dark:shadow-[0_0_10px_rgba(59,130,246,0.15)] dark:border dark:border-blue-500/30">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:bg-amber-600/20 dark:text-amber-300 dark:shadow-[0_0_10px_rgba(245,158,11,0.15)] dark:border dark:border-amber-600/30">
               <span className="font-semibold text-lg">{recentSchedulesCount}</span>
             </div>
           </div>
           
           <div className="mt-6">
-            <Button className="w-full bg-blue-500 hover:bg-blue-600 relative overflow-hidden group dark:bg-blue-600 dark:hover:bg-blue-700 dark:text-white">
+            <Button className="w-full bg-amber-500 hover:bg-amber-600 relative overflow-hidden group dark:bg-amber-600 dark:hover:bg-amber-700 dark:text-white">
               <span className="relative z-10">Ver Calendarios</span>
-              <div className="absolute inset-0 translate-y-[100%] bg-blue-600/20 transition-transform duration-300 group-hover:translate-y-[0%] dark:bg-blue-400/20"></div>
+              <div className="absolute inset-0 translate-y-[100%] bg-amber-600/20 transition-transform duration-300 group-hover:translate-y-[0%] dark:bg-amber-400/20"></div>
             </Button>
           </div>
         </CardContent>

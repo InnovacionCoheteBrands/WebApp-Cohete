@@ -1838,26 +1838,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      // Obtener schedules recientes
       const recentSchedules = await global.storage.listRecentSchedules(limit);
+      
+      if (!recentSchedules || recentSchedules.length === 0) {
+        return res.json([]); // Retornar array vacío si no hay schedules
+      }
       
       // Verificar que el usuario tenga acceso a los proyectos de los schedules
       const accessibleSchedules = [];
       for (const schedule of recentSchedules) {
-        const hasAccess = await global.storage.checkUserProjectAccess(
-          req.user!.id,
-          schedule.projectId,
-          req.user!.isPrimary
-        );
-        
-        if (hasAccess) {
-          accessibleSchedules.push(schedule);
+        try {
+          if (!schedule || !schedule.projectId) {
+            console.warn("Schedule incompleto encontrado en el endpoint:", schedule);
+            continue; // Saltamos schedules incorrectos
+          }
+          
+          const hasAccess = await global.storage.checkUserProjectAccess(
+            req.user!.id,
+            schedule.projectId,
+            req.user!.isPrimary
+          );
+          
+          if (hasAccess) {
+            accessibleSchedules.push(schedule);
+          }
+        } catch (err) {
+          console.error(`Error procesando schedule ID ${schedule?.id}:`, err);
+          // Continuamos con el siguiente schedule
         }
       }
       
       res.json(accessibleSchedules);
     } catch (error) {
       console.error("Error getting recent schedules:", error);
-      res.status(500).json({ message: "Failed to get recent schedules" });
+      res.status(500).json({ message: "Error al obtener cronogramas recientes" });
     }
   });
 
