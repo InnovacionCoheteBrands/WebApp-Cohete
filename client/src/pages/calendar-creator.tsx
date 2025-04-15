@@ -311,9 +311,12 @@ export default function CalendarCreator() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 mb-6 dark:bg-[#1e293b] dark:border dark:border-[#3e4a6d]">
+                <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 mb-6 dark:bg-[#1e293b] dark:border dark:border-[#3e4a6d]">
                   <TabsTrigger value="general" className="dark:data-[state=active]:bg-[#2a3349] dark:data-[state=active]:text-white dark:text-slate-400">
                     General
+                  </TabsTrigger>
+                  <TabsTrigger value="distribution" className="dark:data-[state=active]:bg-[#2a3349] dark:data-[state=active]:text-white dark:text-slate-400">
+                    Distribución
                   </TabsTrigger>
                   <TabsTrigger value="platforms" className="dark:data-[state=active]:bg-[#2a3349] dark:data-[state=active]:text-white dark:text-slate-400">
                     Plataformas
@@ -427,27 +430,58 @@ export default function CalendarCreator() {
                           )}
                         />
                       </div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="specifications"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm font-medium dark:text-slate-300">Especificaciones Generales</FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Describe las características generales del calendario, temas principales, etc."
+                                className="min-h-[220px] transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs flex items-center gap-1.5 text-muted-foreground dark:text-slate-500">
+                              <AlertCircle className="h-4 w-4" />
+                              Las instrucciones específicas para cada red social se pueden configurar en la pestaña "Contenido".
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                {/* Tab: Distribution */}
+                <TabsContent value="distribution" className="space-y-6 p-1">
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 dark:shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 3v18h18" />
+                            <path d="M18 17V9" />
+                            <path d="M13 17V5" />
+                            <path d="M8 17v-3" />
+                          </svg>
+                        </span>
+                        <h3 className="text-lg font-medium dark:text-white">Distribución de Publicaciones</h3>
+                      </div>
                       
                       <FormField
                         control={form.control}
                         name="postsDistribution"
                         render={({ field }) => (
-                          <FormItem className="space-y-3">
-                            <FormLabel className="text-sm font-medium dark:text-slate-300 flex items-center gap-2">
-                              <span className="p-1 rounded-md bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                  <rect width="18" height="18" x="3" y="3" rx="2" />
-                                  <path d="M8 12h8" />
-                                  <path d="M8 8h4" />
-                                  <path d="M8 16h6" />
-                                </svg>
-                              </span>
-                              Distribución de Publicaciones
-                            </FormLabel>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                          <FormItem className="space-y-6">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               <div 
-                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
                                   ${field.value === 'uniform' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
@@ -455,7 +489,7 @@ export default function CalendarCreator() {
                                 onClick={() => field.onChange('uniform')}
                               >
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                  <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
                                     <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
                                       <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                       <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
@@ -464,10 +498,13 @@ export default function CalendarCreator() {
                                       <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                     </div>
                                   </div>
-                                  <span className="text-xs font-medium dark:text-white">Uniforme</span>
+                                  <div className="text-center mt-1">
+                                    <p className="font-medium dark:text-white">Uniforme</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">Distribución equitativa</p>
+                                  </div>
                                 </div>
                                 {field.value === 'uniform' && (
-                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                  <div className="absolute top-2 right-2 h-5 w-5 bg-amber-400 text-white rounded-full flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M20 6L9 17l-5-5" />
                                     </svg>
@@ -476,7 +513,7 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
                                   ${field.value === 'frontloaded' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
@@ -484,7 +521,7 @@ export default function CalendarCreator() {
                                 onClick={() => field.onChange('frontloaded')}
                               >
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                  <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
                                     <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
                                       <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                       <div className="flex-1 h-[50%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
@@ -493,10 +530,13 @@ export default function CalendarCreator() {
                                       <div className="flex-1 h-[20%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                     </div>
                                   </div>
-                                  <span className="text-xs font-medium dark:text-white">Mayor al inicio</span>
+                                  <div className="text-center mt-1">
+                                    <p className="font-medium dark:text-white">Mayor al inicio</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">Concentración inicial</p>
+                                  </div>
                                 </div>
                                 {field.value === 'frontloaded' && (
-                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                  <div className="absolute top-2 right-2 h-5 w-5 bg-amber-400 text-white rounded-full flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M20 6L9 17l-5-5" />
                                     </svg>
@@ -505,7 +545,7 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
                                   ${field.value === 'backloaded' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
@@ -513,7 +553,7 @@ export default function CalendarCreator() {
                                 onClick={() => field.onChange('backloaded')}
                               >
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                  <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
                                     <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
                                       <div className="flex-1 h-[20%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                       <div className="flex-1 h-[30%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
@@ -522,10 +562,13 @@ export default function CalendarCreator() {
                                       <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                     </div>
                                   </div>
-                                  <span className="text-xs font-medium dark:text-white">Mayor al final</span>
+                                  <div className="text-center mt-1">
+                                    <p className="font-medium dark:text-white">Mayor al final</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">Concentración final</p>
+                                  </div>
                                 </div>
                                 {field.value === 'backloaded' && (
-                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                  <div className="absolute top-2 right-2 h-5 w-5 bg-amber-400 text-white rounded-full flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M20 6L9 17l-5-5" />
                                     </svg>
@@ -534,7 +577,7 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
                                   ${field.value === 'weekends' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
@@ -542,7 +585,7 @@ export default function CalendarCreator() {
                                 onClick={() => field.onChange('weekends')}
                               >
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                  <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
                                     <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
                                       <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                       <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
@@ -553,10 +596,13 @@ export default function CalendarCreator() {
                                       <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                     </div>
                                   </div>
-                                  <span className="text-xs font-medium dark:text-white">Fines de semana</span>
+                                  <div className="text-center mt-1">
+                                    <p className="font-medium dark:text-white">Fines de semana</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">Sábados y domingos</p>
+                                  </div>
                                 </div>
                                 {field.value === 'weekends' && (
-                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                  <div className="absolute top-2 right-2 h-5 w-5 bg-amber-400 text-white rounded-full flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M20 6L9 17l-5-5" />
                                     </svg>
@@ -565,7 +611,7 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
                                   ${field.value === 'weekdays' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
@@ -573,7 +619,7 @@ export default function CalendarCreator() {
                                 onClick={() => field.onChange('weekdays')}
                               >
                                 <div className="flex flex-col items-center gap-2">
-                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                  <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
                                     <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
                                       <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                       <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
@@ -584,10 +630,13 @@ export default function CalendarCreator() {
                                       <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
                                     </div>
                                   </div>
-                                  <span className="text-xs font-medium dark:text-white">Días laborables</span>
+                                  <div className="text-center mt-1">
+                                    <p className="font-medium dark:text-white">Días laborables</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">Lunes a viernes</p>
+                                  </div>
                                 </div>
                                 {field.value === 'weekdays' && (
-                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                  <div className="absolute top-2 right-2 h-5 w-5 bg-amber-400 text-white rounded-full flex items-center justify-center">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                       <path d="M20 6L9 17l-5-5" />
                                     </svg>
@@ -617,34 +666,13 @@ export default function CalendarCreator() {
                               </Select>
                             </div>
                             
-                            <FormDescription className="text-xs text-muted-foreground dark:text-slate-500">
-                              Determina cómo se distribuirán las publicaciones en el periodo especificado.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <FormField
-                        control={form.control}
-                        name="specifications"
-                        render={({ field }) => (
-                          <FormItem className="space-y-2">
-                            <FormLabel className="text-sm font-medium dark:text-slate-300">Especificaciones Generales</FormLabel>
-                            <FormControl>
-                              <Textarea 
-                                placeholder="Describe las características generales del calendario, temas principales, etc."
-                                className="min-h-[220px] transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormDescription className="text-xs flex items-center gap-1.5 text-muted-foreground dark:text-slate-500">
-                              <AlertCircle className="h-4 w-4" />
-                              Las instrucciones específicas para cada red social se pueden configurar en la pestaña "Contenido".
-                            </FormDescription>
-                            <FormMessage />
+                            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-700/40">
+                              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                              <AlertTitle className="text-amber-700 dark:text-amber-300">Distribución de publicaciones</AlertTitle>
+                              <AlertDescription className="text-amber-600/80 dark:text-amber-400/90">
+                                Esta configuración determina cómo se distribuirán las publicaciones durante el periodo especificado. Escoge el patrón que mejor se adapte a tu estrategia de contenido.
+                              </AlertDescription>
+                            </Alert>
                           </FormItem>
                         )}
                       />
