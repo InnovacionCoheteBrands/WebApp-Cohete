@@ -13,8 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock, Share2, Download } from "lucide-react";
+import { CalendarIcon, Clock, Share2, Download, CheckCircle, Edit, AlertCircle, ThumbsUp } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format } from "date-fns";
 
 // Tipo para las entradas del horario
@@ -46,10 +47,23 @@ const createScheduleSchema = z.object({
   specifications: z.string().optional(),
 });
 
+// Tipo para los comentarios de revisión
+type ScheduleReview = {
+  generalComments: string;
+  entryComments: {
+    [entryId: number]: string;
+  };
+};
+
 export default function CreateScheduleSection() {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSchedule, setGeneratedSchedule] = useState<Schedule | null>(null);
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [reviewComments, setReviewComments] = useState<ScheduleReview>({
+    generalComments: '',
+    entryComments: {}
+  });
 
   // Fetch projects
   const { data: projects, isLoading: projectsLoading } = useQuery<any[]>({
