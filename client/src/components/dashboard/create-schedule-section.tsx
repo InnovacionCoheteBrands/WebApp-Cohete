@@ -291,7 +291,7 @@ export default function CreateScheduleSection() {
               </Form>
             </div>
 
-            <div className="rounded-xl border bg-card/40 backdrop-blur-sm p-6 shadow-sm relative overflow-hidden dark:bg-[#1e293b]/70 dark:border-[#3e4a6d] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+            <div className="rounded-xl border bg-white p-6 shadow-sm relative overflow-hidden light-hover dark:bg-[#1e293b]/70 dark:border-[#3e4a6d] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
               <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 blur-2xl dark:bg-[#65cef5]/5"></div>
               <h3 className="text-lg font-semibold mb-4 flex items-center tracking-tight dark:text-white">
                 <span className="mr-2 p-1.5 rounded-md bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-300">
@@ -304,7 +304,7 @@ export default function CreateScheduleSection() {
                   Selecciona un proyecto y genera un calendario de publicaciones optimizado con nuestra tecnología de IA.
                 </p>
                 
-                <div className="rounded-lg bg-primary/5 p-4 border border-primary/10 dark:bg-[#2a3349] dark:border-[#3e4a6d]">
+                <div className="rounded-lg bg-gray-50 p-4 border border-gray-100 shadow-sm dark:bg-[#2a3349] dark:border-[#3e4a6d]">
                   <h4 className="font-medium text-primary mb-2 dark:text-[#65cef5]">Tu calendario incluirá:</h4>
                   <ul className="space-y-2">
                     {[
