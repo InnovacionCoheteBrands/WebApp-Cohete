@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import ScheduleDetail from "@/pages/schedule-detail";
+import CalendarCreator from "@/pages/calendar-creator";
 import TaskManager from "@/pages/task-manager";
 import UserManagement from "@/pages/user-management";
 import CreateAccount from "@/pages/create-account";
@@ -60,6 +61,14 @@ function App() {
               )}
             </Route>
 
+            <Route path="/calendar-creator">
+              <ProtectedRoute>
+                <MainLayout>
+                  <CalendarCreator />
+                </MainLayout>
+              </ProtectedRoute>
+            </Route>
+            
             <Route path="/tasks">
               <ProtectedRoute>
                 <MainLayout>

@@ -10,7 +10,9 @@ import {
   Settings,
   LogOut,
   X,
-  ListChecks
+  ListChecks,
+  Calendar,
+  CalendarPlus
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -87,6 +89,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               icon={<Image className="mr-2 h-5 w-5" />} 
               label="Imágenes Generadas" 
               isActive={location === "/images"} 
+              onClick={onClose}
+            />
+            <NavItem 
+              href="/calendar-creator" 
+              icon={<CalendarPlus className="mr-2 h-5 w-5" />} 
+              label="Calendario Avanzado" 
+              isActive={location === "/calendar-creator"} 
               onClick={onClose}
             />
             <NavItem 
