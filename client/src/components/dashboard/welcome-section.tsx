@@ -6,7 +6,7 @@ interface WelcomeSectionProps {
 
 export default function WelcomeSection({ user }: WelcomeSectionProps) {
   return (
-    <div className="rounded-lg bg-gradient-to-r from-primary/90 to-secondary/90 p-6 text-primary-foreground">
+    <div className="rounded-lg bg-gradient-to-r from-gray-800 to-gray-900 p-6 text-white">
       <div className="flex flex-col space-y-2">
         <h2 className="text-2xl font-bold">
           {user ? `Bienvenido, ${user.fullName}` : 'Bienvenido a Cohete Workflow'}
