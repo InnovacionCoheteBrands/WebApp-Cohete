@@ -432,35 +432,191 @@ export default function CalendarCreator() {
                         control={form.control}
                         name="postsDistribution"
                         render={({ field }) => (
-                          <FormItem className="space-y-2">
-                            <FormLabel className="text-sm font-medium dark:text-slate-300">Distribución de Publicaciones</FormLabel>
-                            <Select 
-                              onValueChange={field.onChange} 
-                              defaultValue={field.value}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="h-11 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]">
-                                  <SelectValue placeholder="Elige una distribución" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent className="dark:bg-[#1e293b] dark:border-[#3e4a6d]">
-                                <SelectItem value="uniform" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
-                                  Uniforme (Distribución equitativa)
-                                </SelectItem>
-                                <SelectItem value="frontloaded" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
-                                  Mayor al inicio
-                                </SelectItem>
-                                <SelectItem value="backloaded" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
-                                  Mayor al final
-                                </SelectItem>
-                                <SelectItem value="weekends" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
-                                  Enfoque en fines de semana
-                                </SelectItem>
-                                <SelectItem value="weekdays" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
-                                  Enfoque en días laborables
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                          <FormItem className="space-y-3">
+                            <FormLabel className="text-sm font-medium dark:text-slate-300 flex items-center gap-2">
+                              <span className="p-1 rounded-md bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <rect width="18" height="18" x="3" y="3" rx="2" />
+                                  <path d="M8 12h8" />
+                                  <path d="M8 8h4" />
+                                  <path d="M8 16h6" />
+                                </svg>
+                              </span>
+                              Distribución de Publicaciones
+                            </FormLabel>
+                            
+                            <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                              <div 
+                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                  ${field.value === 'uniform' 
+                                    ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
+                                    : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
+                                  }`}
+                                onClick={() => field.onChange('uniform')}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                    <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium dark:text-white">Uniforme</span>
+                                </div>
+                                {field.value === 'uniform' && (
+                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div 
+                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                  ${field.value === 'frontloaded' 
+                                    ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
+                                    : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
+                                  }`}
+                                onClick={() => field.onChange('frontloaded')}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                    <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[50%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[30%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[20%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium dark:text-white">Mayor al inicio</span>
+                                </div>
+                                {field.value === 'frontloaded' && (
+                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div 
+                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                  ${field.value === 'backloaded' 
+                                    ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
+                                    : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
+                                  }`}
+                                onClick={() => field.onChange('backloaded')}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                    <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
+                                      <div className="flex-1 h-[20%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[30%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[40%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[50%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium dark:text-white">Mayor al final</span>
+                                </div>
+                                {field.value === 'backloaded' && (
+                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div 
+                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                  ${field.value === 'weekends' 
+                                    ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
+                                    : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
+                                  }`}
+                                onClick={() => field.onChange('weekends')}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                    <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium dark:text-white">Fines de semana</span>
+                                </div>
+                                {field.value === 'weekends' && (
+                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div 
+                                className={`relative rounded-lg border p-3 cursor-pointer transition-all 
+                                  ${field.value === 'weekdays' 
+                                    ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
+                                    : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
+                                  }`}
+                                onClick={() => field.onChange('weekdays')}
+                              >
+                                <div className="flex flex-col items-center gap-2">
+                                  <div className="h-8 w-24 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
+                                    <div className="flex absolute inset-0 items-end pb-1 px-1 gap-0.5">
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[60%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                      <div className="flex-1 h-[25%] bg-amber-400 rounded-sm dark:bg-amber-500"></div>
+                                    </div>
+                                  </div>
+                                  <span className="text-xs font-medium dark:text-white">Días laborables</span>
+                                </div>
+                                {field.value === 'weekdays' && (
+                                  <div className="absolute top-1 right-1 h-4 w-4 bg-amber-400 text-white rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M20 6L9 17l-5-5" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Para mantener compatibilidad con el formulario */}
+                            <div className="hidden">
+                              <Select 
+                                onValueChange={field.onChange} 
+                                value={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="uniform">Uniforme</SelectItem>
+                                  <SelectItem value="frontloaded">Mayor al inicio</SelectItem>
+                                  <SelectItem value="backloaded">Mayor al final</SelectItem>
+                                  <SelectItem value="weekends">Fines de semana</SelectItem>
+                                  <SelectItem value="weekdays">Días laborables</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
                             <FormDescription className="text-xs text-muted-foreground dark:text-slate-500">
                               Determina cómo se distribuirán las publicaciones en el periodo especificado.
                             </FormDescription>
