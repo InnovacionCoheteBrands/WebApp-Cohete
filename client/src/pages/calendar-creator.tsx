@@ -101,7 +101,8 @@ const contentTypeSchema = z.object({
 
 const platformConfigSchema = z.object({
   platformId: z.string(),
-  contentTypes: z.array(contentTypeSchema)
+  contentTypes: z.array(contentTypeSchema),
+  customInstructions: z.string().optional()
 });
 
 const formSchema = z.object({
@@ -252,7 +253,8 @@ export default function CalendarCreator() {
         ...platforms,
         {
           platformId,
-          contentTypes: defaultContentTypes
+          contentTypes: defaultContentTypes,
+          customInstructions: ""
         }
       ], { shouldValidate: true });
     }
