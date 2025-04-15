@@ -4,7 +4,6 @@ import {
   Rocket, 
   LayoutDashboard,
   Grid2X2,
-  Image,
   LineChart,
   Users,
   Settings,
@@ -84,13 +83,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               isActive={location === "/projects" || location.startsWith("/projects/")} 
               onClick={onClose}
             />
-            <NavItem 
-              href="/images" 
-              icon={<Image className="mr-2 h-5 w-5" />} 
-              label="Imágenes Generadas" 
-              isActive={location === "/images"} 
-              onClick={onClose}
-            />
+
             <NavItem 
               href="/calendar-creator" 
               icon={<CalendarPlus className="mr-2 h-5 w-5" />} 
