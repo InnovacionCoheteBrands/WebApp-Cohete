@@ -565,6 +565,36 @@ export default function CalendarCreator() {
                                               </div>
                                             );
                                           })}
+                                          
+                                          <div className="mt-5 pt-4 border-t dark:border-[#3e4a6d]">
+                                            <div className="flex items-center gap-2 dark:text-white mb-2">
+                                              <Sparkles className="h-4 w-4 text-amber-500 dark:text-amber-400" />
+                                              <h4 className="text-sm font-medium">Instrucciones Personalizadas</h4>
+                                            </div>
+                                            
+                                            <Textarea
+                                              placeholder={`Instrucciones específicas para ${platform.name}...`}
+                                              className="resize-none min-h-[80px] text-sm transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
+                                              value={platformConfig.customInstructions || ""}
+                                              onChange={(e) => {
+                                                const platforms = form.getValues('platforms');
+                                                const platformIndex = platforms.findIndex(p => p.platformId === platformId);
+                                                
+                                                if (platformIndex === -1) return;
+                                                
+                                                const updatedPlatforms = [...platforms];
+                                                updatedPlatforms[platformIndex] = {
+                                                  ...platforms[platformIndex],
+                                                  customInstructions: e.target.value
+                                                };
+                                                
+                                                form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
+                                              }}
+                                            />
+                                            <p className="text-xs text-muted-foreground mt-1 dark:text-slate-500">
+                                              Añade instrucciones específicas para esta plataforma, como tono, estilo o temas a evitar.
+                                            </p>
+                                          </div>
                                         </div>
                                       </AccordionContent>
                                     </AccordionItem>
