@@ -160,7 +160,7 @@ export default function CreateScheduleSection() {
                     name="startDate"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Start Date</FormLabel>
+                        <FormLabel>Fecha de Inicio</FormLabel>
                         <FormControl>
                           <Input type="date" {...field} />
                         </FormControl>
@@ -174,10 +174,10 @@ export default function CreateScheduleSection() {
                     name="specifications"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Special Instructions</FormLabel>
+                        <FormLabel>Instrucciones Especiales</FormLabel>
                         <FormControl>
                           <Textarea 
-                            placeholder="Add any specific requirements or notes..." 
+                            placeholder="Añade cualquier requisito específico o notas..." 
                             rows={4} 
                             {...field} 
                           />
@@ -193,27 +193,27 @@ export default function CreateScheduleSection() {
                     disabled={isGenerating || createScheduleMutation.isPending}
                   >
                     {isGenerating || createScheduleMutation.isPending
-                      ? "Generating Schedule..."
-                      : "Generate Schedule"}
+                      ? "Generando Calendario..."
+                      : "Generar Calendario"}
                   </Button>
                 </form>
               </Form>
             </div>
 
             <div className="rounded-md border bg-muted p-4">
-              <h3 className="mb-3 font-medium">Schedule Preview</h3>
+              <h3 className="mb-3 font-medium">Vista Previa del Calendario</h3>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>Select a project and specify details to generate a content schedule using AI.</p>
-                <p>Your schedule will include:</p>
+                <p>Selecciona un proyecto y especifica detalles para generar un calendario de contenido usando IA.</p>
+                <p>Tu calendario incluirá:</p>
                 <ul className="ml-5 list-disc space-y-1">
-                  <li>Optimal posting times</li>
-                  <li>Content themes and topics</li>
-                  <li>Caption suggestions</li>
-                  <li>Hashtag recommendations</li>
-                  <li>Visual content ideas</li>
+                  <li>Horarios óptimos de publicación</li>
+                  <li>Temas y tópicos de contenido</li>
+                  <li>Sugerencias de texto</li>
+                  <li>Recomendaciones de hashtags</li>
+                  <li>Ideas para contenido visual</li>
                 </ul>
                 <p className="mt-4 italic">
-                  The AI will analyze your project data to create a tailored schedule that aligns with your marketing goals.
+                  La IA analizará los datos de tu proyecto para crear un calendario personalizado que se alinee con tus objetivos de marketing.
                 </p>
               </div>
             </div>
@@ -227,7 +227,7 @@ export default function CreateScheduleSection() {
           <CardContent className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">
-                Schedule: {generatedSchedule.name}
+                Calendario: {generatedSchedule.name}
               </h2>
               <div className="flex items-center gap-2">
                 <Button 
@@ -257,7 +257,7 @@ export default function CreateScheduleSection() {
                 </Button>
                 <Badge variant="outline" className="px-3 py-1">
                   <CalendarIcon className="w-3.5 h-3.5 mr-1" />
-                  {generatedSchedule.entries.length} posts
+                  {generatedSchedule.entries.length} publicaciones
                 </Badge>
               </div>
             </div>
