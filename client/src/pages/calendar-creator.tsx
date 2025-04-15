@@ -7,13 +7,6 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AlertCircle, CalendarIcon, Clock, Info, Plus, Trash, ArrowRight, Sparkles } from "lucide-react";
 
-// Define interfaces
-interface Project {
-  id: number;
-  name: string;
-  client: string;
-}
-
 // Components
 import {
   Card,
@@ -23,6 +16,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+// Define interfaces
+interface Project {
+  id: number;
+  name: string;
+  client: string;
+}
 import {
   Form,
   FormControl,
