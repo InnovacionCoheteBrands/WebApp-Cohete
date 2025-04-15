@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -39,6 +40,7 @@ export function Header({ onMenuClick }: HeaderProps) {
           <h1 className="text-xl font-semibold">{getTitle()}</h1>
         </div>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <div className="relative">
             <Button variant="ghost" size="icon" className="rounded-md p-2 hover:bg-accent">
               <Bell className="h-5 w-5" />
