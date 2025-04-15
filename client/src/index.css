@@ -15,6 +15,23 @@
     @apply transition-standard hover:opacity-90 active:scale-95;
   }
 
+  /* Mejoras para el tema claro con fondo gris */
+  .light-card {
+    @apply bg-white border border-gray-100 shadow-sm;
+  }
+  
+  .light-hover {
+    @apply hover:shadow-md hover:border-gray-200 transition-all duration-200;
+  }
+  
+  .light-gradient-bg {
+    @apply bg-gradient-to-br from-gray-50 to-white;
+  }
+  
+  .light-highlight {
+    @apply bg-white shadow-sm;
+  }
+
   /* Mejoras para el modo oscuro */
   .dark .dark-glow {
     @apply shadow-[0_0_15px_rgba(101,206,245,0.1)];
@@ -47,7 +64,7 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    --background: 220 14% 96%;
     --foreground: 222.2 47.4% 11.2%;
 
     --card: 0 0% 100%;
@@ -65,7 +82,7 @@
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
  
-    --accent: 210 40% 96.1%;
+    --accent: 210 40% 97%;
     --accent-foreground: 222.2 47.4% 11.2%;
  
     --destructive: 0 84.2% 60.2%;
@@ -76,6 +93,10 @@
     --ring: 222.2 47.4% 11.2%;
  
     --radius: 0.5rem;
+    
+    /* Variables para modo claro con fondo gris suave */
+    --shadow-soft: 0px 4px 15px rgba(0, 0, 0, 0.08);
+    --shadow-medium: 0px 6px 20px rgba(0, 0, 0, 0.12);
   }
  
   .dark {

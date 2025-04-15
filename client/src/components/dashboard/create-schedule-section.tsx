@@ -192,7 +192,7 @@ export default function CreateScheduleSection() {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg overflow-hidden border-none dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
+      <Card className="shadow-lg overflow-hidden border-none light-gradient-bg dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl dark:bg-[#65cef5]/5"></div>
         <CardContent className="p-8 relative z-10">
           <h2 className="mb-6 text-2xl font-bold tracking-tight flex items-center dark:text-white">
@@ -333,7 +333,7 @@ export default function CreateScheduleSection() {
       
       {/* Tabla de cronograma generado */}
       {generatedSchedule && generatedSchedule.entries.length > 0 && (
-        <Card className="shadow-lg overflow-hidden border-none relative dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
+        <Card className="shadow-lg overflow-hidden border-none relative light-gradient-bg dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
           <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full -ml-32 -mt-32 blur-3xl dark:bg-blue-500/5"></div>
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mb-32 blur-3xl dark:bg-[#65cef5]/5"></div>
           
