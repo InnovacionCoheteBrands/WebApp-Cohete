@@ -16,83 +16,86 @@ import ResetPassword from "@/pages/reset-password";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
+import { ThemeProvider } from "./hooks/use-theme";
 import CopilotButton from "@/components/copilot/copilot-button";
 
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Switch>
-          {/* Protected routes */}
-          <Route path="/">
-            <ProtectedRoute>
-              <MainLayout>
-                <Dashboard />
-              </MainLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/projects">
-            <ProtectedRoute>
-              <MainLayout>
-                <Projects />
-              </MainLayout>
-            </ProtectedRoute>
-          </Route>
-          <Route path="/projects/:id">
-            {(params) => (
+      <ThemeProvider defaultTheme="light">
+        <AuthProvider>
+          <Switch>
+            {/* Protected routes */}
+            <Route path="/">
               <ProtectedRoute>
                 <MainLayout>
-                  <ProjectDetail id={parseInt(params.id)} />
+                  <Dashboard />
                 </MainLayout>
               </ProtectedRoute>
-            )}
-          </Route>
-
-          <Route path="/schedules/:id">
-            {(params) => (
+            </Route>
+            <Route path="/projects">
               <ProtectedRoute>
                 <MainLayout>
-                  <ScheduleDetail id={parseInt(params.id)} />
+                  <Projects />
                 </MainLayout>
               </ProtectedRoute>
-            )}
-          </Route>
+            </Route>
+            <Route path="/projects/:id">
+              {(params) => (
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ProjectDetail id={parseInt(params.id)} />
+                  </MainLayout>
+                </ProtectedRoute>
+              )}
+            </Route>
 
-          <Route path="/tasks">
-            <ProtectedRoute>
-              <MainLayout>
-                <TaskManager />
-              </MainLayout>
-            </ProtectedRoute>
-          </Route>
+            <Route path="/schedules/:id">
+              {(params) => (
+                <ProtectedRoute>
+                  <MainLayout>
+                    <ScheduleDetail id={parseInt(params.id)} />
+                  </MainLayout>
+                </ProtectedRoute>
+              )}
+            </Route>
 
-          <Route path="/users">
-            <ProtectedRoute>
-              <MainLayout>
-                <UserManagement />
-              </MainLayout>
-            </ProtectedRoute>
+            <Route path="/tasks">
+              <ProtectedRoute>
+                <MainLayout>
+                  <TaskManager />
+                </MainLayout>
+              </ProtectedRoute>
+            </Route>
+
+            <Route path="/users">
+              <ProtectedRoute>
+                <MainLayout>
+                  <UserManagement />
+                </MainLayout>
+              </ProtectedRoute>
+            </Route>
+            
+            {/* Public routes */}
+            <Route path="/auth" component={AuthPage} />
+            <Route path="/cohete_account" component={CreateAccount} />
+            <Route path="/forgot-password" component={ForgotPassword} />
+            <Route path="/reset-password" component={ResetPassword} />
+            
+            {/* Fallback to 404 */}
+            <Route component={NotFound} />
+          </Switch>
+          <Toaster />
+          {/* Copilot Button (visible on all protected routes) */}
+          <Route path="*">
+            {(params) => {
+              // Don't show on auth page or not found
+              if (params["*"] === "auth") return null;
+              return <CopilotButton />;
+            }}
           </Route>
-          
-          {/* Public routes */}
-          <Route path="/auth" component={AuthPage} />
-          <Route path="/cohete_account" component={CreateAccount} />
-          <Route path="/forgot-password" component={ForgotPassword} />
-          <Route path="/reset-password" component={ResetPassword} />
-          
-          {/* Fallback to 404 */}
-          <Route component={NotFound} />
-        </Switch>
-        <Toaster />
-        {/* Copilot Button (visible on all protected routes) */}
-        <Route path="*">
-          {(params) => {
-            // Don't show on auth page or not found
-            if (params["*"] === "auth") return null;
-            return <CopilotButton />;
-          }}
-        </Route>
-      </AuthProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
