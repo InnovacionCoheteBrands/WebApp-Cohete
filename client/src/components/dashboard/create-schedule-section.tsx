@@ -130,6 +130,65 @@ export default function CreateScheduleSection() {
       return dateString;
     }
   };
+  
+  // Función para manejar la entrada en modo revisión
+  const handleEnterReviewMode = () => {
+    setIsReviewMode(true);
+    setReviewComments({
+      generalComments: '',
+      entryComments: {}
+    });
+    toast({
+      title: "Modo de revisión activado",
+      description: "Puedes agregar comentarios generales o específicos para cada publicación",
+    });
+  };
+  
+  // Función para manejar la salida del modo revisión
+  const handleExitReviewMode = () => {
+    setIsReviewMode(false);
+    toast({
+      title: "Modo de revisión desactivado",
+      description: "Has salido del modo de revisión",
+    });
+  };
+  
+  // Función para actualizar los comentarios generales
+  const handleGeneralCommentsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setReviewComments((prev) => ({
+      ...prev,
+      generalComments: e.target.value
+    }));
+  };
+  
+  // Función para actualizar los comentarios específicos de una entrada
+  const handleEntryCommentChange = (entryId: number, comment: string) => {
+    setReviewComments((prev) => ({
+      ...prev,
+      entryComments: {
+        ...prev.entryComments,
+        [entryId]: comment
+      }
+    }));
+  };
+  
+  // Función para enviar los comentarios de revisión
+  const handleSubmitReview = async () => {
+    try {
+      // Aquí podrías enviar los comentarios al backend si fuera necesario
+      toast({
+        title: "Revisión enviada",
+        description: "Tus comentarios han sido registrados correctamente",
+      });
+      setIsReviewMode(false);
+    } catch (error) {
+      toast({
+        title: "Error al enviar revisión",
+        description: "Ocurrió un error al enviar tus comentarios",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -301,6 +360,17 @@ export default function CreateScheduleSection() {
                 >
                   Ver Completo
                 </Button>
+                {!isReviewMode && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="rounded-lg gap-1 transition-all duration-200 shadow-sm hover:shadow border-amber-200 hover:border-amber-300 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 interactive-element dark:border-amber-600/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+                    onClick={handleEnterReviewMode}
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-1" />
+                    Revisar y Comentar
+                  </Button>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -336,13 +406,20 @@ export default function CreateScheduleSection() {
                     <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Hora</TableHead>
                     <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Texto en Diseño</TableHead>
                     <TableHead className="text-right font-medium text-foreground dark:text-[#65cef5]">Imagen</TableHead>
+                    {isReviewMode && (
+                      <TableHead className="text-center font-medium text-amber-600 dark:text-amber-300">
+                        Revisión
+                      </TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {generatedSchedule.entries.map((entry, idx) => (
                     <TableRow 
                       key={entry.id}
-                      className="transition-colors duration-200 hover:bg-accent/20 dark:border-b dark:border-b-[#2a3349] dark:last:border-b-0 dark:hover:bg-[#2a3349]/50"
+                      className={`transition-colors duration-200 hover:bg-accent/20 dark:border-b dark:border-b-[#2a3349] dark:last:border-b-0 dark:hover:bg-[#2a3349]/50 ${
+                        isReviewMode && reviewComments.entryComments[entry.id] ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                      }`}
                     >
                       <TableCell className="font-medium dark:text-white">{entry.title}</TableCell>
                       <TableCell>
@@ -372,11 +449,140 @@ export default function CreateScheduleSection() {
                           <span className="text-sm text-muted-foreground italic dark:text-slate-500">Pendiente</span>
                         )}
                       </TableCell>
+                      {isReviewMode && (
+                        <TableCell className="text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`rounded-full p-2 h-auto w-auto ${
+                              reviewComments.entryComments[entry.id]
+                                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 hover:text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50'
+                                : 'text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:text-slate-500 dark:hover:text-amber-300 dark:hover:bg-amber-900/20'
+                            }`}
+                            onClick={() => {
+                              document.getElementById(`entry-${entry.id}`)?.click();
+                              setTimeout(() => {
+                                const element = document.getElementById(`entry-${entry.id}-textarea`);
+                                if (element) element.focus();
+                              }, 300);
+                            }}
+                          >
+                            {reviewComments.entryComments[entry.id] ? (
+                              <CheckCircle className="h-5 w-5" />
+                            ) : (
+                              <Edit className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
             </ScrollArea>
+            
+            {/* Sección de revisión y comentarios */}
+            {isReviewMode && (
+              <div className="mt-8 space-y-4">
+                <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-100">
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="p-1.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300">
+                      <AlertCircle className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-300">Modo de Revisión</h3>
+                      <p className="text-sm text-amber-700 dark:text-amber-200/80">
+                        Puedes agregar comentarios generales o específicos para cada publicación. Estos comentarios serán utilizados para mejorar el cronograma.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {/* Comentarios generales */}
+                    <div>
+                      <label htmlFor="general-comments" className="block text-sm font-medium text-amber-800 dark:text-amber-300 mb-1.5">
+                        Comentarios Generales
+                      </label>
+                      <Textarea 
+                        id="general-comments"
+                        placeholder="Añade cualquier comentario o sugerencia general sobre el cronograma..."
+                        value={reviewComments.generalComments}
+                        onChange={handleGeneralCommentsChange}
+                        rows={4}
+                        className="w-full resize-none border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white dark:focus:border-amber-600 dark:focus:ring-amber-600"
+                      />
+                    </div>
+                    
+                    {/* Comentarios específicos para cada entrada */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <Edit className="h-4 w-4" />
+                        Comentarios Específicos por Publicación
+                      </h4>
+                      
+                      <Accordion type="single" collapsible className="w-full">
+                        {generatedSchedule.entries.map((entry) => (
+                          <AccordionItem 
+                            key={entry.id} 
+                            value={`entry-${entry.id}`}
+                            className="border-amber-200 dark:border-amber-800/40"
+                          >
+                            <AccordionTrigger 
+                              id={`entry-${entry.id}`} 
+                              className="text-sm text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200 py-2"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant="outline"
+                                  className="border-amber-300 text-amber-700 dark:border-amber-700/50 dark:text-amber-300"
+                                >
+                                  {entry.platform}
+                                </Badge>
+                                <span>{entry.title}</span>
+                                <span className="text-xs text-amber-600/80 dark:text-amber-400/60">
+                                  ({formatDate(entry.postDate)} {entry.postTime})
+                                </span>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="pt-2">
+                              <Textarea 
+                                id={`entry-${entry.id}-textarea`}
+                                placeholder={`Comentarios sobre "${entry.title}"...`}
+                                value={reviewComments.entryComments[entry.id] || ''}
+                                onChange={(e) => handleEntryCommentChange(entry.id, e.target.value)}
+                                rows={3}
+                                className="w-full resize-none border-amber-200 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white dark:focus:border-amber-600 dark:focus:ring-amber-600"
+                              />
+                              <div className="mt-2 text-xs text-amber-700 dark:text-amber-400/80">
+                                <p>Puedes comentar sobre el título, texto, horario o cualquier otro aspecto de esta publicación.</p>
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </div>
+                  </div>
+                  
+                  {/* Botones de acción */}
+                  <div className="mt-5 flex justify-end gap-3">
+                    <Button 
+                      variant="outline" 
+                      onClick={handleExitReviewMode}
+                      className="border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-800/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
+                    >
+                      Cancelar
+                    </Button>
+                    <Button 
+                      onClick={handleSubmitReview}
+                      className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:text-white dark:hover:bg-amber-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-1.5" />
+                      Enviar Comentarios
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
