@@ -16,8 +16,8 @@ export function Header({ onMenuClick }: HeaderProps) {
   // Generate title based on current path
   const getTitle = () => {
     if (location === "/") return "Dashboard";
-    if (location === "/projects") return "Projects";
-    if (location.startsWith("/projects/")) return "Project Details";
+    if (location === "/projects") return "Proyectos";
+    if (location.startsWith("/projects/")) return "Detalles del Proyecto";
     return "Cohete Workflow";
   };
 
@@ -51,7 +51,7 @@ export function Header({ onMenuClick }: HeaderProps) {
             <Search className="mr-2 h-4 w-4 text-muted-foreground" />
             <Input 
               type="text" 
-              placeholder="Search projects..." 
+              placeholder="Buscar proyectos..." 
               className="w-32 border-0 bg-transparent text-sm outline-none shadow-none p-0 h-auto sm:w-64" 
             />
           </div>

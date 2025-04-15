@@ -53,7 +53,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             </div>
             <div className="flex flex-col">
               <h1 className="text-lg font-bold">Cohete Workflow</h1>
-              <p className="text-xs text-muted-foreground">Marketing Management</p>
+              <p className="text-xs text-muted-foreground">Gestión de Marketing</p>
             </div>
             {/* Close button - mobile only */}
             <Button
@@ -78,28 +78,28 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             <NavItem 
               href="/projects" 
               icon={<Grid2X2 className="mr-2 h-5 w-5" />} 
-              label="Projects" 
+              label="Proyectos" 
               isActive={location === "/projects" || location.startsWith("/projects/")} 
               onClick={onClose}
             />
             <NavItem 
               href="/images" 
               icon={<Image className="mr-2 h-5 w-5" />} 
-              label="Generated Images" 
+              label="Imágenes Generadas" 
               isActive={location === "/images"} 
               onClick={onClose}
             />
             <NavItem 
               href="/analytics" 
               icon={<LineChart className="mr-2 h-5 w-5" />} 
-              label="Analytics" 
+              label="Analíticas" 
               isActive={location === "/analytics"} 
               onClick={onClose}
             />
             <NavItem 
               href="/tasks" 
               icon={<ListChecks className="mr-2 h-5 w-5" />} 
-              label="Task Manager" 
+              label="Gestor de Tareas" 
               isActive={location === "/tasks"} 
               onClick={onClose}
             />
@@ -108,19 +108,19 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             {isPrimary && (
               <div className="mt-4 border-t pt-4">
                 <h2 className="mb-1 px-3 text-xs font-medium text-muted-foreground">
-                  Administration
+                  Administración
                 </h2>
                 <NavItem 
                   href="/users" 
                   icon={<Users className="mr-2 h-5 w-5" />} 
-                  label="User Management" 
+                  label="Gestión de Usuarios" 
                   isActive={location === "/users"} 
                   onClick={onClose}
                 />
                 <NavItem 
                   href="/settings" 
                   icon={<Settings className="mr-2 h-5 w-5" />} 
-                  label="Settings" 
+                  label="Configuración" 
                   isActive={location === "/settings"} 
                   onClick={onClose}
                 />
@@ -137,7 +137,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               <div className="flex flex-col">
                 <span className="text-sm font-medium">{user?.fullName}</span>
                 <span className="text-xs text-muted-foreground">
-                  {user?.isPrimary ? 'Primary User' : 'Secondary User'}
+                  {user?.isPrimary ? 'Usuario Principal' : 'Usuario Secundario'}
                 </span>
               </div>
               <Button 
