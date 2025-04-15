@@ -7,7 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { AlertCircle, CalendarIcon, Clock, Info, Plus, Trash, ArrowRight, Sparkles } from "lucide-react";
 
-// Components
+// UI Components
 import {
   Card,
   CardContent,
@@ -16,13 +16,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-// Define interfaces
-interface Project {
-  id: number;
-  name: string;
-  client: string;
-}
 import {
   Form,
   FormControl,
@@ -39,9 +32,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Tabs,
   TabsContent,
@@ -54,12 +44,22 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+// Define interfaces
+interface Project {
+  id: number;
+  name: string;
+  client: string;
+}
 
 // Define supported platforms and content types
 const PLATFORMS = [
@@ -427,6 +427,47 @@ export default function CalendarCreator() {
                           )}
                         />
                       </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="postsDistribution"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm font-medium dark:text-slate-300">Distribución de Publicaciones</FormLabel>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-11 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]">
+                                  <SelectValue placeholder="Elige una distribución" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="dark:bg-[#1e293b] dark:border-[#3e4a6d]">
+                                <SelectItem value="uniform" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
+                                  Uniforme (Distribución equitativa)
+                                </SelectItem>
+                                <SelectItem value="frontloaded" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
+                                  Mayor al inicio
+                                </SelectItem>
+                                <SelectItem value="backloaded" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
+                                  Mayor al final
+                                </SelectItem>
+                                <SelectItem value="weekends" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
+                                  Enfoque en fines de semana
+                                </SelectItem>
+                                <SelectItem value="weekdays" className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]">
+                                  Enfoque en días laborables
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription className="text-xs text-muted-foreground dark:text-slate-500">
+                              Determina cómo se distribuirán las publicaciones en el periodo especificado.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                     
                     <div className="space-y-4">
@@ -435,455 +476,256 @@ export default function CalendarCreator() {
                         name="specifications"
                         render={({ field }) => (
                           <FormItem className="space-y-2">
-                            <FormLabel className="text-sm font-medium dark:text-slate-300">Instrucciones Especiales</FormLabel>
+                            <FormLabel className="text-sm font-medium dark:text-slate-300">Especificaciones Generales</FormLabel>
                             <FormControl>
                               <Textarea 
-                                placeholder="Añade cualquier requerimiento específico o notas..." 
-                                className="min-h-[150px] resize-none transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
-                                {...field} 
+                                placeholder="Describe las características generales del calendario, temas principales, etc."
+                                className="min-h-[220px] transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                                {...field}
                               />
                             </FormControl>
-                            <FormDescription className="text-xs text-muted-foreground dark:text-slate-500">
-                              Puedes incluir aquí información sobre campañas específicas, fechas importantes, o cualquier otra instrucción relevante.
+                            <FormDescription className="text-xs flex items-center gap-1.5 text-muted-foreground dark:text-slate-500">
+                              <AlertCircle className="h-4 w-4" />
+                              Las instrucciones específicas para cada red social se pueden configurar en la pestaña "Contenido".
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      
-                      <Alert className="bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-300">
-                        <AlertCircle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
-                        <AlertTitle>Consejo</AlertTitle>
-                        <AlertDescription className="text-sm dark:text-amber-300/80">
-                          Selecciona un proyecto y proporciona instrucciones claras para obtener mejores resultados. Puedes especificar temas, tono de voz, o estrategias específicas.
-                        </AlertDescription>
-                      </Alert>
                     </div>
                   </div>
                 </TabsContent>
                 
-                {/* Tab: Plataformas */}
+                {/* Tab: Platforms */}
                 <TabsContent value="platforms" className="space-y-6 p-1">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <h3 className="text-lg font-medium mb-4 dark:text-white">Selecciona las plataformas</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        {PLATFORMS.map(platform => (
-                          <Button
-                            key={platform.id}
-                            type="button"
-                            variant={selectedPlatforms.includes(platform.id) ? "default" : "outline"}
-                            className={`justify-start h-auto py-3 px-4 transition-all duration-200 ${
-                              selectedPlatforms.includes(platform.id) 
-                                ? `bg-${platform.id === 'facebook' ? 'blue-600' : platform.id === 'instagram' ? 'pink-500' : platform.id === 'twitter' ? 'sky-500' : platform.id === 'linkedin' ? 'blue-700' : platform.id === 'tiktok' ? 'neutral-800' : platform.id === 'youtube' ? 'red-600' : 'red-500'} text-white hover:opacity-90 dark:hover:opacity-90 shadow-sm hover:shadow-md`
-                                : 'border-gray-200 bg-white dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white'
-                            }`}
-                            onClick={() => handleTogglePlatform(platform.id)}
-                          >
-                            <div className={`w-4 h-4 rounded-full mr-2 ${platform.color}`}></div>
-                            <span>{platform.name}</span>
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <h3 className="text-lg font-medium mb-4 dark:text-white">Tipos de contenido</h3>
-                      {selectedPlatforms.length === 0 ? (
-                        <div className="rounded-lg border p-4 bg-gray-50 text-muted-foreground dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-slate-400">
-                          <p className="flex items-center gap-2">
-                            <Info className="h-4 w-4 text-muted-foreground dark:text-slate-500" />
-                            Selecciona plataformas para configurar los tipos de contenido.
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {PLATFORMS.map((platform) => (
+                      <div
+                        key={platform.id}
+                        onClick={() => handleTogglePlatform(platform.id)}
+                        className={`
+                          relative rounded-xl border p-4 flex flex-col items-center justify-center gap-2 
+                          transition-all duration-200 cursor-pointer overflow-hidden
+                          ${selectedPlatforms.includes(platform.id) 
+                            ? `bg-primary/5 border-primary shadow-md dark:bg-primary/10 dark:border-primary/40` 
+                            : `bg-white border-border hover:border-primary/40 hover:bg-primary/5 
+                               dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-primary/40 dark:hover:bg-primary/10`
+                          }
+                        `}
+                      >
+                        <div className={`w-10 h-10 rounded-lg ${platform.color} flex items-center justify-center text-white`}>
+                          {platform.name.substring(0, 1)}
+                        </div>
+                        <div className="text-center">
+                          <p className="font-medium dark:text-white">{platform.name}</p>
+                          <p className="text-xs text-muted-foreground dark:text-slate-400">
+                            {platform.contentTypes.length} {platform.contentTypes.length === 1 ? 'formato' : 'formatos'}
                           </p>
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <ScrollArea className="h-[300px] rounded-md border dark:border-[#3e4a6d]">
-                            <div className="p-4">
-                              <Accordion type="multiple" className="space-y-3">
-                                {selectedPlatforms.map(platformId => {
-                                  const platform = PLATFORMS.find(p => p.id === platformId);
-                                  const platformConfig = form.getValues('platforms').find(p => p.platformId === platformId);
-                                  
-                                  if (!platform || !platformConfig) return null;
-                                  
-                                  return (
-                                    <AccordionItem 
-                                      key={platformId} 
-                                      value={platformId}
-                                      className="border dark:border-[#3e4a6d] rounded-lg overflow-hidden"
-                                    >
-                                      <AccordionTrigger className="px-4 py-3 hover:no-underline dark:text-white group transition-all duration-200">
-                                        <div className="flex items-center justify-between w-full">
-                                          <div className="flex items-center">
-                                            <div className={`w-4 h-4 rounded-full mr-2.5 transition-transform duration-200 transform group-data-[state=open]:scale-110 ${platform.color}`}></div>
-                                            <span className="font-medium group-data-[state=open]:text-primary dark:group-data-[state=open]:text-[#65cef5] transition-colors duration-200">{platform.name}</span>
-                                          </div>
-                                          <div className="flex items-center gap-3">
-                                            <div className="flex -space-x-1.5">
-                                              {platform.contentTypes.slice(0, 3).map((type) => (
-                                                <span 
-                                                  key={type} 
-                                                  className="w-5 h-5 rounded-full bg-gray-100 border border-white flex items-center justify-center text-xs dark:bg-slate-700 dark:border-[#1e293b]"
-                                                  title={type}
-                                                >
-                                                  {CONTENT_TYPE_EMOJIS[type] ? CONTENT_TYPE_EMOJIS[type] : '📄'}
-                                                </span>
-                                              ))}
-                                              {platform.contentTypes.length > 3 && (
-                                                <span className="w-5 h-5 rounded-full bg-gray-100 border border-white flex items-center justify-center text-[10px] dark:bg-slate-700 dark:border-[#1e293b] dark:text-slate-300">
-                                                  +{platform.contentTypes.length - 3}
-                                                </span>
-                                              )}
-                                            </div>
-                                            
-                                            {platformConfig.customInstructions && (
-                                              <div className="bg-amber-100 dark:bg-amber-900/30 p-0.5 rounded-sm">
-                                                <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-500" />
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </AccordionTrigger>
-                                      <AccordionContent className="px-4 pb-3 pt-1">
-                                        <div className="space-y-3">
-                                          {platform.contentTypes.map(contentType => {
-                                            const contentTypeConfig = platformConfig?.contentTypes.find(ct => ct.type === contentType);
-                                            const quantity = contentTypeConfig?.quantity || 0;
-                                            
-                                            return (
-                                              <div key={contentType} className="flex items-center justify-between gap-3">
-                                                <div className="flex items-center gap-2 dark:text-slate-300">
-                                                  <span className="text-lg">{CONTENT_TYPE_EMOJIS[contentType] || '📄'}</span>
-                                                  <span className="capitalize">{contentType}</span>
-                                                </div>
-                                                <div className="flex items-center">
-                                                  <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 rounded-md p-0 dark:text-slate-400 dark:hover:text-white"
-                                                    onClick={() => handleContentTypeQuantityChange(
-                                                      platformId, 
-                                                      contentType, 
-                                                      Math.max(1, quantity - 1)
-                                                    )}
-                                                    disabled={quantity <= 1}
-                                                  >
-                                                    -
-                                                  </Button>
-                                                  <span className="w-8 text-center font-medium dark:text-white">{quantity}</span>
-                                                  <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    className="h-8 w-8 rounded-md p-0 dark:text-slate-400 dark:hover:text-white"
-                                                    onClick={() => handleContentTypeQuantityChange(
-                                                      platformId, 
-                                                      contentType, 
-                                                      Math.min(30, quantity + 1)
-                                                    )}
-                                                    disabled={quantity >= 30}
-                                                  >
-                                                    +
-                                                  </Button>
-                                                </div>
-                                              </div>
-                                            );
-                                          })}
-                                          
-                                          <div className="mt-5 pt-4 border-t dark:border-[#3e4a6d]">
-                                            <div className="flex items-center justify-between mb-2">
-                                              <div className="flex items-center gap-2 dark:text-white">
-                                                <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-full p-1 shadow-sm dark:from-amber-500 dark:to-amber-600 dark:shadow-[0_0_3px_rgba(245,158,11,0.3)]">
-                                                  <Sparkles className="h-3.5 w-3.5 text-white" />
-                                                </div>
-                                                <h4 className="text-sm font-medium">Instrucciones Personalizadas</h4>
-                                              </div>
-                                              <Badge 
-                                                variant="outline" 
-                                                className={`text-xs ${
-                                                  platformConfig.customInstructions ? 
-                                                  'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-300' : 
-                                                  'bg-gray-50 text-gray-500 border-gray-200 dark:bg-slate-800/40 dark:border-slate-700/40 dark:text-slate-400'
-                                                }`}
-                                              >
-                                                {platformConfig.customInstructions ? 'Personalizado' : 'Opcional'}
-                                              </Badge>
-                                            </div>
-                                            
-                                            <div className="relative group">
-                                              <Textarea
-                                                placeholder={`Instrucciones específicas para ${platform.name}...`}
-                                                className="resize-none min-h-[100px] text-sm transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
-                                                value={platformConfig.customInstructions || ""}
-                                                onChange={(e) => {
-                                                  const platforms = form.getValues('platforms');
-                                                  const platformIndex = platforms.findIndex(p => p.platformId === platformId);
-                                                  
-                                                  if (platformIndex === -1) return;
-                                                  
-                                                  const updatedPlatforms = [...platforms];
-                                                  updatedPlatforms[platformIndex] = {
-                                                    ...platforms[platformIndex],
-                                                    customInstructions: e.target.value
-                                                  };
-                                                  
-                                                  form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
-                                                }}
-                                              />
-                                              <div className="absolute inset-0 pointer-events-none border rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-primary dark:border-[#65cef5]"></div>
-                                            </div>
-                                            
-                                            <div className="flex items-start gap-2 mt-3">
-                                              <Info className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                                              <p className="text-xs text-muted-foreground dark:text-slate-400">
-                                                Personaliza el contenido generado específicamente para {platform.name}. Puedes especificar tono, estilo, hashtags preferidos, menciones, temas a evitar, o cualquier instrucción especial.
-                                              </p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </AccordionContent>
-                                    </AccordionItem>
-                                  );
-                                })}
-                              </Accordion>
-                            </div>
-                          </ScrollArea>
-                          
-                          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800/40">
-                            <Info className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            <AlertDescription className="text-sm text-blue-800 dark:text-blue-300/80">
-                              Ajusta la cantidad de cada tipo de contenido según tus necesidades. El calendario se generará respetando estas cantidades.
-                            </AlertDescription>
-                          </Alert>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </TabsContent>
-                
-                {/* Tab: Distribución de Contenido */}
-                <TabsContent value="content" className="space-y-6 p-1">
-                  <div className="space-y-6">
-                    <FormField
-                      control={form.control}
-                      name="postsDistribution"
-                      render={({ field }) => (
-                        <FormItem className="space-y-4">
-                          <FormLabel className="text-lg font-medium dark:text-white">Distribución de Publicaciones</FormLabel>
-                          <FormDescription className="text-muted-foreground dark:text-slate-400">
-                            Elige cómo quieres que se distribuyan las publicaciones a lo largo del período seleccionado.
-                          </FormDescription>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div 
-                              className={`rounded-lg border p-4 relative cursor-pointer transition-all hover:border-primary hover:shadow-sm ${
-                                field.value === 'uniform' ? 'border-primary bg-primary/5 dark:border-[#65cef5] dark:bg-[#65cef5]/10' : 'border-gray-200 dark:border-[#3e4a6d] dark:bg-[#1e293b]'
-                              }`}
-                              onClick={() => form.setValue('postsDistribution', 'uniform')}
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-medium dark:text-white">Uniforme</h3>
-                                {field.value === 'uniform' && (
-                                  <div className="rounded-full bg-primary h-3 w-3 dark:bg-[#65cef5]"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground dark:text-slate-400">Publicaciones distribuidas uniformemente a lo largo del período.</p>
-                              <div className="mt-2 flex justify-between">
-                                {[...Array(7)].map((_, i) => (
-                                  <div key={i} className="w-2 h-10 bg-primary/30 rounded-t-sm dark:bg-[#65cef5]/30"></div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div 
-                              className={`rounded-lg border p-4 relative cursor-pointer transition-all hover:border-primary hover:shadow-sm ${
-                                field.value === 'frontloaded' ? 'border-primary bg-primary/5 dark:border-[#65cef5] dark:bg-[#65cef5]/10' : 'border-gray-200 dark:border-[#3e4a6d] dark:bg-[#1e293b]'
-                              }`}
-                              onClick={() => form.setValue('postsDistribution', 'frontloaded')}
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-medium dark:text-white">Inicio Intensivo</h3>
-                                {field.value === 'frontloaded' && (
-                                  <div className="rounded-full bg-primary h-3 w-3 dark:bg-[#65cef5]"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground dark:text-slate-400">Más publicaciones al inicio del período.</p>
-                              <div className="mt-2 flex justify-between">
-                                {[...Array(7)].map((_, i) => (
-                                  <div 
-                                    key={i} 
-                                    className="w-2 bg-primary/30 rounded-t-sm dark:bg-[#65cef5]/30"
-                                    style={{ height: `${Math.max(3, 10 - i * 1.5)}px` }}
-                                  ></div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div 
-                              className={`rounded-lg border p-4 relative cursor-pointer transition-all hover:border-primary hover:shadow-sm ${
-                                field.value === 'backloaded' ? 'border-primary bg-primary/5 dark:border-[#65cef5] dark:bg-[#65cef5]/10' : 'border-gray-200 dark:border-[#3e4a6d] dark:bg-[#1e293b]'
-                              }`}
-                              onClick={() => form.setValue('postsDistribution', 'backloaded')}
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-medium dark:text-white">Final Intensivo</h3>
-                                {field.value === 'backloaded' && (
-                                  <div className="rounded-full bg-primary h-3 w-3 dark:bg-[#65cef5]"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground dark:text-slate-400">Más publicaciones hacia el final del período.</p>
-                              <div className="mt-2 flex justify-between">
-                                {[...Array(7)].map((_, i) => (
-                                  <div 
-                                    key={i} 
-                                    className="w-2 bg-primary/30 rounded-t-sm dark:bg-[#65cef5]/30"
-                                    style={{ height: `${Math.max(3, 3 + i * 1.5)}px` }}
-                                  ></div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div 
-                              className={`rounded-lg border p-4 relative cursor-pointer transition-all hover:border-primary hover:shadow-sm ${
-                                field.value === 'weekends' ? 'border-primary bg-primary/5 dark:border-[#65cef5] dark:bg-[#65cef5]/10' : 'border-gray-200 dark:border-[#3e4a6d] dark:bg-[#1e293b]'
-                              }`}
-                              onClick={() => form.setValue('postsDistribution', 'weekends')}
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-medium dark:text-white">Fines de Semana</h3>
-                                {field.value === 'weekends' && (
-                                  <div className="rounded-full bg-primary h-3 w-3 dark:bg-[#65cef5]"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground dark:text-slate-400">Concentra publicaciones en sábados y domingos.</p>
-                              <div className="mt-2 flex justify-between">
-                                {[...Array(7)].map((_, i) => (
-                                  <div 
-                                    key={i} 
-                                    className="w-2 bg-primary/30 rounded-t-sm dark:bg-[#65cef5]/30"
-                                    style={{ height: `${i < 5 ? 3 : 10}px` }}
-                                  ></div>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div 
-                              className={`rounded-lg border p-4 relative cursor-pointer transition-all hover:border-primary hover:shadow-sm ${
-                                field.value === 'weekdays' ? 'border-primary bg-primary/5 dark:border-[#65cef5] dark:bg-[#65cef5]/10' : 'border-gray-200 dark:border-[#3e4a6d] dark:bg-[#1e293b]'
-                              }`}
-                              onClick={() => form.setValue('postsDistribution', 'weekdays')}
-                            >
-                              <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-medium dark:text-white">Días Laborables</h3>
-                                {field.value === 'weekdays' && (
-                                  <div className="rounded-full bg-primary h-3 w-3 dark:bg-[#65cef5]"></div>
-                                )}
-                              </div>
-                              <p className="text-sm text-muted-foreground dark:text-slate-400">Concentra publicaciones de lunes a viernes.</p>
-                              <div className="mt-2 flex justify-between">
-                                {[...Array(7)].map((_, i) => (
-                                  <div 
-                                    key={i} 
-                                    className="w-2 bg-primary/30 rounded-t-sm dark:bg-[#65cef5]/30"
-                                    style={{ height: `${i < 5 ? 10 : 3}px` }}
-                                  ></div>
-                                ))}
-                              </div>
-                            </div>
+                        
+                        {selectedPlatforms.includes(platform.id) && (
+                          <div className="absolute -top-1 -right-1 bg-primary text-white rounded-bl-lg rounded-tr-lg p-1 dark:bg-primary dark:shadow-[0_0_10px_rgba(101,206,245,0.25)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
                           </div>
-                          
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
-                      <h3 className="font-medium text-lg mb-4 flex items-center gap-2 dark:text-white">
-                        <Sparkles className="h-5 w-5 text-amber-500 dark:text-amber-400" />
-                        Previsualización de Distribución
-                      </h3>
-                      
-                      <div className="mt-4 space-y-4">
-                        <div className="grid grid-cols-7 gap-2 text-center">
-                          {['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa', 'Do'].map(day => (
-                            <div key={day} className="text-sm font-medium dark:text-slate-400">{day}</div>
-                          ))}
-                        </div>
-                        
-                        <div className="grid grid-cols-7 gap-2">
-                          {Array(28).fill(null).map((_, index) => {
-                            const distribution = form.watch('postsDistribution');
-                            const dayOfWeek = index % 7;
-                            const weekNumber = Math.floor(index / 7);
-                            
-                            // Calculate post probability based on distribution pattern
-                            let postProbability = 0.5; // Uniform default
-                            
-                            if (distribution === 'frontloaded') {
-                              postProbability = 0.8 - (weekNumber * 0.2);
-                            } else if (distribution === 'backloaded') {
-                              postProbability = 0.2 + (weekNumber * 0.2);
-                            } else if (distribution === 'weekends') {
-                              postProbability = (dayOfWeek >= 5) ? 0.8 : 0.2;
-                            } else if (distribution === 'weekdays') {
-                              postProbability = (dayOfWeek < 5) ? 0.8 : 0.2;
-                            }
-                            
-                            // Simulated post indicator
-                            const hasPost = Math.random() < postProbability;
-                            
-                            return (
-                              <div 
-                                key={index}
-                                className={`rounded-md h-12 transition-all border flex items-center justify-center text-xs ${
-                                  hasPost 
-                                    ? 'bg-primary/10 border-primary dark:bg-[#65cef5]/20 dark:border-[#65cef5]' 
-                                    : 'bg-gray-50 border-gray-200 dark:bg-[#1e293b] dark:border-[#3e4a6d]'
-                                }`}
-                              >
-                                <span className={hasPost ? 'dark:text-white' : 'text-muted-foreground dark:text-slate-500'}>
-                                  {index + 1}
-                                </span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        <p className="text-sm text-muted-foreground italic dark:text-slate-400">
-                          * Esta es una visualización aproximada. El calendario final puede variar.
-                        </p>
+                        )}
                       </div>
-                    </div>
+                    ))}
                   </div>
+                  
+                  {selectedPlatforms.length === 0 && (
+                    <Alert variant="destructive" className="mt-4 bg-destructive/5 text-destructive border-destructive/20 dark:bg-destructive/10 dark:border-destructive/30 dark:text-destructive-foreground">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>No hay plataformas seleccionadas</AlertTitle>
+                      <AlertDescription>
+                        Selecciona al menos una plataforma para crear el calendario.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {selectedPlatforms.length > 0 && (
+                    <div className="flex items-center gap-2 mt-4">
+                      <Info className="h-4 w-4 text-muted-foreground dark:text-slate-400" />
+                      <p className="text-sm text-muted-foreground dark:text-slate-400">
+                        Ajusta el contenido de cada plataforma en la pestaña "Contenido".
+                      </p>
+                    </div>
+                  )}
                 </TabsContent>
                 
-                {/* Tab: Configuración Avanzada */}
+                {/* Tab: Content */}
+                <TabsContent value="content" className="space-y-6 p-1">
+                  {selectedPlatforms.length === 0 ? (
+                    <Alert variant="default" className="mt-4 bg-muted-foreground/10 text-muted-foreground border-muted-foreground/20 dark:bg-muted-foreground/5 dark:border-muted-foreground/20 dark:text-muted-foreground">
+                      <Info className="h-4 w-4" />
+                      <AlertTitle>Configuración pendiente</AlertTitle>
+                      <AlertDescription>
+                        Primero selecciona las plataformas que deseas incluir en la pestaña "Plataformas".
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        <h3 className="text-lg font-medium dark:text-white">Configuración de contenido por plataforma</h3>
+                      </div>
+                      
+                      <Accordion type="multiple" className="space-y-4">
+                        {selectedPlatforms.map((platformId) => {
+                          const platform = PLATFORMS.find(p => p.id === platformId);
+                          const platformConfig = form.getValues('platforms').find(p => p.platformId === platformId);
+                          
+                          if (!platform || !platformConfig) return null;
+                          
+                          return (
+                            <AccordionItem 
+                              key={platformId} 
+                              value={platformId}
+                              className="border overflow-hidden rounded-lg dark:border-[#3e4a6d] dark:bg-[#1e293b]"
+                            >
+                              <AccordionTrigger className={`px-4 py-3 hover:no-underline hover:bg-slate-50 dark:hover:bg-[#2a3349] group`}>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-8 h-8 rounded-lg ${platform.color} flex items-center justify-center text-white`}>
+                                    {platform.name.substring(0, 1)}
+                                  </div>
+                                  <div className="text-left">
+                                    <p className="font-medium dark:text-white">{platform.name}</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">
+                                      {platformConfig.contentTypes.reduce((acc, ct) => acc + ct.quantity, 0)} publicaciones configuradas
+                                    </p>
+                                  </div>
+                                </div>
+                              </AccordionTrigger>
+                              
+                              <AccordionContent className="px-4 pb-4 pt-2">
+                                <div className="space-y-6">
+                                  <div className="space-y-4">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="text-sm font-medium dark:text-white">Tipos de contenido</h4>
+                                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 dark:bg-primary/10 dark:text-primary-foreground dark:border-primary/30">
+                                        Cantidad total: {platformConfig.contentTypes.reduce((acc, ct) => acc + ct.quantity, 0)}
+                                      </Badge>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                                      {platformConfig.contentTypes.map((contentType) => (
+                                        <div key={`${platformId}-${contentType.type}`} className="border rounded-lg p-3 space-y-2 dark:border-[#3e4a6d]">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-lg">{CONTENT_TYPE_EMOJIS[contentType.type]}</span>
+                                              <span className="text-sm font-medium capitalize dark:text-white">{contentType.type}</span>
+                                            </div>
+                                          </div>
+                                          
+                                          <div className="flex items-center gap-2">
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8 rounded-lg dark:border-[#3e4a6d]"
+                                              onClick={() => handleContentTypeQuantityChange(
+                                                platformId, 
+                                                contentType.type, 
+                                                Math.max(1, contentType.quantity - 1)
+                                              )}
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
+                                              </svg>
+                                            </Button>
+                                            
+                                            <div className="flex-1 text-center">
+                                              <span className="text-sm font-medium dark:text-white">{contentType.quantity}</span>
+                                            </div>
+                                            
+                                            <Button
+                                              type="button"
+                                              variant="outline"
+                                              size="icon"
+                                              className="h-8 w-8 rounded-lg dark:border-[#3e4a6d]"
+                                              onClick={() => handleContentTypeQuantityChange(
+                                                platformId, 
+                                                contentType.type, 
+                                                Math.min(30, contentType.quantity + 1)
+                                              )}
+                                            >
+                                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
+                                              </svg>
+                                            </Button>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  <Separator className="dark:bg-[#3e4a6d]" />
+                                  
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-2">
+                                      <h4 className="text-sm font-medium dark:text-white">Instrucciones personalizadas</h4>
+                                    </div>
+                                    
+                                    <Textarea
+                                      placeholder={`Instrucciones específicas para ${platform.name}. (Ej: tono de voz, requerimientos especiales, información de la estrategia, etc.)`}
+                                      className="min-h-[100px] dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white"
+                                      value={platformConfig.customInstructions || ''}
+                                      onChange={(e) => {
+                                        const platforms = form.getValues('platforms');
+                                        const platformIndex = platforms.findIndex(p => p.platformId === platformId);
+                                        
+                                        if (platformIndex === -1) return;
+                                        
+                                        const updatedPlatforms = [...platforms];
+                                        updatedPlatforms[platformIndex] = {
+                                          ...platforms[platformIndex],
+                                          customInstructions: e.target.value
+                                        };
+                                        
+                                        form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
+                                      }}
+                                    />
+                                    <p className="text-xs text-muted-foreground dark:text-slate-500">
+                                      Estas instrucciones serán utilizadas por la IA para generar contenido específico para esta plataforma.
+                                    </p>
+                                  </div>
+                                </div>
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
+                    </div>
+                  )}
+                </TabsContent>
+                
+                {/* Tab: Advanced */}
                 <TabsContent value="advanced" className="space-y-6 p-1">
-                  <div className="space-y-6">
-                    <div className="rounded-xl border bg-white p-6 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
-                      <h3 className="font-medium text-lg mb-4 dark:text-white">Opciones de Contenido</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        <h3 className="text-lg font-medium dark:text-white">Elementos de contenido</h3>
+                      </div>
                       
                       <div className="space-y-4">
                         <FormField
                           control={form.control}
                           name="advanced.includeCopyIn"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary dark:data-[state=checked]:bg-[#65cef5] dark:data-[state=checked]:border-[#65cef5]"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="font-medium dark:text-white">
-                                  Incluir texto integrado en diseño
-                                </FormLabel>
-                                <FormDescription className="text-sm dark:text-slate-400">
-                                  Texto que aparecerá integrado dentro del diseño de la publicación.
+                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Copy In</FormLabel>
+                                <FormDescription className="text-xs dark:text-slate-400">
+                                  Texto integrado dentro del diseño de la publicación
                                 </FormDescription>
                               </div>
                             </FormItem>
@@ -894,20 +736,18 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeCopyOut"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary dark:data-[state=checked]:bg-[#65cef5] dark:data-[state=checked]:border-[#65cef5]"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="font-medium dark:text-white">
-                                  Incluir texto de descripción
-                                </FormLabel>
-                                <FormDescription className="text-sm dark:text-slate-400">
-                                  Texto que se utilizará como pie de foto o descripción de la publicación.
+                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Copy Out</FormLabel>
+                                <FormDescription className="text-xs dark:text-slate-400">
+                                  Texto para la descripción de la publicación
                                 </FormDescription>
                               </div>
                             </FormItem>
@@ -918,20 +758,18 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeHashtags"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary dark:data-[state=checked]:bg-[#65cef5] dark:data-[state=checked]:border-[#65cef5]"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="font-medium dark:text-white">
-                                  Incluir hashtags
-                                </FormLabel>
-                                <FormDescription className="text-sm dark:text-slate-400">
-                                  Generar hashtags relevantes para cada publicación.
+                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Hashtags</FormLabel>
+                                <FormDescription className="text-xs dark:text-slate-400">
+                                  Generar hashtags relevantes para cada publicación
                                 </FormDescription>
                               </div>
                             </FormItem>
@@ -942,20 +780,18 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeDesignInstructions"
                           render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary dark:data-[state=checked]:bg-[#65cef5] dark:data-[state=checked]:border-[#65cef5]"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="font-medium dark:text-white">
-                                  Incluir instrucciones de diseño
-                                </FormLabel>
-                                <FormDescription className="text-sm dark:text-slate-400">
-                                  Sugerencias para el departamento de diseño sobre el aspecto visual de cada publicación.
+                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Instrucciones de Diseño</FormLabel>
+                                <FormDescription className="text-xs dark:text-slate-400">
+                                  Generar indicaciones para el departamento de diseño
                                 </FormDescription>
                               </div>
                             </FormItem>
@@ -964,20 +800,45 @@ export default function CalendarCreator() {
                       </div>
                     </div>
                     
-                    <Alert className="bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-300">
-                      <AlertCircle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
-                      <AlertTitle>Información</AlertTitle>
-                      <AlertDescription className="text-sm dark:text-amber-300/80">
-                        La creación avanzada de calendarios permite una mayor personalización y control sobre el contenido generado. Revisa todos los ajustes antes de generar el calendario.
-                      </AlertDescription>
-                    </Alert>
+                    <div className="space-y-5">
+                      <div className="flex items-center gap-2">
+                        <Info className="h-5 w-5 text-amber-500" />
+                        <h3 className="text-lg font-medium dark:text-white">Sugerencias</h3>
+                      </div>
+                      
+                      <ScrollArea className="h-[calc(100%-3rem)] pr-4">
+                        <div className="space-y-4">
+                          <Alert className="bg-amber-500/5 border-amber-500/20 dark:bg-amber-500/10 dark:border-amber-500/30">
+                            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            <AlertTitle className="text-amber-700 dark:text-amber-300">Mantén tus instrucciones claras</AlertTitle>
+                            <AlertDescription className="text-amber-700/80 dark:text-amber-400/90">
+                              Las instrucciones específicas para cada plataforma generarán mejor contenido. Sé detallado en tus requerimientos.
+                            </AlertDescription>
+                          </Alert>
+                          
+                          <Alert className="bg-amber-500/5 border-amber-500/20 dark:bg-amber-500/10 dark:border-amber-500/30">
+                            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            <AlertTitle className="text-amber-700 dark:text-amber-300">Proporciona contexto</AlertTitle>
+                            <AlertDescription className="text-amber-700/80 dark:text-amber-400/90">
+                              Incluye información sobre tu marca, audiencia y objetivos en las instrucciones para obtener resultados más relevantes.
+                            </AlertDescription>
+                          </Alert>
+                          
+                          <Alert className="bg-amber-500/5 border-amber-500/20 dark:bg-amber-500/10 dark:border-amber-500/30">
+                            <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                            <AlertTitle className="text-amber-700 dark:text-amber-300">Balancea los tipos de contenido</AlertTitle>
+                            <AlertDescription className="text-amber-700/80 dark:text-amber-400/90">
+                              Distribuye tus publicaciones entre diferentes formatos para mantener tu feed dinámico y atractivo.
+                            </AlertDescription>
+                          </Alert>
+                        </div>
+                      </ScrollArea>
+                    </div>
                   </div>
                 </TabsContent>
               </Tabs>
               
-              <Separator className="my-6 dark:bg-[#3e4a6d]" />
-              
-              <div className="flex justify-end space-x-4">
+              <div className="flex justify-between items-center pt-4 border-t dark:border-[#3e4a6d]">
                 <Button
                   type="button"
                   variant="outline"
@@ -986,18 +847,24 @@ export default function CalendarCreator() {
                 >
                   Cancelar
                 </Button>
+                
                 <Button 
-                  type="submit" 
+                  type="submit"
                   disabled={isGenerating}
-                  className="interactive-element dark:bg-[#65cef5] dark:text-[#1e293b] dark:hover:bg-[#5bb7dd] dark:font-medium"
+                  className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-500 dark:text-white dark:hover:bg-amber-600"
                 >
                   {isGenerating ? (
-                    <>Generando Calendario...</>
+                    <div className="flex items-center gap-2">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generando calendario...
+                    </div>
                   ) : (
-                    <>
-                      Generar Calendario
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </>
+                    <div className="flex items-center gap-2">
+                      Crear Calendario <ArrowRight className="h-4 w-4" />
+                    </div>
                   )}
                 </Button>
               </div>
