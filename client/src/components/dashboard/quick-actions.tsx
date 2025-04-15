@@ -21,60 +21,83 @@ export default function QuickActions() {
   const pendingTasksCount = 3; // This could be fetched from an API in the future
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">Proyectos Activos</h3>
-            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
-              {activeProjectsCount}
-            </span>
+    <div className="grid gap-6 md:grid-cols-3">
+      {/* Proyectos activos */}
+      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md border-t-[3px] border-t-primary">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1.5">
+              <h3 className="font-semibold text-lg tracking-tight">Proyectos Activos</h3>
+              <p className="text-sm text-muted-foreground">
+                Campañas de marketing actualmente activas
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <span className="font-semibold text-lg">{activeProjectsCount}</span>
+            </div>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Campañas de marketing actualmente activas
-          </p>
-          <Link href="/projects">
-            <Button className="mt-4 w-full">
-              Ver Todos los Proyectos
+          
+          <div className="mt-6">
+            <Link href="/projects">
+              <Button className="w-full relative overflow-hidden group">
+                <span className="relative z-10">Ver Todos los Proyectos</span>
+                <div className="absolute inset-0 translate-y-[100%] bg-primary-foreground/10 transition-transform duration-300 group-hover:translate-y-[0%]"></div>
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Calendarios recientes */}
+      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md border-t-[3px] border-t-blue-500">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1.5">
+              <h3 className="font-semibold text-lg tracking-tight">Calendarios Recientes</h3>
+              <p className="text-sm text-muted-foreground">
+                Calendarios de contenido generados recientemente
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/10 text-blue-500">
+              <span className="font-semibold text-lg">{recentSchedulesCount}</span>
+            </div>
+          </div>
+          
+          <div className="mt-6">
+            <Button className="w-full bg-blue-500 hover:bg-blue-600 relative overflow-hidden group">
+              <span className="relative z-10">Ver Calendarios</span>
+              <div className="absolute inset-0 translate-y-[100%] bg-blue-600/20 transition-transform duration-300 group-hover:translate-y-[0%]"></div>
             </Button>
-          </Link>
+          </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">Calendarios Recientes</h3>
-            <span className="rounded-full bg-secondary/10 px-2.5 py-0.5 text-sm font-medium text-secondary">
-              {recentSchedulesCount}
-            </span>
+      {/* Tareas pendientes */}
+      <Card className="overflow-hidden transition-all duration-200 hover:shadow-md border-t-[3px] border-t-destructive">
+        <CardContent className="p-5">
+          <div className="flex items-start justify-between">
+            <div className="space-y-1.5">
+              <h3 className="font-semibold text-lg tracking-tight">Tareas Pendientes</h3>
+              <p className="text-sm text-muted-foreground">
+                Tareas que requieren tu atención inmediata
+              </p>
+            </div>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <span className="font-semibold text-lg">{pendingTasksCount}</span>
+            </div>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Calendarios de contenido generados recientemente
-          </p>
-          <Button className="mt-4 w-full" variant="secondary">
-            Ver Calendarios
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium">Tareas Pendientes</h3>
-            <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-sm font-medium text-destructive">
-              {pendingTasksCount}
-            </span>
+          
+          <div className="mt-6">
+            <Link href="/tasks">
+              <Button 
+                variant="outline" 
+                className="w-full border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20 relative overflow-hidden group"
+              >
+                <span className="relative z-10">Ver Tareas</span>
+                <div className="absolute inset-0 translate-y-[100%] bg-destructive/10 transition-transform duration-300 group-hover:translate-y-[0%]"></div>
+              </Button>
+            </Link>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Tareas que requieren tu atención
-          </p>
-          <Button 
-            variant="outline" 
-            className="mt-4 w-full border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20"
-          >
-            Ver Tareas
-          </Button>
         </CardContent>
       </Card>
     </div>
