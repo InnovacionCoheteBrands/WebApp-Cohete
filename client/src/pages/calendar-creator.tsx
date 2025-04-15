@@ -505,26 +505,37 @@ export default function CalendarCreator() {
                         onClick={() => handleTogglePlatform(platform.id)}
                         className={`
                           relative rounded-xl border p-4 flex flex-col items-center justify-center gap-2 
-                          transition-all duration-200 cursor-pointer overflow-hidden
+                          transition-all duration-300 cursor-pointer overflow-hidden
                           ${selectedPlatforms.includes(platform.id) 
-                            ? `bg-primary/5 border-primary shadow-md dark:bg-primary/10 dark:border-primary/40` 
+                            ? `bg-primary/5 border-primary shadow-sm dark:bg-primary/10 dark:border-primary/40` 
                             : `bg-white border-border hover:border-primary/40 hover:bg-primary/5 
                                dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-primary/40 dark:hover:bg-primary/10`
                           }
                         `}
                       >
-                        <div className={`w-10 h-10 rounded-lg ${platform.color} flex items-center justify-center text-white`}>
-                          {platform.name.substring(0, 1)}
-                        </div>
-                        <div className="text-center">
-                          <p className="font-medium dark:text-white">{platform.name}</p>
-                          <p className="text-xs text-muted-foreground dark:text-slate-400">
-                            {platform.contentTypes.length} {platform.contentTypes.length === 1 ? 'formato' : 'formatos'}
-                          </p>
+                        {/* Gradiente de fondo para efecto visual */}
+                        <div className={`absolute inset-0 opacity-10 ${selectedPlatforms.includes(platform.id) ? 'opacity-20' : ''}`}>
+                          <div className={`absolute inset-0 ${platform.color} opacity-10 blur-xl`}></div>
                         </div>
                         
+                        {/* Ícono y contenido */}
+                        <div className="relative z-10 flex flex-col items-center gap-2">
+                          <div className={`w-14 h-14 rounded-xl ${platform.color} flex items-center justify-center text-white shadow-md transform transition-transform duration-300 ${selectedPlatforms.includes(platform.id) ? 'scale-105' : ''}`}>
+                            <span className="text-xl font-semibold">{platform.name.substring(0, 1)}</span>
+                          </div>
+                          <div className="text-center mt-1">
+                            <p className="font-medium dark:text-white">{platform.name}</p>
+                            <div className="flex items-center justify-center gap-1 mt-1">
+                              <Badge variant="outline" className={`bg-opacity-20 text-xs px-2 py-0.5 ${selectedPlatforms.includes(platform.id) ? 'bg-primary/10 text-primary border-primary/30' : 'bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'}`}>
+                                {platform.contentTypes.length} {platform.contentTypes.length === 1 ? 'formato' : 'formatos'}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Indicador de selección */}
                         {selectedPlatforms.includes(platform.id) && (
-                          <div className="absolute -top-1 -right-1 bg-primary text-white rounded-bl-lg rounded-tr-lg p-1 dark:bg-primary dark:shadow-[0_0_10px_rgba(101,206,245,0.25)]">
+                          <div className="absolute -top-1 -right-1 bg-primary text-white rounded-bl-lg rounded-tr-lg p-1 drop-shadow-md dark:bg-primary dark:shadow-[0_0_10px_rgba(101,206,245,0.25)]">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                             </svg>
@@ -610,20 +621,30 @@ export default function CalendarCreator() {
                                     
                                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                       {platformConfig.contentTypes.map((contentType) => (
-                                        <div key={`${platformId}-${contentType.type}`} className="border rounded-lg p-3 space-y-2 dark:border-[#3e4a6d]">
+                                        <div 
+                                          key={`${platformId}-${contentType.type}`} 
+                                          className="border rounded-lg p-3 space-y-2 bg-white shadow-sm hover:shadow transition-all 
+                                            dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-[#65cef5]/30"
+                                        >
                                           <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
-                                              <span className="text-lg">{CONTENT_TYPE_EMOJIS[contentType.type]}</span>
+                                              <div className="w-8 h-8 rounded-md flex items-center justify-center bg-amber-100 text-amber-600 
+                                                dark:bg-amber-900/30 dark:text-amber-300">
+                                                <span>{CONTENT_TYPE_EMOJIS[contentType.type]}</span>
+                                              </div>
                                               <span className="text-sm font-medium capitalize dark:text-white">{contentType.type}</span>
                                             </div>
+                                            <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700 px-1.5 dark:bg-amber-900/20 dark:border-amber-800/60 dark:text-amber-300">
+                                              {contentType.quantity}
+                                            </Badge>
                                           </div>
                                           
-                                          <div className="flex items-center gap-2">
+                                          <div className="flex items-center gap-2 pt-1">
                                             <Button
                                               type="button"
                                               variant="outline"
                                               size="icon"
-                                              className="h-8 w-8 rounded-lg dark:border-[#3e4a6d]"
+                                              className="h-8 w-8 rounded-lg bg-white hover:bg-slate-50 dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:hover:bg-[#2a3349]"
                                               onClick={() => handleContentTypeQuantityChange(
                                                 platformId, 
                                                 contentType.type, 
@@ -635,15 +656,26 @@ export default function CalendarCreator() {
                                               </svg>
                                             </Button>
                                             
-                                            <div className="flex-1 text-center">
-                                              <span className="text-sm font-medium dark:text-white">{contentType.quantity}</span>
+                                            <div className="flex-1">
+                                              <input 
+                                                type="range" 
+                                                min="1" 
+                                                max="30" 
+                                                value={contentType.quantity}
+                                                onChange={(e) => handleContentTypeQuantityChange(
+                                                  platformId, 
+                                                  contentType.type, 
+                                                  parseInt(e.target.value)
+                                                )}
+                                                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-amber-500 dark:bg-[#2a3349]"
+                                              />
                                             </div>
                                             
                                             <Button
                                               type="button"
                                               variant="outline"
                                               size="icon"
-                                              className="h-8 w-8 rounded-lg dark:border-[#3e4a6d]"
+                                              className="h-8 w-8 rounded-lg bg-white hover:bg-slate-50 dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:hover:bg-[#2a3349]"
                                               onClick={() => handleContentTypeQuantityChange(
                                                 platformId, 
                                                 contentType.type, 
@@ -664,31 +696,47 @@ export default function CalendarCreator() {
                                   
                                   <div className="space-y-3">
                                     <div className="flex items-center gap-2">
-                                      <h4 className="text-sm font-medium dark:text-white">Instrucciones personalizadas</h4>
+                                      <h4 className="text-sm font-medium flex items-center gap-2 dark:text-white">
+                                        <span className={`h-4 w-4 rounded-full ${platform.color}`}></span>
+                                        Instrucciones personalizadas para {platform.name}
+                                      </h4>
                                     </div>
                                     
-                                    <Textarea
-                                      placeholder={`Instrucciones específicas para ${platform.name}. (Ej: tono de voz, requerimientos especiales, información de la estrategia, etc.)`}
-                                      className="min-h-[100px] dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white"
-                                      value={platformConfig.customInstructions || ''}
-                                      onChange={(e) => {
-                                        const platforms = form.getValues('platforms');
-                                        const platformIndex = platforms.findIndex(p => p.platformId === platformId);
-                                        
-                                        if (platformIndex === -1) return;
-                                        
-                                        const updatedPlatforms = [...platforms];
-                                        updatedPlatforms[platformIndex] = {
-                                          ...platforms[platformIndex],
-                                          customInstructions: e.target.value
-                                        };
-                                        
-                                        form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
-                                      }}
-                                    />
-                                    <p className="text-xs text-muted-foreground dark:text-slate-500">
-                                      Estas instrucciones serán utilizadas por la IA para generar contenido específico para esta plataforma.
-                                    </p>
+                                    <div className="relative">
+                                      <Textarea
+                                        placeholder={`Instrucciones específicas para ${platform.name}. (Ej: tono de voz, requerimientos especiales, información de la estrategia, etc.)`}
+                                        className="min-h-[120px] pr-10 border rounded-lg shadow-sm transition-all focus:shadow-md bg-white
+                                          dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:focus:border-[#65cef5]/40"
+                                        value={platformConfig.customInstructions || ''}
+                                        onChange={(e) => {
+                                          const platforms = form.getValues('platforms');
+                                          const platformIndex = platforms.findIndex(p => p.platformId === platformId);
+                                          
+                                          if (platformIndex === -1) return;
+                                          
+                                          const updatedPlatforms = [...platforms];
+                                          updatedPlatforms[platformIndex] = {
+                                            ...platforms[platformIndex],
+                                            customInstructions: e.target.value
+                                          };
+                                          
+                                          form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
+                                        }}
+                                      />
+                                      <div className="absolute right-3 top-3 opacity-50 dark:opacity-30">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M12 20h9"></path>
+                                          <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                                        </svg>
+                                      </div>
+                                    </div>
+                                    
+                                    <Alert className="bg-primary/5 border-primary/20 py-2 dark:bg-primary/10 dark:border-primary/30">
+                                      <Info className="h-4 w-4 text-primary" />
+                                      <AlertDescription className="text-xs text-primary-foreground">
+                                        Estas instrucciones serán utilizadas por la IA para generar contenido específico para esta plataforma.
+                                      </AlertDescription>
+                                    </Alert>
                                   </div>
                                 </div>
                               </AccordionContent>
@@ -714,16 +762,19 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeCopyIn"
                           render={({ field }) => (
-                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-lg border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/20 bg-white dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-[#65cef5]/40">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500 rounded transition-all"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Copy In</FormLabel>
+                                <FormLabel className="text-sm font-medium dark:text-white flex items-center gap-1">
+                                  Incluir Copy In
+                                  {field.value && <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded">Activo</span>}
+                                </FormLabel>
                                 <FormDescription className="text-xs dark:text-slate-400">
                                   Texto integrado dentro del diseño de la publicación
                                 </FormDescription>
@@ -736,16 +787,19 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeCopyOut"
                           render={({ field }) => (
-                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-lg border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/20 bg-white dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-[#65cef5]/40">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500 rounded transition-all"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Copy Out</FormLabel>
+                                <FormLabel className="text-sm font-medium dark:text-white flex items-center gap-1">
+                                  Incluir Copy Out
+                                  {field.value && <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded">Activo</span>}
+                                </FormLabel>
                                 <FormDescription className="text-xs dark:text-slate-400">
                                   Texto para la descripción de la publicación
                                 </FormDescription>
@@ -758,16 +812,19 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeHashtags"
                           render={({ field }) => (
-                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-lg border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/20 bg-white dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-[#65cef5]/40">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500 rounded transition-all"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Hashtags</FormLabel>
+                                <FormLabel className="text-sm font-medium dark:text-white flex items-center gap-1">
+                                  Incluir Hashtags
+                                  {field.value && <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded">Activo</span>}
+                                </FormLabel>
                                 <FormDescription className="text-xs dark:text-slate-400">
                                   Generar hashtags relevantes para cada publicación
                                 </FormDescription>
@@ -780,16 +837,19 @@ export default function CalendarCreator() {
                           control={form.control}
                           name="advanced.includeDesignInstructions"
                           render={({ field }) => (
-                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-md border p-4 dark:border-[#3e4a6d]">
+                            <FormItem className="flex items-start space-x-3 space-y-0 rounded-lg border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/20 bg-white dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-[#65cef5]/40">
                               <FormControl>
                                 <Checkbox
                                   checked={field.value}
                                   onCheckedChange={field.onChange}
-                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500"
+                                  className="data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-500 rounded transition-all"
                                 />
                               </FormControl>
                               <div className="space-y-1 leading-none">
-                                <FormLabel className="text-sm font-medium dark:text-white">Incluir Instrucciones de Diseño</FormLabel>
+                                <FormLabel className="text-sm font-medium dark:text-white flex items-center gap-1">
+                                  Incluir Instrucciones de Diseño
+                                  {field.value && <span className="text-[10px] bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-1.5 py-0.5 rounded">Activo</span>}
+                                </FormLabel>
                                 <FormDescription className="text-xs dark:text-slate-400">
                                   Generar indicaciones para el departamento de diseño
                                 </FormDescription>
