@@ -119,11 +119,13 @@ export default function CreateScheduleSection() {
 
   return (
     <div className="space-y-6">
-      <Card className="shadow-lg overflow-hidden border-none">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+      <Card className="shadow-lg overflow-hidden border-none dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl dark:bg-[#65cef5]/5"></div>
         <CardContent className="p-8 relative z-10">
-          <h2 className="mb-6 text-2xl font-bold tracking-tight flex items-center">
-            <CalendarIcon className="mr-2 h-6 w-6 text-primary" />
+          <h2 className="mb-6 text-2xl font-bold tracking-tight flex items-center dark:text-white">
+            <span className="mr-3 p-1.5 rounded-lg bg-primary/10 text-primary dark:bg-blue-500/20 dark:text-blue-300 dark:shadow-[0_0_10px_rgba(59,130,246,0.15)]">
+              <CalendarIcon className="h-6 w-6" />
+            </span>
             Crear Calendario Rápido
           </h2>
           <div className="grid gap-8 md:grid-cols-2">
@@ -135,20 +137,24 @@ export default function CreateScheduleSection() {
                     name="projectId"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">Seleccionar Proyecto</FormLabel>
+                        <FormLabel className="text-sm font-medium dark:text-slate-300">Seleccionar Proyecto</FormLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
                           disabled={projectsLoading}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-11 transition-all duration-200 hover:border-primary">
+                            <SelectTrigger className="h-11 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]">
                               <SelectValue placeholder="Elige un proyecto" />
                             </SelectTrigger>
                           </FormControl>
-                          <SelectContent>
+                          <SelectContent className="dark:bg-[#1e293b] dark:border-[#3e4a6d]">
                             {projects?.map((project) => (
-                              <SelectItem key={project.id} value={project.id.toString()}>
+                              <SelectItem 
+                                key={project.id} 
+                                value={project.id.toString()}
+                                className="dark:text-white dark:focus:bg-[#2a3349] dark:data-[state=checked]:text-[#65cef5]"
+                              >
                                 {project.name} - {project.client}
                               </SelectItem>
                             ))}
@@ -164,16 +170,16 @@ export default function CreateScheduleSection() {
                     name="startDate"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">Fecha de Inicio</FormLabel>
+                        <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Inicio</FormLabel>
                         <div className="relative">
                           <FormControl>
                             <Input 
                               type="date" 
-                              className="h-11 pl-10 transition-all duration-200 hover:border-primary" 
+                              className="h-11 pl-10 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]" 
                               {...field} 
                             />
                           </FormControl>
-                          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
                         </div>
                         <FormMessage />
                       </FormItem>
@@ -185,12 +191,12 @@ export default function CreateScheduleSection() {
                     name="specifications"
                     render={({ field }) => (
                       <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium">Instrucciones Especiales</FormLabel>
+                        <FormLabel className="text-sm font-medium dark:text-slate-300">Instrucciones Especiales</FormLabel>
                         <FormControl>
                           <Textarea 
                             placeholder="Añade cualquier requisito específico o notas..." 
                             rows={4} 
-                            className="min-h-[120px] resize-none transition-all duration-200 hover:border-primary focus:border-primary"
+                            className="min-h-[120px] resize-none transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
                             {...field} 
                           />
                         </FormControl>
@@ -201,7 +207,7 @@ export default function CreateScheduleSection() {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-11 mt-2 interactive-element"
+                    className="w-full h-11 mt-2 interactive-element dark:bg-[#65cef5] dark:text-[#1e293b] dark:hover:bg-[#5bb7dd] dark:font-medium"
                     disabled={isGenerating || createScheduleMutation.isPending}
                   >
                     {isGenerating || createScheduleMutation.isPending
@@ -212,19 +218,21 @@ export default function CreateScheduleSection() {
               </Form>
             </div>
 
-            <div className="rounded-xl border bg-card/40 backdrop-blur-sm p-6 shadow-sm relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 blur-2xl"></div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center tracking-tight">
-                <Clock className="mr-2 h-5 w-5 text-primary" />
+            <div className="rounded-xl border bg-card/40 backdrop-blur-sm p-6 shadow-sm relative overflow-hidden dark:bg-[#1e293b]/70 dark:border-[#3e4a6d] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
+              <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 blur-2xl dark:bg-[#65cef5]/5"></div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center tracking-tight dark:text-white">
+                <span className="mr-2 p-1.5 rounded-md bg-blue-500/10 text-blue-500 dark:bg-blue-500/20 dark:text-blue-300">
+                  <Clock className="h-5 w-5" />
+                </span>
                 Beneficios del Calendario IA
               </h3>
               <div className="space-y-4 text-sm relative z-10">
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed dark:text-slate-400">
                   Selecciona un proyecto y genera un calendario de publicaciones optimizado con nuestra tecnología de IA.
                 </p>
                 
-                <div className="rounded-lg bg-primary/5 p-4 border border-primary/10">
-                  <h4 className="font-medium text-primary mb-2">Tu calendario incluirá:</h4>
+                <div className="rounded-lg bg-primary/5 p-4 border border-primary/10 dark:bg-[#2a3349] dark:border-[#3e4a6d]">
+                  <h4 className="font-medium text-primary mb-2 dark:text-[#65cef5]">Tu calendario incluirá:</h4>
                   <ul className="space-y-2">
                     {[
                       "Horarios óptimos de publicación",
@@ -234,14 +242,14 @@ export default function CreateScheduleSection() {
                       "Ideas para contenido visual efectivo"
                     ].map((item, i) => (
                       <li key={i} className="flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span> 
-                        <span>{item}</span>
+                        <span className="text-primary mt-1 dark:text-[#65cef5]">•</span> 
+                        <span className="dark:text-white">{item}</span>
                       </li>
                     ))}
                   </ul>
                 </div>
                 
-                <p className="italic text-muted-foreground text-xs border-l-2 border-primary/20 pl-3">
+                <p className="italic text-muted-foreground text-xs border-l-2 border-primary/20 pl-3 dark:text-slate-400 dark:border-[#65cef5]/30">
                   La IA analizará los datos de tu proyecto para crear un calendario personalizado que se alinee perfectamente con tus objetivos de marketing.
                 </p>
               </div>
@@ -252,20 +260,20 @@ export default function CreateScheduleSection() {
       
       {/* Tabla de cronograma generado */}
       {generatedSchedule && generatedSchedule.entries.length > 0 && (
-        <Card className="shadow-lg overflow-hidden border-none relative">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full -ml-32 -mt-32 blur-3xl"></div>
-          <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mb-32 blur-3xl"></div>
+        <Card className="shadow-lg overflow-hidden border-none relative dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
+          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full -ml-32 -mt-32 blur-3xl dark:bg-blue-500/5"></div>
+          <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mb-32 blur-3xl dark:bg-[#65cef5]/5"></div>
           
           <CardContent className="p-8 relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div className="space-y-1">
-                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                  <span className="bg-blue-500/10 text-blue-600 p-1.5 rounded-md">
+                <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 dark:text-white">
+                  <span className="bg-blue-500/10 text-blue-600 p-1.5 rounded-md dark:bg-blue-500/20 dark:text-blue-300 dark:shadow-[0_0_10px_rgba(59,130,246,0.15)]">
                     <CalendarIcon className="h-5 w-5" />
                   </span>
                   {generatedSchedule.name}
                 </h2>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-muted-foreground text-sm dark:text-slate-400">
                   Calendario generado el {new Date().toLocaleDateString()}
                 </p>
               </div>
@@ -274,7 +282,7 @@ export default function CreateScheduleSection() {
                 <Button 
                   variant="default" 
                   size="sm" 
-                  className="rounded-lg transition-all duration-200 shadow-sm hover:shadow interactive-element"
+                  className="rounded-lg transition-all duration-200 shadow-sm hover:shadow interactive-element dark:bg-[#65cef5] dark:text-[#1e293b] dark:hover:bg-[#5bb7dd] dark:font-medium"
                   onClick={() => window.open(`/schedules/${generatedSchedule.id}`, '_blank')}
                 >
                   Ver Completo
@@ -282,7 +290,7 @@ export default function CreateScheduleSection() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="rounded-lg gap-1 transition-all duration-200 shadow-sm hover:shadow border-blue-200 hover:border-blue-300 interactive-element"
+                  className="rounded-lg gap-1 transition-all duration-200 shadow-sm hover:shadow border-blue-200 hover:border-blue-300 interactive-element dark:border-[#3e4a6d] dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20"
                   onClick={() => window.open(`/api/schedules/${generatedSchedule.id}/download?format=excel`, '_blank')}
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />
@@ -291,51 +299,51 @@ export default function CreateScheduleSection() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  className="rounded-lg gap-1 transition-all duration-200 shadow-sm hover:shadow border-blue-200 hover:border-blue-300 interactive-element" 
+                  className="rounded-lg gap-1 transition-all duration-200 shadow-sm hover:shadow border-blue-200 hover:border-blue-300 interactive-element dark:border-[#3e4a6d] dark:bg-blue-500/10 dark:text-blue-300 dark:hover:bg-blue-500/20" 
                   onClick={() => window.open(`/api/schedules/${generatedSchedule.id}/download?format=pdf`, '_blank')}
                 >
                   <Download className="h-3.5 w-3.5 mr-1" />
                   PDF
                 </Button>
-                <Badge className="px-3 py-1.5 bg-blue-500/10 text-blue-600 border-none hover:bg-blue-500/20 transition-colors duration-200">
+                <Badge className="px-3 py-1.5 bg-blue-500/10 text-blue-600 border-none hover:bg-blue-500/20 transition-colors duration-200 dark:bg-blue-500/20 dark:text-blue-300 dark:shadow-[0_0_10px_rgba(59,130,246,0.15)]">
                   <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
                   {generatedSchedule.entries.length} publicaciones
                 </Badge>
               </div>
             </div>
             
-            <ScrollArea className="h-[450px] rounded-xl border shadow-sm overflow-hidden">
+            <ScrollArea className="h-[450px] rounded-xl border shadow-sm overflow-hidden dark:border-[#3e4a6d] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
               <Table>
-                <TableHeader className="sticky top-0 bg-card shadow-sm">
-                  <TableRow className="border-b-0">
-                    <TableHead className="w-[250px] font-medium text-foreground">Título</TableHead>
-                    <TableHead className="font-medium text-foreground">Plataforma</TableHead>
-                    <TableHead className="font-medium text-foreground">Fecha</TableHead>
-                    <TableHead className="font-medium text-foreground">Hora</TableHead>
-                    <TableHead className="font-medium text-foreground">Texto en Diseño</TableHead>
-                    <TableHead className="text-right font-medium text-foreground">Imagen</TableHead>
+                <TableHeader className="sticky top-0 bg-card shadow-sm dark:bg-[#1e293b] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                  <TableRow className="border-b-0 dark:border-b dark:border-b-[#2a3349]">
+                    <TableHead className="w-[250px] font-medium text-foreground dark:text-[#65cef5]">Título</TableHead>
+                    <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Plataforma</TableHead>
+                    <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Fecha</TableHead>
+                    <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Hora</TableHead>
+                    <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Texto en Diseño</TableHead>
+                    <TableHead className="text-right font-medium text-foreground dark:text-[#65cef5]">Imagen</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {generatedSchedule.entries.map((entry, idx) => (
                     <TableRow 
                       key={entry.id}
-                      className="transition-colors duration-200 hover:bg-accent/20"
+                      className="transition-colors duration-200 hover:bg-accent/20 dark:border-b dark:border-b-[#2a3349] dark:last:border-b-0 dark:hover:bg-[#2a3349]/50"
                     >
-                      <TableCell className="font-medium">{entry.title}</TableCell>
+                      <TableCell className="font-medium dark:text-white">{entry.title}</TableCell>
                       <TableCell>
                         <Badge 
                           variant="secondary"
-                          className="shadow-sm transition-all duration-200 hover:shadow"
+                          className="shadow-sm transition-all duration-200 hover:shadow dark:bg-blue-500/20 dark:text-blue-300 dark:shadow-[0_0_10px_rgba(59,130,246,0.1)]"
                         >
                           <Share2 className="w-3.5 h-3.5 mr-1.5" />
                           {entry.platform}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatDate(entry.postDate)}</TableCell>
-                      <TableCell>{entry.postTime}</TableCell>
+                      <TableCell className="dark:text-slate-300">{formatDate(entry.postDate)}</TableCell>
+                      <TableCell className="dark:text-slate-300">{entry.postTime}</TableCell>
                       <TableCell className="max-w-[280px] truncate">
-                        <div className="line-clamp-2 text-sm hover:text-clip">
+                        <div className="line-clamp-2 text-sm hover:text-clip dark:text-slate-300">
                           {entry.copyIn}
                         </div>
                       </TableCell>
@@ -344,10 +352,10 @@ export default function CreateScheduleSection() {
                           <img 
                             src={entry.referenceImageUrl} 
                             alt={entry.title}
-                            className="inline-block w-12 h-12 object-cover rounded-md border shadow-sm hover:shadow-md transition-all duration-200"
+                            className="inline-block w-12 h-12 object-cover rounded-md border shadow-sm hover:shadow-md transition-all duration-200 dark:border-[#3e4a6d] dark:shadow-[0_0_10px_rgba(0,0,0,0.3)]"
                           />
                         ) : (
-                          <span className="text-sm text-muted-foreground italic">Pendiente</span>
+                          <span className="text-sm text-muted-foreground italic dark:text-slate-500">Pendiente</span>
                         )}
                       </TableCell>
                     </TableRow>

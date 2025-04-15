@@ -14,6 +14,35 @@
   .interactive-element {
     @apply transition-standard hover:opacity-90 active:scale-95;
   }
+
+  /* Mejoras para el modo oscuro */
+  .dark .dark-glow {
+    @apply shadow-[0_0_15px_rgba(101,206,245,0.1)];
+  }
+  
+  .dark .dark-card {
+    @apply bg-card/95 backdrop-blur-sm border-[#2a3349];
+    box-shadow: 0 0 15px rgba(101, 206, 245, 0.1);
+  }
+  
+  .dark .dark-hover {
+    @apply hover:border-[#3e4a6d];
+    &:hover {
+      box-shadow: 0 0 15px rgba(101, 206, 245, 0.15);
+    }
+  }
+
+  .dark .dark-gradient-bg {
+    @apply bg-gradient-to-br from-[#1a1d2d] to-[#141825];
+  }
+
+  .dark .dark-highlight-text {
+    @apply text-[#65cef5];
+  }
+
+  .dark .dark-accent-bg {
+    @apply bg-[#1e293b];
+  }
 }
 
 @layer base {
@@ -50,33 +79,39 @@
   }
  
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 220 26% 9%;
     --foreground: 210 40% 98%;
  
-    --card: 222.2 84% 4.9%;
+    --card: 222 18% 12%;
     --card-foreground: 210 40% 98%;
  
-    --popover: 222.2 84% 4.9%;
+    --popover: 222 25% 11%;
     --popover-foreground: 210 40% 98%;
  
-    --primary: 210 40% 98%;
+    --primary: 210 40% 80%;
     --primary-foreground: 222.2 47.4% 11.2%;
  
-    --secondary: 217.2 32.6% 17.5%;
+    --secondary: 217.2 32.6% 25%;
     --secondary-foreground: 210 40% 98%;
  
     --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted-foreground: 210 34% 70%;
  
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
  
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
  
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 210 40% 98%;
+    --border: 217 19% 27%;
+    --input: 217 19% 27%;
+    --ring: 198 93% 60%;
+
+    /* Añadir nuevas variables para modo oscuro */
+    --shadow-soft: 0px 4px 15px rgba(0, 0, 0, 0.5);
+    --shadow-strong: 0px 8px 25px rgba(0, 0, 0, 0.7);
+    --glow-subtle: 0 0 15px rgba(101, 206, 245, 0.1);
+    --highlight-border: 1px solid rgba(101, 206, 245, 0.2);
   }
 
   * {
