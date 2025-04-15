@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { AlertCircle, CalendarIcon, Clock, Info, Plus, Trash, ArrowRight, Sparkles } from "lucide-react";
 
 // Define interfaces
 interface Project {
@@ -58,7 +59,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { AlertCircle, CalendarIcon, Clock, Info, Plus, Trash, ArrowRight, Sparkles } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 // Define supported platforms and content types
@@ -513,10 +513,36 @@ export default function CalendarCreator() {
                                       value={platformId}
                                       className="border dark:border-[#3e4a6d] rounded-lg overflow-hidden"
                                     >
-                                      <AccordionTrigger className="px-4 py-3 hover:no-underline dark:text-white">
-                                        <div className="flex items-center">
-                                          <div className={`w-3 h-3 rounded-full mr-2 ${platform.color}`}></div>
-                                          <span>{platform.name}</span>
+                                      <AccordionTrigger className="px-4 py-3 hover:no-underline dark:text-white group transition-all duration-200">
+                                        <div className="flex items-center justify-between w-full">
+                                          <div className="flex items-center">
+                                            <div className={`w-4 h-4 rounded-full mr-2.5 transition-transform duration-200 transform group-data-[state=open]:scale-110 ${platform.color}`}></div>
+                                            <span className="font-medium group-data-[state=open]:text-primary dark:group-data-[state=open]:text-[#65cef5] transition-colors duration-200">{platform.name}</span>
+                                          </div>
+                                          <div className="flex items-center gap-3">
+                                            <div className="flex -space-x-1.5">
+                                              {platform.contentTypes.slice(0, 3).map((type) => (
+                                                <span 
+                                                  key={type} 
+                                                  className="w-5 h-5 rounded-full bg-gray-100 border border-white flex items-center justify-center text-xs dark:bg-slate-700 dark:border-[#1e293b]"
+                                                  title={type}
+                                                >
+                                                  {CONTENT_TYPE_EMOJIS[type] ? CONTENT_TYPE_EMOJIS[type] : '📄'}
+                                                </span>
+                                              ))}
+                                              {platform.contentTypes.length > 3 && (
+                                                <span className="w-5 h-5 rounded-full bg-gray-100 border border-white flex items-center justify-center text-[10px] dark:bg-slate-700 dark:border-[#1e293b] dark:text-slate-300">
+                                                  +{platform.contentTypes.length - 3}
+                                                </span>
+                                              )}
+                                            </div>
+                                            
+                                            {platformConfig.customInstructions && (
+                                              <div className="bg-amber-100 dark:bg-amber-900/30 p-0.5 rounded-sm">
+                                                <Sparkles className="h-3 w-3 text-amber-600 dark:text-amber-500" />
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       </AccordionTrigger>
                                       <AccordionContent className="px-4 pb-3 pt-1">
@@ -567,33 +593,54 @@ export default function CalendarCreator() {
                                           })}
                                           
                                           <div className="mt-5 pt-4 border-t dark:border-[#3e4a6d]">
-                                            <div className="flex items-center gap-2 dark:text-white mb-2">
-                                              <Sparkles className="h-4 w-4 text-amber-500 dark:text-amber-400" />
-                                              <h4 className="text-sm font-medium">Instrucciones Personalizadas</h4>
+                                            <div className="flex items-center justify-between mb-2">
+                                              <div className="flex items-center gap-2 dark:text-white">
+                                                <div className="bg-gradient-to-br from-amber-400 to-amber-500 rounded-full p-1 shadow-sm dark:from-amber-500 dark:to-amber-600 dark:shadow-[0_0_3px_rgba(245,158,11,0.3)]">
+                                                  <Sparkles className="h-3.5 w-3.5 text-white" />
+                                                </div>
+                                                <h4 className="text-sm font-medium">Instrucciones Personalizadas</h4>
+                                              </div>
+                                              <Badge 
+                                                variant="outline" 
+                                                className={`text-xs ${
+                                                  platformConfig.customInstructions ? 
+                                                  'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-300' : 
+                                                  'bg-gray-50 text-gray-500 border-gray-200 dark:bg-slate-800/40 dark:border-slate-700/40 dark:text-slate-400'
+                                                }`}
+                                              >
+                                                {platformConfig.customInstructions ? 'Personalizado' : 'Opcional'}
+                                              </Badge>
                                             </div>
                                             
-                                            <Textarea
-                                              placeholder={`Instrucciones específicas para ${platform.name}...`}
-                                              className="resize-none min-h-[80px] text-sm transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
-                                              value={platformConfig.customInstructions || ""}
-                                              onChange={(e) => {
-                                                const platforms = form.getValues('platforms');
-                                                const platformIndex = platforms.findIndex(p => p.platformId === platformId);
-                                                
-                                                if (platformIndex === -1) return;
-                                                
-                                                const updatedPlatforms = [...platforms];
-                                                updatedPlatforms[platformIndex] = {
-                                                  ...platforms[platformIndex],
-                                                  customInstructions: e.target.value
-                                                };
-                                                
-                                                form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
-                                              }}
-                                            />
-                                            <p className="text-xs text-muted-foreground mt-1 dark:text-slate-500">
-                                              Añade instrucciones específicas para esta plataforma, como tono, estilo o temas a evitar.
-                                            </p>
+                                            <div className="relative group">
+                                              <Textarea
+                                                placeholder={`Instrucciones específicas para ${platform.name}...`}
+                                                className="resize-none min-h-[100px] text-sm transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
+                                                value={platformConfig.customInstructions || ""}
+                                                onChange={(e) => {
+                                                  const platforms = form.getValues('platforms');
+                                                  const platformIndex = platforms.findIndex(p => p.platformId === platformId);
+                                                  
+                                                  if (platformIndex === -1) return;
+                                                  
+                                                  const updatedPlatforms = [...platforms];
+                                                  updatedPlatforms[platformIndex] = {
+                                                    ...platforms[platformIndex],
+                                                    customInstructions: e.target.value
+                                                  };
+                                                  
+                                                  form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
+                                                }}
+                                              />
+                                              <div className="absolute inset-0 pointer-events-none border rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 border-primary dark:border-[#65cef5]"></div>
+                                            </div>
+                                            
+                                            <div className="flex items-start gap-2 mt-3">
+                                              <Info className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                                              <p className="text-xs text-muted-foreground dark:text-slate-400">
+                                                Personaliza el contenido generado específicamente para {platform.name}. Puedes especificar tono, estilo, hashtags preferidos, menciones, temas a evitar, o cualquier instrucción especial.
+                                              </p>
+                                            </div>
                                           </div>
                                         </div>
                                       </AccordionContent>
