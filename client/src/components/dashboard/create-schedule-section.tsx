@@ -121,7 +121,7 @@ export default function CreateScheduleSection() {
     <div className="space-y-6">
       <Card className="shadow-sm">
         <CardContent className="p-6">
-          <h2 className="mb-4 text-xl font-semibold">Create Quick Schedule</h2>
+          <h2 className="mb-4 text-xl font-semibold">Crear Calendario Rápido</h2>
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-4">
               <Form {...form}>
@@ -131,7 +131,7 @@ export default function CreateScheduleSection() {
                     name="projectId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Select Project</FormLabel>
+                        <FormLabel>Seleccionar Proyecto</FormLabel>
                         <Select 
                           onValueChange={field.onChange} 
                           defaultValue={field.value}
@@ -139,7 +139,7 @@ export default function CreateScheduleSection() {
                         >
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder="Choose a project" />
+                              <SelectValue placeholder="Elige un proyecto" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>

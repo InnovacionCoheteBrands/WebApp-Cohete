@@ -25,17 +25,17 @@ export default function QuickActions() {
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">Active Projects</h3>
+            <h3 className="font-medium">Proyectos Activos</h3>
             <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-sm font-medium text-primary">
               {activeProjectsCount}
             </span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Currently active marketing campaigns
+            Campañas de marketing actualmente activas
           </p>
           <Link href="/projects">
             <Button className="mt-4 w-full">
-              View All Projects
+              Ver Todos los Proyectos
             </Button>
           </Link>
         </CardContent>
@@ -44,16 +44,16 @@ export default function QuickActions() {
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">Recent Schedules</h3>
+            <h3 className="font-medium">Calendarios Recientes</h3>
             <span className="rounded-full bg-secondary/10 px-2.5 py-0.5 text-sm font-medium text-secondary">
               {recentSchedulesCount}
             </span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Recently generated content schedules
+            Calendarios de contenido generados recientemente
           </p>
           <Button className="mt-4 w-full" variant="secondary">
-            View Schedules
+            Ver Calendarios
           </Button>
         </CardContent>
       </Card>
@@ -61,19 +61,19 @@ export default function QuickActions() {
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium">Pending Tasks</h3>
+            <h3 className="font-medium">Tareas Pendientes</h3>
             <span className="rounded-full bg-destructive/10 px-2.5 py-0.5 text-sm font-medium text-destructive">
               {pendingTasksCount}
             </span>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Tasks requiring your attention
+            Tareas que requieren tu atención
           </p>
           <Button 
             variant="outline" 
             className="mt-4 w-full border-destructive bg-destructive/10 text-destructive hover:bg-destructive/20"
           >
-            View Tasks
+            Ver Tareas
           </Button>
         </CardContent>
       </Card>
