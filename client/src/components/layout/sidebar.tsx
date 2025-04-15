@@ -42,24 +42,24 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card md:static md:z-0 transform transition-transform duration-200 ease-in-out",
+        "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card/95 backdrop-blur-sm shadow-lg md:static md:z-0 transform transition-all duration-300 ease-in-out",
         open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
         <div className="flex flex-col space-y-4 p-4 h-full">
           {/* Logo */}
-          <div className="flex items-center gap-2 px-2 py-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-primary">
+          <div className="flex items-center gap-2 px-2 py-3 mb-2">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm transition-all duration-200 hover:shadow-md">
               <Rocket className="h-6 w-6 text-primary-foreground" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-lg font-bold">Cohete Workflow</h1>
+              <h1 className="text-lg font-bold tracking-tight">Cohete Workflow</h1>
               <p className="text-xs text-muted-foreground">Gestión de Marketing</p>
             </div>
             {/* Close button - mobile only */}
             <Button
               variant="ghost"
               size="icon"
-              className="ml-auto md:hidden"
+              className="ml-auto md:hidden interactive-element"
               onClick={onClose}
             >
               <X className="h-5 w-5" />
@@ -129,22 +129,27 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           {/* User Profile */}
-          <div className="mt-auto border-t p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <Users className="h-5 w-5" />
+          <div className="mt-auto border-t pt-4">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/30 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-primary/90 to-primary/70 text-primary-foreground shadow-sm">
+                <Users className="h-6 w-6" />
               </div>
               <div className="flex flex-col">
-                <span className="text-sm font-medium">{user?.fullName}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm font-medium truncate max-w-[120px]">{user?.fullName}</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <span className={cn(
+                    "h-2 w-2 rounded-full", 
+                    user?.isPrimary ? "bg-green-500" : "bg-blue-500"
+                  )}></span>
                   {user?.isPrimary ? 'Usuario Principal' : 'Usuario Secundario'}
                 </span>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="ml-auto rounded-md p-1 hover:bg-accent"
+                className="ml-auto rounded-md p-1.5 hover:bg-accent interactive-element"
                 onClick={handleLogout}
+                title="Cerrar sesión"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -169,15 +174,27 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
     <Link href={href}>
       <div
         className={cn(
-          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium",
+          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative overflow-hidden",
           isActive
-            ? "bg-accent text-accent-foreground"
-            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            ? "bg-accent text-accent-foreground shadow-sm"
+            : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground interactive-element"
         )}
         onClick={onClick}
       >
-        {icon}
-        {label}
+        {isActive && (
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+        )}
+        <div className="flex items-center w-full">
+          <div className={cn("mr-2", isActive ? "text-primary" : "")}>
+            {icon}
+          </div>
+          <span>{label}</span>
+          {isActive && (
+            <div className="ml-auto">
+              <div className="h-2 w-2 rounded-full bg-primary" />
+            </div>
+          )}
+        </div>
       </div>
     </Link>
   );

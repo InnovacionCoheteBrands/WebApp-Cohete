@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .transition-standard {
+    @apply transition-all duration-200 ease-in-out;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-md transition-standard;
+  }
+  
+  .interactive-element {
+    @apply transition-standard hover:opacity-90 active:scale-95;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;

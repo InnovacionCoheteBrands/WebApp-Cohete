@@ -23,8 +23,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Header onMenuClick={toggleSidebar} />
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50 transition-all duration-200">
+          <div className="container mx-auto max-w-7xl">
+            {children}
+          </div>
         </main>
       </div>
     </div>
