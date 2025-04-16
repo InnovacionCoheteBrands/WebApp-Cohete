@@ -666,13 +666,148 @@ export default function CalendarCreator() {
                               </Select>
                             </div>
                             
-                            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-700/40">
-                              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-                              <AlertTitle className="text-amber-700 dark:text-amber-300">Distribución de publicaciones</AlertTitle>
-                              <AlertDescription className="text-amber-600/80 dark:text-amber-400/90">
-                                Esta configuración determina cómo se distribuirán las publicaciones durante el periodo especificado. Escoge el patrón que mejor se adapte a tu estrategia de contenido.
-                              </AlertDescription>
-                            </Alert>
+                            <div className="space-y-4">
+                              <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-700/40">
+                                <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                                <AlertTitle className="text-amber-700 dark:text-amber-300">Distribución de publicaciones</AlertTitle>
+                                <AlertDescription className="text-amber-600/80 dark:text-amber-400/90">
+                                  Esta configuración determina cómo se distribuirán las publicaciones durante el periodo especificado. Escoge el patrón que mejor se adapte a tu estrategia de contenido.
+                                </AlertDescription>
+                              </Alert>
+                              
+                              <div className="bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
+                                <h4 className="font-medium mb-3 text-sm flex items-center gap-2 dark:text-white">
+                                  <CalendarIcon className="h-4 w-4 text-amber-500" />
+                                  Vista previa del calendario
+                                </h4>
+                                
+                                <div className="grid grid-cols-7 gap-1 mb-2">
+                                  {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, i) => (
+                                    <div 
+                                      key={i} 
+                                      className="text-center text-xs font-medium py-1 text-slate-500 dark:text-slate-400"
+                                    >
+                                      {day}
+                                    </div>
+                                  ))}
+                                </div>
+                                
+                                <div className="grid grid-cols-7 gap-1">
+                                  {/* Renderizamos un mes de ejemplo con 35 días (5 semanas) */}
+                                  {Array.from({ length: 35 }).map((_, i) => {
+                                    // Primeros días en blanco (offset)
+                                    if (i < 3) {
+                                      return (
+                                        <div 
+                                          key={i} 
+                                          className="h-8 rounded-md bg-transparent"
+                                        />
+                                      );
+                                    }
+                                    
+                                    // Resto de días del mes
+                                    const dayNumber = i - 3 + 1;
+                                    const isWeekend = i % 7 === 5 || i % 7 === 6; // Si es sábado o domingo
+                                    const weekNumber = Math.floor(i / 7);
+                                    
+                                    // Calculamos la intensidad según el patrón elegido
+                                    let postIntensity = 0;
+                                    
+                                    if (field.value === 'uniform') {
+                                      postIntensity = dayNumber <= 28 ? 1 : 0; // Distribución uniforme para los primeros 28 días
+                                    } 
+                                    else if (field.value === 'frontloaded') {
+                                      // Mayor intensidad al principio
+                                      if (weekNumber === 0) postIntensity = 3;
+                                      else if (weekNumber === 1) postIntensity = 2;
+                                      else if (weekNumber === 2) postIntensity = 1;
+                                      else if (weekNumber === 3) postIntensity = 1;
+                                      else postIntensity = 0;
+                                    } 
+                                    else if (field.value === 'backloaded') {
+                                      // Mayor intensidad al final
+                                      if (weekNumber === 0) postIntensity = 1;
+                                      else if (weekNumber === 1) postIntensity = 1;
+                                      else if (weekNumber === 2) postIntensity = 2;
+                                      else if (weekNumber === 3) postIntensity = 3;
+                                      else postIntensity = 0;
+                                    } 
+                                    else if (field.value === 'weekends') {
+                                      // Mayor intensidad en fines de semana
+                                      postIntensity = isWeekend ? 3 : 1;
+                                    } 
+                                    else if (field.value === 'weekdays') {
+                                      // Mayor intensidad en días laborables
+                                      postIntensity = !isWeekend ? 3 : 1;
+                                    }
+                                    
+                                    // Solo mostramos hasta el día 28 (simulando un mes)
+                                    if (dayNumber > 28) {
+                                      postIntensity = 0;
+                                    }
+                                    
+                                    let bgColor = '';
+                                    let textColor = '';
+                                    
+                                    // Ajustamos colores según intensidad
+                                    if (postIntensity === 0) {
+                                      bgColor = 'bg-slate-100 dark:bg-slate-800/50';
+                                      textColor = 'text-slate-400 dark:text-slate-500';
+                                    } else if (postIntensity === 1) {
+                                      bgColor = 'bg-amber-50 dark:bg-amber-900/20';
+                                      textColor = 'text-amber-800 dark:text-amber-300/70';
+                                    } else if (postIntensity === 2) {
+                                      bgColor = 'bg-amber-100 dark:bg-amber-900/40';
+                                      textColor = 'text-amber-800 dark:text-amber-300';
+                                    } else {
+                                      bgColor = 'bg-amber-200 dark:bg-amber-800/40';
+                                      textColor = 'text-amber-800 dark:text-amber-200';
+                                    }
+                                    
+                                    // Renderizamos el día en el calendario
+                                    return (
+                                      <div 
+                                        key={i} 
+                                        className={`relative h-8 rounded-md ${bgColor} transition-colors flex items-center justify-center
+                                           ${dayNumber <= 28 ? '' : 'opacity-0'}`}
+                                      >
+                                        <span className={`text-xs font-medium ${textColor}`}>
+                                          {dayNumber <= 28 ? dayNumber : ''}
+                                        </span>
+                                        {postIntensity > 0 && (
+                                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                                            {[...Array(postIntensity)].map((_, j) => (
+                                              <div 
+                                                key={j} 
+                                                className={`w-1 h-1 rounded-full ${postIntensity === 1 ? 'bg-amber-400/70 dark:bg-amber-500/70' : 
+                                                  postIntensity === 2 ? 'bg-amber-400/80 dark:bg-amber-500/80' : 
+                                                  'bg-amber-400 dark:bg-amber-500'}`} 
+                                              />
+                                            ))}
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                
+                                <div className="mt-3 flex items-center justify-between border-t pt-3 dark:border-[#3e4a6d]">
+                                  <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                                    Intensidad de publicaciones:
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-3 h-3 rounded-full bg-amber-100 dark:bg-amber-900/30" />
+                                      <span className="text-xs text-slate-500 dark:text-slate-400">Baja</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <div className="w-3 h-3 rounded-full bg-amber-200 dark:bg-amber-800/40" />
+                                      <span className="text-xs text-slate-500 dark:text-slate-400">Alta</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </FormItem>
                         )}
                       />
