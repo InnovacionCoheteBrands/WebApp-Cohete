@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         startDate,
         specifications,
-        14, // Default duration days
+        15, // Periodo quincenal (15 días)
         previousContent
       );
       

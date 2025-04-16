@@ -419,6 +419,9 @@ export default function CalendarCreator() {
               <CalendarIcon className="h-6 w-6" />
             </span>
             Creación Avanzada de Calendario
+            <Badge variant="outline" className="ml-2 bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700/40 dark:text-amber-300">
+              Quincenal
+            </Badge>
           </CardTitle>
           <CardDescription className="dark:text-slate-400">
             Configura un calendario detallado con opciones personalizadas para cada plataforma.
@@ -540,8 +543,9 @@ export default function CalendarCreator() {
                                 </FormControl>
                                 <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
                               </div>
-                              <FormDescription className="text-xs text-muted-foreground dark:text-slate-500">
-                                Si no se especifica, se utilizará un mes a partir de la fecha de inicio.
+                              <FormDescription className="text-xs flex items-center gap-1.5 text-amber-600 font-medium dark:text-amber-400">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                                La fecha de fin se establecerá automáticamente para un periodo quincenal (15 días).
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
