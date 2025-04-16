@@ -975,120 +975,81 @@ export default function CalendarCreator() {
                                 </h4>
                                 
                                 <div className="space-y-5">
-                                  {/* Frecuencia preferida - Versión mejorada */}
+                                  {/* Días de publicación */}
                                   <div className="space-y-2">
                                     <div className="flex items-center justify-between">
                                       <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                        Tipo de planificación
+                                        Publicar en estos días
                                       </h5>
                                       <div className="relative group">
                                         <Info className="h-4 w-4 text-slate-400 cursor-help" />
                                         <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
-                                          Define cómo deseas que se distribuyan las publicaciones a lo largo del periodo.
+                                          Marca los días en que deseas publicar. Las publicaciones se distribuirán entre los días seleccionados.
                                         </div>
                                       </div>
                                     </div>
                                     
-                                    <RadioGroup 
-                                      value={planificationType} 
-                                      onValueChange={handlePlanificationTypeChange} 
-                                      className="flex flex-col gap-2 ml-1"
-                                    >
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="auto" id="r1" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r1" className="text-xs dark:text-slate-400">Automática (basada en el patrón seleccionado)</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="specific_days" id="r2" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r2" className="text-xs dark:text-slate-400">Días específicos (selección manual)</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="specific_dates" id="r3" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r3" className="text-xs dark:text-slate-400">Fechas específicas (selección en calendario)</Label>
-                                      </div>
-                                    </RadioGroup>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                                      {[
+                                        {id: "L", label: "Lunes"},
+                                        {id: "M", label: "Martes"},
+                                        {id: "X", label: "Miércoles"},
+                                        {id: "J", label: "Jueves"},
+                                        {id: "V", label: "Viernes"},
+                                        {id: "S", label: "Sábado"},
+                                        {id: "D", label: "Domingo"}
+                                      ].map((day) => (
+                                        <div key={day.id} className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800/40 rounded px-2 py-1.5">
+                                          <Checkbox 
+                                            id={`day-${day.id}`} 
+                                            checked={selectedDays.includes(day.id)}
+                                            onCheckedChange={(checked) => {
+                                              if (checked) {
+                                                setSelectedDays([...selectedDays, day.id]);
+                                              } else {
+                                                setSelectedDays(selectedDays.filter(d => d !== day.id));
+                                              }
+                                            }}
+                                            className="h-4 w-4 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                                          />
+                                          <Label 
+                                            htmlFor={`day-${day.id}`}
+                                            className="text-sm font-medium dark:text-slate-300"
+                                          >
+                                            {day.label}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
                                     
-                                    {/* Controles condicionales basados en el tipo de planificación */}
-                                    {planificationType === "specific_days" && (
-                                      <div className="mt-4 space-y-3 pt-3 pb-2 px-3 bg-amber-50/50 rounded-md border border-amber-100 dark:bg-amber-900/10 dark:border-amber-800/20">
-                                        <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Seleccione los días de la semana</div>
-                                        <div className="flex flex-wrap gap-2">
-                                          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
-                                            <Button
-                                              key={day}
-                                              type="button"
-                                              size="sm"
-                                              variant={selectedDays.includes(day) ? "default" : "outline"}
-                                              className={`py-1 px-3 h-8 text-xs ${
-                                                selectedDays.includes(day) ? 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700' : 'text-amber-700 border-amber-200 dark:text-amber-300 dark:border-amber-700/30'
-                                              }`}
-                                              onClick={() => {
-                                                if (selectedDays.includes(day)) {
-                                                  setSelectedDays(selectedDays.filter(d => d !== day));
-                                                } else {
-                                                  setSelectedDays([...selectedDays, day]);
-                                                }
-                                              }}
-                                            >
-                                              {day}
-                                            </Button>
-                                          ))}
-                                        </div>
-                                        <div className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                                          <Info className="h-3 w-3" />
-                                          <span>El AI programará publicaciones solo en estos días</span>
-                                        </div>
+                                    {selectedDays.length === 0 && (
+                                      <div className="flex items-center text-xs text-amber-700 dark:text-amber-400 mt-2 bg-amber-50/70 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30 rounded-md p-2">
+                                        <AlertCircle className="h-3.5 w-3.5 mr-1.5" />
+                                        <span>Selecciona al menos un día para publicar</span>
                                       </div>
                                     )}
                                     
-                                    {planificationType === "specific_dates" && (
-                                      <div className="mt-4 space-y-3 pt-3 pb-2 px-3 bg-amber-50/50 rounded-md border border-amber-100 dark:bg-amber-900/10 dark:border-amber-800/20">
-                                        <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Seleccione fechas específicas</div>
+                                    {selectedDays.length > 0 && (
+                                      <div className="mt-3 bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700/30 rounded-md p-3">
+                                        <div className="text-xs text-slate-600 dark:text-slate-400 flex items-center mb-2">
+                                          <CalendarIcon className="h-3.5 w-3.5 mr-1.5" />
+                                          <span>Vista previa de distribución:</span>
+                                        </div>
                                         
-                                        <div className="flex flex-col space-y-3">
-                                          <div className="flex justify-between items-center">
-                                            <Button
-                                              type="button"
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-8 text-xs border-amber-200 text-amber-700 dark:text-amber-300 dark:border-amber-700/30"
-                                              onClick={() => setShowDatePicker(!showDatePicker)}
+                                        <div className="grid grid-cols-7 gap-1">
+                                          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+                                            <div 
+                                              key={day}
+                                              className={`text-center py-1 text-xs font-medium rounded-sm ${
+                                                selectedDays.includes(day)
+                                                  ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' 
+                                                  : 'bg-slate-100 text-slate-400 dark:bg-slate-700/30 dark:text-slate-500'
+                                              }`}
                                             >
-                                              <CalendarIcon2 className="h-3.5 w-3.5 mr-1" />
-                                              Añadir fechas
-                                            </Button>
-                                            
-                                            <span className="text-xs text-slate-500 dark:text-slate-400">
-                                              {selectedDates.length} fecha(s) seleccionada(s)
-                                            </span>
-                                          </div>
-                                          
-                                          {showDatePicker && (
-                                            <div className="p-3 bg-white dark:bg-slate-800 rounded-md border dark:border-slate-700 shadow-md">
-                                              <Calendar
-                                                mode="multiple"
-                                                selected={selectedDates}
-                                                onSelect={(dates: Date[] | undefined) => setSelectedDates(dates || [])}
-                                                className="rounded-md border border-slate-200 dark:border-slate-700"
-                                                locale={es}
-                                              />
+                                              {day}
                                             </div>
-                                          )}
-                                          
-                                          {selectedDates.length > 0 && (
-                                            <div className="flex flex-wrap gap-2 mt-2">
-                                              {selectedDates.map((date, index) => (
-                                                <Badge key={index} className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50 px-2 py-1">
-                                                  {format(date, "dd/MM/yyyy", { locale: es })}
-                                                  <X 
-                                                    className="h-3 w-3 ml-1 cursor-pointer" 
-                                                    onClick={() => setSelectedDates(selectedDates.filter((_, i) => i !== index))}
-                                                  />
-                                                </Badge>
-                                              ))}
-                                            </div>
-                                          )}
+                                          ))}
                                         </div>
                                       </div>
                                     )}
@@ -1123,82 +1084,77 @@ export default function CalendarCreator() {
                                     </Select>
                                   </div>
                                   
-                                  {/* Horarios específicos - Versión mejorada */}
+                                  {/* Bloques horarios para publicaciones */}
                                   <div className="space-y-3 pt-2 border-t dark:border-slate-700">
                                     <div className="flex items-center justify-between">
                                       <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                        Horarios de publicación
+                                        Bloques horarios para publicar
                                       </h5>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm" 
-                                        className="h-7 px-2 text-xs"
-                                        onClick={handleAddPublicationTime}
-                                      >
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        Añadir horario
-                                      </Button>
+                                      <div className="relative group">
+                                        <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                                        <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
+                                          Selecciona los bloques de horas en los que prefieres que se programen las publicaciones. El sistema intentará publicar dentro de estos horarios de acuerdo con la cantidad de publicaciones solicitadas.
+                                        </div>
+                                      </div>
                                     </div>
                                     
-                                    <div className="space-y-4">
-                                      {/* Formulario para añadir nuevo horario */}
-                                      <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/40 rounded-md p-3">
-                                        <div className="space-y-1">
-                                          <Label className="text-xs font-medium">Hora</Label>
-                                          <Input 
-                                            type="time" 
-                                            value={newPublicationTime}
-                                            onChange={(e) => setNewPublicationTime(e.target.value)}
-                                            className="h-8 text-xs"
-                                          />
-                                        </div>
-                                        <div className="space-y-1">
-                                          <Label className="text-xs font-medium">Días</Label>
-                                          <Select
-                                            value={newPublicationDays}
-                                            onValueChange={setNewPublicationDays}
-                                          >
-                                            <SelectTrigger className="h-8 text-xs dark:border-slate-600 dark:bg-slate-800">
-                                              <SelectValue placeholder="Seleccionar días" />
-                                            </SelectTrigger>
-                                            <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
-                                              <SelectItem value="todos" className="text-xs">Todos los días</SelectItem>
-                                              <SelectItem value="L,M,X,J,V" className="text-xs">Entre semana (L-V)</SelectItem>
-                                              <SelectItem value="S,D" className="text-xs">Fin de semana (S-D)</SelectItem>
-                                              <SelectItem value="L,X,V" className="text-xs">Lun, Mié, Vie</SelectItem>
-                                              <SelectItem value="M,J" className="text-xs">Mar, Jue</SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                        </div>
-                                      </div>
-
-                                      <div className="grid grid-cols-1 gap-2">
-                                        {/* Horarios añadidos */}
-                                        {publicationTimes.map((time, index) => (
-                                          <div key={index} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
-                                            <div className="flex items-center gap-2">
-                                              <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
-                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
-                                              </span>
-                                              <span className="dark:text-slate-300">{time.time}</span>
-                                              <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
-                                                {time.days === "todos" ? "Todos los días" : 
-                                                 time.days === "L,X,V" ? "Lun, Mié, Vie" : 
-                                                 time.days === "S,D" ? "Sáb, Dom" : time.days}
-                                              </Badge>
-                                            </div>
-                                            <Button 
-                                              variant="ghost" 
-                                              size="sm" 
-                                              className="h-6 w-6 p-0"
-                                              onClick={() => handleRemovePublicationTime(index)}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                      {[
+                                        {id: "6-9", label: "Mañana (6-9h)"},
+                                        {id: "9-12", label: "Media mañana (9-12h)"},
+                                        {id: "12-15", label: "Mediodía (12-15h)"},
+                                        {id: "15-18", label: "Tarde (15-18h)"},
+                                        {id: "18-21", label: "Tarde-noche (18-21h)"},
+                                        {id: "21-24", label: "Noche (21-24h)"}
+                                      ].map((block) => {
+                                        // Simulando estado para los checkboxes de bloques horarios
+                                        // En una implementación real, esto debería estar en el estado del componente
+                                        const isSelected = publicationTimes.some(t => 
+                                          t.time.startsWith(block.id.split('-')[0]) || 
+                                          t.time.startsWith(block.id.split('-')[1] - 1)
+                                        );
+                                        
+                                        return (
+                                          <div key={block.id} className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800/40 rounded px-2 py-1.5">
+                                            <Checkbox 
+                                              id={`block-${block.id}`} 
+                                              checked={isSelected}
+                                              onCheckedChange={(checked) => {
+                                                if (checked) {
+                                                  // Añadir un tiempo representativo para este bloque
+                                                  const [start] = block.id.split('-');
+                                                  setPublicationTimes([...publicationTimes, {
+                                                    time: `${start}:00`,
+                                                    days: "todos"
+                                                  }]);
+                                                } else {
+                                                  // Eliminar tiempos que caigan en este bloque
+                                                  const [start, end] = block.id.split('-').map(Number);
+                                                  setPublicationTimes(publicationTimes.filter(t => {
+                                                    const hour = Number(t.time.split(':')[0]);
+                                                    return hour < start || hour >= end;
+                                                  }));
+                                                }
+                                              }}
+                                              className="h-4 w-4 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                                            />
+                                            <Label 
+                                              htmlFor={`block-${block.id}`}
+                                              className="text-sm font-medium dark:text-slate-300"
                                             >
-                                              <Trash className="h-3 w-3 text-slate-400" />
-                                            </Button>
+                                              {block.label}
+                                            </Label>
                                           </div>
-                                        ))}
-                                      </div>
+                                        );
+                                      })}
+                                    </div>
+                                    
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-md flex items-start">
+                                      <Info className="h-4 w-4 mr-2 mt-0.5" />
+                                      <span>
+                                        Estos son bloques de preferencia. El sistema colocará las publicaciones dentro de estos horarios de acuerdo con la audiencia óptima y la cantidad total de publicaciones.
+                                      </span>
                                     </div>
                                   </div>
                                   
