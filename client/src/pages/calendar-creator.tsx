@@ -5,7 +5,17 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { AlertCircle, CalendarIcon, Clock, Info, Plus, Trash, ArrowRight, Sparkles } from "lucide-react";
+import { 
+  AlertCircle, 
+  CalendarIcon, 
+  Clock, 
+  Info, 
+  Plus, 
+  Trash, 
+  ArrowRight, 
+  Sparkles,
+  Settings2 
+} from "lucide-react";
 
 // UI Components
 import {
@@ -53,6 +63,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Slider } from "@/components/ui/slider";
 
 // Define interfaces
 interface Project {
@@ -675,10 +688,11 @@ export default function CalendarCreator() {
                                 </AlertDescription>
                               </Alert>
                               
+                              {/* Vista previa del calendario */}
                               <div className="bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
                                 <h4 className="font-medium mb-3 text-sm flex items-center gap-2 dark:text-white">
                                   <CalendarIcon className="h-4 w-4 text-amber-500" />
-                                  Vista previa del calendario
+                                  Simulación de distribución
                                 </h4>
                                 
                                 <div className="grid grid-cols-7 gap-1 mb-2">
@@ -693,98 +707,119 @@ export default function CalendarCreator() {
                                 </div>
                                 
                                 <div className="grid grid-cols-7 gap-1">
-                                  {/* Renderizamos un mes de ejemplo con 35 días (5 semanas) */}
-                                  {Array.from({ length: 35 }).map((_, i) => {
-                                    // Primeros días en blanco (offset)
-                                    if (i < 3) {
-                                      return (
-                                        <div 
-                                          key={i} 
-                                          className="h-8 rounded-md bg-transparent"
-                                        />
-                                      );
-                                    }
+                                  {/* Simulación de 4 semanas (28 días) */}
+                                  {Array.from({ length: 28 }).map((_, i) => {
+                                    const dayIndex = i;
+                                    const weekDay = i % 7; // 0=L, 1=M, ..., 6=D
+                                    const weekNumber = Math.floor(i / 7); // 0, 1, 2, 3
+                                    const isWeekend = weekDay >= 5; // Si es sábado o domingo
                                     
-                                    // Resto de días del mes
-                                    const dayNumber = i - 3 + 1;
-                                    const isWeekend = i % 7 === 5 || i % 7 === 6; // Si es sábado o domingo
-                                    const weekNumber = Math.floor(i / 7);
+                                    // Determinamos si hay publicación según el patrón
+                                    let hasPost = false;
+                                    let postSize = 'small'; // small, medium, large
                                     
-                                    // Calculamos la intensidad según el patrón elegido
-                                    let postIntensity = 0;
-                                    
+                                    // Distribución Uniforme - un post cada 3-4 días aproximadamente
                                     if (field.value === 'uniform') {
-                                      postIntensity = dayNumber <= 28 ? 1 : 0; // Distribución uniforme para los primeros 28 días
+                                      // Aproximadamente 8 posts en el mes (2 por semana)
+                                      hasPost = [1, 4, 8, 11, 15, 18, 22, 25].includes(dayIndex);
+                                      postSize = 'medium';
                                     } 
+                                    // Mayor al inicio - concentración al principio del mes
                                     else if (field.value === 'frontloaded') {
-                                      // Mayor intensidad al principio
-                                      if (weekNumber === 0) postIntensity = 3;
-                                      else if (weekNumber === 1) postIntensity = 2;
-                                      else if (weekNumber === 2) postIntensity = 1;
-                                      else if (weekNumber === 3) postIntensity = 1;
-                                      else postIntensity = 0;
+                                      if (weekNumber === 0) {
+                                        // 4 posts en primera semana
+                                        hasPost = [0, 2, 4, 6].includes(dayIndex);
+                                        postSize = 'large';
+                                      } else if (weekNumber === 1) {
+                                        // 2 posts en segunda semana
+                                        hasPost = [8, 11].includes(dayIndex);
+                                        postSize = 'medium';
+                                      } else if (weekNumber === 2 || weekNumber === 3) {
+                                        // 1 post por semana restante
+                                        hasPost = dayIndex === 16 || dayIndex === 23;
+                                        postSize = 'small';
+                                      }
                                     } 
+                                    // Mayor al final - concentración al final del mes
                                     else if (field.value === 'backloaded') {
-                                      // Mayor intensidad al final
-                                      if (weekNumber === 0) postIntensity = 1;
-                                      else if (weekNumber === 1) postIntensity = 1;
-                                      else if (weekNumber === 2) postIntensity = 2;
-                                      else if (weekNumber === 3) postIntensity = 3;
-                                      else postIntensity = 0;
+                                      if (weekNumber === 3) {
+                                        // 4 posts en última semana
+                                        hasPost = [21, 23, 25, 27].includes(dayIndex);
+                                        postSize = 'large';
+                                      } else if (weekNumber === 2) {
+                                        // 2 posts en penúltima semana
+                                        hasPost = [15, 18].includes(dayIndex);
+                                        postSize = 'medium';
+                                      } else if (weekNumber === 0 || weekNumber === 1) {
+                                        // 1 post por semana al inicio
+                                        hasPost = dayIndex === 2 || dayIndex === 9;
+                                        postSize = 'small';
+                                      }
                                     } 
+                                    // Fines de semana - concentración en sábados y domingos
                                     else if (field.value === 'weekends') {
-                                      // Mayor intensidad en fines de semana
-                                      postIntensity = isWeekend ? 3 : 1;
+                                      if (isWeekend) {
+                                        // Todos los fines de semana
+                                        hasPost = true;
+                                        postSize = 'large';
+                                      } else {
+                                        // Algunos días entre semana
+                                        hasPost = [2, 10, 16, 24].includes(dayIndex);
+                                        postSize = 'small';
+                                      }
                                     } 
+                                    // Días laborables - concentración de lunes a viernes
                                     else if (field.value === 'weekdays') {
-                                      // Mayor intensidad en días laborables
-                                      postIntensity = !isWeekend ? 3 : 1;
+                                      if (!isWeekend) {
+                                        // Días laborables seleccionados
+                                        hasPost = [0, 3, 7, 11, 14, 17, 21, 24].includes(dayIndex);
+                                        postSize = 'large';
+                                      } else {
+                                        // Algunos fines de semana
+                                        hasPost = [5, 19].includes(dayIndex);
+                                        postSize = 'small';
+                                      }
                                     }
                                     
-                                    // Solo mostramos hasta el día 28 (simulando un mes)
-                                    if (dayNumber > 28) {
-                                      postIntensity = 0;
-                                    }
-                                    
+                                    // Estilos según si hay publicación y tamaño
+                                    let borderColor = '';
                                     let bgColor = '';
-                                    let textColor = '';
+                                    let dotColor = '';
+                                    let sizeClass = '';
                                     
-                                    // Ajustamos colores según intensidad
-                                    if (postIntensity === 0) {
-                                      bgColor = 'bg-slate-100 dark:bg-slate-800/50';
-                                      textColor = 'text-slate-400 dark:text-slate-500';
-                                    } else if (postIntensity === 1) {
-                                      bgColor = 'bg-amber-50 dark:bg-amber-900/20';
-                                      textColor = 'text-amber-800 dark:text-amber-300/70';
-                                    } else if (postIntensity === 2) {
-                                      bgColor = 'bg-amber-100 dark:bg-amber-900/40';
-                                      textColor = 'text-amber-800 dark:text-amber-300';
+                                    if (hasPost) {
+                                      if (postSize === 'small') {
+                                        bgColor = 'bg-amber-50 dark:bg-amber-900/10';
+                                        borderColor = 'border-amber-100 dark:border-amber-700/20';
+                                        dotColor = 'bg-amber-400 dark:bg-amber-500';
+                                        sizeClass = 'w-1.5 h-1.5';
+                                      } else if (postSize === 'medium') {
+                                        bgColor = 'bg-amber-100 dark:bg-amber-900/20';
+                                        borderColor = 'border-amber-200 dark:border-amber-700/30';
+                                        dotColor = 'bg-amber-500 dark:bg-amber-400';
+                                        sizeClass = 'w-2 h-2';
+                                      } else { // large
+                                        bgColor = 'bg-amber-200 dark:bg-amber-900/30';
+                                        borderColor = 'border-amber-300 dark:border-amber-700/40';
+                                        dotColor = 'bg-amber-600 dark:bg-amber-300';
+                                        sizeClass = 'w-2.5 h-2.5';
+                                      }
                                     } else {
-                                      bgColor = 'bg-amber-200 dark:bg-amber-800/40';
-                                      textColor = 'text-amber-800 dark:text-amber-200';
+                                      bgColor = isWeekend ? 'bg-slate-50 dark:bg-slate-800/30' : 'bg-white dark:bg-[#1e293b]';
+                                      borderColor = 'border-slate-100 dark:border-slate-700/20';
                                     }
                                     
-                                    // Renderizamos el día en el calendario
                                     return (
                                       <div 
                                         key={i} 
-                                        className={`relative h-8 rounded-md ${bgColor} transition-colors flex items-center justify-center
-                                           ${dayNumber <= 28 ? '' : 'opacity-0'}`}
+                                        className={`relative h-10 border rounded-md ${bgColor} ${borderColor} transition-colors flex items-center justify-center`}
                                       >
-                                        <span className={`text-xs font-medium ${textColor}`}>
-                                          {dayNumber <= 28 ? dayNumber : ''}
+                                        <span className={`text-xs font-medium ${hasPost ? 'text-amber-800 dark:text-amber-300' : 'text-slate-500 dark:text-slate-400'}`}>
+                                          {dayIndex + 1}
                                         </span>
-                                        {postIntensity > 0 && (
-                                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-                                            {[...Array(postIntensity)].map((_, j) => (
-                                              <div 
-                                                key={j} 
-                                                className={`w-1 h-1 rounded-full ${postIntensity === 1 ? 'bg-amber-400/70 dark:bg-amber-500/70' : 
-                                                  postIntensity === 2 ? 'bg-amber-400/80 dark:bg-amber-500/80' : 
-                                                  'bg-amber-400 dark:bg-amber-500'}`} 
-                                              />
-                                            ))}
-                                          </div>
+                                        
+                                        {hasPost && (
+                                          <div className={`absolute bottom-1 ${sizeClass} rounded-full ${dotColor}`} />
                                         )}
                                       </div>
                                     );
@@ -793,16 +828,125 @@ export default function CalendarCreator() {
                                 
                                 <div className="mt-3 flex items-center justify-between border-t pt-3 dark:border-[#3e4a6d]">
                                   <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                                    Intensidad de publicaciones:
+                                    Publicaciones simuladas: {field.value === 'uniform' ? '8' : 
+                                      field.value === 'frontloaded' || field.value === 'backloaded' ? '8' : 
+                                      field.value === 'weekends' ? '12' : '10'}
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <div className="flex items-center gap-1">
-                                      <div className="w-3 h-3 rounded-full bg-amber-100 dark:bg-amber-900/30" />
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Baja</span>
+                                      <div className="w-2 h-2 rounded-full bg-amber-400 dark:bg-amber-500" />
+                                      <span className="text-xs text-slate-500 dark:text-slate-400">Publicación</span>
                                     </div>
-                                    <div className="flex items-center gap-1">
-                                      <div className="w-3 h-3 rounded-full bg-amber-200 dark:bg-amber-800/40" />
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Alta</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Opciones avanzadas de distribución */}
+                              <div className="bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
+                                <h4 className="font-medium mb-3 text-sm flex items-center gap-2 dark:text-white">
+                                  <Settings2 className="h-4 w-4 text-amber-500" />
+                                  Preferencias de distribución
+                                </h4>
+                                
+                                <div className="space-y-4">
+                                  {/* Frecuencia preferida */}
+                                  <div className="space-y-2">
+                                    <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                      Preferencia de frecuencia
+                                    </h5>
+                                    <RadioGroup defaultValue="auto" className="flex flex-wrap gap-2">
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="auto" id="r1" className="h-3.5 w-3.5 dark:border-slate-600" />
+                                        <Label htmlFor="r1" className="text-xs dark:text-slate-400">Automática</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="daily" id="r2" className="h-3.5 w-3.5 dark:border-slate-600" />
+                                        <Label htmlFor="r2" className="text-xs dark:text-slate-400">Diaria</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="workdays" id="r3" className="h-3.5 w-3.5 dark:border-slate-600" />
+                                        <Label htmlFor="r3" className="text-xs dark:text-slate-400">Solo días laborables</Label>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <RadioGroupItem value="weekends" id="r4" className="h-3.5 w-3.5 dark:border-slate-600" />
+                                        <Label htmlFor="r4" className="text-xs dark:text-slate-400">Énfasis en fines de semana</Label>
+                                      </div>
+                                    </RadioGroup>
+                                  </div>
+                                  
+                                  {/* Horarios preferidos */}
+                                  <div className="space-y-2">
+                                    <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                      Horarios preferidos
+                                    </h5>
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
+                                      {['6:00 - 9:00', '9:00 - 12:00', '12:00 - 15:00', '15:00 - 18:00', 
+                                      '18:00 - 21:00', '21:00 - 24:00'].map((timeSlot, index) => (
+                                        <div key={index} className="flex items-center space-x-2">
+                                          <Checkbox 
+                                            id={`time-${index}`} 
+                                            className="h-3.5 w-3.5 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600" 
+                                            defaultChecked={index === 2 || index === 4}
+                                          />
+                                          <Label 
+                                            htmlFor={`time-${index}`} 
+                                            className="text-xs dark:text-slate-400"
+                                          >
+                                            {timeSlot}
+                                          </Label>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Días preferidos */}
+                                  <div className="space-y-2">
+                                    <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                      Ponderación de días
+                                    </h5>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((day, index) => (
+                                        <Badge 
+                                          key={index}
+                                          variant="outline" 
+                                          className={`cursor-pointer px-2 py-1 text-xs ${
+                                            (field.value === 'weekends' && index >= 5) || 
+                                            (field.value === 'weekdays' && index < 5) ? 
+                                            'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/20 dark:border-amber-700/30 dark:text-amber-300' : 
+                                            'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-400'
+                                          }`}
+                                        >
+                                          {day}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Nivel de concentración */}
+                                  <div className="space-y-2">
+                                    <div className="flex justify-between items-center">
+                                      <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Nivel de concentración
+                                      </h5>
+                                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                                        {field.value === 'uniform' ? 'Equilibrado' : 
+                                         field.value === 'frontloaded' || field.value === 'backloaded' ? 'Alto' : 'Medio'}
+                                      </span>
+                                    </div>
+                                    <Slider 
+                                      defaultValue={[field.value === 'uniform' ? 33 : 
+                                                     field.value === 'frontloaded' || field.value === 'backloaded' ? 75 : 50]} 
+                                      max={100} 
+                                      step={1}
+                                      className="py-1"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
+                                      <span>Equilibrado</span>
+                                      <span>Concentrado</span>
                                     </div>
                                   </div>
                                 </div>
