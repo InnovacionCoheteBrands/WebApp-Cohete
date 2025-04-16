@@ -1843,6 +1843,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all recent schedules
   app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      // Si no hay usuario autenticado, devolvemos array vacío
+      if (!req.user) {
+        return res.json([]);
+      }
+      
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       
       // Obtener schedules recientes
@@ -1862,9 +1867,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           const hasAccess = await global.storage.checkUserProjectAccess(
-            req.user!.id,
+            req.user.id,
             schedule.projectId,
-            req.user!.isPrimary
+            req.user.isPrimary
           );
           
           if (hasAccess) {
@@ -1879,7 +1884,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(accessibleSchedules);
     } catch (error) {
       console.error("Error getting recent schedules:", error);
-      res.status(500).json({ message: "Error al obtener cronogramas recientes" });
+      // Devolver array vacío en lugar de error para mejorar la experiencia del usuario
+      return res.json([]);
     }
   });
 
