@@ -15,10 +15,11 @@ import {
   ArrowRight, 
   Sparkles,
   Settings2,
-  Calendar,
+  Calendar as CalendarIcon2,
   BarChart,
   Save,
   Download,
+  Check,
   X
 } from "lucide-react";
 
@@ -71,6 +72,10 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format, parseISO, isValid } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Define interfaces
 interface Project {
@@ -173,6 +178,13 @@ export default function CalendarCreator() {
   const [excludedDates, setExcludedDates] = useState(["15/05/2025", "24/05/2025", "01/06/2025"]);
   const [distributionType, setDistributionType] = useState("equilibrada");
   const [distributionIntensity, setDistributionIntensity] = useState(50);
+  
+  // Estados para las opciones específicas de planificación
+  const [selectedDays, setSelectedDays] = useState<string[]>(["L", "X", "V"]);
+  const [selectedDates, setSelectedDates] = useState<Date[]>([]);
+  const [newPublicationTime, setNewPublicationTime] = useState("12:00");
+  const [newPublicationDays, setNewPublicationDays] = useState("todos");
+  const [showDatePicker, setShowDatePicker] = useState(false);
   
   // Fetch projects
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
