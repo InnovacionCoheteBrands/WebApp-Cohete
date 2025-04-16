@@ -14,7 +14,12 @@ import {
   Trash, 
   ArrowRight, 
   Sparkles,
-  Settings2 
+  Settings2,
+  Calendar,
+  BarChart,
+  Save,
+  Download,
+  X
 } from "lucide-react";
 
 // UI Components
@@ -845,108 +850,244 @@ export default function CalendarCreator() {
                               <div className="bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
                                 <h4 className="font-medium mb-3 text-sm flex items-center gap-2 dark:text-white">
                                   <Settings2 className="h-4 w-4 text-amber-500" />
-                                  Preferencias de distribución
+                                  Preferencias de distribución avanzadas
                                 </h4>
                                 
-                                <div className="space-y-4">
-                                  {/* Frecuencia preferida */}
+                                <div className="space-y-5">
+                                  {/* Frecuencia preferida - Versión mejorada */}
                                   <div className="space-y-2">
-                                    <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                      Preferencia de frecuencia
-                                    </h5>
-                                    <RadioGroup defaultValue="auto" className="flex flex-wrap gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Tipo de planificación
+                                      </h5>
+                                      <div className="relative group">
+                                        <Info className="h-4 w-4 text-slate-400 cursor-help" />
+                                        <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
+                                          Define cómo deseas que se distribuyan las publicaciones a lo largo del periodo.
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <RadioGroup defaultValue="auto" className="flex flex-col gap-2 ml-1">
                                       <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="auto" id="r1" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r1" className="text-xs dark:text-slate-400">Automática</Label>
+                                        <Label htmlFor="r1" className="text-xs dark:text-slate-400">Automática (basada en el patrón seleccionado)</Label>
                                       </div>
                                       <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="daily" id="r2" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r2" className="text-xs dark:text-slate-400">Diaria</Label>
+                                        <RadioGroupItem value="specific_days" id="r2" className="h-3.5 w-3.5 dark:border-slate-600" />
+                                        <Label htmlFor="r2" className="text-xs dark:text-slate-400">Días específicos (selección manual)</Label>
                                       </div>
                                       <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="workdays" id="r3" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r3" className="text-xs dark:text-slate-400">Solo días laborables</Label>
-                                      </div>
-                                      <div className="flex items-center space-x-2">
-                                        <RadioGroupItem value="weekends" id="r4" className="h-3.5 w-3.5 dark:border-slate-600" />
-                                        <Label htmlFor="r4" className="text-xs dark:text-slate-400">Énfasis en fines de semana</Label>
+                                        <RadioGroupItem value="specific_dates" id="r3" className="h-3.5 w-3.5 dark:border-slate-600" />
+                                        <Label htmlFor="r3" className="text-xs dark:text-slate-400">Fechas específicas (selección en calendario)</Label>
                                       </div>
                                     </RadioGroup>
                                   </div>
                                   
-                                  {/* Horarios preferidos */}
+                                  {/* Sección de zona horaria */}
                                   <div className="space-y-2">
-                                    <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                      Horarios preferidos
-                                    </h5>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1.5">
-                                      {['6:00 - 9:00', '9:00 - 12:00', '12:00 - 15:00', '15:00 - 18:00', 
-                                      '18:00 - 21:00', '21:00 - 24:00'].map((timeSlot, index) => (
-                                        <div key={index} className="flex items-center space-x-2">
-                                          <Checkbox 
-                                            id={`time-${index}`} 
-                                            className="h-3.5 w-3.5 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600" 
-                                            defaultChecked={index === 2 || index === 4}
-                                          />
-                                          <Label 
-                                            htmlFor={`time-${index}`} 
-                                            className="text-xs dark:text-slate-400"
-                                          >
-                                            {timeSlot}
-                                          </Label>
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Zona horaria para publicaciones
+                                      </h5>
+                                    </div>
+                                    
+                                    <Select defaultValue="UTC-6">
+                                      <SelectTrigger className="w-full h-9 text-xs dark:border-[#3e4a6d] dark:bg-slate-800 dark:text-white">
+                                        <SelectValue placeholder="Selecciona zona horaria" />
+                                      </SelectTrigger>
+                                      <SelectContent className="dark:bg-slate-800 dark:border-[#3e4a6d]">
+                                        <SelectItem value="UTC-8" className="text-xs">UTC-8 (Pacífico EE.UU.)</SelectItem>
+                                        <SelectItem value="UTC-7" className="text-xs">UTC-7 (Montaña EE.UU.)</SelectItem>
+                                        <SelectItem value="UTC-6" className="text-xs">UTC-6 (México/Centro EE.UU.)</SelectItem>
+                                        <SelectItem value="UTC-5" className="text-xs">UTC-5 (Colombia/Este EE.UU.)</SelectItem>
+                                        <SelectItem value="UTC-3" className="text-xs">UTC-3 (Argentina/Brasil)</SelectItem>
+                                        <SelectItem value="UTC+0" className="text-xs">UTC+0 (Reino Unido)</SelectItem>
+                                        <SelectItem value="UTC+1" className="text-xs">UTC+1 (España/Europa Central)</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
+                                  {/* Horarios específicos - Versión mejorada */}
+                                  <div className="space-y-3 pt-2 border-t dark:border-slate-700">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Horarios de publicación
+                                      </h5>
+                                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Añadir horario
+                                      </Button>
+                                    </div>
+                                    
+                                    <div className="space-y-2">
+                                      <div className="grid grid-cols-1 gap-2">
+                                        {/* Horarios añadidos */}
+                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
+                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
+                                            </span>
+                                            <span className="dark:text-slate-300">12:00</span>
+                                            <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
+                                              Todos los días
+                                            </Badge>
+                                          </div>
+                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                            <Trash className="h-3 w-3 text-slate-400" />
+                                          </Button>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
+                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
+                                            </span>
+                                            <span className="dark:text-slate-300">18:30</span>
+                                            <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
+                                              Lun, Mié, Vie
+                                            </Badge>
+                                          </div>
+                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                            <Trash className="h-3 w-3 text-slate-400" />
+                                          </Button>
+                                        </div>
+                                        
+                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
+                                          <div className="flex items-center gap-2">
+                                            <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
+                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
+                                            </span>
+                                            <span className="dark:text-slate-300">11:00</span>
+                                            <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
+                                              Sáb, Dom
+                                            </Badge>
+                                          </div>
+                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                                            <Trash className="h-3 w-3 text-slate-400" />
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Días preferidos - Versión mejorada con prioridades */}
+                                  <div className="space-y-3 pt-2 border-t dark:border-slate-700">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Prioridad de días
+                                      </h5>
+                                      <div className="relative group">
+                                        <InfoIcon className="h-4 w-4 text-slate-400 cursor-help" />
+                                        <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
+                                          Selecciona la prioridad para cada día de la semana. Mayor prioridad = más publicaciones.
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-7 gap-1">
+                                      {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => (
+                                        <div key={index} className="flex flex-col items-center gap-1">
+                                          <span className="text-xs font-medium dark:text-slate-400">{day}</span>
+                                          <Select defaultValue={index >= 5 ? "alta" : index % 2 === 0 ? "media" : "baja"}>
+                                            <SelectTrigger className="w-full h-7 text-[10px] px-1 bg-transparent border-dashed dark:border-[#3e4a6d]">
+                                              <SelectValue placeholder="-" />
+                                            </SelectTrigger>
+                                            <SelectContent className="dark:bg-slate-800 dark:border-[#3e4a6d]">
+                                              <SelectItem value="ninguna" className="text-xs">Ninguna</SelectItem>
+                                              <SelectItem value="baja" className="text-xs">Baja</SelectItem>
+                                              <SelectItem value="media" className="text-xs">Media</SelectItem>
+                                              <SelectItem value="alta" className="text-xs">Alta</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                                            <div 
+                                              className={`h-full ${
+                                                index >= 5 ? "w-full bg-amber-500 dark:bg-amber-400" : 
+                                                index % 2 === 0 ? "w-2/3 bg-amber-300 dark:bg-amber-500/70" : 
+                                                "w-1/3 bg-amber-200 dark:bg-amber-600/50"
+                                              }`} 
+                                            />
+                                          </div>
                                         </div>
                                       ))}
                                     </div>
                                   </div>
                                   
-                                  {/* Días preferidos */}
-                                  <div className="space-y-2">
-                                    <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                      Ponderación de días
-                                    </h5>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'].map((day, index) => (
+                                  {/* Fechas de exclusión */}
+                                  <div className="space-y-3 pt-2 border-t dark:border-slate-700">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                        Fechas de exclusión
+                                      </h5>
+                                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                                        <Plus className="h-3 w-3 mr-1" />
+                                        Añadir fecha
+                                      </Button>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap gap-2">
+                                      {['15/05/2025', '24/05/2025', '01/06/2025'].map((date, index) => (
                                         <Badge 
                                           key={index}
                                           variant="outline" 
-                                          className={`cursor-pointer px-2 py-1 text-xs ${
-                                            (field.value === 'weekends' && index >= 5) || 
-                                            (field.value === 'weekdays' && index < 5) ? 
-                                            'bg-amber-100 text-amber-700 border-amber-200 hover:bg-amber-200 dark:bg-amber-900/20 dark:border-amber-700/30 dark:text-amber-300' : 
-                                            'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-slate-700 dark:text-slate-400'
-                                          }`}
+                                          className="px-2 py-1 text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40 flex items-center gap-1.5"
                                         >
-                                          {day}
+                                          {date}
+                                          <X className="h-3 w-3 cursor-pointer" />
                                         </Badge>
                                       ))}
                                     </div>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                                      No se programarán publicaciones en las fechas marcadas como exclusión.
+                                    </p>
                                   </div>
                                   
-                                  {/* Nivel de concentración */}
-                                  <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                      <h5 className="text-xs font-medium flex items-center gap-1.5 dark:text-slate-300">
+                                  {/* Densidad de publicaciones - Reemplazo del "nivel de concentración" */}
+                                  <div className="space-y-3 pt-2 border-t dark:border-slate-700">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                        Nivel de concentración
+                                        Densidad de publicaciones
                                       </h5>
-                                      <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
-                                        {field.value === 'uniform' ? 'Equilibrado' : 
-                                         field.value === 'frontloaded' || field.value === 'backloaded' ? 'Alto' : 'Medio'}
-                                      </span>
+                                      <div className="relative group">
+                                        <InfoIcon className="h-4 w-4 text-slate-400 cursor-help" />
+                                        <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
+                                          Determina si prefieres publicaciones distribuidas uniformemente o concentradas en ciertos días.
+                                        </div>
+                                      </div>
                                     </div>
-                                    <Slider 
-                                      defaultValue={[field.value === 'uniform' ? 33 : 
-                                                     field.value === 'frontloaded' || field.value === 'backloaded' ? 75 : 50]} 
-                                      max={100} 
-                                      step={1}
-                                      className="py-1"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
-                                      <span>Equilibrado</span>
-                                      <span>Concentrado</span>
+                                    
+                                    <div className="space-y-4">
+                                      <div className="space-x-2 flex items-center">
+                                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Distribución:</span>
+                                        <Select defaultValue="equilibrada">
+                                          <SelectTrigger className="h-8 text-xs dark:border-[#3e4a6d] dark:bg-slate-800 dark:text-white">
+                                            <SelectValue placeholder="Tipo de distribución" />
+                                          </SelectTrigger>
+                                          <SelectContent className="dark:bg-slate-800 dark:border-[#3e4a6d]">
+                                            <SelectItem value="equilibrada" className="text-xs">Equilibrada</SelectItem>
+                                            <SelectItem value="agrupada" className="text-xs">Agrupada</SelectItem>
+                                            <SelectItem value="concentrada" className="text-xs">Muy concentrada</SelectItem>
+                                          </SelectContent>
+                                        </Select>
+                                      </div>
+                                      
+                                      <div className="flex justify-between gap-2 items-center">
+                                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Intensidad:</span>
+                                        <Slider 
+                                          defaultValue={[field.value === 'uniform' ? 33 : 
+                                                        field.value === 'frontloaded' || field.value === 'backloaded' ? 75 : 50]} 
+                                          max={100} 
+                                          step={1}
+                                          className="flex-1"
+                                        />
+                                      </div>
                                     </div>
                                   </div>
                                 </div>

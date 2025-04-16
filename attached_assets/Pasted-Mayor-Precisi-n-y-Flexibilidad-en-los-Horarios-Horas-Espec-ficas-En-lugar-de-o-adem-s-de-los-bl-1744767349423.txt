@@ -1,0 +1,24 @@
+Mayor Precisión y Flexibilidad en los Horarios:
+
+Horas Específicas: En lugar de (o además de) los bloques horarios actuales (6-9, 9-12, etc.), permitir que el usuario introduzca o seleccione horas y minutos exactos (ej: 08:30, 17:15) para tener control total sobre el momento de publicación.
+Múltiples Horarios Preferidos por Día: Dar la opción de añadir varios horarios distintos en un mismo día (ej: publicar a las 9:00 Y también a las 18:00). Podría ser una lista donde se añaden/eliminan horas.
+Horarios Diferentes según el Día: Permitir configurar horarios preferidos distintos para diferentes días de la semana (ej: Lunes-Viernes a las 9:00, Sábado-Domingo a las 14:00). Esto da un control mucho más adaptado a los patrones de audiencia.
+Selección de Zona Horaria: Añadir una opción clara para definir la zona horaria a la que corresponden los horarios configurados, asegurando que las publicaciones salgan en el momento adecuado para la audiencia objetivo.
+Control Explícito y Matizado sobre los Días:
+
+Selección Directa de Días: Si existe una opción como "Publicar en días específicos", los badges de "Ponderación de días" deberían funcionar como checkboxes claros para activar/desactivar cada día de la semana.
+Ponderación Real (Prioridad): En lugar de solo activar/desactivar días, permitir asignarles una prioridad (ej: Alta, Media, Baja). Esto es útil si la cantidad de posts es fija; el sistema puede priorizar los días "Altos" si no hay suficientes huecos "ideales" para todos.
+Selección Manual de Fechas: Añadir una modalidad (quizás una opción en "Preferencia de frecuencia" llamada "Manual" o "Fechas específicas") que muestre un calendario pequeño donde el usuario pueda hacer clic directamente en las fechas exactas del mes en las que quiere que se ubiquen los posts.
+Claridad y/o Alternativas para Controles Existentes:
+
+Clarificar "Automática" (si existe): Si mantienes una opción de frecuencia "Automática", es crucial explicar (mediante un tooltip (?) o texto descriptivo) qué algoritmo o lógica sigue para distribuir los posts.
+Clarificar/Reemplazar "Nivel de Concentración":
+Añadir una descripción clara que explique el efecto real del slider (¿agrupa posts al inicio/final del periodo?, ¿los junta en días específicos?).
+Considerar si controles más directos (como los de frecuencia y horarios ya mencionados) no harían este slider redundante o confuso. Podría eliminarse o reemplazarse por opciones más concretas ("Distribuir uniformemente", "Agrupar en días/horas preferidos").
+Nuevas Funcionalidades de Planificación:
+
+Fechas de Exclusión: Implementar una forma para que el usuario marque días específicos en un calendario (feriados, vacaciones, eventos) donde el sistema no debe programar ninguna publicación.
+Planificación Basada en Eventos: Permitir definir "eventos" con fecha (ej: "Lanzamiento Producto X", "Webinar") y programar publicaciones relativas a ellos (ej: "3 días antes del evento", "El día del evento", "1 día después").
+Retroalimentación Visual Inmediata:
+
+Simulación Dinámica y Realista: Es fundamental que el calendario de simulación visual se actualice en tiempo real para reflejar todas las configuraciones que el usuario está ajustando (horas específicas, días seleccionados/ponderados, exclusiones, etc.). Esto le da al usuario la confianza de que el sistema entiende sus preferencias.
