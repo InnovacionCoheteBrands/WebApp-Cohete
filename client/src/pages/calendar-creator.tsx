@@ -1369,148 +1369,153 @@ export default function CalendarCreator() {
                                     </div>
                                     
                                     <div className="bg-white dark:bg-slate-800 rounded-md p-4 border border-slate-200 dark:border-slate-700">
-                                      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-3">
-                                        <CalendarIcon2 className="h-3.5 w-3.5" />
-                                        <span>Simulación calendario quincenal (15 días)</span>
-                                      </div>
-                                      
-                                      {/* Calendario simulado de 15 días */}
-                                      <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700 mb-3">
-                                        {/* Encabezados de los días */}
-                                        <div className="grid grid-cols-7 bg-slate-100 dark:bg-slate-800/80">
-                                          {["L", "M", "X", "J", "V", "S", "D"].map(day => (
-                                            <div key={day} className="text-center text-xs font-medium py-1.5 text-slate-500 dark:text-slate-400">
-                                              {day}
-                                            </div>
-                                          ))}
-                                        </div>
+                                      {(() => {
+                                        // Obtener la fecha de inicio seleccionada en el formulario
+                                        const startDateStr = form.watch('startDate');
+                                        let startDate = new Date();
+                                        let endDate = new Date();
+                                        let calendarDays: Array<{ date: Date, dayOfMonth: number, dayOfWeek: number }> = [];
+                                        let formattedStartDate = "Fecha no seleccionada";
+                                        let formattedEndDate = "";
                                         
-                                        {/* Celdas del calendario - Dos semanas */}
-                                        <div className="grid grid-cols-7 divide-x divide-y divide-slate-200 dark:divide-slate-700">
-                                          {/* Primera semana */}
-                                          {Array.from({ length: 7 }).map((_, i) => {
-                                            const day = ["L", "M", "X", "J", "V", "S", "D"][i];
-                                            const dayNum = i + 1; // Día 1 a 7
-                                            const priority = dayPriorities[day] || "ninguna";
-                                            const hasPosts = priority !== "ninguna";
-                                            const posts = priority === "alta" ? 2 : priority === "media" ? 1 : priority === "baja" ? 1 : 0;
-                                            
-                                            return (
-                                              <div 
-                                                key={`week1-${i}`} 
-                                                className={`
-                                                  relative h-16 p-1
-                                                  ${hasPosts ? "bg-white dark:bg-slate-800" : "bg-slate-50/50 dark:bg-slate-800/50"}
-                                                  ${excludedDates.includes(`0${dayNum}/05/2025`) ? "bg-red-50/30 dark:bg-red-950/10" : ""}
-                                                `}
-                                              >
-                                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                                                  {dayNum}
-                                                </div>
-                                                
-                                                {/* Indicador de publicaciones */}
-                                                {posts > 0 && (
-                                                  <div className="absolute bottom-1 right-1 left-1">
-                                                    <div className="flex flex-wrap gap-1 justify-end">
-                                                      {Array.from({ length: posts }).map((_, j) => {
-                                                        const platforms = ["instagram", "facebook", "twitter"];
-                                                        const platform = platforms[Math.floor(Math.random() * platforms.length)];
-                                                        const color = 
-                                                          platform === "instagram" ? "bg-pink-500" : 
-                                                          platform === "facebook" ? "bg-blue-600" : 
-                                                          "bg-sky-500";
-                                                          
-                                                        return (
-                                                          <div 
-                                                            key={`post-${i}-${j}`} 
-                                                            className={`w-2 h-2 rounded-full ${color}`} 
-                                                            title={`Publicación en ${platform}`}
-                                                          />
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  </div>
-                                                )}
-                                                
-                                                {/* Indicador de fecha excluida */}
-                                                {excludedDates.includes(`0${dayNum}/05/2025`) && (
-                                                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                                                    <X className="h-8 w-8 text-red-500 dark:text-red-400" />
-                                                  </div>
-                                                )}
-                                              </div>
-                                            );
-                                          })}
+                                        // Verificar si hay una fecha de inicio válida
+                                        if (startDateStr && isValid(new Date(startDateStr))) {
+                                          startDate = new Date(startDateStr);
+                                          formattedStartDate = format(startDate, "d 'de' MMMM", { locale: es });
                                           
-                                          {/* Segunda semana */}
-                                          {Array.from({ length: 7 }).map((_, i) => {
-                                            const day = ["L", "M", "X", "J", "V", "S", "D"][i];
-                                            const dayNum = i + 8; // Día 8 a 14
-                                            const priority = dayPriorities[day] || "ninguna";
-                                            const hasPosts = priority !== "ninguna";
-                                            const posts = priority === "alta" ? 2 : priority === "media" ? 1 : priority === "baja" ? 1 : 0;
-                                            
-                                            return (
-                                              <div 
-                                                key={`week2-${i}`} 
-                                                className={`
-                                                  relative h-16 p-1
-                                                  ${hasPosts ? "bg-white dark:bg-slate-800" : "bg-slate-50/50 dark:bg-slate-800/50"}
-                                                  ${excludedDates.includes(`${dayNum}/05/2025`) ? "bg-red-50/30 dark:bg-red-950/10" : ""}
-                                                `}
-                                              >
-                                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                                                  {dayNum}
-                                                </div>
-                                                
-                                                {/* Indicador de publicaciones */}
-                                                {posts > 0 && (
-                                                  <div className="absolute bottom-1 right-1 left-1">
-                                                    <div className="flex flex-wrap gap-1 justify-end">
-                                                      {Array.from({ length: posts }).map((_, j) => {
-                                                        const platforms = ["instagram", "facebook", "twitter", "linkedin"];
-                                                        const platform = platforms[Math.floor(Math.random() * platforms.length)];
-                                                        const color = 
-                                                          platform === "instagram" ? "bg-pink-500" : 
-                                                          platform === "facebook" ? "bg-blue-600" : 
-                                                          platform === "linkedin" ? "bg-blue-700" :
-                                                          "bg-sky-500";
-                                                          
-                                                        return (
-                                                          <div 
-                                                            key={`post-${i}-${j}`} 
-                                                            className={`w-2 h-2 rounded-full ${color}`} 
-                                                            title={`Publicación en ${platform}`}
-                                                          />
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  </div>
-                                                )}
-                                                
-                                                {/* Indicador de fecha excluida */}
-                                                {excludedDates.includes(`${dayNum}/05/2025`) && (
-                                                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
-                                                    <X className="h-8 w-8 text-red-500 dark:text-red-400" />
-                                                  </div>
-                                                )}
-                                              </div>
-                                            );
-                                          })}
+                                          // Calcular la fecha de fin (startDate + 14 días)
+                                          endDate = new Date(startDate);
+                                          endDate.setDate(startDate.getDate() + 14);
+                                          formattedEndDate = format(endDate, "d 'de' MMMM", { locale: es });
                                           
-                                          {/* Último día (15) */}
-                                          <div className="relative h-16 p-1 bg-white dark:bg-slate-800">
-                                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
-                                              15
-                                            </div>
-                                            <div className="absolute bottom-1 right-1 left-1">
-                                              <div className="flex flex-wrap gap-1 justify-end">
-                                                <div className="w-2 h-2 rounded-full bg-pink-500" title="Publicación en Instagram" />
+                                          // Generar los días del calendario
+                                          for (let i = 0; i < 15; i++) {
+                                            const day = new Date(startDate);
+                                            day.setDate(startDate.getDate() + i);
+                                            
+                                            calendarDays.push({
+                                              date: day,
+                                              dayOfMonth: day.getDate(),
+                                              dayOfWeek: day.getDay() === 0 ? 6 : day.getDay() - 1 // Convertir 0-6 (Dom-Sáb) a 0-6 (Lun-Dom)
+                                            });
+                                          }
+                                        }
+                                        
+                                        // Calcular el desplazamiento inicial para el primer día
+                                        const initialOffset = calendarDays.length > 0 ? calendarDays[0].dayOfWeek : 0;
+                                        
+                                        return (
+                                          <>
+                                            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between mb-3">
+                                              <div className="flex items-center gap-1.5">
+                                                <CalendarIcon2 className="h-3.5 w-3.5" />
+                                                <span>Simulación calendario quincenal (15 días)</span>
+                                              </div>
+                                              <div className="font-medium">
+                                                {formattedStartDate} - {formattedEndDate}
                                               </div>
                                             </div>
-                                          </div>
-                                        </div>
-                                      </div>
+                                            
+                                            {/* Calendario simulado de 15 días */}
+                                            <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700 mb-3">
+                                              {/* Encabezados de los días */}
+                                              <div className="grid grid-cols-7 bg-slate-100 dark:bg-slate-800/80">
+                                                {["L", "M", "X", "J", "V", "S", "D"].map(day => (
+                                                  <div key={day} className="text-center text-xs font-medium py-1.5 text-slate-500 dark:text-slate-400">
+                                                    {day}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                              
+                                              {/* Celdas del calendario */}
+                                              <div className="grid grid-cols-7 divide-x divide-y divide-slate-200 dark:divide-slate-700">
+                                                {/* Celdas vacías para el desplazamiento inicial */}
+                                                {Array.from({ length: initialOffset }).map((_, i) => (
+                                                  <div 
+                                                    key={`empty-${i}`} 
+                                                    className="relative h-16 p-1 bg-slate-50/70 dark:bg-slate-800/30"
+                                                  />
+                                                ))}
+                                                
+                                                {/* Celdas con días del calendario */}
+                                                {calendarDays.map((calendarDay, i) => {
+                                                  const dayIndex = calendarDay.dayOfWeek;
+                                                  const day = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
+                                                  const priority = dayPriorities[day] || "ninguna";
+                                                  const hasPosts = priority !== "ninguna";
+                                                  const posts = priority === "alta" ? 2 : priority === "media" ? 1 : priority === "baja" ? 1 : 0;
+                                                  
+                                                  // Verificar si es una fecha excluida
+                                                  const formattedDay = format(calendarDay.date, "dd/MM/yyyy", { locale: es });
+                                                  const isExcluded = excludedDates.includes(formattedDay);
+                                                  
+                                                  return (
+                                                    <div 
+                                                      key={`day-${i}`} 
+                                                      className={`
+                                                        relative h-16 p-1
+                                                        ${i === 0 ? "bg-amber-50 dark:bg-amber-950/10 border border-amber-200 dark:border-amber-800/30" : ""}
+                                                        ${hasPosts && !isExcluded ? "bg-white dark:bg-slate-800" : "bg-slate-50/50 dark:bg-slate-800/50"}
+                                                        ${isExcluded ? "bg-red-50/30 dark:bg-red-950/10" : ""}
+                                                      `}
+                                                    >
+                                                      <div className={`text-xs font-medium mb-2 ${i === 0 ? "text-amber-600 dark:text-amber-400" : "text-slate-500 dark:text-slate-400"}`}>
+                                                        {calendarDay.dayOfMonth}
+                                                        {i === 0 && <span className="ml-1 bg-amber-200 dark:bg-amber-700/50 text-amber-700 dark:text-amber-300 px-1 py-0.5 rounded text-[9px]">Inicio</span>}
+                                                      </div>
+                                                      
+                                                      {/* Indicador de publicaciones */}
+                                                      {posts > 0 && !isExcluded && (
+                                                        <div className="absolute bottom-1 right-1 left-1">
+                                                          <div className="flex flex-wrap gap-1 justify-end">
+                                                            {Array.from({ length: posts }).map((_, j) => {
+                                                              const platforms = ["instagram", "facebook", "twitter", "linkedin"];
+                                                              const platform = platforms[Math.floor(Math.random() * platforms.length)];
+                                                              const color = 
+                                                                platform === "instagram" ? "bg-pink-500" : 
+                                                                platform === "facebook" ? "bg-blue-600" : 
+                                                                platform === "linkedin" ? "bg-blue-700" :
+                                                                "bg-sky-500";
+                                                                
+                                                              return (
+                                                                <div 
+                                                                  key={`post-${i}-${j}`} 
+                                                                  className={`w-2 h-2 rounded-full ${color}`} 
+                                                                  title={`Publicación en ${platform}`}
+                                                                />
+                                                              );
+                                                            })}
+                                                          </div>
+                                                        </div>
+                                                      )}
+                                                      
+                                                      {/* Indicador de fecha excluida */}
+                                                      {isExcluded && (
+                                                        <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                                                          <X className="h-8 w-8 text-red-500 dark:text-red-400" />
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  );
+                                                })}
+                                                
+                                                {/* Celdas vacías para completar la última semana */}
+                                                {(() => {
+                                                  const lastDayIndex = calendarDays.length > 0 ? calendarDays[calendarDays.length - 1].dayOfWeek : 0;
+                                                  const remainingCells = 6 - lastDayIndex; // 6 es el índice del domingo
+                                                  
+                                                  return Array.from({ length: remainingCells }).map((_, i) => (
+                                                    <div 
+                                                      key={`remaining-${i}`} 
+                                                      className="relative h-16 p-1 bg-slate-50/70 dark:bg-slate-800/30"
+                                                    />
+                                                  ));
+                                                })()}
+                                              </div>
+                                            </div>
+                                          </>
+                                        );
+                                      })()}
                                       
                                       <div className="flex items-center justify-between text-xs">
                                         <div className="flex flex-wrap gap-x-4 gap-y-1">
