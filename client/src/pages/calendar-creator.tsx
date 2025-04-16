@@ -185,6 +185,8 @@ export default function CalendarCreator() {
   const [newPublicationTime, setNewPublicationTime] = useState("12:00");
   const [newPublicationDays, setNewPublicationDays] = useState("todos");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showExclusionDatePicker, setShowExclusionDatePicker] = useState(false);
+  const [exclusionDates, setExclusionDates] = useState<Date[]>([]);
   
   // Fetch projects
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
@@ -393,13 +395,11 @@ export default function CalendarCreator() {
     });
   };
   
+  // Manejador para controlar la visibilidad del selector de fechas de exclusión
+  
   const handleAddExcludedDate = () => {
-    // En una implementación real, esto abriría un selector de fechas
-    const newDate = "10/06/2025";
-    setExcludedDates(prev => [...prev, newDate]);
-    toast({
-      description: `Fecha añadida a exclusiones: ${newDate}`,
-    });
+    // Alternar visibilidad del calendario
+    setShowExclusionDatePicker(!showExclusionDatePicker);
   };
   
   const handleRemoveExcludedDate = (index: number) => {
@@ -1268,20 +1268,50 @@ export default function CalendarCreator() {
                                       </Button>
                                     </div>
                                     
-                                    <div className="flex flex-wrap gap-2">
-                                      {excludedDates.map((date, index) => (
-                                        <Badge 
-                                          key={index}
-                                          variant="outline" 
-                                          className="px-2 py-1 text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40 flex items-center gap-1.5"
-                                        >
-                                          {date}
-                                          <X 
-                                            className="h-3 w-3 cursor-pointer" 
-                                            onClick={() => handleRemoveExcludedDate(index)}
+                                    <div className="flex flex-col space-y-4">
+                                      {/* Control de calendario para fechas de exclusión */}
+                                      {showExclusionDatePicker && (
+                                        <div className="p-3 bg-white dark:bg-slate-800 rounded-md border dark:border-slate-700 shadow-md">
+                                          <Calendar
+                                            mode="multiple"
+                                            selected={exclusionDates}
+                                            onSelect={(dates) => {
+                                              setExclusionDates(dates || []);
+                                              // Convertir las nuevas fechas seleccionadas a formato de cadena
+                                              const formattedDates = dates?.map(date => 
+                                                format(date, "dd/MM/yyyy", { locale: es })
+                                              ) || [];
+                                              
+                                              // Actualizar el estado de fechas excluidas
+                                              setExcludedDates(formattedDates);
+                                            }}
+                                            className="rounded-md border border-slate-200 dark:border-slate-700"
+                                            locale={es}
                                           />
-                                        </Badge>
-                                      ))}
+                                        </div>
+                                      )}
+                                      
+                                      {/* Lista de fechas excluidas */}
+                                      <div className="flex flex-wrap gap-2">
+                                        {excludedDates.map((date, index) => (
+                                          <Badge 
+                                            key={index}
+                                            variant="outline" 
+                                            className="px-2 py-1 text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40 flex items-center gap-1.5"
+                                          >
+                                            {date}
+                                            <X 
+                                              className="h-3 w-3 cursor-pointer" 
+                                              onClick={() => handleRemoveExcludedDate(index)}
+                                            />
+                                          </Badge>
+                                        ))}
+                                        {excludedDates.length === 0 && (
+                                          <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                                            No hay fechas excluidas. Haga clic en "Añadir fecha" para seleccionar días que desea evitar.
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400 italic">
                                       No se programarán publicaciones en las fechas marcadas como exclusión.
