@@ -219,17 +219,21 @@ export default function CalendarCreator() {
     }
 
     const startDate = new Date(values.startDate);
-    const endDate = values.endDate ? new Date(values.endDate) : new Date(startDate);
-    endDate.setMonth(endDate.getMonth() + 1);
-
-    if (startDate > endDate) {
-      toast({
-        title: "Error",
-        description: "La fecha de inicio debe ser anterior a la fecha de fin",
-        variant: "destructive",
-      });
-      return;
+    
+    // Calcular automáticamente la fecha de fin para periodo quincenal
+    // Independientemente de lo que haya seleccionado el usuario
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 14); // 15 días en total (día inicial + 14 días)
+    
+    // Actualizar el valor en el formulario para que sea visible para el usuario
+    if (values.endDate) {
+      form.setValue('endDate', endDate.toISOString().split('T')[0], { shouldValidate: true });
     }
+    
+    toast({
+      title: "Periodo quincenal",
+      description: `Se generará un calendario desde ${startDate.toLocaleDateString()} hasta ${endDate.toLocaleDateString()}`,
+    });
 
     try {
       setIsGenerating(true);

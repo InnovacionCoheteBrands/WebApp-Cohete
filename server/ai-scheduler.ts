@@ -97,11 +97,12 @@ export async function generateSchedule(
             - **Pilares de Contenido/Temas Clave:** Úsalos como base para las ideas de posts.
             - **Productos/Servicios a Promocionar:** Intégralos estratégicamente.
 
-      3.  **Periodo del Cronograma:**
+      3.  **Periodo del Cronograma Quincenal:**
           - Fecha de Inicio: ${formattedDate}
-          - Duración: ${durationDays} días
+          - Duración: 15 días (periodo quincenal fijo)
           - Distribución: ${specifications.distributionPreferences ? JSON.stringify(specifications.distributionPreferences) : 'Uniforme'}
           - Fecha de Fin (Referencia): ${endDate}
+          - IMPORTANTE: El cronograma debe ser SIEMPRE quincenal (15 días), independientemente de otros parámetros.
 
       4.  **Especificaciones Adicionales del Usuario:** ${specifications || "Ninguna especificación adicional proporcionada."}
           *Interpretación Clave Requerida:* Incorpora estas especificaciones en el cronograma donde sea relevante.
