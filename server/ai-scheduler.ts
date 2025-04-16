@@ -32,7 +32,7 @@ export async function generateSchedule(
   projectDetails: any,
   startDate: string,
   specifications?: string,
-  durationDays: number = 14,
+  durationDays: number = 15, // Periodo quincenal fijo (15 días)
   previousContent: string[] = []
 ): Promise<ContentSchedule> {
   try {
@@ -100,7 +100,7 @@ export async function generateSchedule(
       3.  **Periodo del Cronograma Quincenal:**
           - Fecha de Inicio: ${formattedDate}
           - Duración: 15 días (periodo quincenal fijo)
-          - Distribución: ${specifications.distributionPreferences ? JSON.stringify(specifications.distributionPreferences) : 'Uniforme'}
+          - Distribución: Uniforme quincenal
           - Fecha de Fin (Referencia): ${endDate}
           - IMPORTANTE: El cronograma debe ser SIEMPRE quincenal (15 días), independientemente de otros parámetros.
 
