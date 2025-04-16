@@ -691,6 +691,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all recent schedules - IMPORTANT: esta ruta debe ir ANTES de las rutas con parámetros como :id
+  app.get("/api/schedules/recent", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      // Si no hay usuario autenticado, devolvemos array vacío
+      if (!req.user) {
+        return res.json([]);
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
+      
+      // Obtener schedules recientes
+      const recentSchedules = await global.storage.listRecentSchedules(limit);
+      
+      if (!recentSchedules || recentSchedules.length === 0) {
+        return res.json([]); // Retornar array vacío si no hay schedules
+      }
+      
+      // Verificar que el usuario tenga acceso a los proyectos de los schedules
+      const accessibleSchedules = [];
+      for (const schedule of recentSchedules) {
+        try {
+          if (!schedule || !schedule.projectId) {
+            console.warn("Schedule incompleto encontrado en el endpoint:", schedule);
+            continue; // Saltamos schedules incorrectos
+          }
+          
+          const hasAccess = await global.storage.checkUserProjectAccess(
+            req.user.id,
+            schedule.projectId,
+            req.user.isPrimary
+          );
+          
+          if (hasAccess) {
+            accessibleSchedules.push(schedule);
+          }
+        } catch (err) {
+          console.error(`Error procesando schedule ID ${schedule?.id}:`, err);
+          // Continuamos con el siguiente schedule
+        }
+      }
+      
+      res.json(accessibleSchedules);
+    } catch (error) {
+      console.error("Error getting recent schedules:", error);
+      // Devolver array vacío en lugar de error para mejorar la experiencia del usuario
+      return res.json([]);
+    }
+  });
+
   app.get("/api/schedules/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const scheduleId = parseInt(req.params.id);
