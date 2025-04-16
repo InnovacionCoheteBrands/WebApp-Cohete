@@ -475,9 +475,13 @@ export class DatabaseStorage implements IStorage {
       
       for (const schedule of schedulesResult) {
         try {
-          if (!schedule || !schedule.id || !schedule.projectId) {
-            console.warn("Schedule incompleto encontrado:", schedule);
-            continue; // Saltamos schedules incompletos
+          // Validar que el schedule y sus IDs sean números válidos
+          const scheduleId = parseInt(String(schedule?.id));
+          const projectId = parseInt(String(schedule?.projectId));
+          
+          if (isNaN(scheduleId) || isNaN(projectId)) {
+            console.warn("Schedule con IDs inválidos encontrado:", schedule);
+            continue; // Saltamos schedules con IDs inválidos
           }
           
           // Obtener el proyecto relacionado
