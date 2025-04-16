@@ -373,12 +373,17 @@ export default function CalendarCreator() {
   };
   
   const handleAddPublicationTime = () => {
-    // En una implementación real, esto abriría un modal para seleccionar hora y días
-    const newTime = { time: "15:45", days: "L,M,J" };
-    setPublicationTimes(prev => [...prev, newTime]);
-    toast({
-      description: "Horario de publicación añadido",
-    });
+    // Añadir hora y días seleccionados
+    if (newPublicationTime) {
+      const newTime = { time: newPublicationTime, days: newPublicationDays };
+      setPublicationTimes(prev => [...prev, newTime]);
+      toast({
+        description: "Horario de publicación añadido",
+      });
+      // Reiniciar valores por defecto
+      setNewPublicationTime("12:00");
+      setNewPublicationDays("todos");
+    }
   };
   
   const handleRemovePublicationTime = (index: number) => {
@@ -1003,6 +1008,90 @@ export default function CalendarCreator() {
                                         <Label htmlFor="r3" className="text-xs dark:text-slate-400">Fechas específicas (selección en calendario)</Label>
                                       </div>
                                     </RadioGroup>
+                                    
+                                    {/* Controles condicionales basados en el tipo de planificación */}
+                                    {planificationType === "specific_days" && (
+                                      <div className="mt-4 space-y-3 pt-3 pb-2 px-3 bg-amber-50/50 rounded-md border border-amber-100 dark:bg-amber-900/10 dark:border-amber-800/20">
+                                        <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Seleccione los días de la semana</div>
+                                        <div className="flex flex-wrap gap-2">
+                                          {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+                                            <Button
+                                              key={day}
+                                              type="button"
+                                              size="sm"
+                                              variant={selectedDays.includes(day) ? "default" : "outline"}
+                                              className={`py-1 px-3 h-8 text-xs ${
+                                                selectedDays.includes(day) ? 'bg-amber-500 hover:bg-amber-600 dark:bg-amber-600 dark:hover:bg-amber-700' : 'text-amber-700 border-amber-200 dark:text-amber-300 dark:border-amber-700/30'
+                                              }`}
+                                              onClick={() => {
+                                                if (selectedDays.includes(day)) {
+                                                  setSelectedDays(selectedDays.filter(d => d !== day));
+                                                } else {
+                                                  setSelectedDays([...selectedDays, day]);
+                                                }
+                                              }}
+                                            >
+                                              {day}
+                                            </Button>
+                                          ))}
+                                        </div>
+                                        <div className="text-xs text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                                          <Info className="h-3 w-3" />
+                                          <span>El AI programará publicaciones solo en estos días</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {planificationType === "specific_dates" && (
+                                      <div className="mt-4 space-y-3 pt-3 pb-2 px-3 bg-amber-50/50 rounded-md border border-amber-100 dark:bg-amber-900/10 dark:border-amber-800/20">
+                                        <div className="text-xs font-medium text-amber-800 dark:text-amber-300">Seleccione fechas específicas</div>
+                                        
+                                        <div className="flex flex-col space-y-3">
+                                          <div className="flex justify-between items-center">
+                                            <Button
+                                              type="button"
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-8 text-xs border-amber-200 text-amber-700 dark:text-amber-300 dark:border-amber-700/30"
+                                              onClick={() => setShowDatePicker(!showDatePicker)}
+                                            >
+                                              <CalendarIcon2 className="h-3.5 w-3.5 mr-1" />
+                                              Añadir fechas
+                                            </Button>
+                                            
+                                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                                              {selectedDates.length} fecha(s) seleccionada(s)
+                                            </span>
+                                          </div>
+                                          
+                                          {showDatePicker && (
+                                            <div className="p-3 bg-white dark:bg-slate-800 rounded-md border dark:border-slate-700 shadow-md">
+                                              <Calendar
+                                                mode="multiple"
+                                                selected={selectedDates}
+                                                onSelect={(dates: Date[] | undefined) => setSelectedDates(dates || [])}
+                                                className="rounded-md border border-slate-200 dark:border-slate-700"
+                                                locale={es}
+                                              />
+                                            </div>
+                                          )}
+                                          
+                                          {selectedDates.length > 0 && (
+                                            <div className="flex flex-wrap gap-2 mt-2">
+                                              {selectedDates.map((date, index) => (
+                                                <Badge key={index} className="bg-amber-100 text-amber-800 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50 px-2 py-1">
+                                                  {format(date, "dd/MM/yyyy", { locale: es })}
+                                                  <X 
+                                                    className="h-3 w-3 ml-1 cursor-pointer" 
+                                                    onClick={() => setSelectedDates(selectedDates.filter((_, i) => i !== index))}
+                                                  />
+                                                </Badge>
+                                              ))}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
                                   
                                   {/* Sección de zona horaria */}
@@ -1052,7 +1141,38 @@ export default function CalendarCreator() {
                                       </Button>
                                     </div>
                                     
-                                    <div className="space-y-2">
+                                    <div className="space-y-4">
+                                      {/* Formulario para añadir nuevo horario */}
+                                      <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-800/40 rounded-md p-3">
+                                        <div className="space-y-1">
+                                          <Label className="text-xs font-medium">Hora</Label>
+                                          <Input 
+                                            type="time" 
+                                            value={newPublicationTime}
+                                            onChange={(e) => setNewPublicationTime(e.target.value)}
+                                            className="h-8 text-xs"
+                                          />
+                                        </div>
+                                        <div className="space-y-1">
+                                          <Label className="text-xs font-medium">Días</Label>
+                                          <Select
+                                            value={newPublicationDays}
+                                            onValueChange={setNewPublicationDays}
+                                          >
+                                            <SelectTrigger className="h-8 text-xs dark:border-slate-600 dark:bg-slate-800">
+                                              <SelectValue placeholder="Seleccionar días" />
+                                            </SelectTrigger>
+                                            <SelectContent className="dark:bg-slate-800 dark:border-slate-600">
+                                              <SelectItem value="todos" className="text-xs">Todos los días</SelectItem>
+                                              <SelectItem value="L,M,X,J,V" className="text-xs">Entre semana (L-V)</SelectItem>
+                                              <SelectItem value="S,D" className="text-xs">Fin de semana (S-D)</SelectItem>
+                                              <SelectItem value="L,X,V" className="text-xs">Lun, Mié, Vie</SelectItem>
+                                              <SelectItem value="M,J" className="text-xs">Mar, Jue</SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </div>
+                                      </div>
+
                                       <div className="grid grid-cols-1 gap-2">
                                         {/* Horarios añadidos */}
                                         {publicationTimes.map((time, index) => (
