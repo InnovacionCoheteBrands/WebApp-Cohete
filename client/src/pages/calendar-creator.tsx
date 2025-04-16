@@ -1110,10 +1110,11 @@ export default function CalendarCreator() {
                                       ].map((block) => {
                                         // Simulando estado para los checkboxes de bloques horarios
                                         // En una implementación real, esto debería estar en el estado del componente
-                                        const isSelected = publicationTimes.some(t => 
-                                          t.time.startsWith(block.id.split('-')[0]) || 
-                                          t.time.startsWith(block.id.split('-')[1] - 1)
-                                        );
+                                        const [startHour, endHour] = block.id.split('-').map(Number);
+                                        const isSelected = publicationTimes.some(t => {
+                                          const hour = parseInt(t.time.split(':')[0], 10);
+                                          return hour >= startHour && hour < endHour;
+                                        });
                                         
                                         return (
                                           <div key={block.id} className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800/40 rounded px-2 py-1.5">
@@ -1274,48 +1275,81 @@ export default function CalendarCreator() {
                                     </p>
                                   </div>
                                   
-                                  {/* Densidad de publicaciones - Reemplazo del "nivel de concentración" */}
+                                  {/* Sección de vista previa */}
                                   <div className="space-y-3 pt-2 border-t dark:border-slate-700">
                                     <div className="flex items-center justify-between">
                                       <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                        Densidad de publicaciones
+                                        Vista previa de distribución
                                       </h5>
                                       <div className="relative group">
                                         <Info className="h-4 w-4 text-slate-400 cursor-help" />
                                         <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
-                                          Determina si prefieres publicaciones distribuidas uniformemente o concentradas en ciertos días.
+                                          Esta vista previa muestra cómo se distribuirán las publicaciones según tus preferencias de días y horarios.
                                         </div>
                                       </div>
                                     </div>
                                     
-                                    <div className="space-y-4">
-                                      <div className="space-x-2 flex items-center">
-                                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Distribución:</span>
-                                        <Select 
-                                          value={distributionType}
-                                          onValueChange={handleDistributionTypeChange}
-                                        >
-                                          <SelectTrigger className="h-8 text-xs dark:border-[#3e4a6d] dark:bg-slate-800 dark:text-white">
-                                            <SelectValue placeholder="Tipo de distribución" />
-                                          </SelectTrigger>
-                                          <SelectContent className="dark:bg-slate-800 dark:border-[#3e4a6d]">
-                                            <SelectItem value="equilibrada" className="text-xs">Equilibrada</SelectItem>
-                                            <SelectItem value="agrupada" className="text-xs">Agrupada</SelectItem>
-                                            <SelectItem value="concentrada" className="text-xs">Muy concentrada</SelectItem>
-                                          </SelectContent>
-                                        </Select>
+                                    <div className="bg-slate-50 dark:bg-slate-800/30 rounded-md p-3 border border-slate-100 dark:border-slate-700/40">
+                                      <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-3">
+                                        <Calendar className="h-3.5 w-3.5" />
+                                        <span>Simulación de 2 semanas (calendario quincenal)</span>
                                       </div>
                                       
-                                      <div className="flex justify-between gap-2 items-center">
-                                        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Intensidad:</span>
-                                        <Slider 
-                                          value={[distributionIntensity]} 
-                                          onValueChange={handleDistributionIntensityChange}
-                                          max={100} 
-                                          step={1}
-                                          className="flex-1"
-                                        />
+                                      {/* Simulación visual del calendario */}
+                                      <div className="grid grid-cols-7 gap-1 mb-3">
+                                        {["L", "M", "X", "J", "V", "S", "D"].map(day => (
+                                          <div key={day} className="text-center text-xs font-medium py-1 text-slate-500 dark:text-slate-400">
+                                            {day}
+                                          </div>
+                                        ))}
+                                        
+                                        {/* Primera semana */}
+                                        {[...Array(7)].map((_, index) => {
+                                          const day = ["L", "M", "X", "J", "V", "S", "D"][index];
+                                          const isSelectedDay = selectedDays.includes(day);
+                                          const dots = isSelectedDay ? Math.floor(Math.random() * 3) + 1 : 0;
+                                          
+                                          return (
+                                            <div key={`week1-${index}`} className={`rounded-md p-2 flex flex-col items-center ${
+                                              isSelectedDay ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30' : 
+                                              'bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/30'
+                                            }`}>
+                                              <span className="text-xs mb-1">{index + 1}</span>
+                                              <div className="flex gap-0.5">
+                                                {[...Array(dots)].map((_, i) => (
+                                                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500"></div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                        
+                                        {/* Segunda semana */}
+                                        {[...Array(7)].map((_, index) => {
+                                          const day = ["L", "M", "X", "J", "V", "S", "D"][index];
+                                          const isSelectedDay = selectedDays.includes(day);
+                                          const dots = isSelectedDay ? Math.floor(Math.random() * 3) + 1 : 0;
+                                          
+                                          return (
+                                            <div key={`week2-${index}`} className={`rounded-md p-2 flex flex-col items-center ${
+                                              isSelectedDay ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30' : 
+                                              'bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/30'
+                                            }`}>
+                                              <span className="text-xs mb-1">{index + 8}</span>
+                                              <div className="flex gap-0.5">
+                                                {[...Array(dots)].map((_, i) => (
+                                                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500"></div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                      
+                                      <div className="flex items-center text-xs text-amber-600 dark:text-amber-400">
+                                        <AlertCircle className="h-3.5 w-3.5 mr-1.5" />
+                                        <span>Las publicaciones se distribuirán en los días seleccionados según tus preferencias.</span>
                                       </div>
                                     </div>
                                   </div>
