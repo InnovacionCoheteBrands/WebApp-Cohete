@@ -156,7 +156,7 @@ export default function CalendarCreator() {
   // Estados para las preferencias avanzadas de distribución
   const [planificationType, setPlanificationType] = useState("auto");
   const [timezone, setTimezone] = useState("UTC-6");
-  const [dayPriorities, setDayPriorities] = useState({
+  const [dayPriorities, setDayPriorities] = useState<Record<string, string>>({
     "L": "media",
     "M": "baja",
     "X": "media",
@@ -1081,7 +1081,10 @@ export default function CalendarCreator() {
                                       {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => (
                                         <div key={index} className="flex flex-col items-center gap-1">
                                           <span className="text-xs font-medium dark:text-slate-400">{day}</span>
-                                          <Select defaultValue={index >= 5 ? "alta" : index % 2 === 0 ? "media" : "baja"}>
+                                          <Select 
+                                            value={dayPriorities[day]} 
+                                            onValueChange={(value) => handleDayPriorityChange(day, value)}
+                                          >
                                             <SelectTrigger className="w-full h-7 text-[10px] px-1 bg-transparent border-dashed dark:border-[#3e4a6d]">
                                               <SelectValue placeholder="-" />
                                             </SelectTrigger>
@@ -1095,9 +1098,10 @@ export default function CalendarCreator() {
                                           <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                                             <div 
                                               className={`h-full ${
-                                                index >= 5 ? "w-full bg-amber-500 dark:bg-amber-400" : 
-                                                index % 2 === 0 ? "w-2/3 bg-amber-300 dark:bg-amber-500/70" : 
-                                                "w-1/3 bg-amber-200 dark:bg-amber-600/50"
+                                                dayPriorities[day] === "alta" ? "w-full bg-amber-500 dark:bg-amber-400" : 
+                                                dayPriorities[day] === "media" ? "w-2/3 bg-amber-300 dark:bg-amber-500/70" : 
+                                                dayPriorities[day] === "baja" ? "w-1/3 bg-amber-200 dark:bg-amber-600/50" :
+                                                "w-0"
                                               }`} 
                                             />
                                           </div>
@@ -1113,21 +1117,29 @@ export default function CalendarCreator() {
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                         Fechas de exclusión
                                       </h5>
-                                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 px-2 text-xs"
+                                        onClick={handleAddExcludedDate}
+                                      >
                                         <Plus className="h-3 w-3 mr-1" />
                                         Añadir fecha
                                       </Button>
                                     </div>
                                     
                                     <div className="flex flex-wrap gap-2">
-                                      {['15/05/2025', '24/05/2025', '01/06/2025'].map((date, index) => (
+                                      {excludedDates.map((date, index) => (
                                         <Badge 
                                           key={index}
                                           variant="outline" 
                                           className="px-2 py-1 text-xs bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800/40 flex items-center gap-1.5"
                                         >
                                           {date}
-                                          <X className="h-3 w-3 cursor-pointer" />
+                                          <X 
+                                            className="h-3 w-3 cursor-pointer" 
+                                            onClick={() => handleRemoveExcludedDate(index)}
+                                          />
                                         </Badge>
                                       ))}
                                     </div>
@@ -1154,7 +1166,10 @@ export default function CalendarCreator() {
                                     <div className="space-y-4">
                                       <div className="space-x-2 flex items-center">
                                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Distribución:</span>
-                                        <Select defaultValue="equilibrada">
+                                        <Select 
+                                          value={distributionType}
+                                          onValueChange={handleDistributionTypeChange}
+                                        >
                                           <SelectTrigger className="h-8 text-xs dark:border-[#3e4a6d] dark:bg-slate-800 dark:text-white">
                                             <SelectValue placeholder="Tipo de distribución" />
                                           </SelectTrigger>
@@ -1169,8 +1184,8 @@ export default function CalendarCreator() {
                                       <div className="flex justify-between gap-2 items-center">
                                         <span className="text-xs font-medium text-slate-500 dark:text-slate-400 w-20">Intensidad:</span>
                                         <Slider 
-                                          defaultValue={[field.value === 'uniform' ? 33 : 
-                                                        field.value === 'frontloaded' || field.value === 'backloaded' ? 75 : 50]} 
+                                          value={[distributionIntensity]} 
+                                          onValueChange={handleDistributionIntensityChange}
                                           max={100} 
                                           step={1}
                                           className="flex-1"
