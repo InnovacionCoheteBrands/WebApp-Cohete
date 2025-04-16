@@ -982,7 +982,7 @@ export default function CalendarCreator() {
                                         Prioridad de días
                                       </h5>
                                       <div className="relative group">
-                                        <InfoIcon className="h-4 w-4 text-slate-400 cursor-help" />
+                                        <Info className="h-4 w-4 text-slate-400 cursor-help" />
                                         <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
                                           Selecciona la prioridad para cada día de la semana. Mayor prioridad = más publicaciones.
                                         </div>
@@ -1056,7 +1056,7 @@ export default function CalendarCreator() {
                                         Densidad de publicaciones
                                       </h5>
                                       <div className="relative group">
-                                        <InfoIcon className="h-4 w-4 text-slate-400 cursor-help" />
+                                        <Info className="h-4 w-4 text-slate-400 cursor-help" />
                                         <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
                                           Determina si prefieres publicaciones distribuidas uniformemente o concentradas en ciertos días.
                                         </div>
