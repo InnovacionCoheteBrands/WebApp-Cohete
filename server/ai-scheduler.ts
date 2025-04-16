@@ -100,6 +100,7 @@ export async function generateSchedule(
       3.  **Periodo del Cronograma:**
           - Fecha de Inicio: ${formattedDate}
           - Duración: ${durationDays} días
+          - Distribución: ${specifications.distributionPreferences ? JSON.stringify(specifications.distributionPreferences) : 'Uniforme'}
           - Fecha de Fin (Referencia): ${endDate}
 
       4.  **Especificaciones Adicionales del Usuario:** ${specifications || "Ninguna especificación adicional proporcionada."}

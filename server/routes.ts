@@ -557,6 +557,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (isNaN(projectId)) {
         return res.status(400).json({ message: "Invalid project ID" });
       }
+
+      // Validate distribution preferences
+      const { distributionPreferences, ...otherData } = req.body;
+      if (distributionPreferences?.type === 'custom' && (!distributionPreferences.frequency || !distributionPreferences.preferredTimes || !distributionPreferences.preferredDays)) {
+        return res.status(400).json({ message: "Custom distribution requires frequency, preferred times and days" });
+      }
       
       // Check if user has access to project
       const hasAccess = await global.storage.checkUserProjectAccess(

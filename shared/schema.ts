@@ -278,10 +278,22 @@ export const insertAnalysisResultsSchema = createInsertSchema(analysisResults).o
   updatedAt: true,
 });
 
-export const insertScheduleSchema = createInsertSchema(schedules).omit({
-  id: true,
-  createdAt: true,
+export const distributionPreferencesSchema = z.object({
+  type: z.enum(['uniform', 'weekdays', 'weekend', 'custom']),
+  frequency: z.enum(['daily', 'weekly', 'biweekly']).optional(),
+  preferredTimes: z.array(z.string()).optional(),
+  preferredDays: z.array(z.string()).optional(),
+  concentration: z.number().min(0).max(100).optional(),
 });
+
+export const insertScheduleSchema = createInsertSchema(schedules)
+  .omit({
+    id: true,
+    createdAt: true,
+  })
+  .extend({
+    distributionPreferences: distributionPreferencesSchema
+  });
 
 export const insertScheduleEntrySchema = createInsertSchema(scheduleEntries).omit({
   id: true,
