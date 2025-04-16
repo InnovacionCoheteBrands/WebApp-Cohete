@@ -1368,66 +1368,184 @@ export default function CalendarCreator() {
                                       </div>
                                     </div>
                                     
-                                    <div className="bg-slate-50 dark:bg-slate-800/30 rounded-md p-3 border border-slate-100 dark:border-slate-700/40">
+                                    <div className="bg-white dark:bg-slate-800 rounded-md p-4 border border-slate-200 dark:border-slate-700">
                                       <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-3">
-                                        <Calendar className="h-3.5 w-3.5" />
-                                        <span>Simulación de 2 semanas (calendario quincenal)</span>
+                                        <CalendarIcon2 className="h-3.5 w-3.5" />
+                                        <span>Simulación calendario quincenal (15 días)</span>
                                       </div>
                                       
-                                      {/* Simulación visual del calendario */}
-                                      <div className="grid grid-cols-7 gap-1 mb-3">
-                                        {["L", "M", "X", "J", "V", "S", "D"].map(day => (
-                                          <div key={day} className="text-center text-xs font-medium py-1 text-slate-500 dark:text-slate-400">
-                                            {day}
+                                      {/* Calendario simulado de 15 días */}
+                                      <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700 mb-3">
+                                        {/* Encabezados de los días */}
+                                        <div className="grid grid-cols-7 bg-slate-100 dark:bg-slate-800/80">
+                                          {["L", "M", "X", "J", "V", "S", "D"].map(day => (
+                                            <div key={day} className="text-center text-xs font-medium py-1.5 text-slate-500 dark:text-slate-400">
+                                              {day}
+                                            </div>
+                                          ))}
+                                        </div>
+                                        
+                                        {/* Celdas del calendario - Dos semanas */}
+                                        <div className="grid grid-cols-7 divide-x divide-y divide-slate-200 dark:divide-slate-700">
+                                          {/* Primera semana */}
+                                          {Array.from({ length: 7 }).map((_, i) => {
+                                            const day = ["L", "M", "X", "J", "V", "S", "D"][i];
+                                            const dayNum = i + 1; // Día 1 a 7
+                                            const priority = dayPriorities[day] || "ninguna";
+                                            const hasPosts = priority !== "ninguna";
+                                            const posts = priority === "alta" ? 2 : priority === "media" ? 1 : priority === "baja" ? 1 : 0;
+                                            
+                                            return (
+                                              <div 
+                                                key={`week1-${i}`} 
+                                                className={`
+                                                  relative h-16 p-1
+                                                  ${hasPosts ? "bg-white dark:bg-slate-800" : "bg-slate-50/50 dark:bg-slate-800/50"}
+                                                  ${excludedDates.includes(`0${dayNum}/05/2025`) ? "bg-red-50/30 dark:bg-red-950/10" : ""}
+                                                `}
+                                              >
+                                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                                                  {dayNum}
+                                                </div>
+                                                
+                                                {/* Indicador de publicaciones */}
+                                                {posts > 0 && (
+                                                  <div className="absolute bottom-1 right-1 left-1">
+                                                    <div className="flex flex-wrap gap-1 justify-end">
+                                                      {Array.from({ length: posts }).map((_, j) => {
+                                                        const platforms = ["instagram", "facebook", "twitter"];
+                                                        const platform = platforms[Math.floor(Math.random() * platforms.length)];
+                                                        const color = 
+                                                          platform === "instagram" ? "bg-pink-500" : 
+                                                          platform === "facebook" ? "bg-blue-600" : 
+                                                          "bg-sky-500";
+                                                          
+                                                        return (
+                                                          <div 
+                                                            key={`post-${i}-${j}`} 
+                                                            className={`w-2 h-2 rounded-full ${color}`} 
+                                                            title={`Publicación en ${platform}`}
+                                                          />
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* Indicador de fecha excluida */}
+                                                {excludedDates.includes(`0${dayNum}/05/2025`) && (
+                                                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                                                    <X className="h-8 w-8 text-red-500 dark:text-red-400" />
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                          
+                                          {/* Segunda semana */}
+                                          {Array.from({ length: 7 }).map((_, i) => {
+                                            const day = ["L", "M", "X", "J", "V", "S", "D"][i];
+                                            const dayNum = i + 8; // Día 8 a 14
+                                            const priority = dayPriorities[day] || "ninguna";
+                                            const hasPosts = priority !== "ninguna";
+                                            const posts = priority === "alta" ? 2 : priority === "media" ? 1 : priority === "baja" ? 1 : 0;
+                                            
+                                            return (
+                                              <div 
+                                                key={`week2-${i}`} 
+                                                className={`
+                                                  relative h-16 p-1
+                                                  ${hasPosts ? "bg-white dark:bg-slate-800" : "bg-slate-50/50 dark:bg-slate-800/50"}
+                                                  ${excludedDates.includes(`${dayNum}/05/2025`) ? "bg-red-50/30 dark:bg-red-950/10" : ""}
+                                                `}
+                                              >
+                                                <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                                                  {dayNum}
+                                                </div>
+                                                
+                                                {/* Indicador de publicaciones */}
+                                                {posts > 0 && (
+                                                  <div className="absolute bottom-1 right-1 left-1">
+                                                    <div className="flex flex-wrap gap-1 justify-end">
+                                                      {Array.from({ length: posts }).map((_, j) => {
+                                                        const platforms = ["instagram", "facebook", "twitter", "linkedin"];
+                                                        const platform = platforms[Math.floor(Math.random() * platforms.length)];
+                                                        const color = 
+                                                          platform === "instagram" ? "bg-pink-500" : 
+                                                          platform === "facebook" ? "bg-blue-600" : 
+                                                          platform === "linkedin" ? "bg-blue-700" :
+                                                          "bg-sky-500";
+                                                          
+                                                        return (
+                                                          <div 
+                                                            key={`post-${i}-${j}`} 
+                                                            className={`w-2 h-2 rounded-full ${color}`} 
+                                                            title={`Publicación en ${platform}`}
+                                                          />
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                
+                                                {/* Indicador de fecha excluida */}
+                                                {excludedDates.includes(`${dayNum}/05/2025`) && (
+                                                  <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                                                    <X className="h-8 w-8 text-red-500 dark:text-red-400" />
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          })}
+                                          
+                                          {/* Último día (15) */}
+                                          <div className="relative h-16 p-1 bg-white dark:bg-slate-800">
+                                            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-2">
+                                              15
+                                            </div>
+                                            <div className="absolute bottom-1 right-1 left-1">
+                                              <div className="flex flex-wrap gap-1 justify-end">
+                                                <div className="w-2 h-2 rounded-full bg-pink-500" title="Publicación en Instagram" />
+                                              </div>
+                                            </div>
                                           </div>
-                                        ))}
-                                        
-                                        {/* Primera semana */}
-                                        {[...Array(7)].map((_, index) => {
-                                          const day = ["L", "M", "X", "J", "V", "S", "D"][index];
-                                          const isSelectedDay = selectedDays.includes(day);
-                                          const dots = isSelectedDay ? Math.floor(Math.random() * 3) + 1 : 0;
-                                          
-                                          return (
-                                            <div key={`week1-${index}`} className={`rounded-md p-2 flex flex-col items-center ${
-                                              isSelectedDay ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30' : 
-                                              'bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/30'
-                                            }`}>
-                                              <span className="text-xs mb-1">{index + 1}</span>
-                                              <div className="flex gap-0.5">
-                                                {[...Array(dots)].map((_, i) => (
-                                                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500"></div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
-                                        
-                                        {/* Segunda semana */}
-                                        {[...Array(7)].map((_, index) => {
-                                          const day = ["L", "M", "X", "J", "V", "S", "D"][index];
-                                          const isSelectedDay = selectedDays.includes(day);
-                                          const dots = isSelectedDay ? Math.floor(Math.random() * 3) + 1 : 0;
-                                          
-                                          return (
-                                            <div key={`week2-${index}`} className={`rounded-md p-2 flex flex-col items-center ${
-                                              isSelectedDay ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/30' : 
-                                              'bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/30'
-                                            }`}>
-                                              <span className="text-xs mb-1">{index + 8}</span>
-                                              <div className="flex gap-0.5">
-                                                {[...Array(dots)].map((_, i) => (
-                                                  <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-400 dark:bg-amber-500"></div>
-                                                ))}
-                                              </div>
-                                            </div>
-                                          );
-                                        })}
+                                        </div>
                                       </div>
                                       
-                                      <div className="flex items-center text-xs text-amber-600 dark:text-amber-400">
-                                        <AlertCircle className="h-3.5 w-3.5 mr-1.5" />
-                                        <span>Las publicaciones se distribuirán en los días seleccionados según tus preferencias.</span>
+                                      <div className="flex items-center justify-between text-xs">
+                                        <div className="flex flex-wrap gap-x-4 gap-y-1">
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-pink-500"></div>
+                                            <span className="text-slate-500 dark:text-slate-400">Instagram</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                                            <span className="text-slate-500 dark:text-slate-400">Facebook</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-sky-500"></div>
+                                            <span className="text-slate-500 dark:text-slate-400">Twitter</span>
+                                          </div>
+                                          <div className="flex items-center gap-1.5">
+                                            <div className="w-2 h-2 rounded-full bg-blue-700"></div>
+                                            <span className="text-slate-500 dark:text-slate-400">LinkedIn</span>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <span className="text-slate-600 dark:text-slate-300 font-medium">Total: 15 publicaciones</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="rounded-md p-3 border border-amber-100 dark:border-amber-800/20 bg-amber-50 dark:bg-amber-900/10">
+                                      <div className="flex items-start">
+                                        <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 mr-2 mt-0.5" />
+                                        <div>
+                                          <h6 className="text-sm font-medium text-amber-700 dark:text-amber-400">Distribución inteligente</h6>
+                                          <p className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-1">
+                                            La IA analizará los mejores momentos para publicar en cada plataforma y distribuirá el contenido de manera óptima según las preferencias que has indicado.
+                                          </p>
+                                        </div>
                                       </div>
                                     </div>
                                   </div>
