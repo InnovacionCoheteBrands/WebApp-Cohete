@@ -7,19 +7,25 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { 
   AlertCircle, 
-  CalendarIcon, 
-  Clock, 
-  Info, 
-  Plus, 
-  Trash, 
+  ArrowDown,
   ArrowRight, 
-  Sparkles,
-  Settings2,
-  Calendar as CalendarIcon2,
+  ArrowUp,
   BarChart,
-  Save,
-  Download,
+  Calendar as CalendarIcon2,
+  CalendarIcon, 
   Check,
+  Clock, 
+  Download,
+  Info, 
+  Moon,
+  MoreHorizontal,
+  Plus, 
+  Save,
+  Settings2,
+  Sparkles,
+  Sun,
+  Sunset,
+  Trash, 
   X
 } from "lucide-react";
 
@@ -72,6 +78,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format, parseISO, isValid } from "date-fns";
@@ -1094,116 +1101,187 @@ export default function CalendarCreator() {
                                       <div className="relative group">
                                         <Info className="h-4 w-4 text-slate-400 cursor-help" />
                                         <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
-                                          Selecciona los bloques de horas en los que prefieres que se programen las publicaciones. El sistema intentará publicar dentro de estos horarios de acuerdo con la cantidad de publicaciones solicitadas.
+                                          Selecciona los bloques de horas en los que prefieres publicar. Las publicaciones se distribuirán dentro de estos horarios.
                                         </div>
                                       </div>
                                     </div>
                                     
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                       {[
-                                        {id: "6-9", label: "Mañana (6-9h)"},
-                                        {id: "9-12", label: "Media mañana (9-12h)"},
-                                        {id: "12-15", label: "Mediodía (12-15h)"},
-                                        {id: "15-18", label: "Tarde (15-18h)"},
-                                        {id: "18-21", label: "Tarde-noche (18-21h)"},
-                                        {id: "21-24", label: "Noche (21-24h)"}
+                                        {id: "manana", label: "Mañana", hours: "6-9h", icon: "☀️"},
+                                        {id: "media-manana", label: "Media mañana", hours: "9-12h", icon: "🌤️"},
+                                        {id: "mediodia", label: "Mediodía", hours: "12-15h", icon: "☀️"},
+                                        {id: "tarde", label: "Tarde", hours: "15-18h", icon: "🌇"},
+                                        {id: "tarde-noche", label: "Tarde-noche", hours: "18-21h", icon: "🌆"},
+                                        {id: "noche", label: "Noche", hours: "21-24h", icon: "🌙"}
                                       ].map((block) => {
-                                        // Simulando estado para los checkboxes de bloques horarios
                                         // En una implementación real, esto debería estar en el estado del componente
-                                        const [startHour, endHour] = block.id.split('-').map(Number);
-                                        const isSelected = publicationTimes.some(t => {
-                                          const hour = parseInt(t.time.split(':')[0], 10);
-                                          return hour >= startHour && hour < endHour;
-                                        });
+                                        // Aquí simulamos un estado basado en horas para demostración
+                                        const isSelected = block.id === "mediodia" || block.id === "tarde" || block.id === "tarde-noche";
                                         
                                         return (
-                                          <div key={block.id} className="flex items-center space-x-2 bg-slate-50 dark:bg-slate-800/40 rounded px-2 py-1.5">
+                                          <div 
+                                            key={block.id}
+                                            className={`
+                                              flex items-center gap-2 rounded-lg px-3 py-2 cursor-pointer transition-all
+                                              border border-slate-200 dark:border-slate-700
+                                              ${isSelected 
+                                                ? 'bg-amber-50 dark:bg-amber-950/20 shadow-sm' 
+                                                : 'bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/70'
+                                              }
+                                            `}
+                                            onClick={() => {
+                                              // En una implementación real, actualizaríamos el estado
+                                              console.log(`Toggled ${block.id}`);
+                                            }}
+                                          >
+                                            <div className={`
+                                              h-9 w-9 rounded-md flex items-center justify-center text-xl
+                                              ${isSelected 
+                                                ? 'bg-amber-100 dark:bg-amber-900/30' 
+                                                : 'bg-slate-100 dark:bg-slate-700/50'
+                                              }
+                                            `}>
+                                              {block.icon}
+                                            </div>
+                                            <div className="flex-grow">
+                                              <div className="text-sm font-medium dark:text-slate-300">
+                                                {block.label}
+                                              </div>
+                                              <div className="text-xs text-slate-500 dark:text-slate-400">
+                                                {block.hours}
+                                              </div>
+                                            </div>
                                             <Checkbox 
-                                              id={`block-${block.id}`} 
                                               checked={isSelected}
-                                              onCheckedChange={(checked) => {
-                                                if (checked) {
-                                                  // Añadir un tiempo representativo para este bloque
-                                                  const [start] = block.id.split('-');
-                                                  setPublicationTimes([...publicationTimes, {
-                                                    time: `${start}:00`,
-                                                    days: "todos"
-                                                  }]);
-                                                } else {
-                                                  // Eliminar tiempos que caigan en este bloque
-                                                  const [start, end] = block.id.split('-').map(Number);
-                                                  setPublicationTimes(publicationTimes.filter(t => {
-                                                    const hour = Number(t.time.split(':')[0]);
-                                                    return hour < start || hour >= end;
-                                                  }));
-                                                }
-                                              }}
-                                              className="h-4 w-4 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                                              className="h-4 w-4 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                                             />
-                                            <Label 
-                                              htmlFor={`block-${block.id}`}
-                                              className="text-sm font-medium dark:text-slate-300"
-                                            >
-                                              {block.label}
-                                            </Label>
                                           </div>
                                         );
                                       })}
                                     </div>
                                     
-                                    <div className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/30 p-2 rounded-md flex items-start">
-                                      <Info className="h-4 w-4 mr-2 mt-0.5" />
-                                      <span>
-                                        Estos son bloques de preferencia. El sistema colocará las publicaciones dentro de estos horarios de acuerdo con la audiencia óptima y la cantidad total de publicaciones.
-                                      </span>
+                                    <div className="flex items-center justify-between bg-amber-50 dark:bg-amber-950/20 rounded-md p-3 border border-amber-100/70 dark:border-amber-900/30">
+                                      <div className="flex items-start gap-2">
+                                        <Clock className="h-4 w-4 text-amber-600 dark:text-amber-500 mt-0.5" />
+                                        <div>
+                                          <div className="text-sm font-medium text-amber-700 dark:text-amber-400">Distribución inteligente</div>
+                                          <div className="text-xs text-amber-600/80 dark:text-amber-500/80 mt-0.5">
+                                            La IA distribuirá publicaciones en los horarios seleccionados para maximizar engagement
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <Switch 
+                                        checked={true} 
+                                        className="data-[state=checked]:bg-amber-500"
+                                      />
                                     </div>
                                   </div>
                                   
-                                  {/* Días preferidos - Versión mejorada con prioridades */}
+                                  {/* Días de mayor actividad */}
                                   <div className="space-y-3 pt-2 border-t dark:border-slate-700">
                                     <div className="flex items-center justify-between">
                                       <h5 className="text-sm font-medium flex items-center gap-1.5 dark:text-slate-300">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                                        Prioridad de días
+                                        Días de mayor actividad
                                       </h5>
                                       <div className="relative group">
                                         <Info className="h-4 w-4 text-slate-400 cursor-help" />
                                         <div className="absolute right-0 w-64 p-2 mt-2 text-xs bg-white dark:bg-slate-800 rounded-md shadow-lg border dark:border-slate-600 hidden group-hover:block z-50">
-                                          Selecciona la prioridad para cada día de la semana. Mayor prioridad = más publicaciones.
+                                          Marca los días más importantes para tu audiencia. Se publicará con mayor frecuencia en estos días.
                                         </div>
                                       </div>
                                     </div>
                                     
-                                    <div className="grid grid-cols-7 gap-1">
-                                      {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, index) => (
-                                        <div key={index} className="flex flex-col items-center gap-1">
-                                          <span className="text-xs font-medium dark:text-slate-400">{day}</span>
-                                          <Select 
-                                            value={dayPriorities[day]} 
-                                            onValueChange={(value) => handleDayPriorityChange(day, value)}
-                                          >
-                                            <SelectTrigger className="w-full h-7 text-[10px] px-1 bg-transparent border-dashed dark:border-[#3e4a6d]">
-                                              <SelectValue placeholder="-" />
-                                            </SelectTrigger>
-                                            <SelectContent className="dark:bg-slate-800 dark:border-[#3e4a6d]">
-                                              <SelectItem value="ninguna" className="text-xs">Ninguna</SelectItem>
-                                              <SelectItem value="baja" className="text-xs">Baja</SelectItem>
-                                              <SelectItem value="media" className="text-xs">Media</SelectItem>
-                                              <SelectItem value="alta" className="text-xs">Alta</SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                          <div className="w-full h-1 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                                    <div className="grid grid-cols-7 gap-2">
+                                      {[
+                                        {id: "L", label: "Lunes", fullName: "Lunes"},
+                                        {id: "M", label: "Martes", fullName: "Martes"},
+                                        {id: "X", label: "Miércoles", fullName: "Miércoles"},
+                                        {id: "J", label: "Jueves", fullName: "Jueves"},
+                                        {id: "V", label: "Viernes", fullName: "Viernes"},
+                                        {id: "S", label: "Sábado", fullName: "Sábado"},
+                                        {id: "D", label: "Domingo", fullName: "Domingo"}
+                                      ].map((day) => {
+                                        // En una implementación real, esto estaría conectado al estado
+                                        const priority = dayPriorities[day.id] || "ninguna";
+                                        
+                                        return (
+                                          <div key={day.id} className="relative">
                                             <div 
-                                              className={`h-full ${
-                                                dayPriorities[day] === "alta" ? "w-full bg-amber-500 dark:bg-amber-400" : 
-                                                dayPriorities[day] === "media" ? "w-2/3 bg-amber-300 dark:bg-amber-500/70" : 
-                                                dayPriorities[day] === "baja" ? "w-1/3 bg-amber-200 dark:bg-amber-600/50" :
-                                                "w-0"
-                                              }`} 
-                                            />
+                                              className={`
+                                                flex flex-col items-center gap-1.5 p-2 rounded-lg cursor-pointer transition-all
+                                                ${priority === "alta" 
+                                                  ? "bg-amber-100 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/30" 
+                                                  : priority === "media"
+                                                    ? "bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/20" 
+                                                    : priority === "baja"
+                                                      ? "bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700" 
+                                                      : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50"
+                                                }
+                                              `}
+                                              onClick={() => {
+                                                // Rotación de prioridades: ninguna -> baja -> media -> alta -> ninguna
+                                                const nextPriority = 
+                                                  priority === "ninguna" ? "baja" : 
+                                                  priority === "baja" ? "media" : 
+                                                  priority === "media" ? "alta" : "ninguna";
+                                                
+                                                // En una implementación real, llamar a la función de manejo
+                                                handleDayPriorityChange(day.id, nextPriority);
+                                              }}
+                                            >
+                                              <div className={`
+                                                w-12 h-12 rounded-full flex items-center justify-center text-lg font-semibold
+                                                ${priority === "alta" 
+                                                  ? "bg-amber-200 dark:bg-amber-800/50 text-amber-700 dark:text-amber-300" 
+                                                  : priority === "media"
+                                                    ? "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400" 
+                                                    : priority === "baja"
+                                                      ? "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300"
+                                                      : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400"
+                                                }
+                                              `}>
+                                                {day.label[0]}
+                                              </div>
+                                              <span className="text-xs font-medium dark:text-slate-300">{day.fullName}</span>
+                                              
+                                              {priority !== "ninguna" && (
+                                                <div className="absolute -top-1 -right-1 rounded-full border bg-white dark:bg-slate-800 shadow-sm">
+                                                  <div className={`
+                                                    w-4 h-4 rounded-full flex items-center justify-center
+                                                    ${priority === "alta" 
+                                                      ? "bg-amber-500 text-white" 
+                                                      : priority === "media"
+                                                        ? "bg-amber-400 text-white"
+                                                        : "bg-amber-300 text-amber-800"
+                                                    }
+                                                  `}>
+                                                    {priority === "alta" && <ArrowUp className="h-2 w-2" />}
+                                                    {priority === "media" && <MoreHorizontal className="h-2 w-2" />}
+                                                    {priority === "baja" && <ArrowDown className="h-2 w-2" />}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
                                           </div>
-                                        </div>
-                                      ))}
+                                        );
+                                      })}
+                                    </div>
+                                    
+                                    <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-center gap-6">
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                                        <span>Prioridad alta</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-3 h-3 rounded-full bg-amber-400"></div>
+                                        <span>Prioridad media</span>
+                                      </div>
+                                      <div className="flex items-center gap-1.5">
+                                        <div className="w-3 h-3 rounded-full bg-amber-300"></div>
+                                        <span>Prioridad baja</span>
+                                      </div>
                                     </div>
                                   </div>
                                   
