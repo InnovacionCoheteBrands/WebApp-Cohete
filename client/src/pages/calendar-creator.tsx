@@ -153,6 +153,27 @@ export default function CalendarCreator() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTab, setSelectedTab] = useState("general");
   
+  // Estados para las preferencias avanzadas de distribución
+  const [planificationType, setPlanificationType] = useState("auto");
+  const [timezone, setTimezone] = useState("UTC-6");
+  const [dayPriorities, setDayPriorities] = useState({
+    "L": "media",
+    "M": "baja",
+    "X": "media",
+    "J": "baja",
+    "V": "media",
+    "S": "alta",
+    "D": "alta"
+  });
+  const [publicationTimes, setPublicationTimes] = useState([
+    { time: "12:00", days: "todos" },
+    { time: "18:30", days: "L,X,V" },
+    { time: "11:00", days: "S,D" }
+  ]);
+  const [excludedDates, setExcludedDates] = useState(["15/05/2025", "24/05/2025", "01/06/2025"]);
+  const [distributionType, setDistributionType] = useState("equilibrada");
+  const [distributionIntensity, setDistributionIntensity] = useState(50);
+  
   // Fetch projects
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
@@ -305,6 +326,81 @@ export default function CalendarCreator() {
     };
     
     form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
+  };
+  
+  // Manejadores para opciones avanzadas de distribución
+  const handlePlanificationTypeChange = (value: string) => {
+    setPlanificationType(value);
+    // Actualizar el valor en el formulario si es necesario
+    toast({
+      title: "Tipo de planificación cambiado",
+      description: `Se ha seleccionado: ${value}`,
+    });
+  };
+  
+  const handleTimezoneChange = (value: string) => {
+    setTimezone(value);
+    toast({
+      description: `Zona horaria cambiada a: ${value}`,
+    });
+  };
+  
+  const handleDayPriorityChange = (day: string, priority: string) => {
+    setDayPriorities(prev => ({
+      ...prev,
+      [day]: priority
+    }));
+    // Mostrar feedback visual
+    toast({
+      description: `Prioridad de ${day} cambiada a: ${priority}`,
+    });
+  };
+  
+  const handleAddPublicationTime = () => {
+    // En una implementación real, esto abriría un modal para seleccionar hora y días
+    const newTime = { time: "15:45", days: "L,M,J" };
+    setPublicationTimes(prev => [...prev, newTime]);
+    toast({
+      description: "Horario de publicación añadido",
+    });
+  };
+  
+  const handleRemovePublicationTime = (index: number) => {
+    setPublicationTimes(prev => prev.filter((_, i) => i !== index));
+    toast({
+      description: "Horario de publicación eliminado",
+    });
+  };
+  
+  const handleAddExcludedDate = () => {
+    // En una implementación real, esto abriría un selector de fechas
+    const newDate = "10/06/2025";
+    setExcludedDates(prev => [...prev, newDate]);
+    toast({
+      description: `Fecha añadida a exclusiones: ${newDate}`,
+    });
+  };
+  
+  const handleRemoveExcludedDate = (index: number) => {
+    setExcludedDates(prev => prev.filter((_, i) => i !== index));
+    toast({
+      description: "Fecha eliminada de exclusiones",
+    });
+  };
+  
+  const handleDistributionTypeChange = (value: string) => {
+    setDistributionType(value);
+    toast({
+      description: `Tipo de distribución cambiado a: ${value}`,
+    });
+  };
+  
+  const handleDistributionIntensityChange = (value: number[]) => {
+    setDistributionIntensity(value[0]);
+    // Actualizar el valor en el formulario
+    toast({
+      description: `Intensidad de distribución: ${value[0]}%`,
+    });
   };
 
   return (
@@ -869,7 +965,11 @@ export default function CalendarCreator() {
                                       </div>
                                     </div>
                                     
-                                    <RadioGroup defaultValue="auto" className="flex flex-col gap-2 ml-1">
+                                    <RadioGroup 
+                                      value={planificationType} 
+                                      onValueChange={handlePlanificationTypeChange} 
+                                      className="flex flex-col gap-2 ml-1"
+                                    >
                                       <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="auto" id="r1" className="h-3.5 w-3.5 dark:border-slate-600" />
                                         <Label htmlFor="r1" className="text-xs dark:text-slate-400">Automática (basada en el patrón seleccionado)</Label>
@@ -894,7 +994,11 @@ export default function CalendarCreator() {
                                       </h5>
                                     </div>
                                     
-                                    <Select defaultValue="UTC-6">
+                                    <Select 
+                                      value={timezone} 
+                                      onValueChange={handleTimezoneChange}
+                                      defaultValue="UTC-6"
+                                    >
                                       <SelectTrigger className="w-full h-9 text-xs dark:border-[#3e4a6d] dark:bg-slate-800 dark:text-white">
                                         <SelectValue placeholder="Selecciona zona horaria" />
                                       </SelectTrigger>
@@ -917,7 +1021,12 @@ export default function CalendarCreator() {
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
                                         Horarios de publicación
                                       </h5>
-                                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="h-7 px-2 text-xs"
+                                        onClick={handleAddPublicationTime}
+                                      >
                                         <Plus className="h-3 w-3 mr-1" />
                                         Añadir horario
                                       </Button>
@@ -926,50 +1035,29 @@ export default function CalendarCreator() {
                                     <div className="space-y-2">
                                       <div className="grid grid-cols-1 gap-2">
                                         {/* Horarios añadidos */}
-                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
-                                          <div className="flex items-center gap-2">
-                                            <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
-                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
-                                            </span>
-                                            <span className="dark:text-slate-300">12:00</span>
-                                            <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
-                                              Todos los días
-                                            </Badge>
+                                        {publicationTimes.map((time, index) => (
+                                          <div key={index} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
+                                            <div className="flex items-center gap-2">
+                                              <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
+                                                <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
+                                              </span>
+                                              <span className="dark:text-slate-300">{time.time}</span>
+                                              <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
+                                                {time.days === "todos" ? "Todos los días" : 
+                                                 time.days === "L,X,V" ? "Lun, Mié, Vie" : 
+                                                 time.days === "S,D" ? "Sáb, Dom" : time.days}
+                                              </Badge>
+                                            </div>
+                                            <Button 
+                                              variant="ghost" 
+                                              size="sm" 
+                                              className="h-6 w-6 p-0"
+                                              onClick={() => handleRemovePublicationTime(index)}
+                                            >
+                                              <Trash className="h-3 w-3 text-slate-400" />
+                                            </Button>
                                           </div>
-                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                            <Trash className="h-3 w-3 text-slate-400" />
-                                          </Button>
-                                        </div>
-                                        
-                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
-                                          <div className="flex items-center gap-2">
-                                            <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
-                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
-                                            </span>
-                                            <span className="dark:text-slate-300">18:30</span>
-                                            <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
-                                              Lun, Mié, Vie
-                                            </Badge>
-                                          </div>
-                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                            <Trash className="h-3 w-3 text-slate-400" />
-                                          </Button>
-                                        </div>
-                                        
-                                        <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/60 rounded-md p-2 text-xs">
-                                          <div className="flex items-center gap-2">
-                                            <span className="h-4 w-4 rounded-full bg-amber-200 dark:bg-amber-700 flex items-center justify-center">
-                                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 dark:bg-amber-300"></span>
-                                            </span>
-                                            <span className="dark:text-slate-300">11:00</span>
-                                            <Badge className="px-1.5 bg-slate-200 text-slate-700 border-slate-300 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
-                                              Sáb, Dom
-                                            </Badge>
-                                          </div>
-                                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                            <Trash className="h-3 w-3 text-slate-400" />
-                                          </Button>
-                                        </div>
+                                        ))}
                                       </div>
                                     </div>
                                   </div>
