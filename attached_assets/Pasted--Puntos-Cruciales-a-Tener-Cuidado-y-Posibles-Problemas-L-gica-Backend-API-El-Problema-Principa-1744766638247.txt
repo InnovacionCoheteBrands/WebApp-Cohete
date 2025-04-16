@@ -1,0 +1,22 @@
+⚠️ Puntos Cruciales a Tener Cuidado y Posibles Problemas:
+
+Lógica Backend/API:
+
+El Problema Principal: El cambio más importante que falta (y que no está en este archivo) es en el backend. Cuando el formulario se envía (en la función onSubmit), se hace una llamada a apiRequest('POST', \/api/projects/${values.projectId}/schedule`, { ...values, ... }). El servidor que recibe esta petición en/api/projects/.../schedule**debe ser modificado** para entender qué hacer cuandopostsDistributiontenga el valor"custom"`.
+¿Qué significa "custom"? El backend necesita saber cómo interpretar la opción "custom". Probablemente debería leer los nuevos valores de la sección "Preferencias de distribución" (frecuencia, horarios, días, concentración) que actualmente no se están enviando en la llamada API.
+Acción Requerida: Necesitas asegurarte de que el código del servidor (en la ruta API correspondiente) se actualice para manejar este nuevo caso "custom" y utilice las preferencias detalladas para generar el calendario. Si no, seleccionar "custom" probablemente causará un error en el servidor o generará un calendario incorrecto.
+Envío de las Preferencias Personalizadas:
+
+El Problema: La nueva sección "Preferencias de distribución" (frecuencia, horarios, días, concentración) no parece estar conectada al estado del formulario principal (react-hook-form). Sus valores (lo que el usuario seleccione en los Radio Buttons, Selects, Badges, Slider) no se están incluyendo en el objeto values que se envía al backend en la función onSubmit.
+Acción Requerida: Debes:
+Integrar estos nuevos campos de preferencias dentro del esquema de Zod (formSchema) si quieres que sean validados y gestionados por react-hook-form. Podrían ir dentro del objeto advanced o en un nuevo objeto.
+Usar componentes FormField de react-hook-form para estos nuevos controles (RadioGroup, Select, Checkbox/Badges para días, Slider) para que sus valores se capturen automáticamente.
+Asegurarte de que estos valores se envíen al backend cuando postsDistribution sea "custom".
+Simulación Visual:
+
+El Problema: Como mencioné, la simulación para "custom" es estática. No lee los valores de la nueva sección de preferencias.
+Acción Requerida (Opcional pero Recomendado): Para una mejor experiencia de usuario, deberías actualizar la lógica de la simulación (dentro del bucle Array.from({ length: 28 }).map(...)) para que lea los valores de frecuencia, horarios, días preferidos, etc., y muestre una previsualización más fiel a lo que el usuario está configurando en la sección "Preferencias de distribución" cuando "custom" está seleccionado.
+Pequeños Detalles de UI/UX:
+
+Radio Buttons IDs: En la sección "Preferencia de frecuencia", asegúrate de que los id de RadioGroupItem (r1, r2, r3) sean únicos si la librería lo requiere.
+Slider y Badges en "Custom": ¿Cómo deberían comportarse el Slider de "Nivel de concentración" y los Badges de "Ponderación de días" cuando se selecciona "custom"? Actualmente, su lógica de resaltado/valor parece depender de los valores predefinidos (uniform, weekdays, etc.). Quizás deberían desactivarse o tener un comportamiento específico para "custom".
