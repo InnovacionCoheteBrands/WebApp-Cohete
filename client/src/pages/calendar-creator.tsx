@@ -424,7 +424,25 @@ export default function CalendarCreator() {
   };
   
   const handleRemoveExcludedDate = (index: number) => {
-    setExcludedDates(prev => prev.filter((_, i) => i !== index));
+    // Remover del array de strings
+    const newExcludedDates = [...excludedDates];
+    const removedDate = newExcludedDates.splice(index, 1)[0];
+    setExcludedDates(newExcludedDates);
+    
+    // También debemos remover del array de objetos Date
+    // Convertimos la fecha de string a Date para poder encontrarla
+    const dateParts = removedDate.split('/').map(part => parseInt(part, 10));
+    const dateToRemove = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+    
+    // Filtramos las fechas y mantenemos todas excepto la que queremos eliminar
+    setExclusionDates(prevDates => 
+      prevDates.filter(date => 
+        !(date.getDate() === dateToRemove.getDate() && 
+          date.getMonth() === dateToRemove.getMonth() && 
+          date.getFullYear() === dateToRemove.getFullYear())
+      )
+    );
+    
     toast({
       description: "Fecha eliminada de exclusiones",
     });
@@ -1325,14 +1343,24 @@ export default function CalendarCreator() {
                                             mode="multiple"
                                             selected={exclusionDates}
                                             onSelect={(dates) => {
-                                              setExclusionDates(dates || []);
-                                              // Convertir las nuevas fechas seleccionadas a formato de cadena
-                                              const formattedDates = dates?.map(date => 
+                                              // Verificamos que dates no sea null o undefined
+                                              const newSelectedDates = dates || [];
+                                              setExclusionDates(newSelectedDates);
+                                              
+                                              // Convertir las fechas seleccionadas a formato de cadena
+                                              const formattedDates = newSelectedDates.map(date => 
                                                 format(date, "dd/MM/yyyy", { locale: es })
-                                              ) || [];
+                                              );
                                               
                                               // Actualizar el estado de fechas excluidas
                                               setExcludedDates(formattedDates);
+                                              
+                                              // Mostrar confirmación al usuario
+                                              if (newSelectedDates.length > 0) {
+                                                toast({
+                                                  description: `${newSelectedDates.length} fechas seleccionadas para exclusión`,
+                                                });
+                                              }
                                             }}
                                             className="rounded-md border border-slate-200 dark:border-slate-700"
                                             locale={es}
