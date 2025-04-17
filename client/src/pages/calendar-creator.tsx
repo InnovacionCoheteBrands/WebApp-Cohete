@@ -182,7 +182,14 @@ export default function CalendarCreator() {
     { time: "18:30", days: "L,X,V" },
     { time: "11:00", days: "S,D" }
   ]);
-  const [excludedDates, setExcludedDates] = useState(["15/05/2025", "24/05/2025", "01/06/2025"]);
+  // Convertir fechas iniciales de string a objetos Date
+  const initialExcludedDates = ["15/05/2025", "24/05/2025", "01/06/2025"];
+  const initialDateObjects = initialExcludedDates.map(dateStr => {
+    const [day, month, year] = dateStr.split('/').map(num => parseInt(num, 10));
+    return new Date(year, month - 1, day); // Mes es base 0 en JavaScript
+  });
+  
+  const [excludedDates, setExcludedDates] = useState(initialExcludedDates);
   const [distributionType, setDistributionType] = useState("equilibrada");
   const [distributionIntensity, setDistributionIntensity] = useState(50);
   
@@ -193,7 +200,7 @@ export default function CalendarCreator() {
   const [newPublicationDays, setNewPublicationDays] = useState("todos");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showExclusionDatePicker, setShowExclusionDatePicker] = useState(false);
-  const [exclusionDates, setExclusionDates] = useState<Date[]>([]);
+  const [exclusionDates, setExclusionDates] = useState<Date[]>(initialDateObjects);
   
   // Fetch projects
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
@@ -407,6 +414,13 @@ export default function CalendarCreator() {
   const handleAddExcludedDate = () => {
     // Alternar visibilidad del calendario
     setShowExclusionDatePicker(!showExclusionDatePicker);
+    
+    // Mostrar mensaje de ayuda cuando se abre el selector
+    if (!showExclusionDatePicker) {
+      toast({
+        description: "Selecciona una o varias fechas para excluir del calendario",
+      });
+    }
   };
   
   const handleRemoveExcludedDate = (index: number) => {
