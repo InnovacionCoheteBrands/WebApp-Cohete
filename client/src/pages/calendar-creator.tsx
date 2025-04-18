@@ -317,7 +317,7 @@ export default function CalendarCreator() {
       const platform = PLATFORMS.find(p => p.id === platformId);
       const defaultContentTypes = platform?.contentTypes.map(type => ({
         type,
-        quantity: 1
+        quantity: 0 // Comenzamos con 0 para permitir que el usuario decida qué tipos quiere incluir
       })) || [];
       
       form.setValue('platforms', [
@@ -1724,7 +1724,15 @@ export default function CalendarCreator() {
                                   <div className="space-y-4">
                                     <div className="flex items-center gap-2">
                                       <h4 className="text-sm font-medium dark:text-white">Tipos de contenido</h4>
-                                      <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 dark:bg-primary/10 dark:text-primary-foreground dark:border-primary/30">
+                                      <Badge 
+                                        variant="outline" 
+                                        className={`
+                                          ${platformConfig.contentTypes.reduce((acc, ct) => acc + ct.quantity, 0) === 0 
+                                            ? "bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800/50 dark:text-slate-400 dark:border-slate-700/30" 
+                                            : "bg-primary/5 text-primary border-primary/20 dark:bg-primary/10 dark:text-primary-foreground dark:border-primary/30"
+                                          }
+                                        `}
+                                      >
                                         Cantidad total: {platformConfig.contentTypes.reduce((acc, ct) => acc + ct.quantity, 0)}
                                       </Badge>
                                     </div>
@@ -1744,7 +1752,14 @@ export default function CalendarCreator() {
                                               </div>
                                               <span className="text-sm font-medium capitalize dark:text-white">{contentType.type}</span>
                                             </div>
-                                            <Badge variant="outline" className="bg-amber-50 border-amber-200 text-amber-700 px-1.5 dark:bg-amber-900/20 dark:border-amber-800/60 dark:text-amber-300">
+                                            <Badge 
+                                              variant="outline" 
+                                              className={`px-1.5 ${
+                                                contentType.quantity === 0 
+                                                  ? "bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-900/20 dark:border-slate-700/60 dark:text-slate-500" 
+                                                  : "bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-800/60 dark:text-amber-300"
+                                              }`}
+                                            >
                                               {contentType.quantity}
                                             </Badge>
                                           </div>
@@ -1758,7 +1773,7 @@ export default function CalendarCreator() {
                                               onClick={() => handleContentTypeQuantityChange(
                                                 platformId, 
                                                 contentType.type, 
-                                                Math.max(1, contentType.quantity - 1)
+                                                Math.max(0, contentType.quantity - 1)
                                               )}
                                             >
                                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -1769,7 +1784,7 @@ export default function CalendarCreator() {
                                             <div className="flex-1">
                                               <input 
                                                 type="range" 
-                                                min="1" 
+                                                min="0" 
                                                 max="30" 
                                                 value={contentType.quantity}
                                                 onChange={(e) => handleContentTypeQuantityChange(
