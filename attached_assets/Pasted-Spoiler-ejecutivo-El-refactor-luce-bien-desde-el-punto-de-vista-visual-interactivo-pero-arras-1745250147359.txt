@@ -1,0 +1,42 @@
+Spoiler ejecutivo:
+El refactor luce bien desde el punto de vista visual–interactivo 💅🏻, pero arrastra tres “red flags” de front‑end que conviene ajustar antes de hacer merge a main.
+
+1. Qué mejoró claramente
+
+Área	Antes	Después	Valor aportado
+Jerarquía visual	text-lg + h-10 íconos	text-xl, h-12 íconos, gradientes	Titulares e iconos más visibles, UX más “premium”.
+Feedback al hover	Sombra sutil (shadow-md)	Sombra profunda + transiciones 300 ms	Sensación de “tarjeta clicable” moderna.
+Consistencia cromática	Fondos planos	bg-gradient-to-br + sombras coloreadas	Mejor alineación con branding (azul/ámbar).
+Micro‑animaciones	Sólo overlay vertical	Gradiente + cambios de color y sombra sincronizados con group-hover	Interacción más rica y fluida.
+2. Riesgos / mejoras pendientes
+Responsividad del grid interno
+
+tsx
+Copiar
+Editar
+<div className="mt-6 grid grid-cols-2 gap-4">
+En móviles (≤ sm) ya no existe fallback a una sola columna. Si el contenedor tiene < 320 px de ancho, los 2 cards pueden colisionar o forzar scroll horizontal.
+Propuesta: grid-cols-1 sm:grid-cols-2 (o volver a la lógica anterior con md:grid-cols-2).
+
+Reutilización del prefijo group
+
+El Card y el Button comparten la clase group.
+
+Los span/overlay dentro del botón dependen del group del botón, por lo que funciona.
+
+Sin embargo, cualquier group-hover: que cuelgue de la tarjeta influye en TODOS los descendientes, y viceversa.
+Riesgo: efectos encadenados inesperados (por ejemplo, overlay del botón activándose al pasar el cursor por la esquina del card).
+Mitigación: renombrar una de las instancias (group/card, group/button) con peer o group/card usando peer-hover:.
+
+Accesibilidad (contraste)
+
+Texto text-blue-600 sobre fondo white y text-blue-600/80 sobre white podrían quedarse en 3.9:1.
+
+En Dark Mode el contraste mejora, pero en Light podría no pasar WCAG AA.
+Solución rápida: subir tono (blue-700) o añadir font-semibold a los subtítulos.
+
+Performance menor en dispositivos de gama baja
+
+Las sombras RGBA grandes (shadow-[0_8px_32px_rgba(...)]) + gradientes pueden penalizar renderizado en móviles.
+
+No es blocker, pero conviene probar en Lighthouse Mobile.
