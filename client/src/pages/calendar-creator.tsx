@@ -570,13 +570,30 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Inicio</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <Input 
-                                    type="date" 
-                                    className="h-11 pl-10 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]" 
-                                    {...field} 
-                                  />
+                                  <div className="relative group">
+                                    <Button 
+                                      type="button"
+                                      variant="outline"
+                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                                      onClick={() => {
+                                        // Simulamos un clic en el input de fecha para abrir el selector nativo
+                                        const dateInput = document.getElementById("date-input-startDate");
+                                        if (dateInput) {
+                                          dateInput.click();
+                                        }
+                                      }}
+                                    >
+                                      {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
+                                    </Button>
+                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
+                                    <Input 
+                                      id="date-input-startDate"
+                                      type="date" 
+                                      className="absolute inset-0 opacity-0 w-full cursor-pointer"
+                                      {...field} 
+                                    />
+                                  </div>
                                 </FormControl>
-                                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
                               </div>
                               <FormMessage />
                             </FormItem>
@@ -591,13 +608,30 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Fin (opcional)</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <Input 
-                                    type="date" 
-                                    className="h-11 pl-10 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]" 
-                                    {...field} 
-                                  />
+                                  <div className="relative group">
+                                    <Button 
+                                      type="button"
+                                      variant="outline"
+                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                                      onClick={() => {
+                                        // Simulamos un clic en el input de fecha para abrir el selector nativo
+                                        const dateInput = document.getElementById("date-input-endDate");
+                                        if (dateInput) {
+                                          dateInput.click();
+                                        }
+                                      }}
+                                    >
+                                      {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
+                                    </Button>
+                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
+                                    <Input 
+                                      id="date-input-endDate"
+                                      type="date" 
+                                      className="absolute inset-0 opacity-0 w-full cursor-pointer"
+                                      {...field} 
+                                    />
+                                  </div>
                                 </FormControl>
-                                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
                               </div>
                               <FormDescription className="text-xs flex items-center gap-1.5 text-amber-600 font-medium dark:text-amber-400">
                                 <AlertCircle className="h-3.5 w-3.5" />
@@ -1327,7 +1361,7 @@ export default function CalendarCreator() {
                                       <Button 
                                         variant="outline" 
                                         size="sm" 
-                                        className="h-7 px-2 text-xs"
+                                        className="h-7 px-2 text-xs bg-white hover:bg-slate-50 transition-colors dark:bg-slate-800 dark:hover:bg-slate-700 dark:border-slate-700"
                                         onClick={handleAddExcludedDate}
                                       >
                                         <Plus className="h-3 w-3 mr-1" />
