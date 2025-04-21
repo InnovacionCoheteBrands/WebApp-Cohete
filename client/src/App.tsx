@@ -100,7 +100,7 @@ function App() {
             <Route path="/cohete_account" component={CreateAccount} />
             <Route path="/forgot-password" component={ForgotPassword} />
             <Route path="/reset-password" component={ResetPassword} />
-            <Route path="/setup/create-primary-user" component={CreatePrimaryUser} />
+            <Route path="/create-user" component={CreatePrimaryUser} />
             
             {/* Fallback to 404 */}
             <Route component={NotFound} />
