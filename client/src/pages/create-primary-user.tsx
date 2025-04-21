@@ -42,6 +42,7 @@ export default function CreatePrimaryUser() {
       const response = await apiRequest("POST", "/api/create-primary-account", data);
       
       if (response.ok) {
+        const userData = await response.json();
         setIsSuccess(true);
         toast({
           title: "Usuario creado con éxito",
@@ -53,13 +54,17 @@ export default function CreatePrimaryUser() {
         form.reset();
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Error al crear el usuario");
+        toast({
+          title: "Error al crear usuario",
+          description: errorData.message || "No se pudo crear el usuario primario",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error creating primary user:", error);
       toast({
-        title: "Error al crear usuario",
-        description: error instanceof Error ? error.message : "Ocurrió un error inesperado",
+        title: "Error de conexión",
+        description: "No se pudo conectar con el servidor. Verifica tu conexión a internet.",
         variant: "destructive",
       });
     } finally {
