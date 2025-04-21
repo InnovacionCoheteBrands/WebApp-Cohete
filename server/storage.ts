@@ -459,10 +459,14 @@ export class DatabaseStorage implements IStorage {
 
   async listRecentSchedules(limit: number = 5): Promise<(Schedule & { project: Project, entries: ScheduleEntry[] })[]> {
     try {
-      // Obtener schedules recientes
+      // Obtener schedules recientes con join a projects para asegurar que el proyecto existe
       const schedulesResult = await db
-        .select()
+        .select({
+          schedule: schedules,
+          project: projects
+        })
         .from(schedules)
+        .innerJoin(projects, eq(schedules.projectId, projects.id))
         .orderBy(desc(schedules.createdAt))
         .limit(limit);
       
@@ -470,36 +474,24 @@ export class DatabaseStorage implements IStorage {
         return []; // No hay schedules para procesar
       }
       
-      // Para cada schedule, obtener su proyecto relacionado y las entradas
+      // Para cada schedule, obtener sus entradas
       const results: (Schedule & { project: Project, entries: ScheduleEntry[] })[] = [];
       
-      for (const schedule of schedulesResult) {
+      for (const { schedule, project } of schedulesResult) {
         try {
-          // Validar que el schedule y sus IDs sean números válidos
-          const scheduleId = parseInt(String(schedule?.id));
-          const projectId = parseInt(String(schedule?.projectId));
-          
-          if (isNaN(scheduleId) || isNaN(projectId)) {
-            console.warn("Schedule con IDs inválidos encontrado:", schedule);
-            continue; // Saltamos schedules con IDs inválidos
+          if (!schedule || !schedule.id) {
+            console.warn("Schedule inválido encontrado");
+            continue;
           }
           
-          // Obtener el proyecto relacionado
-          const [project] = await db
-            .select()
-            .from(projects)
-            .where(eq(projects.id, schedule.projectId));
+          // Obtener las entradas para este cronograma
+          const entries = await this.listEntriesBySchedule(schedule.id);
           
-          if (project) {
-            // También obtener las entradas para este cronograma
-            const entries = await this.listEntriesBySchedule(schedule.id);
-            
-            results.push({
-              ...schedule,
-              project,
-              entries: entries || [] // Incluir las entradas en el resultado, asegurando que nunca es null
-            });
-          }
+          results.push({
+            ...schedule,
+            project,
+            entries: entries || [] // Incluir las entradas en el resultado, asegurando que nunca es null
+          });
         } catch (err) {
           console.error(`Error getting project for schedule ${schedule?.id}:`, err);
           // Si falla obtener el proyecto, saltamos este schedule
