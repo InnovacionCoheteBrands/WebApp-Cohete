@@ -15,6 +15,7 @@ import Analytics from "@/pages/analytics";
 import CreateAccount from "@/pages/create-account";
 import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
+import CreatePrimaryUser from "@/pages/create-primary-user";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -99,6 +100,7 @@ function App() {
             <Route path="/cohete_account" component={CreateAccount} />
             <Route path="/forgot-password" component={ForgotPassword} />
             <Route path="/reset-password" component={ResetPassword} />
+            <Route path="/setup/create-primary-user" component={CreatePrimaryUser} />
             
             {/* Fallback to 404 */}
             <Route component={NotFound} />
