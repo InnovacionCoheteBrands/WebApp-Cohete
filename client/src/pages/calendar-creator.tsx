@@ -148,7 +148,7 @@ const formSchema = z.object({
     required_error: "Por favor selecciona una fecha de fin",
   }).optional(),
   specifications: z.string().optional(),
-  aiModel: z.enum(["mistral", "openai", "grok"]).default("mistral"),
+  aiModel: z.enum(["openai", "grok"]).default("openai"),
   advanced: z.object({
     includeCopyIn: z.boolean().default(true),
     includeCopyOut: z.boolean().default(true),
@@ -220,7 +220,7 @@ export default function CalendarCreator() {
     defaultValues: {
       name: "",
       specifications: "",
-      aiModel: "mistral", // Por defecto usamos Mistral
+      aiModel: "openai", // Por defecto usamos OpenAI
       advanced: {
         includeCopyIn: true,
         includeCopyOut: true,
@@ -1939,23 +1939,15 @@ export default function CalendarCreator() {
                               >
                                 <FormItem className="flex items-center space-x-3 space-y-0">
                                   <FormControl>
-                                    <RadioGroupItem value="mistral" className="data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500" />
-                                  </FormControl>
-                                  <FormLabel className="font-normal cursor-pointer dark:text-white">
-                                    <div className="flex items-center">
-                                      Mistral AI
-                                      <Badge variant="outline" className="ml-2 bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700/40 dark:text-blue-300">
-                                        Recomendado
-                                      </Badge>
-                                    </div>
-                                  </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-3 space-y-0">
-                                  <FormControl>
                                     <RadioGroupItem value="openai" className="data-[state=checked]:border-green-500 data-[state=checked]:bg-green-500" />
                                   </FormControl>
                                   <FormLabel className="font-normal cursor-pointer dark:text-white">
-                                    OpenAI GPT-4o
+                                    <div className="flex items-center">
+                                      OpenAI GPT-4o
+                                      <Badge variant="outline" className="ml-2 bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-700/40 dark:text-green-300">
+                                        Recomendado
+                                      </Badge>
+                                    </div>
                                   </FormLabel>
                                 </FormItem>
                                 <FormItem className="flex items-center space-x-3 space-y-0">

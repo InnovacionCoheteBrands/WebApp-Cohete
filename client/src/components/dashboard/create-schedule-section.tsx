@@ -45,6 +45,7 @@ const createScheduleSchema = z.object({
   projectId: z.string().min(1, "Please select a project"),
   startDate: z.string().min(1, "Start date is required"),
   specifications: z.string().optional(),
+  aiModel: z.enum(["openai", "grok"]).default("openai"),
 });
 
 // Tipo para los comentarios de revisión
@@ -78,6 +79,7 @@ export default function CreateScheduleSection() {
       projectId: "",
       startDate: "",
       specifications: "",
+      aiModel: "openai", // Por defecto usamos OpenAI
     },
   });
 
