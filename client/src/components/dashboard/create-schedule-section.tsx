@@ -95,7 +95,7 @@ export default function CreateScheduleSection() {
         {
           startDate: values.startDate,
           specifications: values.specifications,
-          aiModel: values.aiModel, // Incluimos el modelo de IA seleccionado
+          // El campo aiModel ha sido eliminado
         }
       );
       return await res.json();
