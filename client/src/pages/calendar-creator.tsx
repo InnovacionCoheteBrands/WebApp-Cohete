@@ -1520,42 +1520,62 @@ export default function CalendarCreator() {
                                       </div>
                                     </div>
                                     
-                                    <div className="bg-white dark:bg-slate-800 rounded-md p-4 border border-slate-200 dark:border-slate-700">
-                                      {(() => {
-                                        // Obtener la fecha de inicio seleccionada en el formulario
-                                        const startDateStr = form.watch('startDate');
-                                        const periodType = form.watch('periodType'); // Obtener el tipo de periodo seleccionado
-                                        let startDate = new Date();
-                                        let endDate = new Date();
-                                        let calendarDays: Array<{ date: Date, dayOfMonth: number, dayOfWeek: number }> = [];
-                                        let formattedStartDate = "Fecha no seleccionada";
-                                        let formattedEndDate = "";
+                                    {/* Calculamos las variables del calendario */}
+                                    {(() => {
+                                      // Esta función se ejecuta en cada renderizado para calcular las variables del calendario
+                                      const startDateStr = form.watch('startDate');
+                                      const periodType = form.watch('periodType');
+                                      const numDays = periodType === "mensual" ? 31 : 15;
+                                      
+                                      // Scope de la variable para acceder desde todo el componente
+                                      window.calendarInfo = {
+                                        calendarDays: [] as Array<{ date: Date, dayOfMonth: number, dayOfWeek: number }>,
+                                        startDate: new Date(),
+                                        endDate: new Date(),
+                                        formattedStartDate: "Fecha no seleccionada",
+                                        formattedEndDate: "",
+                                        numDays: numDays
+                                      };
+                                      
+                                      // Verificar si hay una fecha de inicio válida
+                                      if (startDateStr && isValid(new Date(startDateStr))) {
+                                        window.calendarInfo.startDate = new Date(startDateStr);
+                                        window.calendarInfo.formattedStartDate = format(window.calendarInfo.startDate, "d 'de' MMMM", { locale: es });
                                         
-                                        // Determinar número de días según el tipo de periodo
-                                        const numDays = periodType === "mensual" ? 31 : 15;
+                                        // Calcular la fecha de fin según el tipo de periodo
+                                        window.calendarInfo.endDate = new Date(window.calendarInfo.startDate);
+                                        window.calendarInfo.endDate.setDate(window.calendarInfo.startDate.getDate() + numDays - 1);
+                                        window.calendarInfo.formattedEndDate = format(window.calendarInfo.endDate, "d 'de' MMMM", { locale: es });
                                         
-                                        // Verificar si hay una fecha de inicio válida
-                                        if (startDateStr && isValid(new Date(startDateStr))) {
-                                          startDate = new Date(startDateStr);
-                                          formattedStartDate = format(startDate, "d 'de' MMMM", { locale: es });
-                                          
-                                          // Calcular la fecha de fin según el tipo de periodo
-                                          endDate = new Date(startDate);
-                                          endDate.setDate(startDate.getDate() + numDays - 1); // Restamos 1 para incluir el día inicial
-                                          formattedEndDate = format(endDate, "d 'de' MMMM", { locale: es });
-                                          
-                                          // Generar los días del calendario según el periodo
+                                        // Generar los días del calendario
+                                        try {
+                                          // Generar días de manera segura
                                           for (let i = 0; i < numDays; i++) {
-                                            const day = new Date(startDate);
-                                            day.setDate(startDate.getDate() + i);
+                                            const day = new Date(window.calendarInfo.startDate);
+                                            day.setDate(window.calendarInfo.startDate.getDate() + i);
                                             
-                                            calendarDays.push({
+                                            window.calendarInfo.calendarDays.push({
                                               date: day,
                                               dayOfMonth: day.getDate(),
-                                              dayOfWeek: day.getDay() === 0 ? 6 : day.getDay() - 1 // Convertir 0-6 (Dom-Sáb) a 0-6 (Lun-Dom)
+                                              dayOfWeek: day.getDay() === 0 ? 6 : day.getDay() - 1
                                             });
                                           }
+                                        } catch (e) {
+                                          console.error("Error generando días:", e);
                                         }
+                                      }
+                                      
+                                      return null; // Sólo para cálculos, no renderiza nada
+                                    })()}
+                                    
+                                    <div className="bg-white dark:bg-slate-800 rounded-md p-4 border border-slate-200 dark:border-slate-700">
+                                      {(() => {
+                                        // Obtener valores computados anteriormente
+                                        const { calendarDays, formattedStartDate, formattedEndDate } = window.calendarInfo || {
+                                          calendarDays: [],
+                                          formattedStartDate: "Fecha no seleccionada",
+                                          formattedEndDate: ""
+                                        };
                                         
                                         // Calcular el desplazamiento inicial para el primer día
                                         const initialOffset = calendarDays.length > 0 ? calendarDays[0].dayOfWeek : 0;
@@ -1694,13 +1714,37 @@ export default function CalendarCreator() {
                                         </div>
                                         <div>
                                           <span className="text-slate-600 dark:text-slate-300 font-medium">
-                                            Total: {calendarDays.filter(day => {
-                                              const dayIndex = day.dayOfWeek;
-                                              const dayName = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
-                                              const priority = dayPriorities[dayName] || "ninguna";
-                                              const formattedDay = format(day.date, "dd/MM/yyyy", { locale: es });
-                                              return priority !== "ninguna" && !excludedDates.includes(formattedDay);
-                                            }).length * (dayPriorities["L"] === "alta" ? 2 : 1)} publicaciones
+                                            Total: {(() => {
+                                              try {
+                                                // Método simplificado y más seguro para calcular el total de publicaciones
+                                                let totalPosts = 0;
+                                                const info = window.calendarInfo || { calendarDays: [] };
+                                                
+                                                // Calculamos los días que tienen publicaciones
+                                                const daysWithPosts = info.calendarDays.filter(day => {
+                                                  if (!day) return false;
+                                                  const dayIndex = day.dayOfWeek;
+                                                  const dayName = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
+                                                  const priority = dayPriorities[dayName] || "ninguna";
+                                                  const formattedDay = format(day.date, "dd/MM/yyyy", { locale: es });
+                                                  return priority !== "ninguna" && !excludedDates.includes(formattedDay);
+                                                });
+                                                
+                                                // Calculamos el total considerando prioridades
+                                                for (const day of daysWithPosts) {
+                                                  const dayIndex = day.dayOfWeek;
+                                                  const dayName = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
+                                                  const priority = dayPriorities[dayName];
+                                                  
+                                                  totalPosts += priority === "alta" ? 2 : 1;
+                                                }
+                                                
+                                                return totalPosts;
+                                              } catch (e) {
+                                                console.error("Error calculando publicaciones:", e);
+                                                return 0;
+                                              }
+                                            })()} publicaciones
                                           </span>
                                         </div>
                                       </div>
