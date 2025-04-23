@@ -577,7 +577,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate required data
-      const { startDate, specifications, aiModel } = req.body;
+      const { startDate, specifications, aiModel, periodType } = req.body;
       if (!startDate) {
         return res.status(400).json({ message: "Start date is required" });
       }
@@ -593,6 +593,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Valor predeterminado: OpenAI
         selectedAIModel = AIModel.OPENAI;
+      }
+      
+      // Determinar el número de días según el tipo de periodo
+      let periodDays = 15; // Valor predeterminado: quincenal (15 días)
+      if (periodType === "mensual") {
+        periodDays = 31; // Periodo mensual: 31 días
       }
       
       // Get project with analysis
@@ -615,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         startDate,
         specifications,
-        15, // Periodo quincenal (15 días)
+        periodDays, // Usar el número de días según el tipo de periodo seleccionado (quincenal o mensual)
         previousContent,
         selectedAIModel // Pasar el modelo de IA seleccionado
       );
@@ -628,6 +634,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         specifications,
         createdBy: req.user.id,
         aiModel: selectedAIModel, // Guardar el modelo de IA utilizado
+        periodType: periodType || "quincenal", // Guardar el tipo de periodo seleccionado
         distributionPreferences: { type: "uniform" } // Valor predeterminado necesario
       });
       

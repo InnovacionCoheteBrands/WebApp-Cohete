@@ -83,6 +83,8 @@ export const schedules = pgTable("schedules", {
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   specifications: text("specifications"),
+  aiModel: aiModelEnum("ai_model").default('openai'), // Modelo de IA usado para generar
+  periodType: text("period_type").default('quincenal'), // Tipo de periodo: quincenal o mensual
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -293,7 +295,9 @@ export const insertScheduleSchema = createInsertSchema(schedules)
     createdAt: true,
   })
   .extend({
-    distributionPreferences: distributionPreferencesSchema
+    distributionPreferences: distributionPreferencesSchema,
+    periodType: z.enum(['quincenal', 'mensual']).default('quincenal'),
+    aiModel: z.enum(['openai', 'grok']).default('openai')
   });
 
 export const insertScheduleEntrySchema = createInsertSchema(scheduleEntries).omit({
