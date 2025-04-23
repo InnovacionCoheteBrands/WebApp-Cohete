@@ -1,11 +1,8 @@
-import OpenAI from "openai";
 import { format, parseISO, addDays } from "date-fns";
 import { AIModel } from "@shared/schema";
-import { mistralService } from "./mistral-integration";
 import { grokService } from "./grok-integration";
 
-// Integraciones con varios modelos de IA
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+// Solo usamos la integración de Grok para IA
 
 export interface ContentScheduleEntry {
   title: string;
@@ -26,9 +23,8 @@ export interface ContentSchedule {
 }
 
 /**
- * Generates a content schedule for social media using the selected AI model
- * Takes into account the monthly frequency of posts defined for each social network
- * @param aiModel The AI model to use for generation (mistral, openai, grok)
+ * Genera un cronograma de contenido para redes sociales usando exclusivamente Grok AI
+ * Tiene en cuenta la frecuencia mensual de publicaciones definida para cada red social
  */
 export async function generateSchedule(
   projectName: string,
@@ -36,8 +32,7 @@ export async function generateSchedule(
   startDate: string,
   specifications?: string,
   durationDays: number = 15, // Periodo quincenal fijo (15 días)
-  previousContent: string[] = [],
-  aiModel: AIModel = AIModel.MISTRAL // Modelo predeterminado: Mistral
+  previousContent: string[] = []
 ): Promise<ContentSchedule> {
   try {
     // Format the start date using date-fns
@@ -119,24 +114,6 @@ export async function generateSchedule(
           ${previousContentSection || "No se proporcionó información sobre contenido previo. Enfócate en las mejores prácticas y los detalles del proyecto."}
           *Interpretación Clave Requerida:* Si se proporciona, **analiza insights clave** (qué funcionó/no funcionó, temas/formatos exitosos) y úsalos activamente para informar las nuevas ideas. Evita repetir errores, potencia éxitos.
 
-      **II. INSTRUCCIONES DETALLADAS PARA LA GENERACIÓN DEL CRONOGRAMA:**
-
-      1.  **Estrategia de Contenido Clara:**
-          - Define una **mezcla estratégica de pilares de contenido** (ej. 60% Educativo, 20% Interactivo, 10% Promocional, 10% Comunitario) basada en los objetivos y la audiencia.
-          - Establece una **cadencia de publicación** y horarios sugeridos óptimos por red social, considerando la audiencia.
-
-      2.  **Generación de Entradas Detalladas por Post:**
-          - Para cada día y red social programada, crea una entrada detallada con:
-            - **Idea/Brief de Contenido:** Ángulo específico y mensaje clave
-            - **Sugerencia Visual/Copy:** Indicación útil y específica
-            - **Hashtags Estratégicos:** 3-5 hashtags relevantes
-            - **Objetivo Específico del Post (KPI):** Vinculado a objetivos definidos
-            - **Llamada a la Acción (CTA):** Clara y medible
-
-      3.  **Coherencia y Adaptación:**
-          - Mantén tono consistente con la marca
-          - Adapta el mensaje a la audiencia y plataforma
-
       **III. FORMATO DE SALIDA OBLIGATORIO:**
 
       Devuelve el cronograma en formato JSON, con todo el contenido en español:
@@ -157,117 +134,11 @@ export async function generateSchedule(
           }
         ]
       }
-
-      METODOLOGÍA AVANZADA PARA CADA PUBLICACIÓN:
-      1. Analiza profundamente: Objetivos comerciales, insights del mercado y psicología de la audiencia
-      2. Personaliza estratégicamente: Adapta cada pieza a las particularidades y algoritmos de cada plataforma
-      3. Optimiza para conversión: Utiliza principios de psicología persuasiva y storytelling emocional
-      4. Diseña para impacto visual: Crea instrucciones que resulten en diseños memorables y alineados con la marca
-      5. Secuencia estratégicamente: Asegura que cada pieza construya sobre las anteriores para crear una narrativa cohesiva
-
-      ELEMENTOS CLAVE POR PIEZA DE CONTENIDO:
-      1. Título: Altamente específico, evocativo e intrigante (máx. 60 caracteres)
-      2. Descripción: Resumen conciso orientado a beneficios (máx. 150 caracteres)
-      3. Contenido principal: Mensaje completo estructurado para engagement máximo
-      4. Copy In: Texto integrado en el diseño - impactante, directo, sin emojis (máx. 60 caracteres)
-      5. Copy Out: Texto para caption - persuasivo, estructurado en párrafos, con llamada a la acción clara y emojis estratégicos
-      6. Instrucciones de diseño: Extraordinariamente detalladas, incluyendo composición, paleta de colores, tipografía, jerarquía visual y elementos específicos
-      7. Plataforma: Red social específica con formato adaptado a sus particularidades
-      8. Fecha y hora: Optimizadas según métricas actuales de engagement por plataforma
-      9. Hashtags: Combinación estratégica de hashtags populares, nicho y marca
-      10. Prompt para imagen: Detallado y técnico, diseñado para generar referencias visuales profesionales
-
-      ESPECIFICIDADES POR PLATAFORMA:
-      - Instagram: 
-         * Feed: Visuales impactantes, máximo 2250 caracteres en caption, 3-5 párrafos con espaciado
-         * Stories: Copy mínimo, diseño inmersivo, incluir elementos interactivos
-         * Reels: Energía alta, tendencia, guión con gancho en primeros 3 segundos
-      
-      - Facebook: 
-         * Posts estándar: Hasta 400 caracteres para mejor engagement, incluir elemento visual
-         * Videos: Optimizados para visualización sin sonido, subtítulos incluidos
-         * Artículos/Notas: Contenido valioso y detallado, estructura clara
-      
-      - TikTok: 
-         * Estructura: Gancho (3s) + Contenido principal (20-25s) + CTA (2-3s)
-         * Estilo: Auténtico, entretenido, uso de trending sounds
-         * Descripción: Concisa, con pregunta o intriga
-      
-      - LinkedIn: 
-         * Estructura: Gancho inicial + Valor principal + Insight profesional + CTA
-         * Tono: Profesional pero conversacional, enfocado en expertise
-         * Formato: Párrafos cortos, espaciados, uso de bullet points para escaneabilidad
-      
-      - Twitter: 
-         * Tweets principales: 240-250 caracteres máximo para permitir engagement
-         * Hilos: 4-6 tweets conectados, cada uno auto-contenido
-         * Elementos: Pregunta provocativa o estadística sorprendente + insight + CTA
-      
-      TÉCNICAS AVANZADAS DE COPYWRITING:
-      - Utiliza la estructura AIDA (Atención, Interés, Deseo, Acción) para copyOut
-      - Implementa principios de escasez y exclusividad cuando sea relevante
-      - Incorpora storytelling micro-narrativo para crear conexión emocional
-      - Usa gatillos psicológicos específicos según la plataforma y audiencia
-      - Evita absolutamente frases genéricas como "¡No te lo pierdas!" o "Más información en nuestro link"
-      
-      FORMATO DE ENTREGA:
-      Devuelve el cronograma en formato JSON, con todo el contenido en español:
-      {
-        "name": "Nombre del cronograma - creativo y específico al proyecto",
-        "entries": [
-          {
-            "title": "Título impactante en español",
-            "description": "Descripción persuasiva en español",
-            "content": "Contenido principal detallado en español",
-            "copyIn": "Texto integrado conciso e impactante en español",
-            "copyOut": "Texto estructurado para descripción en español con emojis estratégicos",
-            "designInstructions": "Instrucciones ultra-detalladas de diseño en español",
-            "platform": "Plataforma específica",
-            "postDate": "YYYY-MM-DD",
-            "postTime": "HH:MM",
-            "hashtags": "Mezcla estratégica de hashtags en español"
-          }
-        ]
-      }
-      
-      REQUERIMIENTOS CRÍTICOS:
-      - IMPORTANTE: Respeta ESTRICTAMENTE el número de publicaciones solicitado para cada red social según el valor "postsForPeriod" indicado en la distribución de publicaciones
-      - Crea un balance estratégico entre contenido educativo (30%), inspiracional (25%), promocional (25%) y de engagement (20%)
-      - Optimiza los horarios según métricas actuales de engagement por plataforma y segmento
-      - Asegura variedad visual en el feed al alternar formatos y composiciones
-      - Proporciona instrucciones de diseño extraordinariamente detalladas y ejecutables
-      - Proporciona instrucciones de diseño detalladas y específicas para los diseñadores
-      - Diseña el cronograma como una campaña estratégica integrada, no como publicaciones aisladas
-      - Absolutamente EVITA repetir contenido, temas o enfoques utilizados previamente
-      - Los copyIn deben ser concisos e impactantes, adecuados para superponerse en imágenes
-      - Los copyOut deben usar estructura de párrafos y ser persuasivos con llamadas a la acción específicas
     `;
 
-    // Seleccionar el modelo de IA a utilizar
-    let scheduleText = "";
-    
-    switch (aiModel) {
-      case AIModel.MISTRAL:
-        console.log("Generando cronograma con Mistral AI");
-        scheduleText = await mistralService.generateText(prompt);
-        break;
-      case AIModel.OPENAI:
-        console.log("Generando cronograma con OpenAI");
-        const openaiResponse = await openai.chat.completions.create({
-          model: "gpt-4o",
-          messages: [{ role: "user", content: prompt }],
-          temperature: 0.7,
-        });
-        scheduleText = openaiResponse.choices[0].message.content || "";
-        break;
-      case AIModel.GROK:
-        console.log("Generando cronograma con Grok AI");
-        scheduleText = await grokService.generateText(prompt);
-        break;
-      default:
-        console.log("Modelo no reconocido, usando Mistral AI como fallback");
-        scheduleText = await mistralService.generateText(prompt);
-    }
+    // Usamos exclusivamente Grok AI para generar el cronograma
+    console.log("Generando cronograma con Grok AI");
+    const scheduleText = await grokService.generateText(prompt);
     
     // Intentar parsear el resultado como JSON
     try {
@@ -276,13 +147,13 @@ export async function generateSchedule(
       const jsonMatch = scheduleText.match(jsonRegex);
       
       if (!jsonMatch) {
-        throw new Error(`No se encontró un objeto JSON válido en la respuesta del modelo de IA: ${aiModel}`);
+        throw new Error("No se encontró un objeto JSON válido en la respuesta del modelo de IA Grok");
       }
       
       const jsonContent = jsonMatch[0];
       return JSON.parse(jsonContent) as ContentSchedule;
     } catch (parseError) {
-      console.error(`Error al parsear la respuesta del modelo ${aiModel} como JSON:`, parseError);
+      console.error("Error al parsear la respuesta del modelo Grok como JSON:", parseError);
       console.log("Respuesta original:", scheduleText);
       
       // Intentar extraer la parte que parece JSON de la respuesta si es posible

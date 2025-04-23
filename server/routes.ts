@@ -601,7 +601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentHistory = await global.storage.listContentHistoryByProject(projectId);
       const previousContent = contentHistory.map(entry => entry.content);
       
-      // Generate schedule using AI, passing previous content
+      // Generate schedule using Grok AI, passing previous content
       const generatedSchedule = await generateSchedule(
         project.name,
         {
@@ -612,8 +612,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate,
         specifications,
         periodDays, // Usar el número de días según el tipo de periodo seleccionado (quincenal o mensual)
-        previousContent,
-        selectedAIModel // Pasar el modelo de IA seleccionado
+        previousContent
       );
       
       // Save schedule to database

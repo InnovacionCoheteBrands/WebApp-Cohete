@@ -8,7 +8,7 @@ export const projectStatusEnum = pgEnum('project_status', ['active', 'planning',
 export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'review', 'completed', 'cancelled']);
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent']);
 export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom']);
-export const aiModelEnum = pgEnum('ai_model', ['mistral', 'openai', 'grok']);
+export const aiModelEnum = pgEnum('ai_model', ['grok']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -83,7 +83,7 @@ export const schedules = pgTable("schedules", {
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   specifications: text("specifications"),
-  aiModel: aiModelEnum("ai_model").default('openai'), // Modelo de IA usado para generar
+  aiModel: aiModelEnum("ai_model").default('grok'), // Modelo de IA usado para generar
   periodType: text("period_type").default('quincenal'), // Tipo de periodo: quincenal o mensual
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -297,7 +297,7 @@ export const insertScheduleSchema = createInsertSchema(schedules)
   .extend({
     distributionPreferences: distributionPreferencesSchema,
     periodType: z.enum(['quincenal', 'mensual']).default('quincenal'),
-    aiModel: z.enum(['openai', 'grok']).default('openai')
+    aiModel: z.enum(['grok']).default('grok')
   });
 
 export const insertScheduleEntrySchema = createInsertSchema(scheduleEntries).omit({
@@ -364,10 +364,8 @@ export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type ScheduleEntry = typeof scheduleEntries.$inferSelect;
 export type InsertScheduleEntry = z.infer<typeof insertScheduleEntrySchema>;
 
-// Tipo para los modelos de IA
+// Tipo para los modelos de IA - Actualmente solo se usa Grok
 export enum AIModel {
-  MISTRAL = "mistral",
-  OPENAI = "openai",
   GROK = "grok"
 }
 
