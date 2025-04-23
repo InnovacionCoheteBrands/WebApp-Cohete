@@ -147,6 +147,7 @@ const formSchema = z.object({
   endDate: z.string({
     required_error: "Por favor selecciona una fecha de fin",
   }).optional(),
+  periodType: z.enum(["quincenal", "mensual"]).default("quincenal"),
   specifications: z.string().optional(),
   aiModel: z.enum(["openai", "grok"]).default("openai"),
   advanced: z.object({
@@ -220,6 +221,7 @@ export default function CalendarCreator() {
     defaultValues: {
       name: "",
       specifications: "",
+      periodType: "quincenal", // Por defecto usamos periodo quincenal
       aiModel: "openai", // Por defecto usamos OpenAI
       advanced: {
         includeCopyIn: true,
@@ -251,10 +253,17 @@ export default function CalendarCreator() {
 
     const startDate = new Date(values.startDate);
     
-    // Calcular automáticamente la fecha de fin para periodo quincenal
-    // Independientemente de lo que haya seleccionado el usuario
+    // Calcular automáticamente la fecha de fin según el periodo seleccionado
     const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + 14); // 15 días en total (día inicial + 14 días)
+    
+    // Ajustar la fecha según el tipo de periodo seleccionado
+    if (values.periodType === "mensual") {
+      // Para un periodo mensual, agregamos 30 días desde la fecha de inicio
+      endDate.setDate(startDate.getDate() + 30); // 31 días en total (día inicial + 30 días)
+    } else {
+      // Para un periodo quincenal, agregamos 14 días desde la fecha de inicio
+      endDate.setDate(startDate.getDate() + 14); // 15 días en total (día inicial + 14 días)
+    }
     
     // Actualizar el valor en el formulario para que sea visible para el usuario
     if (values.endDate) {
@@ -262,7 +271,7 @@ export default function CalendarCreator() {
     }
     
     toast({
-      title: "Periodo quincenal",
+      title: `Periodo ${values.periodType}`,
       description: `Se generará un calendario desde ${startDate.toLocaleDateString()} hasta ${endDate.toLocaleDateString()}`,
     });
 
