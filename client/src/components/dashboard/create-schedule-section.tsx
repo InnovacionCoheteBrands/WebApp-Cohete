@@ -46,7 +46,7 @@ const createScheduleSchema = z.object({
   projectId: z.string().min(1, "Please select a project"),
   startDate: z.string().min(1, "Start date is required"),
   specifications: z.string().optional(),
-  aiModel: z.enum(["openai", "grok"]).default("openai"),
+  aiModel: z.enum(["grok"]).default("grok"), // Forzamos siempre a usar Grok
 });
 
 // Tipo para los comentarios de revisión
@@ -80,7 +80,7 @@ export default function CreateScheduleSection() {
       projectId: "",
       startDate: "",
       specifications: "",
-      aiModel: "openai", // Por defecto usamos OpenAI
+      aiModel: "grok", // Usamos Grok como único modelo disponible
     },
   });
 
@@ -287,55 +287,7 @@ export default function CreateScheduleSection() {
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="aiModel"
-                    render={({ field }) => (
-                      <FormItem className="space-y-3">
-                        <FormLabel className="text-sm font-medium flex items-center gap-2 dark:text-slate-300">
-                          <Sparkles className="h-4 w-4 text-amber-500" />
-                          Modelo de IA
-                        </FormLabel>
-                        <FormDescription className="text-xs dark:text-slate-400 mb-3">
-                          Selecciona el modelo de IA para generar el contenido.
-                        </FormDescription>
-                        <FormControl>
-                          <RadioGroup
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                            className="flex flex-col space-y-2"
-                          >
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="openai" className="data-[state=checked]:border-green-500 data-[state=checked]:bg-green-500" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer dark:text-white">
-                                <div className="flex items-center">
-                                  OpenAI GPT-4o
-                                  <Badge variant="outline" className="ml-2 bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-700/40 dark:text-green-300">
-                                    Recomendado
-                                  </Badge>
-                                </div>
-                              </FormLabel>
-                            </FormItem>
-                            <FormItem className="flex items-center space-x-3 space-y-0">
-                              <FormControl>
-                                <RadioGroupItem value="grok" className="data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500" />
-                              </FormControl>
-                              <FormLabel className="font-normal cursor-pointer dark:text-white">
-                                <div className="flex items-center">
-                                  Grok AI
-                                  <Badge variant="outline" className="ml-2 bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-700/40 dark:text-purple-300">
-                                    Nuevo
-                                  </Badge>
-                                </div>
-                              </FormLabel>
-                            </FormItem>
-                          </RadioGroup>
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
+                  {/* La sección de selección de modelo de IA ha sido eliminada */}
 
                   <Button 
                     type="submit" 
