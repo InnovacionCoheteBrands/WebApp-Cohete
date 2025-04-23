@@ -312,9 +312,31 @@ export default function CalendarCreator() {
       
     } catch (error) {
       console.error('Error creating schedule:', error);
+      
+      // Extraer mensaje de error detallado si está disponible
+      let errorMessage = "Ocurrió un error al crear el calendario. Por favor, inténtalo de nuevo.";
+      
+      if (error.response) {
+        const responseData = error.response.data;
+        
+        // Comprobar si tenemos un mensaje específico del servidor
+        if (responseData && responseData.message) {
+          errorMessage = responseData.message;
+        }
+        
+        // Manejo especial basado en códigos de estado
+        if (error.response.status === 503) {
+          errorMessage = "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.";
+        } else if (error.response.status === 429) {
+          errorMessage = "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.";
+        } else if (error.response.status === 401) {
+          errorMessage = "Error en la configuración del servicio de IA. Por favor contacta al administrador.";
+        }
+      }
+      
       toast({
-        title: "Error",
-        description: "Ocurrió un error al crear el calendario. Por favor, inténtalo de nuevo.",
+        title: "Error al generar calendario",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
