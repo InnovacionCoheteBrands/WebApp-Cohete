@@ -137,72 +137,151 @@ export async function generateSchedule(
 
     // Usamos exclusivamente Grok AI para generar el cronograma
     console.log("Generando cronograma con Grok AI");
-    const scheduleText = await grokService.generateText(prompt);
+    const scheduleText = await grokService.generateText(prompt, {
+      // Aumentamos temperatura para evitar respuestas demasiado estructuradas que puedan causar problemas
+      temperature: 0.4,
+      // Aumentamos tokens máximos para obtener respuestas más completas
+      maxTokens: 4000
+    });
+    
+    // Registramos una versión truncada para debug
+    console.log("Respuesta de Grok AI (primeros 200 caracteres):", 
+      scheduleText.substring(0, 200) + "... [truncado]");
     
     try {
-      // Estrategia 1: Extraer y parsear directamente
+      // Registro posiciones
       const jsonStart = scheduleText.indexOf('{');
       const jsonEnd = scheduleText.lastIndexOf('}') + 1;
+      console.log(`Posiciones JSON detectadas: inicio=${jsonStart}, fin=${jsonEnd}`);
       
+      // Estrategia 1: Extraer y parsear directamente
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         try {
           const jsonContent = scheduleText.substring(jsonStart, jsonEnd);
+          // Registrar longitud para depuración
+          console.log(`Longitud del contenido JSON: ${jsonContent.length} caracteres`);
+          
           const parsedContent = JSON.parse(jsonContent);
           
           if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
             console.log(`Cronograma parseado correctamente con ${parsedContent.entries.length} entradas`);
-            return parsedContent;
+            // Verificar que las entradas tengan los campos requeridos mínimos
+            const validEntries = parsedContent.entries.filter((entry: any) => 
+              entry.title && entry.platform && entry.postDate && 
+              typeof entry.title === 'string' &&
+              typeof entry.platform === 'string' &&
+              typeof entry.postDate === 'string'
+            );
+            
+            if (validEntries.length === parsedContent.entries.length) {
+              // Todas las entradas son válidas
+              return parsedContent;
+            } else {
+              // Algunas entradas son inválidas, pero tenemos suficientes
+              if (validEntries.length > 0) {
+                console.log(`Se filtraron ${parsedContent.entries.length - validEntries.length} entradas inválidas`);
+                return {
+                  name: parsedContent.name || `Cronograma para ${projectName}`,
+                  entries: validEntries
+                };
+              }
+              // Si no hay entradas válidas, continuamos con la siguiente estrategia
+            }
           }
         } catch (error) {
           console.error("Error al parsear JSON completo:", error);
         }
       }
       
-      // Estrategia 2: Extraer y limpiar el JSON antes de parsearlo
+      // Estrategia 2: Normalizar y limpiar el JSON antes de parsearlo
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         try {
           let jsonContent = scheduleText.substring(jsonStart, jsonEnd);
+          console.log("Aplicando limpieza al JSON...");
           
-          // Limpiar problemas comunes
+          // Normalizar saltos de línea y espacios
+          jsonContent = jsonContent.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
+          
+          // Arreglar problemas comunes en JSON como separaciones, comillas, etc.
           jsonContent = jsonContent.replace(/}\s*{/g, '},{');
           jsonContent = jsonContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
           jsonContent = jsonContent.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
           jsonContent = jsonContent.replace(/:(\s*)'([^']*)'/g, ':$1"$2"');
+          // Reemplazar comillas españolas por comillas inglesas
+          jsonContent = jsonContent.replace(/«/g, '"').replace(/»/g, '"');
+          // Asegurar comillas alrededor de strings en español con acentos y ñ
+          jsonContent = jsonContent.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
+          
+          console.log("JSON limpiado (primeros 100 caracteres):", 
+            jsonContent.substring(0, 100) + "... [truncado]");
           
           const parsedContent = JSON.parse(jsonContent);
           
           if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
             console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
-            return parsedContent;
+            // Verificar entradas válidas
+            const validEntries = parsedContent.entries.filter((entry: any) => 
+              entry.title && entry.platform && entry.postDate
+            );
+            
+            if (validEntries.length > 0) {
+              return {
+                name: parsedContent.name || `Cronograma para ${projectName}`,
+                entries: validEntries
+              };
+            }
           }
         } catch (error) {
           console.error("Error al parsear JSON limpiado:", error);
         }
       }
       
-      // Estrategia 3: Extraer objetos individuales
+      // Estrategia 3: Buscar y extraer entradas individuales con regex más flexible
       try {
-        const entriesRegex = /{[^{]*"title"[^}]*"platform"[^}]*"postDate"[^}]*}/g;
+        console.log("Aplicando extracción por expresiones regulares...");
+        // Regex mejorada para detectar objetos que parezcan entradas del calendario
+        const entriesRegex = /{(?:[^{}]|"[^"]*")*?"title"(?:[^{}]|"[^"]*")*?"platform"(?:[^{}]|"[^"]*")*?"postDate"(?:[^{}]|"[^"]*")*?}/g;
         const validEntries: ContentScheduleEntry[] = [];
         let match;
         
         while ((match = entriesRegex.exec(scheduleText)) !== null) {
           try {
             let entryText = match[0];
+            console.log("Encontrada posible entrada:", entryText.substring(0, 50) + "... [truncado]");
+            
+            // Normalizar
+            entryText = entryText.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
+            // Limpiar campos
             entryText = entryText.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
             entryText = entryText.replace(/:(\s*)'([^']*)'/g, ':$1"$2"');
+            entryText = entryText.replace(/«/g, '"').replace(/»/g, '"');
+            entryText = entryText.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
             
             const entry = JSON.parse(entryText);
             if (entry.title && entry.platform && entry.postDate) {
-              validEntries.push(entry);
+              // Aseguramos que tenga al menos campos mínimos
+              const completeEntry: ContentScheduleEntry = {
+                title: entry.title,
+                description: entry.description || "",
+                content: entry.content || "",
+                copyIn: entry.copyIn || "",
+                copyOut: entry.copyOut || "",
+                designInstructions: entry.designInstructions || "",
+                platform: entry.platform,
+                postDate: entry.postDate,
+                postTime: entry.postTime || "12:00",
+                hashtags: entry.hashtags || ""
+              };
+              validEntries.push(completeEntry);
+              console.log(`Entrada válida para ${entry.platform} en fecha ${entry.postDate}`);
             }
           } catch (e) {
-            // Ignorar entradas inválidas
+            console.warn("Error procesando entrada individual:", e);
           }
         }
         
         if (validEntries.length > 0) {
-          console.log(`Recuperadas ${validEntries.length} entradas de forma individual`);
+          console.log(`Recuperadas ${validEntries.length} entradas de forma individual mediante regex`);
           
           // Extraer nombre si es posible
           const nameMatch = scheduleText.match(/"name"\s*:\s*"([^"]+)"/);
@@ -217,8 +296,156 @@ export async function generateSchedule(
         console.error("Error al extraer entradas individuales:", error);
       }
       
-      // Fallback final
-      console.log("Usando cronograma fallback");
+      // Estrategia 4: Intento de análisis inteligente línea por línea para extraer contenido
+      console.log("Intentando extracción línea por línea para buscar publicaciones...");
+      
+      try {
+        // Dividir el texto en líneas y buscar patrones que parezcan entradas
+        const lines = scheduleText.split('\n');
+        const entries: ContentScheduleEntry[] = [];
+        
+        // Variables para rastrear una entrada en construcción
+        let currentEntry: Partial<ContentScheduleEntry> | null = null;
+        let potentialPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'TikTok', 'YouTube', 'Pinterest', 'WhatsApp'];
+        
+        // Patrones de fecha (formato YYYY-MM-DD)
+        const datePattern = /\d{4}-\d{2}-\d{2}/;
+        // Patrón de tiempo (formato HH:MM o H:MM)
+        const timePattern = /\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/;
+        
+        // Iterar por cada línea
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          // Ignorar líneas vacías
+          if (!line) continue;
+          
+          // Buscar plataformas
+          const platformFound = potentialPlatforms.find(platform => 
+            line.includes(platform) || 
+            line.toLowerCase().includes(platform.toLowerCase())
+          );
+          
+          // Buscar fechas
+          const dateMatch = line.match(datePattern);
+          // Buscar tiempos
+          const timeMatch = line.match(timePattern);
+          
+          // Si encontramos una plataforma o fecha, podría ser el inicio de una nueva entrada
+          if (platformFound || dateMatch) {
+            // Si ya teníamos una entrada en construcción con datos suficientes, guardémosla
+            if (currentEntry && currentEntry.title && currentEntry.platform && currentEntry.postDate) {
+              // Asegurar que todos los campos requeridos estén presentes
+              entries.push({
+                title: currentEntry.title,
+                description: currentEntry.description || "",
+                content: currentEntry.content || "",
+                copyIn: currentEntry.copyIn || "",
+                copyOut: currentEntry.copyOut || "",
+                designInstructions: currentEntry.designInstructions || "",
+                platform: currentEntry.platform,
+                postDate: currentEntry.postDate,
+                postTime: currentEntry.postTime || "12:00",
+                hashtags: currentEntry.hashtags || ""
+              });
+            }
+            
+            // Iniciar una nueva entrada
+            currentEntry = {};
+            
+            // Asignar plataforma si la encontramos
+            if (platformFound) {
+              currentEntry.platform = platformFound;
+            }
+            
+            // Asignar fecha si la encontramos
+            if (dateMatch) {
+              currentEntry.postDate = dateMatch[0];
+            }
+            
+            // Intenta extraer un título de esta línea o la siguiente
+            if (line.length > 5 && !line.startsWith('{') && !line.startsWith('"')) {
+              // Usar esta línea como título si parece un título (no demasiado largo)
+              if (line.length < 100) {
+                currentEntry.title = line;
+              } 
+              // O intenta ver si la siguiente línea podría ser un título
+              else if (i+1 < lines.length && lines[i+1].length < 100) {
+                currentEntry.title = lines[i+1].trim();
+              }
+            }
+          }
+          
+          // Si ya tenemos una entrada en construcción, seguir agregando datos
+          if (currentEntry) {
+            // Buscar tiempo si no lo tenemos
+            if (!currentEntry.postTime && timeMatch) {
+              currentEntry.postTime = timeMatch[0];
+            }
+            
+            // Intenta identificar contenido según palabras clave
+            if (line.toLowerCase().includes("descripción") || line.toLowerCase().includes("description")) {
+              currentEntry.description = extractContentAfterLabel(line);
+            } else if (line.toLowerCase().includes("contenido") || line.toLowerCase().includes("content")) {
+              currentEntry.content = extractContentAfterLabel(line);
+            } else if (line.toLowerCase().includes("copy in") || line.toLowerCase().includes("copyin")) {
+              currentEntry.copyIn = extractContentAfterLabel(line);
+            } else if (line.toLowerCase().includes("copy out") || line.toLowerCase().includes("copyout")) {
+              currentEntry.copyOut = extractContentAfterLabel(line);
+            } else if (line.toLowerCase().includes("instrucciones") || line.toLowerCase().includes("diseño")) {
+              currentEntry.designInstructions = extractContentAfterLabel(line);
+            } else if (line.toLowerCase().includes("hashtag")) {
+              currentEntry.hashtags = extractContentAfterLabel(line);
+            }
+            
+            // Si no tenemos título y esta línea parece un buen candidato, úsala
+            if (!currentEntry.title && line.length > 5 && line.length < 100 && 
+                !line.includes(':') && !line.includes('{') && !line.includes('}')) {
+              currentEntry.title = line;
+            }
+            
+            // Si no hemos encontrado fecha, intenta buscarla
+            if (!currentEntry.postDate && dateMatch) {
+              currentEntry.postDate = dateMatch[0];
+            }
+          }
+        }
+        
+        // Agregar la última entrada si existe
+        if (currentEntry && currentEntry.title && currentEntry.platform) {
+          // Si no tenemos fecha, usa la fecha inicial
+          if (!currentEntry.postDate) {
+            currentEntry.postDate = formattedDate;
+          }
+          
+          entries.push({
+            title: currentEntry.title,
+            description: currentEntry.description || "",
+            content: currentEntry.content || "",
+            copyIn: currentEntry.copyIn || "",
+            copyOut: currentEntry.copyOut || "",
+            designInstructions: currentEntry.designInstructions || "",
+            platform: currentEntry.platform,
+            postDate: currentEntry.postDate,
+            postTime: currentEntry.postTime || "12:00",
+            hashtags: currentEntry.hashtags || ""
+          });
+        }
+        
+        if (entries.length > 0) {
+          console.log(`Extraídas ${entries.length} entradas mediante análisis línea por línea`);
+          return {
+            name: `Cronograma para ${projectName}`,
+            entries: entries
+          };
+        }
+        
+      } catch (error) {
+        console.error("Error en la extracción línea por línea:", error);
+      }
+      
+      // Fallback final cuando ninguna estrategia funcionó
+      console.log("Usando cronograma fallback básico (último recurso)");
       return {
         name: `Cronograma para ${projectName}`,
         entries: [
@@ -264,3 +491,25 @@ export async function generateSchedule(
 }
 
 // Función de generación de imágenes eliminada (ya no se generan imágenes)
+
+/**
+ * Extrae el contenido después de una etiqueta o dos puntos en una línea
+ * Útil para analizar líneas en formato clave-valor
+ */
+function extractContentAfterLabel(line: string): string {
+  // Buscar el patrón "etiqueta:" o después de un separador ":"
+  const colonIndex = line.indexOf(':');
+  if (colonIndex > 0 && colonIndex < line.length - 1) {
+    return line.substring(colonIndex + 1).trim();
+  }
+  
+  // Si no hay ":", intentar separar por la primera palabra si hay al menos 2 palabras
+  const words = line.trim().split(/\s+/);
+  if (words.length >= 2) {
+    // Devolver todo menos la primera palabra
+    return words.slice(1).join(' ').trim();
+  }
+  
+  // Si no podemos extraer, devolver la línea completa
+  return line.trim();
+}
