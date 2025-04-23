@@ -141,7 +141,9 @@ export async function generateSchedule(
       // Aumentamos temperatura para evitar respuestas demasiado estructuradas que puedan causar problemas
       temperature: 0.4,
       // Aumentamos tokens máximos para obtener respuestas más completas
-      maxTokens: 4000
+      maxTokens: 4000,
+      // Configurar hasta 3 reintentos con backoff exponencial si hay errores de red o del servidor
+      retryCount: 3
     });
     
     // Registramos una versión truncada para debug
