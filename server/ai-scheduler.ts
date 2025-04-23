@@ -147,13 +147,13 @@ export async function generateSchedule(
       const jsonMatch = scheduleText.match(jsonRegex);
       
       if (!jsonMatch) {
-        throw new Error("No se encontró un objeto JSON válido en la respuesta del modelo de IA Grok");
+        throw new Error("No se encontró un objeto JSON válido en la respuesta de Grok AI");
       }
       
       const jsonContent = jsonMatch[0];
       return JSON.parse(jsonContent) as ContentSchedule;
     } catch (parseError) {
-      console.error("Error al parsear la respuesta del modelo Grok como JSON:", parseError);
+      console.error("Error al parsear la respuesta de Grok AI como JSON:", parseError);
       console.log("Respuesta original:", scheduleText);
       
       // Intentar extraer la parte que parece JSON de la respuesta si es posible
