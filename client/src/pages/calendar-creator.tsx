@@ -313,7 +313,7 @@ export default function CalendarCreator() {
       // Usamos setLocation de Wouter en lugar de window.location para evitar DOMException
       setLocation(`/schedules/${data.id}`);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating schedule:', error);
       
       // Extraer mensaje de error detallado si está disponible
@@ -335,6 +335,9 @@ export default function CalendarCreator() {
         } else if (error.response.status === 401) {
           errorMessage = "Error en la configuración del servicio de IA. Por favor contacta al administrador.";
         }
+      } else if (error instanceof Error) {
+        // Si es un error estándar de JavaScript, usar su mensaje
+        errorMessage = error.message;
       }
       
       toast({
