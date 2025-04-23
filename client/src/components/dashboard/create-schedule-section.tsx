@@ -253,7 +253,12 @@ export default function CreateScheduleSection() {
                             <Input 
                               type="date" 
                               className="h-11 pl-10 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]" 
-                              {...field} 
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  field.onChange(e.target.value);
+                                }
+                              }}
+                              value={field.value || ''}
                             />
                           </FormControl>
                           <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />

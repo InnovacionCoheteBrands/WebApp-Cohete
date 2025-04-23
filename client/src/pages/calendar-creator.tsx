@@ -583,6 +583,7 @@ export default function CalendarCreator() {
                                         const dateInput = document.getElementById("date-input-startDate");
                                         if (dateInput) {
                                           dateInput.click();
+                                          dateInput.focus();
                                         }
                                       }}
                                     >
@@ -592,8 +593,13 @@ export default function CalendarCreator() {
                                     <Input 
                                       id="date-input-startDate"
                                       type="date" 
-                                      className="absolute inset-0 opacity-0 w-full cursor-pointer"
-                                      {...field} 
+                                      className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          field.onChange(e.target.value);
+                                        }
+                                      }}
+                                      value={field.value || ''}
                                     />
                                   </div>
                                 </FormControl>
@@ -621,6 +627,7 @@ export default function CalendarCreator() {
                                         const dateInput = document.getElementById("date-input-endDate");
                                         if (dateInput) {
                                           dateInput.click();
+                                          dateInput.focus();
                                         }
                                       }}
                                     >
@@ -630,8 +637,13 @@ export default function CalendarCreator() {
                                     <Input 
                                       id="date-input-endDate"
                                       type="date" 
-                                      className="absolute inset-0 opacity-0 w-full cursor-pointer"
-                                      {...field} 
+                                      className="absolute inset-0 opacity-0 w-full cursor-pointer z-10"
+                                      onChange={(e) => {
+                                        if (e.target.value) {
+                                          field.onChange(e.target.value);
+                                        }
+                                      }}
+                                      value={field.value || ''}
                                     />
                                   </div>
                                 </FormControl>
