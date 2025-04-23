@@ -83,7 +83,7 @@ export const schedules = pgTable("schedules", {
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   specifications: text("specifications"),
-  aiModel: aiModelEnum("ai_model").default('grok'), // Modelo de IA usado para generar
+  // aiModel: aiModelEnum("ai_model").default('grok'), // Removida - ya solo usamos Grok implícitamente
   periodType: text("period_type").default('quincenal'), // Tipo de periodo: quincenal o mensual
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -296,8 +296,8 @@ export const insertScheduleSchema = createInsertSchema(schedules)
   })
   .extend({
     distributionPreferences: distributionPreferencesSchema,
-    periodType: z.enum(['quincenal', 'mensual']).default('quincenal'),
-    aiModel: z.enum(['grok']).default('grok')
+    periodType: z.enum(['quincenal', 'mensual']).default('quincenal')
+    // aiModel field removed as it no longer exists in the database
   });
 
 export const insertScheduleEntrySchema = createInsertSchema(scheduleEntries).omit({

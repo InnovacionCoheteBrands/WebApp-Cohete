@@ -46,7 +46,7 @@ const createScheduleSchema = z.object({
   projectId: z.string().min(1, "Please select a project"),
   startDate: z.string().min(1, "Start date is required"),
   specifications: z.string().optional(),
-  aiModel: z.enum(["grok"]).default("grok"), // Forzamos siempre a usar Grok
+  // Campo aiModel eliminado porque ya no se usa en la base de datos
 });
 
 // Tipo para los comentarios de revisión
@@ -80,7 +80,7 @@ export default function CreateScheduleSection() {
       projectId: "",
       startDate: "",
       specifications: "",
-      aiModel: "grok", // Usamos Grok como único modelo disponible
+      // Campo aiModel eliminado
     },
   });
 
