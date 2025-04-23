@@ -627,16 +627,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       
       // Save schedule to database
-      const schedule = await global.storage.createSchedule({
+      const scheduleData: any = {
         projectId,
         name: generatedSchedule.name,
         startDate: new Date(startDate),
         specifications,
         createdBy: req.user.id,
-        aiModel: selectedAIModel, // Guardar el modelo de IA utilizado
-        periodType: periodType || "quincenal", // Guardar el tipo de periodo seleccionado
-        distributionPreferences: { type: "uniform" } // Valor predeterminado necesario
-      });
+        periodType: periodType || "quincenal" // Guardar el tipo de periodo seleccionado
+        // Omitimos el campo aiModel que está causando el error
+      };
+      
+      const schedule = await global.storage.createSchedule(scheduleData);
       
       // Save schedule entries without generating images automatically
       const entryPromises = generatedSchedule.entries.map(async (entry) => {
@@ -652,8 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platform: entry.platform,
           postDate: new Date(entry.postDate),
           postTime: entry.postTime,
-          hashtags: entry.hashtags,
-          referenceImagePrompt: entry.referenceImagePrompt
+          hashtags: entry.hashtags
         });
         
         // 2. Guardar el contenido en el historial para evitar repeticiones
