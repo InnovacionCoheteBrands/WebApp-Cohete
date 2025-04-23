@@ -1,8 +1,10 @@
 import OpenAI from "openai";
 import { format, parseISO, addDays } from "date-fns";
+import { AIModel } from "@shared/schema";
 import { mistralService } from "./mistral-integration";
+import { grokService } from "./grok-integration";
 
-// Mantenemos OpenAI como fallback, pero usamos principalmente Mistral AI
+// Integraciones con varios modelos de IA
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 
 export interface ContentScheduleEntry {
@@ -24,8 +26,9 @@ export interface ContentSchedule {
 }
 
 /**
- * Generates a content schedule for social media using Mistral AI
+ * Generates a content schedule for social media using the selected AI model
  * Takes into account the monthly frequency of posts defined for each social network
+ * @param aiModel The AI model to use for generation (mistral, openai, grok)
  */
 export async function generateSchedule(
   projectName: string,
@@ -33,7 +36,8 @@ export async function generateSchedule(
   startDate: string,
   specifications?: string,
   durationDays: number = 15, // Periodo quincenal fijo (15 días)
-  previousContent: string[] = []
+  previousContent: string[] = [],
+  aiModel: AIModel = AIModel.MISTRAL // Modelo predeterminado: Mistral
 ): Promise<ContentSchedule> {
   try {
     // Format the start date using date-fns
@@ -239,9 +243,31 @@ export async function generateSchedule(
       - Los copyOut deben usar estructura de párrafos y ser persuasivos con llamadas a la acción específicas
     `;
 
-    // Usar la API de Mistral para generar el cronograma
-    console.log("Generando cronograma con Mistral AI");
-    const scheduleText = await mistralService.generateText(prompt);
+    // Seleccionar el modelo de IA a utilizar
+    let scheduleText = "";
+    
+    switch (aiModel) {
+      case AIModel.MISTRAL:
+        console.log("Generando cronograma con Mistral AI");
+        scheduleText = await mistralService.generateText(prompt);
+        break;
+      case AIModel.OPENAI:
+        console.log("Generando cronograma con OpenAI");
+        const openaiResponse = await openai.chat.completions.create({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+        });
+        scheduleText = openaiResponse.choices[0].message.content || "";
+        break;
+      case AIModel.GROK:
+        console.log("Generando cronograma con Grok AI");
+        scheduleText = await grokService.generateText(prompt);
+        break;
+      default:
+        console.log("Modelo no reconocido, usando Mistral AI como fallback");
+        scheduleText = await mistralService.generateText(prompt);
+    }
     
     // Intentar parsear el resultado como JSON
     try {
@@ -250,13 +276,13 @@ export async function generateSchedule(
       const jsonMatch = scheduleText.match(jsonRegex);
       
       if (!jsonMatch) {
-        throw new Error("No se encontró un objeto JSON válido en la respuesta de Mistral");
+        throw new Error(`No se encontró un objeto JSON válido en la respuesta del modelo de IA: ${aiModel}`);
       }
       
       const jsonContent = jsonMatch[0];
       return JSON.parse(jsonContent) as ContentSchedule;
     } catch (parseError) {
-      console.error("Error al parsear la respuesta de Mistral como JSON:", parseError);
+      console.error(`Error al parsear la respuesta del modelo ${aiModel} como JSON:`, parseError);
       console.log("Respuesta original:", scheduleText);
       
       // Intentar extraer la parte que parece JSON de la respuesta si es posible

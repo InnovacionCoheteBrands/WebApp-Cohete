@@ -8,6 +8,7 @@ export const projectStatusEnum = pgEnum('project_status', ['active', 'planning',
 export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'review', 'completed', 'cancelled']);
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent']);
 export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom']);
+export const aiModelEnum = pgEnum('ai_model', ['mistral', 'openai', 'grok']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -359,7 +360,14 @@ export type InsertSchedule = z.infer<typeof insertScheduleSchema>;
 export type ScheduleEntry = typeof scheduleEntries.$inferSelect;
 export type InsertScheduleEntry = z.infer<typeof insertScheduleEntrySchema>;
 
-// Definición de la interfaz para la respuesta de ContentSchedule desde Mistral
+// Tipo para los modelos de IA
+export enum AIModel {
+  MISTRAL = "mistral",
+  OPENAI = "openai",
+  GROK = "grok"
+}
+
+// Definición de la interfaz para la respuesta de ContentSchedule desde los modelos de IA
 export interface ContentScheduleEntry {
   title: string;
   description: string;
