@@ -140,43 +140,91 @@ export async function generateSchedule(
     console.log("Generando cronograma con Grok AI");
     const scheduleText = await grokService.generateText(prompt);
     
-    // Intentar parsear el resultado como JSON
+    // Intentar parsear el resultado como JSON con un enfoque más robusto
     try {
-      // Para asegurarnos que obtenemos sólo el JSON, extraemos cualquier parte JSON de la respuesta
-      const jsonRegex = /{[\s\S]*}/;
+      // Primero depuramos la respuesta
+      console.log("Longitud de la respuesta de Grok:", scheduleText.length);
+      console.log("Primeros 200 caracteres:", scheduleText.substring(0, 200));
+      
+      // Intentamos encontrar el JSON usando una expresión regular más precisa
+      // Buscamos específicamente un objeto JSON que tenga las propiedades esperadas
+      const jsonRegex = /{[\s\S]*?"name"[\s\S]*?"entries"[\s\S]*?}/;
       const jsonMatch = scheduleText.match(jsonRegex);
       
-      if (!jsonMatch) {
-        throw new Error("No se encontró un objeto JSON válido en la respuesta de Grok AI");
+      if (jsonMatch) {
+        console.log("Encontrado JSON completo con regex");
+        try {
+          return JSON.parse(jsonMatch[0]) as ContentSchedule;
+        } catch (parseError) {
+          console.error("Error parseando JSON encontrado con regex:", parseError);
+          // Continuamos con otros métodos si este falla
+        }
       }
       
-      const jsonContent = jsonMatch[0];
-      return JSON.parse(jsonContent) as ContentSchedule;
-    } catch (parseError) {
-      console.error("Error al parsear la respuesta de Grok AI como JSON:", parseError);
-      console.log("Respuesta original:", scheduleText);
+      // Si el regex específico falla, intentamos extraer manualmente el JSON
+      console.log("Intentando extracción manual del JSON");
+      const jsonStart = scheduleText.indexOf('{');
+      const jsonEnd = scheduleText.lastIndexOf('}') + 1;
       
-      // Intentar extraer la parte que parece JSON de la respuesta si es posible
-      try {
-        const jsonStart = scheduleText.indexOf('{');
-        const jsonEnd = scheduleText.lastIndexOf('}') + 1;
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        const jsonPart = scheduleText.substring(jsonStart, jsonEnd);
+        console.log("JSON extraído manualmente (longitud):", jsonPart.length);
         
-        if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          const jsonPart = scheduleText.substring(jsonStart, jsonEnd);
-          console.log("Intentando parsear parte de la respuesta como JSON:", jsonPart);
+        try {
+          // Intentamos limpiar el JSON de posibles errores
+          let cleanedJson = jsonPart;
+          // Reemplazar comas extra antes de cerrar objetos o arrays
+          cleanedJson = cleanedJson.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
           
-          const partialParsed = JSON.parse(jsonPart);
+          const parsed = JSON.parse(cleanedJson);
           
-          if (partialParsed && partialParsed.entries && Array.isArray(partialParsed.entries)) {
-            console.log("Se pudo recuperar parcialmente la respuesta JSON");
+          if (parsed && parsed.entries && Array.isArray(parsed.entries)) {
+            console.log("JSON parseado manualmente con éxito, entradas:", parsed.entries.length);
             return {
-              name: partialParsed.name || `Cronograma para ${projectName}`,
-              entries: partialParsed.entries
+              name: parsed.name || `Cronograma para ${projectName}`,
+              entries: parsed.entries
             };
+          } else {
+            console.error("El JSON extraído no tiene la estructura esperada");
           }
+        } catch (jsonError) {
+          console.error("Error parseando JSON extraído manualmente:", jsonError);
         }
-      } catch (recoveryError) {
-        console.error("No se pudo recuperar la respuesta JSON:", recoveryError);
+      }
+      
+      // Si todos los intentos anteriores fallan, tratamos de reconstruir el JSON
+      console.error("No se pudo parsear el JSON con métodos estándar, intentando reconstrucción");
+      console.log("Respuesta original (primeros 1000 caracteres):", scheduleText.substring(0, 1000));
+      
+      // Intentamos una última estrategia
+      try {
+        // Buscar partes del JSON que podamos utilizar
+        const nameMatch = scheduleText.match(/"name"\s*:\s*"([^"]+)"/);
+        const entriesStartMatch = scheduleText.match(/"entries"\s*:\s*\[/);
+        
+        if (nameMatch && entriesStartMatch) {
+          console.log("Encontrados elementos clave para reconstrucción parcial");
+          // Reconstruimos un JSON mínimo válido con el nombre y al menos una entrada
+          return {
+            name: nameMatch[1] || `Cronograma para ${projectName}`,
+            entries: [
+              {
+                title: "Reconstrucción parcial",
+                description: "Este es un cronograma reconstruido parcialmente debido a problemas de formato en la respuesta.",
+                content: "Contenido recuperado parcialmente. Recomendamos revisar y personalizar este contenido.",
+                copyIn: "Texto recuperado parcialmente",
+                copyOut: "Texto descriptivo recuperado parcialmente",
+                designInstructions: "Instrucciones de diseño básicas",
+                platform: "Red social principal",
+                postDate: formattedDate,
+                postTime: "12:00",
+                hashtags: "#reconstruido #marketing #contenido"
+              }
+            ]
+          };
+        }
+      } catch (reconstructError) {
+        console.error("Error en la reconstrucción final:", reconstructError);
       }
       
       // Si no se pudo recuperar, crear un cronograma mínimo como fallback
