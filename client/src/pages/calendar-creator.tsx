@@ -1094,12 +1094,16 @@ export default function CalendarCreator() {
                                             checked={selectedDays.includes(day.id)}
                                             onCheckedChange={(checked) => {
                                               if (checked) {
-                                                setSelectedDays([...selectedDays, day.id]);
+                                                const newSelectedDays = [...selectedDays, day.id];
+                                                setSelectedDays(newSelectedDays);
+                                                console.log("Días seleccionados:", newSelectedDays);
                                               } else {
-                                                setSelectedDays(selectedDays.filter(d => d !== day.id));
+                                                const newSelectedDays = selectedDays.filter(d => d !== day.id);
+                                                setSelectedDays(newSelectedDays);
+                                                console.log("Días seleccionados:", newSelectedDays);
                                               }
                                             }}
-                                            className="h-4 w-4 rounded-sm data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                                            className="h-4 w-4 rounded-sm cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
                                           />
                                           <Label 
                                             htmlFor={`day-${day.id}`}
@@ -1235,7 +1239,11 @@ export default function CalendarCreator() {
                                             </div>
                                             <Checkbox 
                                               checked={isSelected}
-                                              className="h-4 w-4 data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
+                                              onCheckedChange={(checked) => {
+                                                // En una implementación real, actualizaríamos el estado
+                                                console.log(`Toggled checkbox for ${block.id}: ${checked}`);
+                                              }}
+                                              className="h-4 w-4 cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
                                             />
                                           </div>
                                         );
@@ -1253,8 +1261,11 @@ export default function CalendarCreator() {
                                         </div>
                                       </div>
                                       <Switch 
-                                        checked={true} 
-                                        className="data-[state=checked]:bg-amber-500"
+                                        checked={true}
+                                        onCheckedChange={(checked) => {
+                                          console.log(`Distribución inteligente: ${checked ? 'activada' : 'desactivada'}`);
+                                        }}
+                                        className="data-[state=checked]:bg-amber-500 cursor-pointer"
                                       />
                                     </div>
                                   </div>
