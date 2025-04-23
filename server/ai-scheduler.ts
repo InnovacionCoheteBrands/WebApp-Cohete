@@ -212,27 +212,118 @@ export async function generateSchedule(
           // Asegurar comillas alrededor de strings en español con acentos y ñ
           jsonContent = jsonContent.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
           
+          // Limpiar casos de comas incorrectas o faltantes
+          jsonContent = jsonContent.replace(/",\s*"/g, '","');
+          jsonContent = jsonContent.replace(/",\s*}/g, '"}');
+          jsonContent = jsonContent.replace(/"\s*}/g, '"}');
+          jsonContent = jsonContent.replace(/"\s*]/g, '"]');
+          
+          // Arreglar caracteres de escape
+          jsonContent = jsonContent.replace(/\\"/g, '"').replace(/\\'/g, "'");
+          jsonContent = jsonContent.replace(/(?<!\\)\\(?!["\\\/bfnrtu])/g, "\\\\");
+          
+          // Corregir problemas de anidamiento
+          jsonContent = jsonContent.replace(/\}\s*"/g, '},"');
+          jsonContent = jsonContent.replace(/\}\s*\{/g, '},{');
+          
+          // Eliminar caracteres Unicode que puedan interferir
+          jsonContent = jsonContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
+          
+          // Reemplazar cualquier coma final antes de cerrar arrays o objetos
+          jsonContent = jsonContent.replace(/,(\s*[\]}])/g, '$1');
+          
+          // Asegurar que todas las propiedades tengan comillas dobles
+          jsonContent = jsonContent.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+          
           console.log("JSON limpiado (primeros 100 caracteres):", 
             jsonContent.substring(0, 100) + "... [truncado]");
           
-          const parsedContent = JSON.parse(jsonContent);
-          
-          if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
-            console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
-            // Verificar entradas válidas
-            const validEntries = parsedContent.entries.filter((entry: any) => 
-              entry.title && entry.platform && entry.postDate
-            );
+          try {
+            const parsedContent = JSON.parse(jsonContent);
             
-            if (validEntries.length > 0) {
-              return {
-                name: parsedContent.name || `Cronograma para ${projectName}`,
-                entries: validEntries
-              };
+            if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
+              console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
+              // Verificar entradas válidas
+              const validEntries = parsedContent.entries.filter((entry: any) => 
+                entry.title && entry.platform && entry.postDate
+              );
+              
+              if (validEntries.length > 0) {
+                return {
+                  name: parsedContent.name || `Cronograma para ${projectName}`,
+                  entries: validEntries
+                };
+              }
+            }
+          } catch (parseError) {
+            console.error("Error al parsear JSON limpiado:", parseError);
+            
+            // Último intento: corregir errores comunes de JSON
+            try {
+              console.log("Intentando reparación profunda del JSON...");
+              // Usar RegEx para extraer manualmente la estructura básica
+              const nameMatch = jsonContent.match(/"name"\s*:\s*"([^"]+)"/);
+              const name = nameMatch ? nameMatch[1] : `Cronograma para ${projectName}`;
+              
+              // Intentar extraer las entradas como un array
+              let entriesMatch = jsonContent.match(/"entries"\s*:\s*\[([\s\S]+?)\](?=\s*\})/);
+              if (entriesMatch && entriesMatch[1]) {
+                // Tokenizar la cadena de entradas en objetos individuales
+                const entriesStr = entriesMatch[1].trim();
+                // Dividir por cierre y apertura de objetos para obtener entradas individuales
+                const rawEntries = entriesStr.split(/}\s*,\s*{/);
+                
+                const validEntries: ContentScheduleEntry[] = [];
+                
+                for (let i = 0; i < rawEntries.length; i++) {
+                  try {
+                    // Reconstruir el objeto con llaves de apertura/cierre
+                    let entryStr = rawEntries[i];
+                    if (!entryStr.startsWith('{')) entryStr = '{' + entryStr;
+                    if (!entryStr.endsWith('}')) entryStr = entryStr + '}';
+                    
+                    // Limpiar la cadena de entrada
+                    entryStr = entryStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+                    entryStr = entryStr.replace(/:\s*'([^']*)'/g, ':"$1"');
+                    entryStr = entryStr.replace(/:\s*"([^"]*)"/g, ':"$1"');
+                    
+                    // Intentar parsear como JSON
+                    const entry = JSON.parse(entryStr);
+                    
+                    if (entry.title && entry.platform && entry.postDate) {
+                      const completeEntry: ContentScheduleEntry = {
+                        title: entry.title,
+                        description: entry.description || "",
+                        content: entry.content || "",
+                        copyIn: entry.copyIn || "",
+                        copyOut: entry.copyOut || "",
+                        designInstructions: entry.designInstructions || "",
+                        platform: entry.platform,
+                        postDate: entry.postDate,
+                        postTime: entry.postTime || "12:00",
+                        hashtags: entry.hashtags || ""
+                      };
+                      validEntries.push(completeEntry);
+                    }
+                  } catch (innerError) {
+                    console.warn(`Error procesando entrada ${i}:`, innerError);
+                  }
+                }
+                
+                if (validEntries.length > 0) {
+                  console.log(`Recuperadas ${validEntries.length} entradas mediante reparación profunda`);
+                  return {
+                    name,
+                    entries: validEntries
+                  };
+                }
+              }
+            } catch (repairError) {
+              console.error("La reparación profunda del JSON falló:", repairError);
             }
           }
         } catch (error) {
-          console.error("Error al parsear JSON limpiado:", error);
+          console.error("Error al limpiar y procesar JSON:", error);
         }
       }
       
@@ -244,6 +335,40 @@ export async function generateSchedule(
         const validEntries: ContentScheduleEntry[] = [];
         let match;
         
+        // Primero intentamos una reparación general del texto completo
+        try {
+          console.log("Aplicando reparación general del JSON antes de procesamiento por piezas");
+          const repairedFullText = repairMalformedJson(scheduleText);
+          const jsonStart = repairedFullText.indexOf('{');
+          const jsonEnd = repairedFullText.lastIndexOf('}') + 1;
+          
+          if (jsonStart >= 0 && jsonEnd > jsonStart) {
+            try {
+              const jsonContent = repairedFullText.substring(jsonStart, jsonEnd);
+              const parsedContent = JSON.parse(jsonContent);
+              
+              if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
+                console.log(`JSON reparado correctamente con ${parsedContent.entries.length} entradas`);
+                const validEntries = parsedContent.entries.filter((entry: any) => 
+                  entry.title && entry.platform && entry.postDate
+                );
+                
+                if (validEntries.length > 0) {
+                  return {
+                    name: parsedContent.name || `Cronograma para ${projectName}`,
+                    entries: validEntries
+                  };
+                }
+              }
+            } catch (error) {
+              console.log("La reparación general del JSON no fue suficiente, continuando con procesamiento por piezas");
+            }
+          }
+        } catch (repairError) {
+          console.warn("Error en reparación general:", repairError);
+        }
+        
+        // Si la reparación general falló, continuamos con la extracción pieza por pieza
         while ((match = entriesRegex.exec(scheduleText)) !== null) {
           try {
             let entryText = match[0];
@@ -251,29 +376,59 @@ export async function generateSchedule(
             
             // Normalizar
             entryText = entryText.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
-            // Limpiar campos
+            // Limpiar campos con técnicas básicas
             entryText = entryText.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
             entryText = entryText.replace(/:(\s*)'([^']*)'/g, ':$1"$2"');
             entryText = entryText.replace(/«/g, '"').replace(/»/g, '"');
             entryText = entryText.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
             
-            const entry = JSON.parse(entryText);
-            if (entry.title && entry.platform && entry.postDate) {
-              // Aseguramos que tenga al menos campos mínimos
-              const completeEntry: ContentScheduleEntry = {
-                title: entry.title,
-                description: entry.description || "",
-                content: entry.content || "",
-                copyIn: entry.copyIn || "",
-                copyOut: entry.copyOut || "",
-                designInstructions: entry.designInstructions || "",
-                platform: entry.platform,
-                postDate: entry.postDate,
-                postTime: entry.postTime || "12:00",
-                hashtags: entry.hashtags || ""
-              };
-              validEntries.push(completeEntry);
-              console.log(`Entrada válida para ${entry.platform} en fecha ${entry.postDate}`);
+            try {
+              // Intentar parsear directamente
+              const entry = JSON.parse(entryText);
+              if (entry.title && entry.platform && entry.postDate) {
+                // Aseguramos que tenga al menos campos mínimos
+                const completeEntry: ContentScheduleEntry = {
+                  title: entry.title,
+                  description: entry.description || "",
+                  content: entry.content || "",
+                  copyIn: entry.copyIn || "",
+                  copyOut: entry.copyOut || "",
+                  designInstructions: entry.designInstructions || "",
+                  platform: entry.platform,
+                  postDate: entry.postDate,
+                  postTime: entry.postTime || "12:00",
+                  hashtags: entry.hashtags || ""
+                };
+                validEntries.push(completeEntry);
+                console.log(`Entrada válida para ${entry.platform} en fecha ${entry.postDate}`);
+              }
+            } catch (parseError) {
+              // Si el parseo directo falla, intentar con reparación avanzada
+              console.log("Intentando reparación avanzada para entrada individual");
+              try {
+                const repairedEntryText = repairMalformedJson(entryText);
+                const entry = JSON.parse(repairedEntryText);
+                
+                if (entry.title && entry.platform && entry.postDate) {
+                  // Procesar entrada reparada
+                  const completeEntry: ContentScheduleEntry = {
+                    title: entry.title,
+                    description: entry.description || "",
+                    content: entry.content || "",
+                    copyIn: entry.copyIn || "",
+                    copyOut: entry.copyOut || "",
+                    designInstructions: entry.designInstructions || "",
+                    platform: entry.platform,
+                    postDate: entry.postDate,
+                    postTime: entry.postTime || "12:00",
+                    hashtags: entry.hashtags || ""
+                  };
+                  validEntries.push(completeEntry);
+                  console.log(`Entrada reparada válida para ${entry.platform} en fecha ${entry.postDate}`);
+                }
+              } catch (repairError) {
+                console.warn("Error en reparación individual:", repairError);
+              }
             }
           } catch (e) {
             console.warn("Error procesando entrada individual:", e);
@@ -503,7 +658,16 @@ function extractContentAfterLabel(line: string): string {
     return line.substring(colonIndex + 1).trim();
   }
   
-  // Si no hay ":", intentar separar por la primera palabra si hay al menos 2 palabras
+  // Si no hay ":", intentar con otros separadores comunes
+  const separators = ['-', '–', '—', '>', '=', '|', '•'];
+  for (const sep of separators) {
+    const sepIndex = line.indexOf(sep);
+    if (sepIndex > 0 && sepIndex < line.length - 1) {
+      return line.substring(sepIndex + 1).trim();
+    }
+  }
+  
+  // Si no hay separadores conocidos, intentar separar por la primera palabra si hay al menos 2 palabras
   const words = line.trim().split(/\s+/);
   if (words.length >= 2) {
     // Devolver todo menos la primera palabra
@@ -512,4 +676,66 @@ function extractContentAfterLabel(line: string): string {
   
   // Si no podemos extraer, devolver la línea completa
   return line.trim();
+}
+
+/**
+ * Intenta reparar un JSON malformado utilizando estrategias avanzadas
+ * Se usa como último recurso cuando los parsers normales fallan
+ */
+function repairMalformedJson(jsonString: string): string {
+  let result = jsonString;
+  
+  // 1. Corregir comillas mal cerradas
+  result = result.replace(/([a-zA-Z0-9_]+)(?=:)/g, '"$1"'); // Asegurar comillas en claves
+  
+  // 2. Corregir problemas comunes de escape
+  result = result.replace(/(?<!\\)\\(?!["\\\/bfnrtu])/g, "\\\\"); // Escape de backslash
+  
+  // 3. Reemplazar comillas simples con comillas dobles
+  const singleQuoteRegex = /'([^']*?)'/g;
+  result = result.replace(singleQuoteRegex, '"$1"');
+  
+  // 4. Arreglar propiedades en español con acentos
+  const spanishWordRegex = /:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g;
+  result = result.replace(spanishWordRegex, ':"$2"$3');
+  
+  // 5. Eliminar comas extra antes de cerrar objetos o arrays
+  result = result.replace(/,(\s*[\]}])/g, '$1');
+  
+  // 6. Asegurar que las llaves y corchetes estén correctamente balanceados
+  const countOccurrences = (str: string, char: string): number => {
+    return (str.match(new RegExp(`\\${char}`, 'g')) || []).length;
+  };
+  
+  const openBraces = countOccurrences(result, '{');
+  const closeBraces = countOccurrences(result, '}');
+  if (openBraces > closeBraces) {
+    result += '}'.repeat(openBraces - closeBraces);
+  } else if (closeBraces > openBraces) {
+    result = '{'.repeat(closeBraces - openBraces) + result;
+  }
+  
+  const openBrackets = countOccurrences(result, '[');
+  const closeBrackets = countOccurrences(result, ']');
+  if (openBrackets > closeBrackets) {
+    result += ']'.repeat(openBrackets - closeBrackets);
+  } else if (closeBrackets > openBrackets) {
+    result = '['.repeat(closeBrackets - openBrackets) + result;
+  }
+  
+  // 7. Corregir valores con espacios que deberían tener comillas
+  result = result.replace(/:\s*([^"{}\[\],\d][^,}\]]*[^"{}\[\],\d])\s*([,}\]])/g, ':"$1"$2');
+  
+  // 8. Quitar espacios entre comillas y dos puntos
+  result = result.replace(/"\s+:/g, '":');
+  
+  // 9. Asegurar que no haya comas extras al final de objetos o arrays
+  result = result.replace(/,(\s*})/g, '$1');
+  result = result.replace(/,(\s*\])/g, '$1');
+  
+  // 10. Arreglar valores booleanos y numéricos
+  result = result.replace(/"(true|false)"(?=[\s,}\]])/g, '$1');
+  result = result.replace(/"(\d+)"(?=[\s,}\]])/g, '$1');
+  
+  return result;
 }
