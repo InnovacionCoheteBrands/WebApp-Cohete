@@ -8,6 +8,7 @@ import path from "path";
 import pdfParse from "pdf-parse";
 import { analyzeDocument, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
+import { AIModel } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
@@ -581,8 +582,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Start date is required" });
       }
       
-      // Validar modelo de IA (usar Mistral como predeterminado si no se proporciona)
-      const selectedAIModel = aiModel ? aiModel : "mistral";
+      // Validar modelo de IA (usar OpenAI como predeterminado si no se proporciona)
+      let selectedAIModel;
+      
+      // Convertir el aiModel a un tipo del enumerador AIModel 
+      if (aiModel === "openai") {
+        selectedAIModel = AIModel.OPENAI;
+      } else if (aiModel === "grok") {
+        selectedAIModel = AIModel.GROK;
+      } else {
+        // Valor predeterminado: OpenAI
+        selectedAIModel = AIModel.OPENAI;
+      }
       
       // Get project with analysis
       const project = await global.storage.getProjectWithAnalysis(projectId);
