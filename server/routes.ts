@@ -577,23 +577,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate required data
-      const { startDate, specifications, aiModel, periodType } = req.body;
+      const { startDate, specifications, periodType } = req.body;
       if (!startDate) {
         return res.status(400).json({ message: "Start date is required" });
       }
       
-      // Validar modelo de IA (usar OpenAI como predeterminado si no se proporciona)
-      let selectedAIModel;
-      
-      // Convertir el aiModel a un tipo del enumerador AIModel 
-      if (aiModel === "openai") {
-        selectedAIModel = AIModel.OPENAI;
-      } else if (aiModel === "grok") {
-        selectedAIModel = AIModel.GROK;
-      } else {
-        // Valor predeterminado: OpenAI
-        selectedAIModel = AIModel.OPENAI;
-      }
+      // Forzamos el uso de Grok como único modelo de IA disponible
+      const selectedAIModel = AIModel.GROK;
       
       // Determinar el número de días según el tipo de periodo
       let periodDays = 15; // Valor predeterminado: quincenal (15 días)
