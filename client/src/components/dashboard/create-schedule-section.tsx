@@ -6,14 +6,15 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { CalendarIcon, Clock, Share2, Download, CheckCircle, Edit, AlertCircle, ThumbsUp } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CalendarIcon, Clock, Share2, Download, CheckCircle, Edit, AlertCircle, ThumbsUp, Sparkles } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { format } from "date-fns";
@@ -94,14 +95,15 @@ export default function CreateScheduleSection() {
         {
           startDate: values.startDate,
           specifications: values.specifications,
+          aiModel: values.aiModel, // Incluimos el modelo de IA seleccionado
         }
       );
       return await res.json();
     },
     onSuccess: (data: Schedule) => {
       toast({
-        title: "Schedule created",
-        description: "Your content schedule has been successfully generated",
+        title: "Calendario creado",
+        description: "Tu calendario de contenido ha sido generado exitosamente",
       });
       setIsGenerating(false);
       setGeneratedSchedule(data); // Store the generated schedule
@@ -110,7 +112,7 @@ export default function CreateScheduleSection() {
     },
     onError: (error) => {
       toast({
-        title: "Failed to create schedule",
+        title: "Error al crear el calendario",
         description: error.message,
         variant: "destructive",
       });
@@ -276,6 +278,56 @@ export default function CreateScheduleSection() {
                           />
                         </FormControl>
                         <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="aiModel"
+                    render={({ field }) => (
+                      <FormItem className="space-y-3">
+                        <FormLabel className="text-sm font-medium flex items-center gap-2 dark:text-slate-300">
+                          <Sparkles className="h-4 w-4 text-amber-500" />
+                          Modelo de IA
+                        </FormLabel>
+                        <FormDescription className="text-xs dark:text-slate-400 mb-3">
+                          Selecciona el modelo de IA para generar el contenido.
+                        </FormDescription>
+                        <FormControl>
+                          <RadioGroup
+                            onValueChange={field.onChange}
+                            defaultValue={field.value}
+                            className="flex flex-col space-y-2"
+                          >
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="openai" className="data-[state=checked]:border-green-500 data-[state=checked]:bg-green-500" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer dark:text-white">
+                                <div className="flex items-center">
+                                  OpenAI GPT-4o
+                                  <Badge variant="outline" className="ml-2 bg-green-50 border-green-200 text-green-700 dark:bg-green-900/20 dark:border-green-700/40 dark:text-green-300">
+                                    Recomendado
+                                  </Badge>
+                                </div>
+                              </FormLabel>
+                            </FormItem>
+                            <FormItem className="flex items-center space-x-3 space-y-0">
+                              <FormControl>
+                                <RadioGroupItem value="grok" className="data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500" />
+                              </FormControl>
+                              <FormLabel className="font-normal cursor-pointer dark:text-white">
+                                <div className="flex items-center">
+                                  Grok AI
+                                  <Badge variant="outline" className="ml-2 bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-700/40 dark:text-purple-300">
+                                    Nuevo
+                                  </Badge>
+                                </div>
+                              </FormLabel>
+                            </FormItem>
+                          </RadioGroup>
+                        </FormControl>
                       </FormItem>
                     )}
                   />
