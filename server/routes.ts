@@ -576,10 +576,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate required data
-      const { startDate, specifications } = req.body;
+      const { startDate, specifications, aiModel } = req.body;
       if (!startDate) {
         return res.status(400).json({ message: "Start date is required" });
       }
+      
+      // Validar modelo de IA (usar Mistral como predeterminado si no se proporciona)
+      const selectedAIModel = aiModel ? aiModel : "mistral";
       
       // Get project with analysis
       const project = await global.storage.getProjectWithAnalysis(projectId);
@@ -602,7 +605,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate,
         specifications,
         15, // Periodo quincenal (15 días)
-        previousContent
+        previousContent,
+        selectedAIModel // Pasar el modelo de IA seleccionado
       );
       
       // Save schedule to database
@@ -611,7 +615,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: generatedSchedule.name,
         startDate: new Date(startDate),
         specifications,
-        createdBy: req.user.id
+        createdBy: req.user.id,
+        aiModel: selectedAIModel, // Guardar el modelo de IA utilizado
+        distributionPreferences: { type: "uniform" } // Valor predeterminado necesario
       });
       
       // Save schedule entries without generating images automatically
