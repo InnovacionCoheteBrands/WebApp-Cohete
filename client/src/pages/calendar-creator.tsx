@@ -487,7 +487,7 @@ export default function CalendarCreator() {
               <CalendarIcon className="h-6 w-6" />
             </span>
             Creación Avanzada de Calendario
-            <Badge variant="outline" className="ml-2 bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700/40 dark:text-amber-300">
+            <Badge variant="outline" id="period-badge" className="ml-2 bg-amber-50 border-amber-200 text-amber-700 dark:bg-amber-900/20 dark:border-amber-700/40 dark:text-amber-300">
               Quincenal
             </Badge>
           </CardTitle>
@@ -568,6 +568,47 @@ export default function CalendarCreator() {
                                 {...field}
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      
+                      <FormField
+                        control={form.control}
+                        name="periodType"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm font-medium dark:text-slate-300">Tipo de Periodo</FormLabel>
+                            <Select
+                              onValueChange={(value) => {
+                                field.onChange(value);
+                                
+                                // Actualizar el texto de la badge en la cabecera
+                                const badgeElement = document.getElementById('period-badge');
+                                if (badgeElement) {
+                                  badgeElement.textContent = value === "mensual" ? "Mensual" : "Quincenal";
+                                }
+                                
+                                // Mostrar notificación
+                                toast({
+                                  description: `Tipo de periodo cambiado a: ${value === "mensual" ? "Mensual (31 días)" : "Quincenal (15 días)"}`,
+                                });
+                              }}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-11 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]">
+                                  <SelectValue placeholder="Selecciona el tipo de periodo" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent className="dark:bg-[#1e293b] dark:border-[#3e4a6d]">
+                                <SelectItem value="quincenal" className="dark:text-white">Quincenal (15 días)</SelectItem>
+                                <SelectItem value="mensual" className="dark:text-white">Mensual (31 días)</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription className="text-xs dark:text-slate-400">
+                              El tipo de periodo determina la duración del calendario generado.
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -659,7 +700,7 @@ export default function CalendarCreator() {
                               </div>
                               <FormDescription className="text-xs flex items-center gap-1.5 text-amber-600 font-medium dark:text-amber-400">
                                 <AlertCircle className="h-3.5 w-3.5" />
-                                La fecha de fin se establecerá automáticamente para un periodo quincenal (15 días).
+                                La fecha de fin se establecerá automáticamente según el tipo de periodo seleccionado (quincenal: 15 días, mensual: 31 días).
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
