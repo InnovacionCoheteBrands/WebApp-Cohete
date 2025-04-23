@@ -244,12 +244,16 @@ export default function CalendarCreator() {
 
   // Handle form submission
   const onSubmit = async (values: FormValues) => {
+    console.log("Formulario enviado:", values);
+    
+    // Verificar plataformas manualmente ya que este control está fuera del formulario formal
     if (selectedPlatforms.length === 0) {
       toast({
         title: "Error",
         description: "Debes seleccionar al menos una plataforma",
         variant: "destructive",
       });
+      setSelectedTab("platforms");
       return;
     }
 
@@ -500,7 +504,10 @@ export default function CalendarCreator() {
         
         <CardContent className="p-6 relative z-10">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <form className="space-y-6" onSubmit={(e) => {
+                e.preventDefault(); // Evitar envío predeterminado del formulario
+                return false; // No hacer nada, ya que el botón tiene su propio manejador
+              }}>
               <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
                 <TabsList className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 mb-6 dark:bg-[#1e293b] dark:border dark:border-[#3e4a6d]">
                   <TabsTrigger value="general" className="dark:data-[state=active]:bg-[#2a3349] dark:data-[state=active]:text-white dark:text-slate-400">
@@ -2251,8 +2258,47 @@ export default function CalendarCreator() {
                 </Button>
                 
                 <Button 
-                  type="submit"
+                  type="button"
                   disabled={isGenerating}
+                  onClick={() => {
+                    // Obtener valores manualmente
+                    const values = form.getValues();
+                    console.log("Enviando formulario:", values);
+                    
+                    // Verificación manual de valores requeridos
+                    if (!values.projectId) {
+                      toast({
+                        title: "Error",
+                        description: "Por favor selecciona un proyecto",
+                        variant: "destructive",
+                      });
+                      setSelectedTab("general");
+                      return;
+                    }
+                    
+                    if (!values.name) {
+                      toast({
+                        title: "Error",
+                        description: "Por favor introduce un nombre para el calendario",
+                        variant: "destructive",
+                      });
+                      setSelectedTab("general");
+                      return;
+                    }
+                    
+                    if (!values.startDate) {
+                      toast({
+                        title: "Error",
+                        description: "Por favor selecciona una fecha de inicio",
+                        variant: "destructive",
+                      });
+                      setSelectedTab("general");
+                      return;
+                    }
+                    
+                    // Llamar a la función de envío
+                    onSubmit(values);
+                  }}
                   className="bg-amber-500 text-white hover:bg-amber-600 dark:bg-amber-500 dark:text-white dark:hover:bg-amber-600"
                 >
                   {isGenerating ? (
