@@ -621,9 +621,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: generatedSchedule.name,
         startDate: new Date(startDate),
         specifications,
-        createdBy: req.user.id,
-        periodType: periodType || "quincenal" // Guardar el tipo de periodo seleccionado
-        // Omitimos el campo aiModel que está causando el error
+        createdBy: req.user.id
+        // Omitimos los campos aiModel y periodType que ya no existen en la base de datos
       };
       
       const schedule = await global.storage.createSchedule(scheduleData);
