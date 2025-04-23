@@ -1524,24 +1524,28 @@ export default function CalendarCreator() {
                                       {(() => {
                                         // Obtener la fecha de inicio seleccionada en el formulario
                                         const startDateStr = form.watch('startDate');
+                                        const periodType = form.watch('periodType'); // Obtener el tipo de periodo seleccionado
                                         let startDate = new Date();
                                         let endDate = new Date();
                                         let calendarDays: Array<{ date: Date, dayOfMonth: number, dayOfWeek: number }> = [];
                                         let formattedStartDate = "Fecha no seleccionada";
                                         let formattedEndDate = "";
                                         
+                                        // Determinar número de días según el tipo de periodo
+                                        const numDays = periodType === "mensual" ? 31 : 15;
+                                        
                                         // Verificar si hay una fecha de inicio válida
                                         if (startDateStr && isValid(new Date(startDateStr))) {
                                           startDate = new Date(startDateStr);
                                           formattedStartDate = format(startDate, "d 'de' MMMM", { locale: es });
                                           
-                                          // Calcular la fecha de fin (startDate + 14 días)
+                                          // Calcular la fecha de fin según el tipo de periodo
                                           endDate = new Date(startDate);
-                                          endDate.setDate(startDate.getDate() + 14);
+                                          endDate.setDate(startDate.getDate() + numDays - 1); // Restamos 1 para incluir el día inicial
                                           formattedEndDate = format(endDate, "d 'de' MMMM", { locale: es });
                                           
-                                          // Generar los días del calendario
-                                          for (let i = 0; i < 15; i++) {
+                                          // Generar los días del calendario según el periodo
+                                          for (let i = 0; i < numDays; i++) {
                                             const day = new Date(startDate);
                                             day.setDate(startDate.getDate() + i);
                                             
@@ -1561,14 +1565,14 @@ export default function CalendarCreator() {
                                             <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between mb-3">
                                               <div className="flex items-center gap-1.5">
                                                 <CalendarIcon2 className="h-3.5 w-3.5" />
-                                                <span>Simulación calendario quincenal (15 días)</span>
+                                                <span>Simulación calendario {periodType === "mensual" ? 'mensual (31 días)' : 'quincenal (15 días)'}</span>
                                               </div>
                                               <div className="font-medium">
                                                 {formattedStartDate} - {formattedEndDate}
                                               </div>
                                             </div>
                                             
-                                            {/* Calendario simulado de 15 días */}
+                                            {/* Calendario simulado de días según periodo */}
                                             <div className="overflow-hidden rounded-md border border-slate-200 dark:border-slate-700 mb-3">
                                               {/* Encabezados de los días */}
                                               <div className="grid grid-cols-7 bg-slate-100 dark:bg-slate-800/80">
@@ -1689,7 +1693,15 @@ export default function CalendarCreator() {
                                           </div>
                                         </div>
                                         <div>
-                                          <span className="text-slate-600 dark:text-slate-300 font-medium">Total: 15 publicaciones</span>
+                                          <span className="text-slate-600 dark:text-slate-300 font-medium">
+                                            Total: {calendarDays.filter(day => {
+                                              const dayIndex = day.dayOfWeek;
+                                              const dayName = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
+                                              const priority = dayPriorities[dayName] || "ninguna";
+                                              const formattedDay = format(day.date, "dd/MM/yyyy", { locale: es });
+                                              return priority !== "ninguna" && !excludedDates.includes(formattedDay);
+                                            }).length * (dayPriorities["L"] === "alta" ? 2 : 1)} publicaciones
+                                          </span>
                                         </div>
                                       </div>
                                     </div>
