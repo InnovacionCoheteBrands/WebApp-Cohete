@@ -5,6 +5,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+
+
 import { 
   AlertCircle, 
   ArrowDown,
@@ -1520,62 +1522,47 @@ export default function CalendarCreator() {
                                       </div>
                                     </div>
                                     
-                                    {/* Calculamos las variables del calendario */}
-                                    {(() => {
-                                      // Esta función se ejecuta en cada renderizado para calcular las variables del calendario
-                                      const startDateStr = form.watch('startDate');
-                                      const periodType = form.watch('periodType');
-                                      const numDays = periodType === "mensual" ? 31 : 15;
-                                      
-                                      // Scope de la variable para acceder desde todo el componente
-                                      window.calendarInfo = {
-                                        calendarDays: [] as Array<{ date: Date, dayOfMonth: number, dayOfWeek: number }>,
-                                        startDate: new Date(),
-                                        endDate: new Date(),
-                                        formattedStartDate: "Fecha no seleccionada",
-                                        formattedEndDate: "",
-                                        numDays: numDays
-                                      };
-                                      
-                                      // Verificar si hay una fecha de inicio válida
-                                      if (startDateStr && isValid(new Date(startDateStr))) {
-                                        window.calendarInfo.startDate = new Date(startDateStr);
-                                        window.calendarInfo.formattedStartDate = format(window.calendarInfo.startDate, "d 'de' MMMM", { locale: es });
-                                        
-                                        // Calcular la fecha de fin según el tipo de periodo
-                                        window.calendarInfo.endDate = new Date(window.calendarInfo.startDate);
-                                        window.calendarInfo.endDate.setDate(window.calendarInfo.startDate.getDate() + numDays - 1);
-                                        window.calendarInfo.formattedEndDate = format(window.calendarInfo.endDate, "d 'de' MMMM", { locale: es });
-                                        
-                                        // Generar los días del calendario
-                                        try {
-                                          // Generar días de manera segura
-                                          for (let i = 0; i < numDays; i++) {
-                                            const day = new Date(window.calendarInfo.startDate);
-                                            day.setDate(window.calendarInfo.startDate.getDate() + i);
-                                            
-                                            window.calendarInfo.calendarDays.push({
-                                              date: day,
-                                              dayOfMonth: day.getDate(),
-                                              dayOfWeek: day.getDay() === 0 ? 6 : day.getDay() - 1
-                                            });
-                                          }
-                                        } catch (e) {
-                                          console.error("Error generando días:", e);
-                                        }
-                                      }
-                                      
-                                      return null; // Sólo para cálculos, no renderiza nada
-                                    })()}
-                                    
                                     <div className="bg-white dark:bg-slate-800 rounded-md p-4 border border-slate-200 dark:border-slate-700">
                                       {(() => {
-                                        // Obtener valores computados anteriormente
-                                        const { calendarDays, formattedStartDate, formattedEndDate } = window.calendarInfo || {
-                                          calendarDays: [],
-                                          formattedStartDate: "Fecha no seleccionada",
-                                          formattedEndDate: ""
-                                        };
+                                        // Esta función se ejecuta en cada renderizado para calcular las variables del calendario
+                                        const startDateStr = form.watch('startDate');
+                                        const periodType = form.watch('periodType');
+                                        const numDays = periodType === "mensual" ? 31 : 15;
+                                        
+                                        // Variables locales para los datos del calendario
+                                        let calendarDays: Array<{ date: Date, dayOfMonth: number, dayOfWeek: number }> = [];
+                                        let startDate = new Date();
+                                        let endDate = new Date();
+                                        let formattedStartDate = "Fecha no seleccionada";
+                                        let formattedEndDate = "";
+                                        
+                                        // Verificar si hay una fecha de inicio válida
+                                        if (startDateStr && isValid(new Date(startDateStr))) {
+                                          try {
+                                            startDate = new Date(startDateStr);
+                                            formattedStartDate = format(startDate, "d 'de' MMMM", { locale: es });
+                                            
+                                            // Calcular la fecha de fin según el tipo de periodo
+                                            endDate = new Date(startDate);
+                                            endDate.setDate(startDate.getDate() + numDays - 1);
+                                            formattedEndDate = format(endDate, "d 'de' MMMM", { locale: es });
+                                            
+                                            // Generar los días del calendario (limitado a un máximo razonable)
+                                            const maxDays = Math.min(numDays, 40); // Limitamos a 40 días como seguridad
+                                            for (let i = 0; i < maxDays; i++) {
+                                              const day = new Date(startDate);
+                                              day.setDate(startDate.getDate() + i);
+                                              
+                                              calendarDays.push({
+                                                date: day,
+                                                dayOfMonth: day.getDate(),
+                                                dayOfWeek: day.getDay() === 0 ? 6 : day.getDay() - 1
+                                              });
+                                            }
+                                          } catch (e) {
+                                            console.error("Error generando calendario:", e);
+                                          }
+                                        }
                                         
                                         // Calcular el desplazamiento inicial para el primer día
                                         const initialOffset = calendarDays.length > 0 ? calendarDays[0].dayOfWeek : 0;
@@ -1585,7 +1572,7 @@ export default function CalendarCreator() {
                                             <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center justify-between mb-3">
                                               <div className="flex items-center gap-1.5">
                                                 <CalendarIcon2 className="h-3.5 w-3.5" />
-                                                <span>Simulación calendario {periodType === "mensual" ? 'mensual (31 días)' : 'quincenal (15 días)'}</span>
+                                                <span>Simulación calendario {form.watch('periodType') === "mensual" ? 'mensual (31 días)' : 'quincenal (15 días)'}</span>
                                               </div>
                                               <div className="font-medium">
                                                 {formattedStartDate} - {formattedEndDate}
@@ -1614,7 +1601,7 @@ export default function CalendarCreator() {
                                                 ))}
                                                 
                                                 {/* Celdas con días del calendario */}
-                                                {calendarDays.map((calendarDay, i) => {
+                                                {calendarDays.map((calendarDay: { date: Date, dayOfMonth: number, dayOfWeek: number }, i: number) => {
                                                   const dayIndex = calendarDay.dayOfWeek;
                                                   const day = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
                                                   const priority = dayPriorities[day] || "ninguna";
@@ -1716,27 +1703,36 @@ export default function CalendarCreator() {
                                           <span className="text-slate-600 dark:text-slate-300 font-medium">
                                             Total: {(() => {
                                               try {
-                                                // Método simplificado y más seguro para calcular el total de publicaciones
+                                                // Cálculo simplificado de publicaciones totales basado en días de la semana
+                                                const startDateStr = form.watch('startDate');
+                                                const periodType = form.watch('periodType');
+                                                
+                                                if (!startDateStr || !isValid(new Date(startDateStr))) {
+                                                  return 0;
+                                                }
+                                                
+                                                const numDays = periodType === "mensual" ? 31 : 15;
                                                 let totalPosts = 0;
-                                                const info = window.calendarInfo || { calendarDays: [] };
+                                                const startDate = new Date(startDateStr);
                                                 
-                                                // Calculamos los días que tienen publicaciones
-                                                const daysWithPosts = info.calendarDays.filter(day => {
-                                                  if (!day) return false;
-                                                  const dayIndex = day.dayOfWeek;
-                                                  const dayName = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
-                                                  const priority = dayPriorities[dayName] || "ninguna";
-                                                  const formattedDay = format(day.date, "dd/MM/yyyy", { locale: es });
-                                                  return priority !== "ninguna" && !excludedDates.includes(formattedDay);
-                                                });
-                                                
-                                                // Calculamos el total considerando prioridades
-                                                for (const day of daysWithPosts) {
-                                                  const dayIndex = day.dayOfWeek;
-                                                  const dayName = ["L", "M", "X", "J", "V", "S", "D"][dayIndex];
-                                                  const priority = dayPriorities[dayName];
+                                                // Calculamos el total de publicaciones según los días de la semana seleccionados
+                                                for (let i = 0; i < numDays; i++) {
+                                                  const currentDate = new Date(startDate);
+                                                  currentDate.setDate(startDate.getDate() + i);
                                                   
-                                                  totalPosts += priority === "alta" ? 2 : 1;
+                                                  // Convertimos el día de la semana al formato que usamos (L, M, X, J, V, S, D)
+                                                  const weekdayNum = currentDate.getDay(); // 0 = domingo, 1 = lunes, ...
+                                                  const weekdayIdx = weekdayNum === 0 ? 6 : weekdayNum - 1; // Convertir a 0 = lunes, 6 = domingo
+                                                  const dayName = ["L", "M", "X", "J", "V", "S", "D"][weekdayIdx];
+                                                  
+                                                  // Verificamos si es una fecha excluida
+                                                  const formattedDay = format(currentDate, "dd/MM/yyyy", { locale: es });
+                                                  const isExcluded = excludedDates.includes(formattedDay);
+                                                  
+                                                  // Si el día tiene prioridad y no está excluido, agregamos publicaciones
+                                                  if (!isExcluded && dayPriorities[dayName] && dayPriorities[dayName] !== "ninguna") {
+                                                    totalPosts += dayPriorities[dayName] === "alta" ? 2 : 1;
+                                                  }
                                                 }
                                                 
                                                 return totalPosts;
