@@ -46,14 +46,13 @@ export async function generateSchedule(
       const selectedNetworks = socialNetworks
         .filter((network: any) => network.selected && typeof network.postsPerMonth === 'number')
         .map((network: any) => {
-          // Calculate posts per two weeks based on monthly frequency
-          // For a 14-day period (2 weeks), we multiply the monthly rate by (14/30)
-          const postsPerTwoWeeks = Math.ceil(network.postsPerMonth * (durationDays / 30));
+          // Calculate posts per period based on monthly frequency
+          const postsPerPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
           
           return {
             name: network.name,
             postsPerMonth: network.postsPerMonth,
-            postsForPeriod: postsPerTwoWeeks,
+            postsForPeriod: postsPerPeriod,
             contentTypes: network.contentTypes || []
           };
         });
@@ -96,12 +95,12 @@ export async function generateSchedule(
             - **Pilares de Contenido/Temas Clave:** Úsalos como base para las ideas de posts.
             - **Productos/Servicios a Promocionar:** Intégralos estratégicamente.
 
-      3.  **Periodo del Cronograma Quincenal:**
+      3.  **Periodo del Cronograma:**
           - Fecha de Inicio: ${formattedDate}
-          - Duración: 15 días (periodo quincenal fijo)
-          - Distribución: Uniforme quincenal
+          - Duración: ${durationDays} días
+          - Distribución: Uniforme durante el periodo
           - Fecha de Fin (Referencia): ${endDate}
-          - IMPORTANTE: El cronograma debe ser SIEMPRE quincenal (15 días), independientemente de otros parámetros.
+          - IMPORTANTE: Respeta estrictamente la duración indicada.
 
       4.  **Especificaciones Adicionales del Usuario:** ${specifications || "Ninguna especificación adicional proporcionada."}
           *Interpretación Clave Requerida:* Incorpora estas especificaciones en el cronograma donde sea relevante.
@@ -140,109 +139,120 @@ export async function generateSchedule(
     console.log("Generando cronograma con Grok AI");
     const scheduleText = await grokService.generateText(prompt);
     
-    // Intentar parsear el resultado como JSON con un enfoque más robusto
     try {
-      // Primero depuramos la respuesta
-      console.log("Longitud de la respuesta de Grok:", scheduleText.length);
-      console.log("Primeros 200 caracteres:", scheduleText.substring(0, 200));
-      
-      // Intentamos encontrar el JSON usando una expresión regular más precisa
-      // Buscamos específicamente un objeto JSON que tenga las propiedades esperadas
-      const jsonRegex = /{[\s\S]*?"name"[\s\S]*?"entries"[\s\S]*?}/;
-      const jsonMatch = scheduleText.match(jsonRegex);
-      
-      if (jsonMatch) {
-        console.log("Encontrado JSON completo con regex");
-        try {
-          return JSON.parse(jsonMatch[0]) as ContentSchedule;
-        } catch (parseError) {
-          console.error("Error parseando JSON encontrado con regex:", parseError);
-          // Continuamos con otros métodos si este falla
-        }
-      }
-      
-      // Si el regex específico falla, intentamos extraer manualmente el JSON
-      console.log("Intentando extracción manual del JSON");
+      // Estrategia 1: Extraer y parsear directamente
       const jsonStart = scheduleText.indexOf('{');
       const jsonEnd = scheduleText.lastIndexOf('}') + 1;
       
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
-        const jsonPart = scheduleText.substring(jsonStart, jsonEnd);
-        console.log("JSON extraído manualmente (longitud):", jsonPart.length);
-        
         try {
-          // Intentamos limpiar el JSON de posibles errores
-          let cleanedJson = jsonPart;
-          // Reemplazar comas extra antes de cerrar objetos o arrays
-          cleanedJson = cleanedJson.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+          const jsonContent = scheduleText.substring(jsonStart, jsonEnd);
+          const parsedContent = JSON.parse(jsonContent);
           
-          const parsed = JSON.parse(cleanedJson);
-          
-          if (parsed && parsed.entries && Array.isArray(parsed.entries)) {
-            console.log("JSON parseado manualmente con éxito, entradas:", parsed.entries.length);
-            return {
-              name: parsed.name || `Cronograma para ${projectName}`,
-              entries: parsed.entries
-            };
-          } else {
-            console.error("El JSON extraído no tiene la estructura esperada");
+          if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
+            console.log(`Cronograma parseado correctamente con ${parsedContent.entries.length} entradas`);
+            return parsedContent;
           }
-        } catch (jsonError) {
-          console.error("Error parseando JSON extraído manualmente:", jsonError);
+        } catch (error) {
+          console.error("Error al parsear JSON completo:", error);
         }
       }
       
-      // Si todos los intentos anteriores fallan, tratamos de reconstruir el JSON
-      console.error("No se pudo parsear el JSON con métodos estándar, intentando reconstrucción");
-      console.log("Respuesta original (primeros 1000 caracteres):", scheduleText.substring(0, 1000));
+      // Estrategia 2: Extraer y limpiar el JSON antes de parsearlo
+      if (jsonStart >= 0 && jsonEnd > jsonStart) {
+        try {
+          let jsonContent = scheduleText.substring(jsonStart, jsonEnd);
+          
+          // Limpiar problemas comunes
+          jsonContent = jsonContent.replace(/}\s*{/g, '},{');
+          jsonContent = jsonContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+          jsonContent = jsonContent.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+          jsonContent = jsonContent.replace(/:(\s*)'([^']*)'/g, ':$1"$2"');
+          
+          const parsedContent = JSON.parse(jsonContent);
+          
+          if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
+            console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
+            return parsedContent;
+          }
+        } catch (error) {
+          console.error("Error al parsear JSON limpiado:", error);
+        }
+      }
       
-      // Intentamos una última estrategia
+      // Estrategia 3: Extraer objetos individuales
       try {
-        // Buscar partes del JSON que podamos utilizar
-        const nameMatch = scheduleText.match(/"name"\s*:\s*"([^"]+)"/);
-        const entriesStartMatch = scheduleText.match(/"entries"\s*:\s*\[/);
+        const entriesRegex = /{[^{]*"title"[^}]*"platform"[^}]*"postDate"[^}]*}/g;
+        const validEntries: ContentScheduleEntry[] = [];
+        let match;
         
-        if (nameMatch && entriesStartMatch) {
-          console.log("Encontrados elementos clave para reconstrucción parcial");
-          // Reconstruimos un JSON mínimo válido con el nombre y al menos una entrada
+        while ((match = entriesRegex.exec(scheduleText)) !== null) {
+          try {
+            let entryText = match[0];
+            entryText = entryText.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
+            entryText = entryText.replace(/:(\s*)'([^']*)'/g, ':$1"$2"');
+            
+            const entry = JSON.parse(entryText);
+            if (entry.title && entry.platform && entry.postDate) {
+              validEntries.push(entry);
+            }
+          } catch (e) {
+            // Ignorar entradas inválidas
+          }
+        }
+        
+        if (validEntries.length > 0) {
+          console.log(`Recuperadas ${validEntries.length} entradas de forma individual`);
+          
+          // Extraer nombre si es posible
+          const nameMatch = scheduleText.match(/"name"\s*:\s*"([^"]+)"/);
+          const name = nameMatch ? nameMatch[1] : `Cronograma para ${projectName}`;
+          
           return {
-            name: nameMatch[1] || `Cronograma para ${projectName}`,
-            entries: [
-              {
-                title: "Reconstrucción parcial",
-                description: "Este es un cronograma reconstruido parcialmente debido a problemas de formato en la respuesta.",
-                content: "Contenido recuperado parcialmente. Recomendamos revisar y personalizar este contenido.",
-                copyIn: "Texto recuperado parcialmente",
-                copyOut: "Texto descriptivo recuperado parcialmente",
-                designInstructions: "Instrucciones de diseño básicas",
-                platform: "Red social principal",
-                postDate: formattedDate,
-                postTime: "12:00",
-                hashtags: "#reconstruido #marketing #contenido"
-              }
-            ]
+            name: name,
+            entries: validEntries
           };
         }
-      } catch (reconstructError) {
-        console.error("Error en la reconstrucción final:", reconstructError);
+      } catch (error) {
+        console.error("Error al extraer entradas individuales:", error);
       }
       
-      // Si no se pudo recuperar, crear un cronograma mínimo como fallback
-      console.log("Usando cronograma fallback debido a error de parseo");
+      // Fallback final
+      console.log("Usando cronograma fallback");
       return {
         name: `Cronograma para ${projectName}`,
         entries: [
           {
-            title: "Publicación de ejemplo",
-            description: "Este es un cronograma básico de ejemplo generado como fallback.",
-            content: "Contenido generado como fallback debido a un error en la generación del cronograma completo.",
-            copyIn: "Texto de ejemplo",
-            copyOut: "Texto de descripción de ejemplo",
-            designInstructions: "Instrucciones de diseño básicas",
+            title: "Publicación principal para redes sociales",
+            description: "Este es un cronograma básico para comenzar. Por favor regenera para obtener más opciones.",
+            content: "Contenido detallado para la red social principal del proyecto.",
+            copyIn: "Texto integrado para diseño",
+            copyOut: "Texto para descripción en redes sociales ✨",
+            designInstructions: "Diseño basado en la identidad visual del proyecto",
             platform: "Instagram",
             postDate: formattedDate,
             postTime: "12:00",
-            hashtags: "#ejemplo #cronograma #marketing"
+            hashtags: "#marketing #contenido #socialmedia"
+          }
+        ]
+      };
+    } catch (generalError) {
+      console.error("Error general procesando respuesta:", generalError);
+      // Fallback final en caso de error general
+      return {
+        name: `Cronograma para ${projectName}`,
+        entries: [
+          {
+            title: "Publicación principal para redes sociales",
+            description: "Este es un cronograma básico para comenzar. Por favor regenera para obtener más opciones.",
+            content: "Contenido detallado para la red social principal del proyecto.",
+            copyIn: "Texto integrado para diseño",
+            copyOut: "Texto para descripción en redes sociales ✨",
+            designInstructions: "Diseño basado en la identidad visual del proyecto",
+            platform: "Instagram",
+            postDate: formattedDate,
+            postTime: "12:00",
+            hashtags: "#marketing #contenido #socialmedia"
           }
         ]
       };
