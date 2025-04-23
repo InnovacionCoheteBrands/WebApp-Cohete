@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 
 
 import { 
@@ -166,6 +167,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function CalendarCreator() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTab, setSelectedTab] = useState("general");
@@ -308,7 +310,8 @@ export default function CalendarCreator() {
       });
       
       // Redirect to schedule detail page
-      window.location.href = `/schedules/${data.id}`;
+      // Usamos setLocation de Wouter en lugar de window.location para evitar DOMException
+      setLocation(`/schedules/${data.id}`);
       
     } catch (error) {
       console.error('Error creating schedule:', error);
