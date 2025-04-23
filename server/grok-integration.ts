@@ -45,10 +45,38 @@ export class GrokService {
       return response.data.choices[0].message.content;
     } catch (error) {
       console.error('Error generando texto con Grok:', error);
-      if (axios.isAxiosError(error) && error.response) {
-        throw new Error(`Error de Grok API (${error.response.status}): ${error.response.data.error?.message || JSON.stringify(error.response.data)}`);
+      
+      // Manejar diferentes tipos de errores
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Error con respuesta del servidor (400, 500, etc.)
+          const statusCode = error.response.status;
+          
+          // Para errores 502, 503, 504 (errores de gateway y disponibilidad)
+          if (statusCode >= 502 && statusCode <= 504) {
+            throw new Error(`Servicio de Grok AI temporalmente no disponible. Por favor intenta nuevamente más tarde (Error ${statusCode}).`);
+          }
+          
+          // Para error 429 (rate limit)
+          if (statusCode === 429) {
+            throw new Error(`Se ha excedido el límite de peticiones a Grok AI. Por favor espera unos minutos antes de intentar nuevamente.`);
+          }
+          
+          // Para errores 401, 403 (autenticación)
+          if (statusCode === 401 || statusCode === 403) {
+            throw new Error(`Error de autenticación con la API de Grok. Verifica que la clave API sea válida.`);
+          }
+          
+          // Otros errores con respuesta
+          throw new Error(`Error del servicio Grok AI (${statusCode}): ${error.response.data.error?.message || "Detalles no disponibles"}`);
+        } else if (error.request) {
+          // Error sin respuesta (problemas de red)
+          throw new Error(`No se pudo conectar con el servicio de Grok AI. Verifica tu conexión a internet.`);
+        }
       }
-      throw new Error('Error al conectar con la API de Grok');
+      
+      // Errores genéricos
+      throw new Error(`Error inesperado al utilizar el servicio de Grok AI: ${error.message || "Detalles no disponibles"}`);
     }
   }
 
@@ -96,10 +124,38 @@ export class GrokService {
       return response.data.choices[0].message.content;
     } catch (error) {
       console.error('Error generando texto con imagen en Grok:', error);
-      if (axios.isAxiosError(error) && error.response) {
-        throw new Error(`Error de Grok API (${error.response.status}): ${error.response.data.error?.message || JSON.stringify(error.response.data)}`);
+      
+      // Manejar diferentes tipos de errores
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Error con respuesta del servidor (400, 500, etc.)
+          const statusCode = error.response.status;
+          
+          // Para errores 502, 503, 504 (errores de gateway y disponibilidad)
+          if (statusCode >= 502 && statusCode <= 504) {
+            throw new Error(`Servicio de Grok AI temporalmente no disponible. Por favor intenta nuevamente más tarde (Error ${statusCode}).`);
+          }
+          
+          // Para error 429 (rate limit)
+          if (statusCode === 429) {
+            throw new Error(`Se ha excedido el límite de peticiones a Grok AI. Por favor espera unos minutos antes de intentar nuevamente.`);
+          }
+          
+          // Para errores 401, 403 (autenticación)
+          if (statusCode === 401 || statusCode === 403) {
+            throw new Error(`Error de autenticación con la API de Grok. Verifica que la clave API sea válida.`);
+          }
+          
+          // Otros errores con respuesta
+          throw new Error(`Error del servicio Grok AI (${statusCode}): ${error.response.data.error?.message || "Detalles no disponibles"}`);
+        } else if (error.request) {
+          // Error sin respuesta (problemas de red)
+          throw new Error(`No se pudo conectar con el servicio de Grok AI. Verifica tu conexión a internet.`);
+        }
       }
-      throw new Error('Error al conectar con la API de Grok para análisis de imagen');
+      
+      // Errores genéricos
+      throw new Error(`Error inesperado al utilizar el servicio de Grok AI para análisis de imagen: ${error.message || "Detalles no disponibles"}`);
     }
   }
 }

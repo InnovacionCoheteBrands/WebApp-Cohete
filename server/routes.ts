@@ -673,7 +673,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(scheduleWithEntries);
     } catch (error) {
       console.error("Error creating schedule:", error);
-      res.status(500).json({ message: "Failed to create schedule", error: error.message });
+      
+      // Mensajes de error específicos basados en el tipo de error
+      if (error.message && error.message.includes("Servicio de Grok AI temporalmente no disponible")) {
+        // Error de disponibilidad de Grok API
+        return res.status(503).json({ 
+          message: "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.", 
+          error: error.message 
+        });
+      } else if (error.message && error.message.includes("límite de peticiones")) {
+        // Error de límite de peticiones
+        return res.status(429).json({ 
+          message: "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.", 
+          error: error.message 
+        });
+      } else if (error.message && error.message.includes("Error de autenticación")) {
+        // Error de autenticación con la API
+        return res.status(401).json({ 
+          message: "Error en la configuración del servicio de IA. Por favor contacta al administrador.", 
+          error: error.message 
+        });
+      }
+      
+      // Errores generales
+      res.status(500).json({ 
+        message: "Ocurrió un error al crear el calendario. Por favor intenta con menos plataformas o en otro momento.", 
+        error: error.message 
+      });
     }
   });
 
