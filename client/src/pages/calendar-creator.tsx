@@ -16,6 +16,7 @@ import {
   Check,
   Clock, 
   Download,
+  HelpCircle,
   Info, 
   Moon,
   MoreHorizontal,
@@ -147,6 +148,7 @@ const formSchema = z.object({
     required_error: "Por favor selecciona una fecha de fin",
   }).optional(),
   specifications: z.string().optional(),
+  aiModel: z.enum(["mistral", "openai", "grok"]).default("mistral"),
   advanced: z.object({
     includeCopyIn: z.boolean().default(true),
     includeCopyOut: z.boolean().default(true),
@@ -218,6 +220,7 @@ export default function CalendarCreator() {
     defaultValues: {
       name: "",
       specifications: "",
+      aiModel: "mistral", // Por defecto usamos Mistral
       advanced: {
         includeCopyIn: true,
         includeCopyOut: true,
@@ -1911,6 +1914,69 @@ export default function CalendarCreator() {
                 <TabsContent value="advanced" className="space-y-6 p-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-5">
+                      <div className="flex items-center gap-2">
+                        <Settings2 className="h-5 w-5 text-purple-500" />
+                        <h3 className="text-lg font-medium dark:text-white">Modelo de IA</h3>
+                      </div>
+                      
+                      <FormField
+                        control={form.control}
+                        name="aiModel"
+                        render={({ field }) => (
+                          <FormItem className="rounded-lg border p-4 shadow-sm transition-all hover:shadow-md hover:border-primary/20 bg-white dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-[#65cef5]/40">
+                            <FormLabel className="text-sm font-medium dark:text-white flex items-center gap-2">
+                              Selecciona el modelo de IA
+                              <HelpCircle className="h-3.5 w-3.5 text-slate-400" />
+                            </FormLabel>
+                            <FormDescription className="text-xs dark:text-slate-400 mb-3">
+                              Cada modelo tiene capacidades diferentes para generar contenido.
+                            </FormDescription>
+                            <FormControl>
+                              <RadioGroup
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                                className="flex flex-col space-y-2"
+                              >
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="mistral" className="data-[state=checked]:border-blue-500 data-[state=checked]:bg-blue-500" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer dark:text-white">
+                                    <div className="flex items-center">
+                                      Mistral AI
+                                      <Badge variant="outline" className="ml-2 bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-700/40 dark:text-blue-300">
+                                        Recomendado
+                                      </Badge>
+                                    </div>
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="openai" className="data-[state=checked]:border-green-500 data-[state=checked]:bg-green-500" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer dark:text-white">
+                                    OpenAI GPT-4o
+                                  </FormLabel>
+                                </FormItem>
+                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                  <FormControl>
+                                    <RadioGroupItem value="grok" className="data-[state=checked]:border-purple-500 data-[state=checked]:bg-purple-500" />
+                                  </FormControl>
+                                  <FormLabel className="font-normal cursor-pointer dark:text-white">
+                                    <div className="flex items-center">
+                                      Grok AI
+                                      <Badge variant="outline" className="ml-2 bg-purple-50 border-purple-200 text-purple-700 dark:bg-purple-900/20 dark:border-purple-700/40 dark:text-purple-300">
+                                        Nuevo
+                                      </Badge>
+                                    </div>
+                                  </FormLabel>
+                                </FormItem>
+                              </RadioGroup>
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-amber-500" />
                         <h3 className="text-lg font-medium dark:text-white">Elementos de contenido</h3>
