@@ -91,45 +91,23 @@ export async function generateSchedule(
     }
     
     const prompt = `
-      Actúa como un **Director de Marketing Digital Estratégico y Creativo** con 15 años de experiencia, especializado en la creación de contenido de alto rendimiento basado en datos y enfocado en ROI para redes sociales. Eres experto en traducir objetivos de negocio en planes de contenido accionables, optimizar para cada plataforma y adaptarte a las tendencias del mercado.
+      Crea un cronograma de contenido para redes sociales para el proyecto "${projectName}". Utiliza estos datos para crear contenido relevante y efectivo:
 
-      Tu misión es generar un **CRONOGRAMA DE CONTENIDO DETALLADO Y ESTRUCTURADO** para el proyecto "${projectName}" que impulse sus objetivos comerciales y resuene profundamente con su audiencia objetivo, listo para ser implementado.
+      **Proyecto:** ${projectName}
+      **Detalles:**
+      ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
 
-      **I. DATOS DE ENTRADA DEL PROYECTO:**
+      **Periodo:** ${formattedDate} a ${endDate} (${durationDays} días)
+      **Especificaciones:** ${specifications || "Ninguna especificación adicional."}
+      
+      **Redes sociales:**
+      ${socialNetworksSection || "Sugiere 2-3 redes sociales apropiadas para el proyecto."}
+      
+      **Contenido previo:**
+      ${previousContentSection || "Sin historial de contenido previo."}
 
-      1.  **Nombre del Proyecto:** ${projectName}
-      2.  **Detalles Clave del Proyecto (Formato JSON):**
-          \`\`\`json
-          ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
-          \`\`\`
-          *Interpretación Clave Requerida:* **Extrae y utiliza activamente** la siguiente información de este JSON para fundamentar TODO el cronograma:
-            - **Objetivos de Negocio/KPIs:** (ej. leads, ventas, engagement, awareness). Cada post debe alinearse a uno.
-            - **Audiencia Objetivo:** (ej. demografía, intereses, puntos de dolor, motivaciones). Adapta el contenido y tono a ellos.
-            - **Voz y Tono de Marca:** Mantén la coherencia estricta.
-            - **Pilares de Contenido/Temas Clave:** Úsalos como base para las ideas de posts.
-            - **Productos/Servicios a Promocionar:** Intégralos estratégicamente.
-
-      3.  **Periodo del Cronograma:**
-          - Fecha de Inicio: ${formattedDate}
-          - Duración: ${durationDays} días
-          - Distribución: Uniforme durante el periodo
-          - Fecha de Fin (Referencia): ${endDate}
-          - IMPORTANTE: Respeta estrictamente la duración indicada.
-
-      4.  **Especificaciones Adicionales del Usuario:** ${specifications || "Ninguna especificación adicional proporcionada."}
-          *Interpretación Clave Requerida:* Incorpora estas especificaciones en el cronograma donde sea relevante.
-
-      5.  **Redes Sociales y Directrices Específicas:**
-          ${socialNetworksSection || "No se especificaron redes sociales. Basado en 'Detalles Clave del Proyecto', sugiere las 2-3 redes más relevantes y una cadencia óptima para cada una."}
-          *Interpretación Clave Requerida:* **Adapta el tipo de contenido, formato y frecuencia** a las mejores prácticas y directrices de CADA red social especificada o sugerida. Considera los formatos nativos (Reels, Stories, etc.).
-
-      6.  **Contexto de Contenido Previo (Opcional):**
-          ${previousContentSection || "No se proporcionó información sobre contenido previo. Enfócate en las mejores prácticas y los detalles del proyecto."}
-          *Interpretación Clave Requerida:* Si se proporciona, **analiza insights clave** (qué funcionó/no funcionó, temas/formatos exitosos) y úsalos activamente para informar las nuevas ideas. Evita repetir errores, potencia éxitos.
-
-      **III. FORMATO DE SALIDA OBLIGATORIO:**
-
-      Devuelve el cronograma en formato JSON, con todo el contenido en español:
+      **FORMATO DE RESPUESTA:**
+      Devuelve ÚNICAMENTE un objeto JSON con esta estructura (todo en español):
       {
         "name": "Nombre del cronograma - creativo y específico al proyecto",
         "entries": [

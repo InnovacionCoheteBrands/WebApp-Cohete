@@ -602,6 +602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const previousContent = contentHistory.map(entry => entry.content);
       
       // Generate schedule using Grok AI, passing previous content
+      console.log("[CALENDAR] Iniciando generación de cronograma");
+      
+      // Intentamos generar el cronograma
       const generatedSchedule = await generateSchedule(
         project.name,
         {
@@ -611,7 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
         startDate,
         specifications,
-        periodDays, // Usar el número de días según el tipo de periodo seleccionado (quincenal o mensual)
+        periodDays, // Usar el número de días según el tipo de periodo seleccionado
         previousContent
       );
       

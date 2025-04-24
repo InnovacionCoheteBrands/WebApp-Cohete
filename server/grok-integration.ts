@@ -73,7 +73,7 @@ export class GrokService {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${this.apiKey}`
             },
-            timeout: 60000 // 60 segundos de timeout para evitar bloqueos indefinidos
+            timeout: 120000 // 120 segundos de timeout para solicitudes grandes
           }
         );
         
