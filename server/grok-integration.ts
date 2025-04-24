@@ -147,17 +147,23 @@ export class GrokService {
         
         // Para errores 502, 503, 504 (errores de gateway y disponibilidad)
         if (statusCode >= 502 && statusCode <= 504) {
-          throw new Error(`Servicio de Grok AI temporalmente no disponible. Por favor intenta nuevamente más tarde (Error ${statusCode}).`);
+          const serviceError = new Error(`Servicio de Grok AI temporalmente no disponible. Por favor intenta nuevamente más tarde (Error ${statusCode}).`);
+          (serviceError as any).errorType = "NETWORK";
+          throw serviceError;
         }
         
         // Para error 429 (rate limit)
         if (statusCode === 429) {
-          throw new Error(`Se ha excedido el límite de peticiones a Grok AI. Por favor espera unos minutos antes de intentar nuevamente.`);
+          const rateLimitError = new Error(`Se ha excedido el límite de peticiones a Grok AI. Por favor espera unos minutos antes de intentar nuevamente.`);
+          (rateLimitError as any).errorType = "RATE_LIMIT";
+          throw rateLimitError;
         }
         
         // Para errores 401, 403 (autenticación)
         if (statusCode === 401 || statusCode === 403) {
-          throw new Error(`Error de autenticación con la API de Grok. Verifica que la clave API sea válida.`);
+          const authError = new Error(`Error de autenticación con la API de Grok. Verifica que la clave API sea válida.`);
+          (authError as any).errorType = "AUTH";
+          throw authError;
         }
         
         // Extraer mensaje detallado si está disponible
@@ -177,16 +183,22 @@ export class GrokService {
         }
         
         // Otros errores con respuesta
-        throw new Error(`Error del servicio Grok AI (${statusCode}): ${detailedMessage}`);
+        const otherResponseError = new Error(`Error del servicio Grok AI (${statusCode}): ${detailedMessage}`);
+        (otherResponseError as any).errorType = "API_ERROR";
+        throw otherResponseError;
       } else if (error.request) {
         // Error sin respuesta (problemas de red)
-        throw new Error(`No se pudo conectar con el servicio de Grok AI. Verifica tu conexión a internet.`);
+        const networkError = new Error(`No se pudo conectar con el servicio de Grok AI. Verifica tu conexión a internet.`);
+        (networkError as any).errorType = "NETWORK"; // Añadir el tipo explícitamente
+        throw networkError;
       }
     }
     
     // Errores genéricos
     const errorMessage = error instanceof Error ? error.message : String(error || "Error desconocido");
-    throw new Error(`Error inesperado al utilizar el servicio de Grok AI: ${errorMessage}`);
+    const genericError = new Error(`Error inesperado al utilizar el servicio de Grok AI: ${errorMessage}`);
+    (genericError as any).errorType = "UNKNOWN";
+    throw genericError;
   }
 
   /**
@@ -242,30 +254,42 @@ export class GrokService {
           
           // Para errores 502, 503, 504 (errores de gateway y disponibilidad)
           if (statusCode >= 502 && statusCode <= 504) {
-            throw new Error(`Servicio de Grok AI temporalmente no disponible. Por favor intenta nuevamente más tarde (Error ${statusCode}).`);
+            const serviceError = new Error(`Servicio de Grok AI temporalmente no disponible. Por favor intenta nuevamente más tarde (Error ${statusCode}).`);
+            (serviceError as any).errorType = "NETWORK";
+            throw serviceError;
           }
           
           // Para error 429 (rate limit)
           if (statusCode === 429) {
-            throw new Error(`Se ha excedido el límite de peticiones a Grok AI. Por favor espera unos minutos antes de intentar nuevamente.`);
+            const rateLimitError = new Error(`Se ha excedido el límite de peticiones a Grok AI. Por favor espera unos minutos antes de intentar nuevamente.`);
+            (rateLimitError as any).errorType = "RATE_LIMIT";
+            throw rateLimitError;
           }
           
           // Para errores 401, 403 (autenticación)
           if (statusCode === 401 || statusCode === 403) {
-            throw new Error(`Error de autenticación con la API de Grok. Verifica que la clave API sea válida.`);
+            const authError = new Error(`Error de autenticación con la API de Grok. Verifica que la clave API sea válida.`);
+            (authError as any).errorType = "AUTH";
+            throw authError;
           }
           
           // Otros errores con respuesta
-          throw new Error(`Error del servicio Grok AI (${statusCode}): ${error.response.data.error?.message || "Detalles no disponibles"}`);
+          const otherResponseError = new Error(`Error del servicio Grok AI (${statusCode}): ${error.response.data.error?.message || "Detalles no disponibles"}`);
+          (otherResponseError as any).errorType = "API_ERROR";
+          throw otherResponseError;
         } else if (error.request) {
           // Error sin respuesta (problemas de red)
-          throw new Error(`No se pudo conectar con el servicio de Grok AI. Verifica tu conexión a internet.`);
+          const networkError = new Error(`No se pudo conectar con el servicio de Grok AI. Verifica tu conexión a internet.`);
+          (networkError as any).errorType = "NETWORK";
+          throw networkError;
         }
       }
       
       // Errores genéricos
       const errorMessage = error instanceof Error ? error.message : String(error || "Error desconocido");
-      throw new Error(`Error inesperado al utilizar el servicio de Grok AI para análisis de imagen: ${errorMessage}`);
+      const genericError = new Error(`Error inesperado al utilizar el servicio de Grok AI para análisis de imagen: ${errorMessage}`);
+      (genericError as any).errorType = "UNKNOWN";
+      throw genericError;
     }
   }
 }

@@ -34,7 +34,7 @@ export async function generateSchedule(
   durationDays: number = 15, // Periodo quincenal fijo (15 días)
   previousContent: string[] = []
 ): Promise<ContentSchedule> {
-  console.log(`[CALENDAR] Iniciando generación de calendario para proyecto "${projectName}"`);
+  console.log(`[CALENDAR] !! Iniciando generación de calendario para proyecto "${projectName}"`);
   console.log(`[CALENDAR] Parámetros: startDate=${startDate}, durationDays=${durationDays}, prevContent.length=${previousContent.length}`);
   
   try {
@@ -721,21 +721,29 @@ export async function generateSchedule(
     // Registrar mensaje detallado del error
     console.error("[CALENDAR] Error crítico en generateSchedule:", error);
     
-    // Determinar categoría de error
-    let errorType = "UNKNOWN";
+    // Verificar si el error ya tiene un tipo definido
+    let errorType = error.errorType || "UNKNOWN";
     let errorMessage = "";
     
+    // Loggeamos información detallada del error
+    console.log("[CALENDAR ERROR] Detalles completos:", { 
+      message: error.message, 
+      type: error.errorType, 
+      stack: error.stack,
+      originalError: error
+    });
+    
     if (error.message && typeof error.message === 'string') {
-      if (error.message.includes("connect")) {
+      if (errorType === "NETWORK" || error.message.includes("connect")) {
         errorType = "NETWORK";
         errorMessage = `Error de conexión con la API de Grok: ${error.message}`;
-      } else if (error.message.includes("JSON") || error.message.includes("parse")) {
+      } else if (errorType === "JSON_PARSING" || error.message.includes("JSON") || error.message.includes("parse")) {
         errorType = "JSON_PARSING";
         errorMessage = `Error de procesamiento de respuesta JSON: ${error.message}`;
-      } else if (error.message.includes("limit")) {
+      } else if (errorType === "RATE_LIMIT" || error.message.includes("limit")) {
         errorType = "RATE_LIMIT";
         errorMessage = `Se ha excedido el límite de peticiones a Grok AI: ${error.message}`;
-      } else if (error.message.includes("autenticación") || error.message.includes("authentication")) {
+      } else if (errorType === "AUTH" || error.message.includes("autenticación") || error.message.includes("authentication")) {
         errorType = "AUTH";
         errorMessage = `Error de autenticación con Grok AI: ${error.message}`;
       } else if (error.message.startsWith("ERROR_JSON_PROCESSING:")) {
