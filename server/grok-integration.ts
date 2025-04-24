@@ -19,14 +19,15 @@ export class GrokService {
     model?: string, 
     temperature?: number,
     maxTokens?: number,
-    retryCount?: number
+    retryCount?: number,
+    responseFormat?: string  // Nuevo: Formato de respuesta deseado: "json_object" o "text"
   } = {}): Promise<string> {
     // Número de intentos (predeterminado: 1)
     const maxRetries = options.retryCount || 1;
     let lastError: any = null;
     
     // Información para log
-    console.log(`Iniciando solicitud a Grok AI. Modelo: ${options.model || 'grok-3-beta'}, Temperatura: ${options.temperature || 0.7}, Max tokens: ${options.maxTokens || 2000}`);
+    console.log(`Iniciando solicitud a Grok AI. Modelo: ${options.model || 'grok-3-beta'}, Temperatura: ${options.temperature || 0.7}, Max tokens: ${options.maxTokens || 2000}${options.responseFormat ? ', Formato: ' + options.responseFormat : ''}`);
     
     // Intentar varias veces si se especificaron reintentos
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -36,7 +37,8 @@ export class GrokService {
           console.log(`Intento ${attempt}/${maxRetries} de generar texto con Grok AI...`);
         }
         
-        const requestPayload = {
+        // Construir payload base
+        const requestPayload: any = {
           model: options.model || 'grok-3-beta',
           messages: [
             {
@@ -47,6 +49,12 @@ export class GrokService {
           temperature: options.temperature || 0.7,
           max_tokens: options.maxTokens || 2000,
         };
+        
+        // Si se solicita formato JSON, configurarlo explícitamente
+        if (options.responseFormat === 'json_object') {
+          console.log('[GROK] Configurando formato de respuesta: JSON_OBJECT');
+          requestPayload.response_format = { type: "json_object" };
+        }
         
         // Registrar tamaño de la solicitud
         const requestSize = JSON.stringify(requestPayload).length;

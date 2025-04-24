@@ -150,14 +150,21 @@ export async function generateSchedule(
     `;
 
     // Usamos exclusivamente Grok AI para generar el cronograma
-    console.log("Generando cronograma con Grok AI");
-    const scheduleText = await grokService.generateText(prompt, {
-      // Aumentamos temperatura para evitar respuestas demasiado estructuradas que puedan causar problemas
-      temperature: 0.4,
+    console.log("[CALENDAR] Generando cronograma con Grok AI");
+    
+    // Modificamos el prompt para forzar una respuesta más estructurada
+    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Responde SOLO con el objeto JSON solicitado, sin texto adicional antes o después. No incluyas anotaciones, explicaciones, ni marcadores de código como \`\`\`json. Tu respuesta debe comenzar con '{' y terminar con '}'.`;
+    
+    // Usamos el formato JSON explícitamente para garantizar una respuesta estructurada
+    const scheduleText = await grokService.generateText(enhancedPrompt, {
+      // Reducimos temperatura para obtener respuesta más predecible y estructurada
+      temperature: 0.2,
       // Aumentamos tokens máximos para obtener respuestas más completas
       maxTokens: 4000,
-      // Configurar hasta 3 reintentos con backoff exponencial si hay errores de red o del servidor
-      retryCount: 3
+      // Aumentamos los reintentos para casos de red inestable
+      retryCount: 3,
+      // Solicitar explícitamente respuesta en formato JSON para mayor compatibilidad
+      responseFormat: 'json_object'
     });
     
     // Registramos una versión truncada para debug
