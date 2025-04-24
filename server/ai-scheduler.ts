@@ -137,12 +137,14 @@ export async function generateSchedule(
     const scheduleText = await grokService.generateText(enhancedPrompt, {
       // Reducimos temperatura para obtener respuesta más predecible y estructurada
       temperature: 0.2,
-      // Aumentamos tokens máximos para obtener respuestas más completas
-      maxTokens: 4000,
+      // Reducimos tokens máximos para evitar problemas de red
+      maxTokens: 2500,
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
       // Solicitar explícitamente respuesta en formato JSON para mayor compatibilidad
-      responseFormat: 'json_object'
+      responseFormat: 'json_object',
+      // Forzamos el modelo más liviano
+      model: 'grok-3-beta'
     });
     
     // Registramos una versión truncada para debug

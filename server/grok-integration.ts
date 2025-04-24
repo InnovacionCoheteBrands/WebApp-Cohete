@@ -37,18 +37,48 @@ export class GrokService {
           console.log(`Intento ${attempt}/${maxRetries} de generar texto con Grok AI...`);
         }
         
-        // Construir payload base
-        const requestPayload: any = {
-          model: options.model || 'grok-3-beta',
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          temperature: options.temperature || 0.7,
-          max_tokens: options.maxTokens || 2000,
-        };
+        // Si el prompt es muy largo, podría causar problemas
+        const promptLength = prompt.length;
+        console.log(`[GROK] Longitud del prompt: ${promptLength} caracteres`);
+        
+        // Preparar el payload de la solicitud
+        let requestPayload: any;
+        
+        // Verificar si el prompt es demasiado grande
+        if (promptLength > 20000) {
+          console.warn(`[GROK] El prompt es extremadamente largo (${promptLength} caracteres), truncando para evitar errores de red`);
+          // Truncar conservando la estructura (inicio y fin)
+          const promptStart = prompt.substring(0, 10000);
+          const promptEnd = prompt.substring(prompt.length - 5000);
+          const truncatedPrompt = `${promptStart}\n\n[CONTENIDO TRUNCADO PARA OPTIMIZAR RENDIMIENTO]\n\n${promptEnd}`;
+          console.log(`[GROK] Prompt truncado a ${truncatedPrompt.length} caracteres`);
+          
+          // Construir payload con prompt truncado
+          requestPayload = {
+            model: options.model || 'grok-3-beta',
+            messages: [
+              {
+                role: 'user',
+                content: truncatedPrompt
+              }
+            ],
+            temperature: options.temperature || 0.7,
+            max_tokens: options.maxTokens || 2000
+          };
+        } else {
+          // Construir payload estándar
+          requestPayload = {
+            model: options.model || 'grok-3-beta',
+            messages: [
+              {
+                role: 'user',
+                content: prompt
+              }
+            ],
+            temperature: options.temperature || 0.7,
+            max_tokens: options.maxTokens || 2000
+          };
+        }
         
         // Si se solicita formato JSON, configurarlo explícitamente
         if (options.responseFormat === 'json_object') {
