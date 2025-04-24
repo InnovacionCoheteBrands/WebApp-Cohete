@@ -86,6 +86,7 @@ export class GrokService {
         
         // Determinar si debemos reintentar basado en el tipo de error
         let shouldRetry = false;
+        let errorCategory = "desconocido";
         
         if (axios.isAxiosError(error)) {
           if (error.response) {
@@ -93,23 +94,40 @@ export class GrokService {
             const statusCode = error.response.status;
             if (statusCode >= 500) {
               shouldRetry = true;
-              console.log(`Error de servidor ${statusCode}, reintentando...`);
+              errorCategory = `servidor ${statusCode}`;
+              console.log(`[GROK] Error de servidor ${statusCode}, reintentando...`);
+            } else if (statusCode === 429) {
+              // Rate limit - esperamos más tiempo
+              shouldRetry = true;
+              errorCategory = "límite de peticiones";
+              console.log(`[GROK] Error de límite de peticiones, reintentando con espera más larga...`);
+            } else if (statusCode === 401 || statusCode === 403) {
+              // Error de autenticación - no reintentar
+              shouldRetry = false;
+              errorCategory = "autenticación";
+              console.error(`[GROK] Error de autenticación con la API de Grok (${statusCode})`);
             }
           } else if (error.request) {
             // Errores de red son candidatos para reintento
             shouldRetry = true;
-            console.log("Error de red, reintentando...");
+            errorCategory = "red/conexión";
+            console.log("[GROK] Error de red, reintentando...");
           }
         }
         
-        // Si es el último intento o no debemos reintentar, lanzar el error
+        // Registrar detalle del error para diagnóstico
+        console.log(`[GROK] Error (categoría: ${errorCategory}) en intento ${attempt}/${maxRetries}. Reintento: ${shouldRetry ? "Sí" : "No"}`);
+        
+        // Si estamos en el último intento o no se debe reintentar, lanzar error
         if (attempt === maxRetries || !shouldRetry) {
+          console.error(`[GROK] Se agotaron los reintentos o error no recuperable. Categoría: ${errorCategory}`);
           break;
         }
         
-        // Esperar brevemente antes de reintentar (backoff exponencial)
-        const waitTime = Math.min(1000 * Math.pow(2, attempt - 1), 8000);
-        console.log(`Esperando ${waitTime}ms antes del siguiente intento...`);
+        // Esperar con retroceso exponencial antes de reintentar
+        const baseDelay = errorCategory === "límite de peticiones" ? 5000 : 1000; // 5 segundos base para errores de rate limit
+        const waitTime = Math.min(baseDelay * Math.pow(2, attempt - 1), 30000); // Máximo 30 segundos
+        console.log(`[GROK] Esperando ${waitTime}ms antes del siguiente intento...`);
         await new Promise(resolve => setTimeout(resolve, waitTime));
       }
     }

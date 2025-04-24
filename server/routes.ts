@@ -671,34 +671,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const scheduleWithEntries = await global.storage.getScheduleWithEntries(schedule.id);
       
       res.status(201).json(scheduleWithEntries);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating schedule:", error);
       
+      // Extraer tipo de error si está disponible
+      const errorType = error.errorType || "UNKNOWN";
+      const errorMessage = error.message || "Error desconocido";
+      
+      // Log detallado para diagnóstico
+      console.log(`[CALENDAR ROUTE] Error tipo: ${errorType}, Mensaje: ${errorMessage}`);
+      
       // Mensajes de error específicos basados en el tipo de error
-      if (error.message && error.message.includes("Servicio de Grok AI temporalmente no disponible")) {
-        // Error de disponibilidad de Grok API
+      if (errorType === "NETWORK" || errorMessage.includes("connect") || errorMessage.includes("Servicio de Grok AI temporalmente no disponible")) {
+        // Error de conexión o disponibilidad de Grok API
         return res.status(503).json({ 
           message: "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.", 
-          error: error.message 
+          error: errorMessage,
+          errorType: "SERVICIO_NO_DISPONIBLE"
         });
-      } else if (error.message && error.message.includes("límite de peticiones")) {
+      } else if (errorType === "RATE_LIMIT" || errorMessage.includes("límite de peticiones")) {
         // Error de límite de peticiones
         return res.status(429).json({ 
           message: "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.", 
-          error: error.message 
+          error: errorMessage,
+          errorType: "LIMITE_EXCEDIDO"
         });
-      } else if (error.message && error.message.includes("Error de autenticación")) {
+      } else if (errorType === "AUTH" || errorMessage.includes("autenticación") || errorMessage.includes("authentication")) {
         // Error de autenticación con la API
         return res.status(401).json({ 
           message: "Error en la configuración del servicio de IA. Por favor contacta al administrador.", 
-          error: error.message 
+          error: errorMessage,
+          errorType: "ERROR_AUTENTICACION"
+        });
+      } else if (errorType === "JSON_PARSING" || errorMessage.includes("JSON") || errorMessage.includes("parse")) {
+        // Error de procesamiento de la respuesta JSON
+        return res.status(422).json({
+          message: "Error al procesar la respuesta del servicio de IA. Intenta con menos contenido o diferentes configuraciones.",
+          error: errorMessage,
+          errorType: "ERROR_FORMATO_RESPUESTA"
+        });
+      } else if (errorType === "JSON_PROCESSING" || errorMessage.includes("ERROR_JSON_PROCESSING")) {
+        // Error en el procesamiento de datos JSON
+        return res.status(422).json({
+          message: "No pudimos procesar correctamente el calendario generado. Intenta con diferentes ajustes o menos plataformas.",
+          error: errorMessage,
+          errorType: "ERROR_DATOS"
         });
       }
       
       // Errores generales
       res.status(500).json({ 
         message: "Ocurrió un error al crear el calendario. Por favor intenta con menos plataformas o en otro momento.", 
-        error: error.message 
+        error: errorMessage,
+        errorType: "ERROR_GENERAL"
       });
     }
   });
