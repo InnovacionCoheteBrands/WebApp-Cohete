@@ -34,14 +34,19 @@ export async function generateSchedule(
   durationDays: number = 15, // Periodo quincenal fijo (15 días)
   previousContent: string[] = []
 ): Promise<ContentSchedule> {
+  console.log(`[CALENDAR] Iniciando generación de calendario para proyecto "${projectName}"`);
+  console.log(`[CALENDAR] Parámetros: startDate=${startDate}, durationDays=${durationDays}, prevContent.length=${previousContent.length}`);
+  
   try {
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
+    console.log(`[CALENDAR] Periodo del calendario: ${formattedDate} hasta ${endDate}`);
     
     // Extract social networks with monthly post frequency data
     let socialNetworksSection = "";
     try {
+      console.log(`[CALENDAR] Procesando datos de redes sociales del proyecto`);
       const socialNetworks = projectDetails?.analysisResults?.socialNetworks || [];
       const selectedNetworks = socialNetworks
         .filter((network: any) => network.selected && typeof network.postsPerMonth === 'number')
@@ -57,16 +62,20 @@ export async function generateSchedule(
           };
         });
       
+      console.log(`[CALENDAR] Redes sociales seleccionadas: ${selectedNetworks.length}`);
       if (selectedNetworks.length > 0) {
+        console.log(`[CALENDAR] Redes: ${selectedNetworks.map((n: any) => n.name).join(', ')}`);
         socialNetworksSection = `
         DISTRIBUCIÓN DE PUBLICACIONES:
         ${JSON.stringify(selectedNetworks, null, 2)}
         
         IMPORTANTE: Respeta la cantidad de publicaciones por red social indicada en "postsForPeriod".
         `;
+      } else {
+        console.warn(`[CALENDAR] ¡Advertencia! No se encontraron redes sociales seleccionadas en el proyecto`);
       }
     } catch (error) {
-      console.warn("Error processing social networks frequency data:", error);
+      console.error("[CALENDAR] Error procesando datos de redes sociales:", error);
       socialNetworksSection = "No hay información específica sobre la frecuencia de publicaciones.";
     }
     
@@ -75,6 +84,11 @@ export async function generateSchedule(
       ? `Previously used content (AVOID REPEATING THESE TOPICS AND IDEAS):
         ${previousContent.join('\n')}`
       : "No previous content history available.";
+    
+    console.log(`[CALENDAR] Historial de contenido: ${previousContent.length} elementos`);
+    if (previousContent.length > 0) {
+      console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
+    }
     
     const prompt = `
       Actúa como un **Director de Marketing Digital Estratégico y Creativo** con 15 años de experiencia, especializado en la creación de contenido de alto rendimiento basado en datos y enfocado en ROI para redes sociales. Eres experto en traducir objetivos de negocio en planes de contenido accionables, optimizar para cada plataforma y adaptarte a las tendencias del mercado.
@@ -147,52 +161,114 @@ export async function generateSchedule(
     });
     
     // Registramos una versión truncada para debug
-    console.log("Respuesta de Grok AI (primeros 200 caracteres):", 
-      scheduleText.substring(0, 200) + "... [truncado]");
+    console.log(`[CALENDAR] Respuesta de Grok AI recibida. Longitud: ${scheduleText.length} caracteres`);
+    console.log(`[CALENDAR] Primeros 200 caracteres de la respuesta: "${scheduleText.substring(0, 200)}... [truncado]"`);
+    console.log(`[CALENDAR] Últimos 200 caracteres de la respuesta: "...${scheduleText.substring(Math.max(0, scheduleText.length - 200))}"`)
+    
+    // Escribir respuesta completa en el log para diagnóstico
+    console.log(`[CALENDAR] RESPUESTA COMPLETA DE GROK AI (inicio):`);
+    // Dividir respuesta en chunks de 1000 caracteres para evitar truncamiento en logs
+    const chunkSize = 1000;
+    for (let i = 0; i < scheduleText.length; i += chunkSize) {
+        console.log(scheduleText.substring(i, i + chunkSize));
+    }
+    console.log(`[CALENDAR] RESPUESTA COMPLETA DE GROK AI (fin)`);
     
     try {
+      console.log(`[CALENDAR] Iniciando procesamiento de la respuesta (Estrategia 1: JSON directo)`);
       // Registro posiciones
       const jsonStart = scheduleText.indexOf('{');
       const jsonEnd = scheduleText.lastIndexOf('}') + 1;
-      console.log(`Posiciones JSON detectadas: inicio=${jsonStart}, fin=${jsonEnd}`);
+      console.log(`[CALENDAR] Posiciones JSON detectadas: inicio=${jsonStart}, fin=${jsonEnd}`);
+      
+      if (jsonStart < 0) {
+        console.error(`[CALENDAR] ERROR: No se encontró carácter de inicio JSON '{' en la respuesta`);
+      }
+      if (jsonEnd <= jsonStart) {
+        console.error(`[CALENDAR] ERROR: Posición de fin inválida o no se encontró carácter de cierre JSON '}'`);
+      }
       
       // Estrategia 1: Extraer y parsear directamente
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         try {
+          console.log(`[CALENDAR] Ejecutando estrategia 1: Extracción directa de JSON`);
           const jsonContent = scheduleText.substring(jsonStart, jsonEnd);
           // Registrar longitud para depuración
-          console.log(`Longitud del contenido JSON: ${jsonContent.length} caracteres`);
+          console.log(`[CALENDAR] Longitud del contenido JSON extraído: ${jsonContent.length} caracteres`);
+          console.log(`[CALENDAR] Primeros 100 caracteres del JSON extraído: ${jsonContent.substring(0, 100)}...`);
           
+          console.log(`[CALENDAR] Intentando parsear JSON con JSON.parse()`);
           const parsedContent = JSON.parse(jsonContent);
+          console.log(`[CALENDAR] JSON parseado exitosamente, verificando estructura`);
           
-          if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
-            console.log(`Cronograma parseado correctamente con ${parsedContent.entries.length} entradas`);
-            // Verificar que las entradas tengan los campos requeridos mínimos
-            const validEntries = parsedContent.entries.filter((entry: any) => 
-              entry.title && entry.platform && entry.postDate && 
-              typeof entry.title === 'string' &&
-              typeof entry.platform === 'string' &&
-              typeof entry.postDate === 'string'
-            );
+          if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries)) {
+            console.log(`[CALENDAR] Estructura básica correcta. Entradas encontradas: ${parsedContent.entries.length}`);
             
-            if (validEntries.length === parsedContent.entries.length) {
-              // Todas las entradas son válidas
-              return parsedContent;
+            if (parsedContent.entries.length === 0) {
+              console.error(`[CALENDAR] ERROR: Array de entradas vacío en el JSON`);
+              console.log(`[CALENDAR] Detalles del objeto parseado:`, JSON.stringify(parsedContent, null, 2).substring(0, 500) + "...");
             } else {
-              // Algunas entradas son inválidas, pero tenemos suficientes
-              if (validEntries.length > 0) {
-                console.log(`Se filtraron ${parsedContent.entries.length - validEntries.length} entradas inválidas`);
-                return {
-                  name: parsedContent.name || `Cronograma para ${projectName}`,
-                  entries: validEntries
-                };
+              console.log(`[CALENDAR] Verificando campos requeridos en las entradas`);
+              // Verificar que las entradas tengan los campos requeridos mínimos
+              const validEntries = parsedContent.entries.filter((entry: any) => 
+                entry.title && entry.platform && entry.postDate && 
+                typeof entry.title === 'string' &&
+                typeof entry.platform === 'string' &&
+                typeof entry.postDate === 'string'
+              );
+              
+              console.log(`[CALENDAR] Entradas con todos los campos requeridos: ${validEntries.length}/${parsedContent.entries.length}`);
+              
+              if (validEntries.length === parsedContent.entries.length) {
+                // Todas las entradas son válidas
+                console.log(`[CALENDAR] ÉXITO: Estrategia 1 exitosa. Devolviendo cronograma con ${validEntries.length} entradas`);
+                return parsedContent;
+              } else {
+                // Algunas entradas son inválidas, pero tenemos suficientes
+                if (validEntries.length > 0) {
+                  console.log(`[CALENDAR] Se filtraron ${parsedContent.entries.length - validEntries.length} entradas inválidas`);
+                  // Mostrar la primera entrada inválida para diagnóstico
+                  if (parsedContent.entries.length > validEntries.length) {
+                    const invalidEntry = parsedContent.entries.find((entry: any) => 
+                      !entry.title || !entry.platform || !entry.postDate ||
+                      typeof entry.title !== 'string' ||
+                      typeof entry.platform !== 'string' ||
+                      typeof entry.postDate !== 'string'
+                    );
+                    console.log(`[CALENDAR] Ejemplo de entrada inválida:`, JSON.stringify(invalidEntry));
+                  }
+                  
+                  console.log(`[CALENDAR] ÉXITO PARCIAL: Estrategia 1 parcialmente exitosa. Devolviendo cronograma con ${validEntries.length} entradas válidas`);
+                  return {
+                    name: parsedContent.name || `Cronograma para ${projectName}`,
+                    entries: validEntries
+                  };
+                } else {
+                  console.error(`[CALENDAR] ERROR: No hay entradas válidas entre las ${parsedContent.entries.length} detectadas`);
+                  // Si no hay entradas válidas, continuamos con la siguiente estrategia
+                }
               }
-              // Si no hay entradas válidas, continuamos con la siguiente estrategia
             }
+          } else {
+            console.error(`[CALENDAR] ERROR: Estructura de JSON inválida. entries=${!!parsedContent?.entries}, isArray=${Array.isArray(parsedContent?.entries)}`);
+            console.log(`[CALENDAR] Detalles del objeto parseado:`, JSON.stringify(parsedContent, null, 2).substring(0, 500) + "...");
           }
         } catch (error) {
-          console.error("Error al parsear JSON completo:", error);
+          console.error(`[CALENDAR] ERROR Estrategia 1: Error al parsear JSON completo:`, error);
+          // Mostrar el punto exacto donde falló el parsing si es un error de sintaxis
+          if (error instanceof SyntaxError && 'message' in error) {
+            const errorMsg = (error as SyntaxError).message;
+            const positionMatch = errorMsg.match(/position (\d+)/);
+            if (positionMatch && positionMatch[1]) {
+              const pos = parseInt(positionMatch[1]);
+              const contextStart = Math.max(0, pos - 20);
+              const contextEnd = Math.min(scheduleText.length, pos + 20);
+              console.error(`[CALENDAR] Error de sintaxis cerca de la posición ${pos}. Contexto: '${scheduleText.substring(contextStart, pos)}>>AQUÍ<<${scheduleText.substring(pos, contextEnd)}'`);
+            }
+          }
         }
+      } else {
+        console.error(`[CALENDAR] ERROR: No se puede ejecutar Estrategia 1, posiciones JSON inválidas`);
       }
       
       // Estrategia 2: Normalizar y limpiar el JSON antes de parsearlo
@@ -641,9 +717,42 @@ export async function generateSchedule(
         ]
       };
     }
-  } catch (error) {
-    console.error("Error generating schedule:", error);
-    throw new Error(`Failed to generate schedule: ${(error as Error).message}`);
+  } catch (error: any) {
+    // Registrar mensaje detallado del error
+    console.error("[CALENDAR] Error crítico en generateSchedule:", error);
+    
+    // Determinar categoría de error
+    let errorType = "UNKNOWN";
+    let errorMessage = "";
+    
+    if (error.message && typeof error.message === 'string') {
+      if (error.message.includes("connect")) {
+        errorType = "NETWORK";
+        errorMessage = `Error de conexión con la API de Grok: ${error.message}`;
+      } else if (error.message.includes("JSON") || error.message.includes("parse")) {
+        errorType = "JSON_PARSING";
+        errorMessage = `Error de procesamiento de respuesta JSON: ${error.message}`;
+      } else if (error.message.includes("limit")) {
+        errorType = "RATE_LIMIT";
+        errorMessage = `Se ha excedido el límite de peticiones a Grok AI: ${error.message}`;
+      } else if (error.message.includes("autenticación") || error.message.includes("authentication")) {
+        errorType = "AUTH";
+        errorMessage = `Error de autenticación con Grok AI: ${error.message}`;
+      } else if (error.message.startsWith("ERROR_JSON_PROCESSING:")) {
+        // Error ya categorizado
+        errorType = "JSON_PROCESSING";
+        errorMessage = error.message;
+      } else {
+        errorMessage = `Error desconocido: ${error.message}`;
+      }
+    } else {
+      errorMessage = "Error desconocido sin mensaje";
+    }
+    
+    // Lanzar error tipificado para mejor manejo en las rutas
+    const enhancedError = new Error(`${errorType}: ${errorMessage}`);
+    (enhancedError as any).errorType = errorType;
+    throw enhancedError;
   }
 }
 
