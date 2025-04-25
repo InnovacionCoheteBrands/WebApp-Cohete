@@ -16,11 +16,11 @@ export class GrokService {
    * Genera texto usando el modelo de Grok
    */
   async generateText(prompt: string, options: { 
-    model?: string, 
-    temperature?: number,
-    maxTokens?: number,
-    retryCount?: number,
-    responseFormat?: string  // Nuevo: Formato de respuesta deseado: "json_object" o "text"
+    model?: string; 
+    temperature?: number;
+    maxTokens?: number;
+    retryCount?: number;
+    responseFormat?: string;  // Nuevo: Formato de respuesta deseado: "json_object" o "text"
   } = {}): Promise<string> {
     // Número de intentos (predeterminado: 1)
     const maxRetries = options.retryCount || 1;
@@ -243,9 +243,9 @@ export class GrokService {
    * Genera texto con análisis de imágenes usando el modelo de Grok con capacidades visuales
    */
   async generateTextWithImage(prompt: string, imageBase64: string, options: {
-    model?: string,
-    temperature?: number,
-    maxTokens?: number
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
   } = {}): Promise<string> {
     try {
       const response = await axios.post(

@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { DatabaseStorage } from "./storage";
 import multer from "multer";
 import fs from "fs";
@@ -8,14 +8,13 @@ import path from "path";
 import pdfParse from "pdf-parse";
 import { analyzeDocument, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
-import { AIModel } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
 import { db } from "./db";
 import { eq, asc } from "drizzle-orm";
 import * as htmlPdf from 'html-pdf-node';
-import { hashPassword } from "./auth";
+import { AIModel } from "@shared/schema";
 import {
   insertProjectSchema,
   insertAnalysisResultsSchema,
@@ -24,7 +23,8 @@ import {
   insertTaskSchema,
   insertUserSchema,
   insertProductSchema,
-  scheduleEntries
+  scheduleEntries,
+  Product
 } from "@shared/schema";
 import { WebSocketServer } from "ws";
 
@@ -869,7 +869,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Sort entries by date
       const sortedEntries = [...schedule.entries].sort((a, b) => {
-        return new Date(a.postDate).getTime() - new Date(b.postDate).getTime();
+        const dateA = a.postDate ? new Date(a.postDate) : new Date(0);
+        const dateB = b.postDate ? new Date(b.postDate) : new Date(0);
+        return dateA.getTime() - dateB.getTime();
       });
       
       if (format === 'excel') {
