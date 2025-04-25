@@ -109,19 +109,19 @@ export async function generateSchedule(
       **FORMATO DE RESPUESTA:**
       Devuelve ÚNICAMENTE un objeto JSON con esta estructura (todo en español):
       {
-        "name": "Nombre del cronograma - creativo y específico al proyecto",
+        "name": "Nombre del cronograma",
         "entries": [
           {
-            "title": "Título impactante en español",
-            "description": "Descripción persuasiva en español",
-            "content": "Contenido principal detallado en español",
-            "copyIn": "Texto integrado conciso e impactante en español",
-            "copyOut": "Texto estructurado para descripción en español con emojis estratégicos",
-            "designInstructions": "Instrucciones ultra-detalladas de diseño en español",
-            "platform": "Plataforma específica",
-            "postDate": "YYYY-MM-DD",
-            "postTime": "HH:MM",
-            "hashtags": "Mezcla estratégica de hashtags en español"
+            "title": "Título corto",
+            "description": "Descripción breve",
+            "content": "Contenido principal",
+            "copyIn": "Texto interno",
+            "copyOut": "Texto externo",
+            "designInstructions": "Instrucciones básicas",
+            "platform": "Nombre plataforma",
+            "postDate": "2025-05-01",
+            "postTime": "12:00",
+            "hashtags": "#hashtag1 #hashtag2"
           }
         ]
       }
@@ -131,7 +131,7 @@ export async function generateSchedule(
     console.log("[CALENDAR] Generando cronograma con Grok AI");
     
     // Modificamos el prompt para forzar una respuesta más estructurada
-    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Responde SOLO con el objeto JSON solicitado, sin texto adicional antes o después. No incluyas anotaciones, explicaciones, ni marcadores de código como \`\`\`json. Tu respuesta debe comenzar con '{' y terminar con '}'.`;
+    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Responde SOLO con el objeto JSON solicitado, sin texto adicional antes o después. No incluyas anotaciones, explicaciones, ni marcadores de código como \`\`\`json. Tu respuesta debe comenzar con '{' y terminar con '}'. Asegúrate de que el JSON sea válido: todas las propiedades y valores deben estar entre comillas dobles, excepto los números y booleanos. No uses comillas simples ni mezcles diferentes tipos de comillas.`;
     
     // Usamos el formato JSON explícitamente para garantizar una respuesta estructurada
     const scheduleText = await grokService.generateText(enhancedPrompt, {
@@ -266,6 +266,31 @@ export async function generateSchedule(
           
           // Normalizar saltos de línea y espacios
           jsonContent = jsonContent.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
+          
+          // Arreglar problemas con caracteres de truncamiento
+          jsonContent = jsonContent.replace(/Lujo$/g, 'Lujo"');
+          jsonContent = jsonContent.replace(/Lujo\s*}\s*,/g, 'Lujo"},');
+          
+          // Arreglar específicamente problemas con comillas en el título
+          jsonContent = jsonContent.replace(/"name"\s*:\s*"([^"]*)"/g, (match, p1) => {
+            // Escapar comillas internas en el nombre
+            return `"name":"${p1.replace(/"/g, '\\"')}"`;
+          });
+          
+          // Arreglar problemas con entradas que no cierran correctamente
+          jsonContent = jsonContent.replace(/}(\s*)\n?$/g, '}]}');
+          if (!jsonContent.endsWith(']}')) {
+            if (jsonContent.endsWith('}')) {
+              // Si termina con } pero no es el cierre del array y objeto principal
+              jsonContent = jsonContent + ']}';
+            } else if (!jsonContent.endsWith(']')) {
+              // Si no termina con ] añadimos el cierre del array y objeto
+              jsonContent = jsonContent + ']}';
+            } else if (!jsonContent.endsWith('}}')) {
+              // Si termina con ] pero no con el cierre del objeto principal
+              jsonContent = jsonContent + '}';
+            }
+          }
           
           // Arreglar problemas comunes en JSON como separaciones, comillas, etc.
           jsonContent = jsonContent.replace(/}\s*{/g, '},{');
