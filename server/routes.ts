@@ -1014,10 +1014,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sortedEntries.forEach((entry, index) => {
           const rowIndex = headerRowIndex + index + 1;
           const row = worksheet.addRow({
-            postDate: new Date(entry.postDate).toLocaleDateString('es-ES', { 
+            postDate: entry.postDate ? new Date(entry.postDate).toLocaleDateString('es-ES', { 
               day: '2-digit', month: '2-digit', year: 'numeric' 
-            }),
-            postTime: entry.postTime,
+            }) : 'Sin fecha',
+            postTime: entry.postTime || 'Sin hora',
             platform: entry.platform,
             format: getFormatByPlatform(entry.platform),
             title: entry.title,
@@ -1301,9 +1301,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   <strong>Cliente:</strong> ${project.client}
                 </div>
                 <div class="info-item">
-                  <strong>Fecha de Inicio:</strong> ${new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', { 
+                  <strong>Fecha de Inicio:</strong> ${schedule.startDate ? new Date(schedule.startDate).toLocaleDateString('es-ES', { 
                     day: '2-digit', month: '2-digit', year: 'numeric' 
-                  })}
+                  }) : 'No definida'}
                 </div>
                 <div class="info-item">
                   <strong>Total de Publicaciones:</strong> ${sortedEntries.length}
@@ -1335,12 +1335,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Agregar filas a la tabla
         sortedEntries.forEach((entry) => {
-          const dateFormatted = new Date(entry.postDate).toLocaleDateString('es-ES', { 
-            day: '2-digit', month: '2-digit', year: 'numeric' 
-          });
+          const dateFormatted = entry.postDate 
+            ? new Date(entry.postDate).toLocaleDateString('es-ES', { 
+                day: '2-digit', month: '2-digit', year: 'numeric' 
+              })
+            : 'Sin fecha';
           
-          const platformColor = getPlatformColor(entry.platform);
-          const formatText = getFormatByPlatform(entry.platform);
+          const platformColor = getPlatformColor(entry.platform || '');
+          const formatText = getFormatByPlatform(entry.platform || '');
           
           const imageHtml = entry.referenceImageUrl 
             ? `<div class="image-container"><img src="${entry.referenceImageUrl}" alt="${entry.title}"></div>` 
@@ -1576,7 +1578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const taskData = insertTaskSchema.parse({
         projectId,
         ...req.body,
-        createdBy: req.user.id
+        createdById: req.user.id
       });
       
       const task = await global.storage.createTask(taskData);
@@ -1935,7 +1937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return await global.storage.createTask({
             ...taskData,
             projectId,
-            createdBy: req.user.id
+            createdById: req.user.id
           });
         })
       );
@@ -1991,7 +1993,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Datos del producto
       const productData = {
         projectId,
-        createdBy: req.user!.id,
+        createdBy: req.user?.id,
         name,
         description: description || null,
         sku: null,

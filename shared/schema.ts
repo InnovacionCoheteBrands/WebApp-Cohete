@@ -129,8 +129,8 @@ export const contentHistory = pgTable("content_history", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Tasks Table - Para el gestor de tareas con IA estilo Monday
-export const tasks = pgTable("tasks", {
+// Declarar el objeto tasksTable primero para evitar referencia circular
+const tasksTable = {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
   assignedToId: integer("assigned_to_id").references(() => users.id, { onDelete: 'set null' }),
@@ -148,13 +148,16 @@ export const tasks = pgTable("tasks", {
   completedAt: timestamp("completed_at"),
   estimatedHours: integer("estimated_hours"),
   dependencies: integer("dependencies").array(), // IDs de tareas de las que depende
-  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: 'set null' }), // Para subtareas
+  parentTaskId: integer("parent_task_id"), // Referencia a la propia tabla de tareas (añadida después)
   progress: integer("progress").default(0), // Progreso de la tarea en porcentaje (0-100)
-  attachments: json("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
+  attachments: jsonb("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
   reminderDate: timestamp("reminder_date"), // Fecha para enviar recordatorio
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-})
+};
+
+// Tasks Table - Para el gestor de tareas con IA estilo Monday
+export const tasks = pgTable("tasks", tasksTable);
 
 // Tabla para comentarios de tareas
 export const taskComments = pgTable("task_comments", {
@@ -162,7 +165,7 @@ export const taskComments = pgTable("task_comments", {
   taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
   userId: integer("user_id").references(() => users.id, { onDelete: 'set null' }),
   comment: text("comment").notNull(),
-  attachments: json("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
+  attachments: jsonb("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
