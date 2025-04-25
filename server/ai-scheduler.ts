@@ -372,13 +372,86 @@ export async function generateSchedule(
                     if (!entryStr.startsWith('{')) entryStr = '{' + entryStr;
                     if (!entryStr.endsWith('}')) entryStr = entryStr + '}';
                     
-                    // Limpiar la cadena de entrada
+                    // Limpiar la cadena de entrada - mejora intensiva
+                    // 1. Asegurarse que los nombres de propiedades tengan comillas dobles
                     entryStr = entryStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
-                    entryStr = entryStr.replace(/:\s*'([^']*)'/g, ':"$1"');
-                    entryStr = entryStr.replace(/:\s*"([^"]*)"/g, ':"$1"');
                     
-                    // Intentar parsear como JSON
-                    const entry = JSON.parse(entryStr);
+                    // 2. Convertir comillas simples a dobles para valores
+                    entryStr = entryStr.replace(/:\s*'([^']*)'/g, ':"$1"');
+                    
+                    // 3. Asegurarse que los valores tengan el formato correcto
+                    // No sobreescribir valores ya con formato correcto
+                    entryStr = entryStr.replace(/"([^"]+)":\s*([^",\{\}\[\]]+)([,\}])/g, (match, p1, p2, p3) => {
+                      // Si p2 es un número o true/false/null dejarlo tal cual, de lo contrario añadir comillas
+                      if (/^(\-?\d+\.?\d*|true|false|null)$/.test(p2.trim())) {
+                        return `"${p1}": ${p2.trim()}${p3}`;
+                      } else {
+                        return `"${p1}": "${p2.trim()}"${p3}`;
+                      }
+                    });
+                    
+                    // 4. Corregir errores comunes de formato
+                    entryStr = entryStr.replace(/,\s*}/g, '}'); // Eliminar coma final antes de cierre
+                    entryStr = entryStr.replace(/}\s*{/g, '},{'); // Asegurar separación correcta entre objetos
+                    entryStr = entryStr.replace(/}\s*"/g, '},"'); // Corregir transición entre objeto y propiedad
+                    entryStr = entryStr.replace(/"\s*{/g, '":{'); // Corregir transición entre propiedad y objeto
+                    
+                    // 5. Corregir comillas dobles duplicadas
+                    entryStr = entryStr.replace(/""+/g, '"');
+                    
+                    // Intentar parsear como JSON con verificación adicional
+                    let entry;
+                    try {
+                      entry = JSON.parse(entryStr);
+                    } catch (parseError) {
+                      // Intentar identificar ubicación del error - extracción específica de mensaje
+                      const errorMsg = parseError.message || '';
+                      const positionMatch = errorMsg.match(/position\s+(\d+)/i);
+                      let errorPosition = -1;
+                      
+                      if (positionMatch && positionMatch[1]) {
+                        errorPosition = parseInt(positionMatch[1]);
+                        // Intentar reparar en la posición específica del error
+                        if (errorPosition > 0 && errorPosition < entryStr.length) {
+                          // Ver contexto de error (10 caracteres antes y después)
+                          const start = Math.max(0, errorPosition - 10);
+                          const end = Math.min(entryStr.length, errorPosition + 10);
+                          const context = entryStr.substring(start, end);
+                          console.log(`Contexto de error JSON en pos ${errorPosition}: "${context}"`);
+                          
+                          // Intentar reparar basado en patrones específicos
+                          if (errorMsg.includes("Expected ',' or '}'")) {
+                            // Intentar arreglar insertando la coma o llave faltante
+                            let fixedStr = entryStr.substring(0, errorPosition) + '}' + entryStr.substring(errorPosition);
+                            try {
+                              entry = JSON.parse(fixedStr);
+                              console.log(`Reparación exitosa insertando '}' en posición ${errorPosition}`);
+                            } catch (e) {
+                              fixedStr = entryStr.substring(0, errorPosition) + ',' + entryStr.substring(errorPosition);
+                              try {
+                                entry = JSON.parse(fixedStr);
+                                console.log(`Reparación exitosa insertando ',' en posición ${errorPosition}`);
+                              } catch (e2) {
+                                // Si ambos intentos fallan, eliminar el caracter problemático
+                                fixedStr = entryStr.substring(0, errorPosition) + entryStr.substring(errorPosition + 1);
+                                try {
+                                  entry = JSON.parse(fixedStr);
+                                  console.log(`Reparación exitosa eliminando caracter en posición ${errorPosition}`);
+                                } catch (e3) {
+                                  throw parseError; // Si nada funciona, propagar error original
+                                }
+                              }
+                            }
+                          } else {
+                            throw parseError;
+                          }
+                        } else {
+                          throw parseError;
+                        }
+                      } else {
+                        throw parseError;
+                      }
+                    }
                     
                     if (entry.title && entry.platform && entry.postDate) {
                       const completeEntry: ContentScheduleEntry = {
