@@ -403,7 +403,7 @@ export async function generateSchedule(
                     let entry;
                     try {
                       entry = JSON.parse(entryStr);
-                    } catch (parseError) {
+                    } catch (parseError: any) {
                       // Intentar identificar ubicación del error - extracción específica de mensaje
                       const errorMsg = parseError.message || '';
                       const positionMatch = errorMsg.match(/position\s+(\d+)/i);
