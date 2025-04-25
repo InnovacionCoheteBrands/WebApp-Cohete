@@ -3,60 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-    <!-- Script de intercepción de errores: debe cargarse ANTES de cualquier otro script -->
-    <script src="/error-interceptor.js"></script>
-    <!-- Deshabilitar explícitamente el WebSocket de Vite -->
+    <!-- Script simple para suprimir mensajes DOMException -->
     <script>
-      // Sobrescribir WebSocket antes de que Vite lo use
-      window.__VITE_WS_DISABLED = true;
-      // Reemplazar WebSocket con versión dummy (importante que sea antes de otros scripts)
-      if (typeof window !== 'undefined') {
-        const originalWebSocket = window.WebSocket;
-        // Reemplazar con versión que detecta conexiones de Vite e impide que se establezcan
-        window.WebSocket = function(url, protocols) {
-          // Si es una URL de Vite, devolver un WebSocket simulado que no hace nada
-          if (url && url.toString().includes('vite')) {
-            return {
-              readyState: 3, // CLOSED
-              send: function() {},
-              close: function() {},
-              addEventListener: function() {},
-              removeEventListener: function() {},
-              CONNECTING: 0,
-              OPEN: 1,
-              CLOSING: 2,
-              CLOSED: 3
-            };
-          }
-          
-          // Para otras conexiones, usar implementación original
-          return new originalWebSocket(url, protocols);
-        };
-      }
-    </script>
-    <!-- Script para eliminar cualquier error de consola relacionado con WebSocket -->
-    <script>
-      // Interceptar todos los mensajes de error y eliminar los relacionados con WebSocket
-      const originalConsoleError = console.error;
-      console.error = function() {
-        const args = Array.from(arguments);
-        const errorString = args.join(' ');
-        
-        // Filtrar errores de WebSocket
-        if (
-          errorString.includes('WebSocket') || 
-          errorString.includes('socket') || 
-          errorString.includes('vite') || 
-          errorString.includes('hmr') ||
-          errorString.includes('DOMException')
+      // Solo interceptar errores específicos de WebSocket DOMException
+      window.addEventListener('unhandledrejection', function(event) {
+        // Si el rechazo proviene de una DOMException, suprimirlo discretamente
+        if (event.reason && 
+            (event.reason.name === 'DOMException' || 
+             (event.reason.toString && event.reason.toString().includes('DOMException')))
         ) {
-          // No mostrar estos errores
-          return;
+          // Evitar que aparezca en la consola
+          event.preventDefault();
         }
-        
-        // Mostrar otros errores normalmente
-        originalConsoleError.apply(console, args);
-      };
+      });
     </script>
   </head>
   <body>
