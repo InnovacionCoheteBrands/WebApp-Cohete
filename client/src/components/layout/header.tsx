@@ -1,10 +1,20 @@
 import { Link, useLocation } from "wouter";
-import { Menu, Bell, Search } from "lucide-react";
+import { Menu, Bell, Search, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { LogOut } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -68,6 +78,38 @@ export function Header({ onMenuClick }: HeaderProps) {
               className="w-32 border-0 bg-transparent text-sm outline-none shadow-none p-0 h-auto sm:w-64" 
             />
           </div>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="p-1 h-auto hover:bg-accent rounded-full" size="icon">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.profileImage} />
+                  <AvatarFallback className="text-xs">
+                    {user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || user?.username?.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <Link href="/profile">
+                <DropdownMenuItem className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Perfil</span>
+                </DropdownMenuItem>
+              </Link>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                className="cursor-pointer text-destructive focus:text-destructive"
+                onClick={() => {
+                  // TODO: Implement logout
+                }}
+              >
+                Cerrar Sesión
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
