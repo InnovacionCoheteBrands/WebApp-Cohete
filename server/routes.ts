@@ -234,7 +234,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para obtener todos los usuarios (para asignación de tareas)
+  
+  // Endpoint para actualizar el perfil del usuario actual
+  app.patch("/api/profile", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const profileData = updateProfileSchema.parse(req.body);
+      const userId = req.user.id;
+      
+      // Actualizar el perfil del usuario
+      const updatedUser = await global.storage.updateUser(userId, profileData);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Eliminar contraseña del resultado
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error updating profile:", error);
+      res.status(500).json({ message: "Error al actualizar el perfil" });
+    }
+  });
+  
+  // Endpoint para cambiar la contraseña del usuario actual
+  app.post("/api/profile/change-password", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Se requiere la contraseña actual y la nueva contraseña" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "La nueva contraseña debe tener al menos 6 caracteres" });
+      }
+      
+      // Obtener usuario actual
+      const user = await global.storage.getUser(req.user.id);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Verificar contraseña actual
+      const isPasswordValid = await comparePasswords(currentPassword, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: "La contraseña actual es incorrecta" });
+      }
+      
+      // Actualizar contraseña
+      const hashedPassword = await hashPassword(newPassword);
+      await global.storage.updateUser(req.user.id, { password: hashedPassword });
+      
+      res.json({ message: "Contraseña actualizada correctamente" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ message: "Error al cambiar la contraseña" });
+    }
+  });
+
   app.get("/api/users", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const users = await global.storage.listUsers();
@@ -244,7 +306,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         id: user.id,
         fullName: user.fullName,
         username: user.username,
-        isPrimary: user.isPrimary
+        isPrimary: user.isPrimary,
+        role: user.role,
+        jobTitle: user.jobTitle,
+        department: user.department,
+        profileImage: user.profileImage
       }));
       
       res.json(safeUsers);

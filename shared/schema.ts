@@ -10,6 +10,9 @@ export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high'
 export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom']);
 export const aiModelEnum = pgEnum('ai_model', ['grok']);
 
+// Enum para roles de usuario
+export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'designer', 'content_creator', 'analyst']);
+
 // Users Table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -19,6 +22,15 @@ export const users = pgTable("users", {
   // email: text("email").unique(),
   password: text("password").notNull(),
   isPrimary: boolean("is_primary").default(false).notNull(),
+  role: userRoleEnum("role").default('content_creator'),
+  bio: text("bio"),
+  profileImage: text("profile_image"),
+  jobTitle: text("job_title"),
+  department: text("department"),
+  phoneNumber: text("phone_number"),
+  preferredLanguage: text("preferred_language").default("es"),
+  theme: text("theme").default("light"),
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -264,6 +276,27 @@ export const insertUserSchema = z.object({
   email: z.string().email("Debe ser un correo electrónico válido").optional(),
   password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
   isPrimary: z.boolean().optional().default(false),
+  role: z.enum(['admin', 'manager', 'designer', 'content_creator', 'analyst']).optional().default('content_creator'),
+  bio: z.string().optional(),
+  profileImage: z.string().optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  preferredLanguage: z.string().optional().default("es"),
+  theme: z.string().optional().default("light"),
+});
+
+// Schema para actualizar perfil (sin contraseña)
+export const updateProfileSchema = z.object({
+  fullName: z.string().min(1, "El nombre completo es obligatorio").optional(),
+  role: z.enum(['admin', 'manager', 'designer', 'content_creator', 'analyst']).optional(),
+  bio: z.string().optional(),
+  profileImage: z.string().optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  preferredLanguage: z.string().optional(),
+  theme: z.string().optional(),
 });
 
 // Esquema para login que permite usar username o email
@@ -348,6 +381,7 @@ export const insertProductSchema = createInsertSchema(products).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 
 export type Project = typeof projects.$inferSelect;
