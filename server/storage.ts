@@ -623,27 +623,63 @@ export class DatabaseStorage implements IStorage {
   }
   
   async listTasksByProject(projectId: number): Promise<Task[]> {
-    return await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.projectId, projectId))
-      .orderBy(asc(tasks.dueDate), desc(tasks.priority));
+    // Usar una consulta SQL directa para evitar el error de la columna reminderDate
+    // Seleccionamos solo las columnas que sabemos que existen en la tabla
+    return await db.execute(sql`
+      SELECT 
+        id, project_id, assigned_to_id, created_by_id, title, 
+        description, status, priority, "group", position, 
+        ai_generated, ai_suggestion, tags, due_date, completed_at, 
+        estimated_hours, dependencies, parent_task_id, progress, 
+        attachments, created_at, updated_at
+      FROM tasks 
+      WHERE project_id = ${projectId}
+      ORDER BY due_date ASC, 
+               CASE 
+                 WHEN priority = 'urgent' THEN 1
+                 WHEN priority = 'high' THEN 2
+                 WHEN priority = 'medium' THEN 3
+                 WHEN priority = 'low' THEN 4
+                 ELSE 5
+               END
+    `);
   }
   
   async listTasksByAssignee(userId: number): Promise<Task[]> {
-    return await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.assignedToId, userId))
-      .orderBy(asc(tasks.dueDate), desc(tasks.priority));
+    // Usar una consulta SQL directa para evitar el error de la columna reminderDate
+    return await db.execute(sql`
+      SELECT 
+        id, project_id, assigned_to_id, created_by_id, title, 
+        description, status, priority, "group", position, 
+        ai_generated, ai_suggestion, tags, due_date, completed_at, 
+        estimated_hours, dependencies, parent_task_id, progress, 
+        attachments, created_at, updated_at
+      FROM tasks 
+      WHERE assigned_to_id = ${userId}
+      ORDER BY due_date ASC, 
+               CASE 
+                 WHEN priority = 'urgent' THEN 1
+                 WHEN priority = 'high' THEN 2
+                 WHEN priority = 'medium' THEN 3
+                 WHEN priority = 'low' THEN 4
+                 ELSE 5
+               END
+    `);
   }
   
   async listSubtasks(parentTaskId: number): Promise<Task[]> {
-    return await db
-      .select()
-      .from(tasks)
-      .where(eq(tasks.parentTaskId, parentTaskId))
-      .orderBy(asc(tasks.position));
+    // Usar una consulta SQL directa para evitar el error de la columna reminderDate
+    return await db.execute(sql`
+      SELECT 
+        id, project_id, assigned_to_id, created_by_id, title, 
+        description, status, priority, "group", position, 
+        ai_generated, ai_suggestion, tags, due_date, completed_at, 
+        estimated_hours, dependencies, parent_task_id, progress, 
+        attachments, created_at, updated_at
+      FROM tasks 
+      WHERE parent_task_id = ${parentTaskId}
+      ORDER BY position ASC
+    `);
   }
   
   // Task Comments methods
