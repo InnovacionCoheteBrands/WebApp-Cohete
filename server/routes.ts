@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, hashPassword } from "./auth";
+import { setupAuth, hashPassword, comparePasswords } from "./auth";
 import { DatabaseStorage } from "./storage";
 import multer from "multer";
 import fs from "fs";
@@ -23,6 +23,7 @@ import {
   insertTaskSchema,
   insertUserSchema,
   insertProductSchema,
+  updateProfileSchema,
   scheduleEntries,
   Product
 } from "@shared/schema";
@@ -130,6 +131,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username,
         password: hashedPassword,
         isPrimary: true,
+        role: 'admin',
+        preferredLanguage: 'es',
+        theme: 'light'
       });
       
       // Eliminar password del response
