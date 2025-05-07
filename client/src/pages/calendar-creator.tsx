@@ -2030,7 +2030,7 @@ export default function CalendarCreator() {
                         </div>
                       )}
                       
-                      <Accordion type="multiple" className="space-y-4">
+                      <Accordion type="multiple" className={`space-y-4 ${form.watch('followSpecsContent') ? 'opacity-60 pointer-events-none' : ''}`}>
                         {selectedPlatforms.map((platformId) => {
                           const platform = PLATFORMS.find(p => p.id === platformId);
                           const platformConfig = form.getValues('platforms').find(p => p.platformId === platformId);
