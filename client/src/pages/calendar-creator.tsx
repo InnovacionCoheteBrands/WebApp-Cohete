@@ -161,6 +161,8 @@ const formSchema = z.object({
     includeDesignInstructions: z.boolean().default(true),
   }),
   followSpecsDistribution: z.boolean().default(false),
+  followSpecsContent: z.boolean().default(false),
+  followSpecsPlatforms: z.boolean().default(false),
   postsDistribution: z.enum(["uniform", "frontloaded", "backloaded", "weekends", "weekdays"]).default("uniform"),
   platforms: z.array(platformConfigSchema).min(1, "Debes seleccionar al menos una plataforma")
 });
@@ -236,6 +238,8 @@ export default function CalendarCreator() {
         includeDesignInstructions: true,
       },
       followSpecsDistribution: false,
+      followSpecsContent: false,
+      followSpecsPlatforms: false,
       postsDistribution: "uniform",
       platforms: []
     }
@@ -817,6 +821,15 @@ export default function CalendarCreator() {
                         </div>
                       </div>
                       
+                      {/* Aquí agregamos una nota informativa cuando está activado "Seguir especificaciones" */}
+                      {form.watch('followSpecsDistribution') && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 dark:bg-amber-900/20 dark:border-amber-700/30">
+                          <p className="text-sm text-amber-800 dark:text-amber-300">
+                            <strong>Importante:</strong> Las opciones de distribución se configurarán automáticamente según las especificaciones del proyecto. Cualquier ajuste manual será ignorado.
+                          </p>
+                        </div>
+                      )}
+                      
                       <FormField
                         control={form.control}
                         name="postsDistribution"
@@ -824,12 +837,12 @@ export default function CalendarCreator() {
                           <FormItem className="space-y-6">
                             <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                               <div 
-                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
+                                className={`relative rounded-lg border p-4 transition-all ${!form.watch('followSpecsDistribution') ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-70'}
                                   ${field.value === 'uniform' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
                                   }`}
-                                onClick={() => field.onChange('uniform')}
+                                onClick={() => !form.watch('followSpecsDistribution') && field.onChange('uniform')}
                               >
                                 <div className="flex flex-col items-center gap-2">
                                   <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
@@ -1834,6 +1847,49 @@ export default function CalendarCreator() {
                 
                 {/* Tab: Platforms */}
                 <TabsContent value="platforms" className="space-y-6 p-1">
+                  <div className="flex items-center justify-between gap-2 mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 dark:shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z" />
+                        </svg>
+                      </span>
+                      <h3 className="text-lg font-medium dark:text-white">Plataformas</h3>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <Checkbox 
+                        id="follow-specs-platforms"
+                        checked={form.watch('followSpecsPlatforms')}
+                        onCheckedChange={(checked) => {
+                          // Actualizamos el valor en el formulario
+                          form.setValue('followSpecsPlatforms', !!checked, { shouldValidate: true });
+                          
+                          // Mostrar notificación
+                          toast({
+                            description: `${checked ? "Seguirá" : "No seguirá"} las especificaciones del proyecto para las plataformas`,
+                          });
+                        }}
+                        className="h-4 w-4 rounded-sm cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                      />
+                      <Label 
+                        htmlFor="follow-specs-platforms"
+                        className="text-xs font-medium dark:text-slate-300"
+                      >
+                        Seguir especificaciones del proyecto
+                      </Label>
+                    </div>
+                  </div>
+
+                  {/* Mensaje informativo cuando está activado "Seguir especificaciones" */}
+                  {form.watch('followSpecsPlatforms') && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 dark:bg-amber-900/20 dark:border-amber-700/30">
+                      <p className="text-sm text-amber-800 dark:text-amber-300">
+                        <strong>Importante:</strong> Las plataformas y su configuración se determinarán automáticamente según las especificaciones del proyecto. Se ignorarán las selecciones manuales.
+                      </p>
+                    </div>
+                  )}
+                  
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                     {PLATFORMS.map((platform) => (
                       <div
@@ -1913,10 +1969,46 @@ export default function CalendarCreator() {
                     </Alert>
                   ) : (
                     <div className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-amber-500" />
-                        <h3 className="text-lg font-medium dark:text-white">Configuración de contenido por plataforma</h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 dark:shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                            <Sparkles className="h-5 w-5" />
+                          </span>
+                          <h3 className="text-lg font-medium dark:text-white">Configuración de contenido por plataforma</h3>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Checkbox 
+                            id="follow-specs-content"
+                            checked={form.watch('followSpecsContent')}
+                            onCheckedChange={(checked) => {
+                              // Actualizamos el valor en el formulario
+                              form.setValue('followSpecsContent', !!checked, { shouldValidate: true });
+                              
+                              // Mostrar notificación
+                              toast({
+                                description: `${checked ? "Seguirá" : "No seguirá"} las especificaciones del proyecto para el contenido`,
+                              });
+                            }}
+                            className="h-4 w-4 rounded-sm cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                          />
+                          <Label 
+                            htmlFor="follow-specs-content"
+                            className="text-xs font-medium dark:text-slate-300"
+                          >
+                            Seguir especificaciones del proyecto
+                          </Label>
+                        </div>
                       </div>
+                      
+                      {/* Mensaje informativo cuando está activado "Seguir especificaciones" */}
+                      {form.watch('followSpecsContent') && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-4 dark:bg-amber-900/20 dark:border-amber-700/30">
+                          <p className="text-sm text-amber-800 dark:text-amber-300">
+                            <strong>Importante:</strong> El contenido se generará automáticamente según las especificaciones del proyecto. Los ajustes manuales de cantidades y tipos serán ignorados.
+                          </p>
+                        </div>
+                      )}
                       
                       <Accordion type="multiple" className="space-y-4">
                         {selectedPlatforms.map((platformId) => {
