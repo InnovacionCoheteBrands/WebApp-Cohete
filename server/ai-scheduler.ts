@@ -91,37 +91,58 @@ export async function generateSchedule(
     }
     
     const prompt = `
-      Crea un cronograma de contenido para redes sociales para el proyecto "${projectName}". Utiliza estos datos para crear contenido relevante y efectivo:
+      Crea un cronograma avanzado de contenido para redes sociales para el proyecto "${projectName}". Actúa como un experto profesional en marketing digital con especialización en contenidos de alto impacto, branding y narrativa de marca. Tu objetivo es crear contenido estratégico, persuasivo y memorable que genere engagement.
 
-      **Proyecto:** ${projectName}
-      **Detalles:**
+      **PROYECTO:**
+      Nombre: ${projectName}
+      
+      **DETALLES DEL PROYECTO:**
       ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
 
-      **Periodo:** ${formattedDate} a ${endDate} (${durationDays} días)
-      **Especificaciones:** ${specifications || "Ninguna especificación adicional."}
+      **PERIODO DE PLANIFICACIÓN:** 
+      De ${formattedDate} a ${endDate} (${durationDays} días)
       
-      **Redes sociales:**
-      ${socialNetworksSection || "Sugiere 2-3 redes sociales apropiadas para el proyecto."}
+      **ESPECIFICACIONES DEL CLIENTE:** 
+      ${specifications || "Ninguna especificación adicional proporcionada."}
       
-      **Contenido previo:**
-      ${previousContentSection || "Sin historial de contenido previo."}
+      **ESTRATEGIA DE REDES SOCIALES:**
+      ${socialNetworksSection || "Sugiere 2-3 redes sociales estratégicamente seleccionadas para el público objetivo de este proyecto."}
+      
+      **HISTORIAL DE CONTENIDO (EVITAR DUPLICACIÓN):**
+      ${previousContentSection || "Sin historial de contenido previo disponible."}
+
+      **DIRECTRICES PARA CREACIÓN DE CONTENIDO DE ALTA CALIDAD:**
+      1. STORYTELLING - Utiliza narrativas emocionales y personales que conecten con la audiencia.
+      2. VALOR PRÁCTICO - Cada publicación debe ofrecer insights, consejos, o soluciones reales.
+      3. LLAMADAS A LA ACCIÓN - Incluye CTAs claros y persuasivos que inciten al compromiso.
+      4. ADAPTACIÓN POR PLATAFORMA - Personaliza el tono y formato según cada red social.
+      5. ORIGINALIDAD - Evita clichés y lugares comunes del sector, busca ángulos únicos.
+      6. ESTILO DISTINTIVO - Mantén coherencia con la voz de marca pero con variedad creativa.
+      7. INSTRUCCIONES VISUALES - Sé específico sobre las imágenes/videos sugiriendo paletas de color, composición y elementos visuales distintivos.
+
+      **ESTRUCTURA DE LAS PUBLICACIONES:**
+      - TÍTULOS: Concisos, impactantes, con palabras potentes y gatillos emocionales.
+      - CONTENIDO PRINCIPAL: Desarrolla ideas completas con narrativa estructurada (problema-solución-beneficio).
+      - COPY IN: Texto que aparecerá sobre la imagen/diseño, corto y memorable.
+      - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
+      - HASHTAGS: Mezcla hashtags populares y específicos del nicho (entre 3-7 por publicación).
 
       **FORMATO DE RESPUESTA:**
       Devuelve ÚNICAMENTE un objeto JSON con esta estructura (todo en español):
       {
-        "name": "Nombre del cronograma",
+        "name": "Nombre estratégico del cronograma",
         "entries": [
           {
-            "title": "Título corto",
-            "description": "Descripción breve",
-            "content": "Contenido principal",
-            "copyIn": "Texto interno",
-            "copyOut": "Texto externo",
-            "designInstructions": "Instrucciones básicas",
-            "platform": "Nombre plataforma",
-            "postDate": "2025-05-01",
-            "postTime": "12:00",
-            "hashtags": "#hashtag1 #hashtag2"
+            "title": "Título impactante y único",
+            "description": "Objetivo estratégico de la publicación",
+            "content": "Contenido principal extenso, desarrollando ideas completas con estructura narrativa clara",
+            "copyIn": "Texto conciso, memorable e impactante para incluir sobre la imagen",
+            "copyOut": "Texto externo detallado para la descripción del post, escrito en tono conversacional y persuasivo",
+            "designInstructions": "Instrucciones detalladas de diseño incluyendo elementos visuales, colores, composición y estilo",
+            "platform": "Plataforma específica",
+            "postDate": "YYYY-MM-DD",
+            "postTime": "HH:MM",
+            "hashtags": "#hashtag1 #hashtag2 #hashtag3 #hashtag4"
           }
         ]
       }
@@ -135,16 +156,16 @@ export async function generateSchedule(
     
     // Usamos el formato JSON explícitamente para garantizar una respuesta estructurada
     const scheduleText = await grokService.generateText(enhancedPrompt, {
-      // Reducimos temperatura para obtener respuesta más predecible y estructurada
-      temperature: 0.2,
-      // Reducimos tokens máximos para evitar problemas de red
-      maxTokens: 2500,
+      // Aumentamos temperatura para obtener respuesta más creativa y única
+      temperature: 0.7,
+      // Aumentamos tokens máximos para permitir respuestas más elaboradas
+      maxTokens: 4000,
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
       // Solicitar explícitamente respuesta en formato JSON para mayor compatibilidad
       responseFormat: 'json_object',
-      // Forzamos el modelo más liviano
-      model: 'grok-3-beta'
+      // Usamos el modelo de mejor calidad disponible
+      model: 'grok-2-1212'
     });
     
     // Registramos una versión truncada para debug
