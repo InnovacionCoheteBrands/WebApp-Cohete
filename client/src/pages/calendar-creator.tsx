@@ -816,7 +816,6 @@ export default function CalendarCreator() {
                           </Label>
                         </div>
                       </div>
-                      </div>
                       
                       <FormField
                         control={form.control}
