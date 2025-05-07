@@ -359,6 +359,16 @@ export default function CalendarCreator() {
 
   // Handle platform selection
   const handleTogglePlatform = (platformId: string) => {
+    // Si está activado "Seguir especificaciones del proyecto", no permitimos cambios
+    if (form.watch('followSpecsPlatforms')) {
+      toast({
+        title: "Acción bloqueada",
+        description: "No puedes modificar las plataformas mientras 'Seguir especificaciones del proyecto' esté activado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const platforms = form.getValues('platforms');
     
     if (selectedPlatforms.includes(platformId)) {
@@ -387,6 +397,16 @@ export default function CalendarCreator() {
 
   // Handle content type quantity change
   const handleContentTypeQuantityChange = (platformId: string, contentType: string, quantity: number) => {
+    // Si está activado "Seguir especificaciones del proyecto", no permitimos cambios
+    if (form.watch('followSpecsContent')) {
+      toast({
+        title: "Acción bloqueada",
+        description: "No puedes modificar el contenido mientras 'Seguir especificaciones del proyecto' esté activado.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     const platforms = form.getValues('platforms');
     const platformIndex = platforms.findIndex(p => p.platformId === platformId);
     
@@ -869,12 +889,12 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
+                                className={`relative rounded-lg border p-4 transition-all ${!form.watch('followSpecsDistribution') ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-70'}
                                   ${field.value === 'frontloaded' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
                                   }`}
-                                onClick={() => field.onChange('frontloaded')}
+                                onClick={() => !form.watch('followSpecsDistribution') && field.onChange('frontloaded')}
                               >
                                 <div className="flex flex-col items-center gap-2">
                                   <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
@@ -901,12 +921,12 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
+                                className={`relative rounded-lg border p-4 transition-all ${!form.watch('followSpecsDistribution') ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-70'}
                                   ${field.value === 'backloaded' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
                                   }`}
-                                onClick={() => field.onChange('backloaded')}
+                                onClick={() => !form.watch('followSpecsDistribution') && field.onChange('backloaded')}
                               >
                                 <div className="flex flex-col items-center gap-2">
                                   <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
@@ -933,12 +953,12 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
+                                className={`relative rounded-lg border p-4 transition-all ${!form.watch('followSpecsDistribution') ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-70'}
                                   ${field.value === 'weekends' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
                                   }`}
-                                onClick={() => field.onChange('weekends')}
+                                onClick={() => !form.watch('followSpecsDistribution') && field.onChange('weekends')}
                               >
                                 <div className="flex flex-col items-center gap-2">
                                   <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
@@ -967,12 +987,12 @@ export default function CalendarCreator() {
                               </div>
                               
                               <div 
-                                className={`relative rounded-lg border p-4 cursor-pointer transition-all hover:shadow-md
+                                className={`relative rounded-lg border p-4 transition-all ${!form.watch('followSpecsDistribution') ? 'cursor-pointer hover:shadow-md' : 'cursor-not-allowed opacity-70'}
                                   ${field.value === 'weekdays' 
                                     ? 'bg-amber-50 border-amber-300 shadow-sm dark:bg-amber-900/20 dark:border-amber-700/50' 
                                     : 'bg-white hover:bg-slate-50 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:bg-[#2a3349]'
                                   }`}
-                                onClick={() => field.onChange('weekdays')}
+                                onClick={() => !form.watch('followSpecsDistribution') && field.onChange('weekdays')}
                               >
                                 <div className="flex flex-col items-center gap-2">
                                   <div className="h-12 w-32 bg-slate-100 rounded-md overflow-hidden relative dark:bg-slate-700">
@@ -2087,12 +2107,13 @@ export default function CalendarCreator() {
                                               type="button"
                                               variant="outline"
                                               size="icon"
-                                              className="h-8 w-8 rounded-lg bg-white hover:bg-slate-50 dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:hover:bg-[#2a3349]"
+                                              className={`h-8 w-8 rounded-lg ${form.watch('followSpecsContent') ? 'opacity-50 cursor-not-allowed' : 'bg-white hover:bg-slate-50'} dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:hover:bg-[#2a3349]`}
                                               onClick={() => handleContentTypeQuantityChange(
                                                 platformId, 
                                                 contentType.type, 
                                                 Math.max(0, contentType.quantity - 1)
                                               )}
+                                              disabled={form.watch('followSpecsContent')}
                                             >
                                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M18 12H6" />
@@ -2110,7 +2131,8 @@ export default function CalendarCreator() {
                                                   contentType.type, 
                                                   parseInt(e.target.value)
                                                 )}
-                                                className="w-full h-2 rounded-lg appearance-none cursor-pointer bg-slate-200 accent-amber-500 dark:bg-[#2a3349]"
+                                                className={`w-full h-2 rounded-lg appearance-none ${form.watch('followSpecsContent') ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'} bg-slate-200 accent-amber-500 dark:bg-[#2a3349]`}
+                                                disabled={form.watch('followSpecsContent')}
                                               />
                                             </div>
                                             
@@ -2118,12 +2140,13 @@ export default function CalendarCreator() {
                                               type="button"
                                               variant="outline"
                                               size="icon"
-                                              className="h-8 w-8 rounded-lg bg-white hover:bg-slate-50 dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:hover:bg-[#2a3349]"
+                                              className={`h-8 w-8 rounded-lg ${form.watch('followSpecsContent') ? 'opacity-50 cursor-not-allowed' : 'bg-white hover:bg-slate-50'} dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:hover:bg-[#2a3349]`}
                                               onClick={() => handleContentTypeQuantityChange(
                                                 platformId, 
                                                 contentType.type, 
                                                 Math.min(30, contentType.quantity + 1)
                                               )}
+                                              disabled={form.watch('followSpecsContent')}
                                             >
                                               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m6-6H6" />
