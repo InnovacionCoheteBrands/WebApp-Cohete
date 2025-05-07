@@ -255,8 +255,8 @@ export default function CalendarCreator() {
   const onSubmit = async (values: FormValues) => {
     console.log("Formulario enviado:", values);
     
-    // Verificar plataformas manualmente ya que este control está fuera del formulario formal
-    if (selectedPlatforms.length === 0) {
+    // Verificar plataformas manualmente solo si no está activo "Seguir especificaciones del proyecto"
+    if (selectedPlatforms.length === 0 && !values.followSpecsPlatforms) {
       toast({
         title: "Error",
         description: "Debes seleccionar al menos una plataforma",
