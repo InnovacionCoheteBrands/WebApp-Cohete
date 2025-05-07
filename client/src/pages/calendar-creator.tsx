@@ -136,7 +136,8 @@ const contentTypeSchema = z.object({
 const platformConfigSchema = z.object({
   platformId: z.string(),
   contentTypes: z.array(contentTypeSchema),
-  customInstructions: z.string().optional()
+  customInstructions: z.string().optional(),
+  followProjectSpecs: z.boolean().default(false)
 });
 
 const formSchema = z.object({
@@ -371,7 +372,8 @@ export default function CalendarCreator() {
         {
           platformId,
           contentTypes: defaultContentTypes,
-          customInstructions: ""
+          customInstructions: "",
+          followProjectSpecs: false
         }
       ], { shouldValidate: true });
     }
@@ -2017,11 +2019,44 @@ export default function CalendarCreator() {
                                   <Separator className="dark:bg-[#3e4a6d]" />
                                   
                                   <div className="space-y-3">
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between gap-2">
                                       <h4 className="text-sm font-medium flex items-center gap-2 dark:text-white">
                                         <span className={`h-4 w-4 rounded-full ${platform.color}`}></span>
                                         Instrucciones personalizadas para {platform.name}
                                       </h4>
+                                      
+                                      <div className="flex items-center gap-2">
+                                        <Checkbox 
+                                          id={`follow-specs-${platformId}`}
+                                          checked={platformConfig.followProjectSpecs || false}
+                                          onCheckedChange={(checked) => {
+                                            const platforms = form.getValues('platforms');
+                                            const platformIndex = platforms.findIndex(p => p.platformId === platformId);
+                                            
+                                            if (platformIndex === -1) return;
+                                            
+                                            const updatedPlatforms = [...platforms];
+                                            updatedPlatforms[platformIndex] = {
+                                              ...platforms[platformIndex],
+                                              followProjectSpecs: !!checked
+                                            };
+                                            
+                                            form.setValue('platforms', updatedPlatforms, { shouldValidate: true });
+                                            
+                                            // Mostrar notificación
+                                            toast({
+                                              description: `${checked ? "Seguirá" : "No seguirá"} las especificaciones del proyecto para ${platform.name}`,
+                                            });
+                                          }}
+                                          className="h-4 w-4 rounded-sm cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                                        />
+                                        <Label 
+                                          htmlFor={`follow-specs-${platformId}`}
+                                          className="text-xs font-medium dark:text-slate-300"
+                                        >
+                                          Seguir especificaciones del proyecto
+                                        </Label>
+                                      </div>
                                     </div>
                                     
                                     <div className="relative">
