@@ -164,8 +164,8 @@ export async function generateSchedule(
       retryCount: 3,
       // Solicitar explícitamente respuesta en formato JSON para mayor compatibilidad
       responseFormat: 'json_object',
-      // Usamos el modelo de mejor calidad disponible
-      model: 'grok-2-1212'
+      // Utilizamos el modelo Grok 3 como solicitado
+      model: 'grok-3-beta'
     });
     
     // Registramos una versión truncada para debug
