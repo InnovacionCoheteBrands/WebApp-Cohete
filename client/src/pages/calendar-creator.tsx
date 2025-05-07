@@ -160,6 +160,7 @@ const formSchema = z.object({
     includeHashtags: z.boolean().default(true),
     includeDesignInstructions: z.boolean().default(true),
   }),
+  followSpecsDistribution: z.boolean().default(false),
   postsDistribution: z.enum(["uniform", "frontloaded", "backloaded", "weekends", "weekdays"]).default("uniform"),
   platforms: z.array(platformConfigSchema).min(1, "Debes seleccionar al menos una plataforma")
 });
@@ -234,6 +235,7 @@ export default function CalendarCreator() {
         includeHashtags: true,
         includeDesignInstructions: true,
       },
+      followSpecsDistribution: false,
       postsDistribution: "uniform",
       platforms: []
     }
@@ -778,16 +780,42 @@ export default function CalendarCreator() {
                 <TabsContent value="distribution" className="space-y-6 p-1">
                   <div className="grid grid-cols-1 gap-6">
                     <div className="space-y-6">
-                      <div className="flex items-center gap-2">
-                        <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 dark:shadow-[0_0_10px_rgba(245,158,11,0.15)]">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 3v18h18" />
-                            <path d="M18 17V9" />
-                            <path d="M13 17V5" />
-                            <path d="M8 17v-3" />
-                          </svg>
-                        </span>
-                        <h3 className="text-lg font-medium dark:text-white">Distribución de Publicaciones</h3>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-300 dark:shadow-[0_0_10px_rgba(245,158,11,0.15)]">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 3v18h18" />
+                              <path d="M18 17V9" />
+                              <path d="M13 17V5" />
+                              <path d="M8 17v-3" />
+                            </svg>
+                          </span>
+                          <h3 className="text-lg font-medium dark:text-white">Distribución de Publicaciones</h3>
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <Checkbox 
+                            id="follow-specs-distribution"
+                            checked={form.watch('followSpecsDistribution')}
+                            onCheckedChange={(checked) => {
+                              // Actualizamos el valor en el formulario
+                              form.setValue('followSpecsDistribution', !!checked, { shouldValidate: true });
+                              
+                              // Mostrar notificación
+                              toast({
+                                description: `${checked ? "Seguirá" : "No seguirá"} las especificaciones del proyecto para la distribución`,
+                              });
+                            }}
+                            className="h-4 w-4 rounded-sm cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500 dark:border-slate-600"
+                          />
+                          <Label 
+                            htmlFor="follow-specs-distribution"
+                            className="text-xs font-medium dark:text-slate-300"
+                          >
+                            Seguir especificaciones del proyecto
+                          </Label>
+                        </div>
+                      </div>
                       </div>
                       
                       <FormField
