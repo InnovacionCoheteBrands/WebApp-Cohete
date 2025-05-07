@@ -1205,7 +1205,7 @@ export default function CalendarCreator() {
                               </div>
                               
                               {/* Opciones avanzadas de distribución */}
-                              <div className="bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
+                              <div className={`bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d] ${form.watch('followSpecsDistribution') ? 'opacity-60 pointer-events-none' : ''}`}>
                                 <h4 className="font-medium mb-3 text-sm flex items-center gap-2 dark:text-white">
                                   <Settings2 className="h-4 w-4 text-amber-500" />
                                   Preferencias de distribución avanzadas
