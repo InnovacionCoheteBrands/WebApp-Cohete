@@ -213,6 +213,24 @@ export default function CalendarCreator() {
   const [showExclusionDatePicker, setShowExclusionDatePicker] = useState(false);
   const [exclusionDates, setExclusionDates] = useState<Date[]>(initialDateObjects);
   
+  // Estado para los bloques de tiempo seleccionados
+  const [selectedTimeBlocks, setSelectedTimeBlocks] = useState<string[]>([
+    "mediodia", "tarde", "tarde-noche"
+  ]);
+  
+  // Función para alternar la selección de un bloque de tiempo
+  const toggleTimeBlock = (blockId: string) => {
+    setSelectedTimeBlocks(prev => {
+      if (prev.includes(blockId)) {
+        // Si ya está seleccionado, lo quitamos
+        return prev.filter(id => id !== blockId);
+      } else {
+        // Si no está seleccionado, lo añadimos
+        return [...prev, blockId];
+      }
+    });
+  };
+  
   // Fetch projects
   const { data: projects, isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
@@ -1349,9 +1367,8 @@ export default function CalendarCreator() {
                                         {id: "tarde-noche", label: "Tarde-noche", hours: "18-21h", icon: "🌆"},
                                         {id: "noche", label: "Noche", hours: "21-24h", icon: "🌙"}
                                       ].map((block) => {
-                                        // En una implementación real, esto debería estar en el estado del componente
-                                        // Aquí simulamos un estado basado en horas para demostración
-                                        const isSelected = block.id === "mediodia" || block.id === "tarde" || block.id === "tarde-noche";
+                                        // Obtener el estado de selección del estado local
+                                        const isSelected = selectedTimeBlocks.includes(block.id);
                                         
                                         return (
                                           <div 
@@ -1365,7 +1382,8 @@ export default function CalendarCreator() {
                                               }
                                             `}
                                             onClick={() => {
-                                              // En una implementación real, actualizaríamos el estado
+                                              // Actualizar el estado de selección
+                                              toggleTimeBlock(block.id);
                                               console.log(`Toggled ${block.id}`);
                                             }}
                                           >
@@ -1389,7 +1407,8 @@ export default function CalendarCreator() {
                                             <Checkbox 
                                               checked={isSelected}
                                               onCheckedChange={(checked) => {
-                                                // En una implementación real, actualizaríamos el estado
+                                                // Actualizar el estado de selección cuando se cambia el checkbox
+                                                toggleTimeBlock(block.id);
                                                 console.log(`Toggled checkbox for ${block.id}: ${checked}`);
                                               }}
                                               className="h-4 w-4 cursor-pointer data-[state=checked]:bg-amber-500 data-[state=checked]:border-amber-500"
