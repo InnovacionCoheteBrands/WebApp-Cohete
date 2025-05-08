@@ -706,41 +706,25 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Inicio</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <div className="relative w-full cursor-pointer" onClick={() => {
-                                    // Simulamos un clic en el input de fecha para abrir el selector nativo
-                                    const dateInput = document.getElementById("date-input-startDate");
-                                    if (dateInput) {
-                                      dateInput.click();
-                                      dateInput.focus();
-                                    }
-                                  }}>
-                                    <Button 
-                                      type="button"
-                                      variant="outline"
-                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] pointer-events-none"
-                                    >
-                                      {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
-                                    </Button>
-                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
-                                    <Input 
-                                      id="date-input-startDate"
-                                      type="date" 
-                                      className="absolute inset-0 opacity-0 cursor-pointer"
+                                  <div className="relative">
+                                    <Input
+                                      type="date"
+                                      className="h-11 w-full pl-10 pr-3 py-2 bg-transparent border rounded-md border-input font-normal cursor-pointer"
+                                      value={field.value || ''}
                                       onChange={(e) => {
                                         if (e.target.value) {
-                                          // Corrección del error off-by-one al seleccionar fechas
-                                          // Creamos un objeto Date con la fecha seleccionada y 
-                                          // la ajustamos para compensar la diferencia horaria
                                           const selectedDate = new Date(e.target.value);
-                                          // Ajustamos la fecha para evitar el off-by-one error
-                                          selectedDate.setHours(12); // Poner hora del día para evitar problemas de zona horaria
-                                          // Formatear la fecha correctamente en formato 'YYYY-MM-DD'
-                                          const formattedDate = selectedDate.toISOString().split('T')[0];
-                                          field.onChange(formattedDate);
+                                          selectedDate.setHours(12);
+                                          field.onChange(selectedDate.toISOString().split('T')[0]);
                                         }
                                       }}
-                                      value={field.value || ''}
                                     />
+                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
+                                    <div className="absolute inset-0 pointer-events-none flex items-center pl-10">
+                                      <span className="text-sm">
+                                        {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
+                                      </span>
+                                    </div>
                                   </div>
                                 </FormControl>
                               </div>
@@ -757,41 +741,25 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Fin (opcional)</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <div className="relative w-full cursor-pointer" onClick={() => {
-                                    // Simulamos un clic en el input de fecha para abrir el selector nativo
-                                    const dateInput = document.getElementById("date-input-endDate");
-                                    if (dateInput) {
-                                      dateInput.click();
-                                      dateInput.focus();
-                                    }
-                                  }}>
-                                    <Button 
-                                      type="button"
-                                      variant="outline"
-                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] pointer-events-none"
-                                    >
-                                      {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
-                                    </Button>
-                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
-                                    <Input 
-                                      id="date-input-endDate"
-                                      type="date" 
-                                      className="absolute inset-0 opacity-0 cursor-pointer"
+                                  <div className="relative">
+                                    <Input
+                                      type="date"
+                                      className="h-11 w-full pl-10 pr-3 py-2 bg-transparent border rounded-md border-input font-normal cursor-pointer"
+                                      value={field.value || ''}
                                       onChange={(e) => {
                                         if (e.target.value) {
-                                          // Corrección del error off-by-one al seleccionar fechas
-                                          // Creamos un objeto Date con la fecha seleccionada y 
-                                          // la ajustamos para compensar la diferencia horaria
                                           const selectedDate = new Date(e.target.value);
-                                          // Ajustamos la fecha para evitar el off-by-one error
-                                          selectedDate.setHours(12); // Poner hora del día para evitar problemas de zona horaria
-                                          // Formatear la fecha correctamente en formato 'YYYY-MM-DD'
-                                          const formattedDate = selectedDate.toISOString().split('T')[0];
-                                          field.onChange(formattedDate);
+                                          selectedDate.setHours(12);
+                                          field.onChange(selectedDate.toISOString().split('T')[0]);
                                         }
                                       }}
-                                      value={field.value || ''}
                                     />
+                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
+                                    <div className="absolute inset-0 pointer-events-none flex items-center pl-10">
+                                      <span className="text-sm">
+                                        {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
+                                      </span>
+                                    </div>
                                   </div>
                                 </FormControl>
                               </div>
