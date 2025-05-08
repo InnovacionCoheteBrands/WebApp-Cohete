@@ -745,36 +745,29 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Fin (opcional)</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <div className="relative cursor-pointer" onClick={() => {
-                                    // Enfocar y abrir el input de fecha oculto
-                                    const dateInput = document.getElementById('endDate-input') as HTMLInputElement;
-                                    if (dateInput && typeof dateInput.showPicker === 'function') {
-                                      dateInput.showPicker();
-                                    } else if (dateInput) {
-                                      dateInput.click();
-                                    }
-                                  }}>
+                                  <div className="relative">
+                                    <div className="absolute left-0 top-0 w-full h-full overflow-hidden">
+                                      <input 
+                                        type="date" 
+                                        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" 
+                                        value={field.value || ''}
+                                        onChange={(e) => {
+                                          if (e.target.value) {
+                                            const selectedDate = new Date(e.target.value);
+                                            selectedDate.setHours(12);
+                                            field.onChange(selectedDate.toISOString().split('T')[0]);
+                                          }
+                                        }}
+                                      />
+                                    </div>
                                     <Button 
                                       type="button"
                                       variant="outline"
-                                      className="w-full h-11 pl-10 justify-start text-left font-normal dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white"
+                                      className="w-full h-11 pl-10 justify-start text-left font-normal dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white pointer-events-none"
                                     >
                                       {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
                                     </Button>
-                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
-                                    <input 
-                                      id="endDate-input"
-                                      type="date" 
-                                      className="w-0 h-0 opacity-0 absolute"
-                                      onChange={(e) => {
-                                        if (e.target.value) {
-                                          const selectedDate = new Date(e.target.value);
-                                          selectedDate.setHours(12);
-                                          field.onChange(selectedDate.toISOString().split('T')[0]);
-                                        }
-                                      }}
-                                      value={field.value || ''}
-                                    />
+                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
                                   </div>
                                 </FormControl>
                               </div>
