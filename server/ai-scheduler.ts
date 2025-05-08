@@ -156,8 +156,8 @@ export async function generateSchedule(
     
     // Usamos el formato JSON explícitamente para garantizar una respuesta estructurada
     const scheduleText = await grokService.generateText(enhancedPrompt, {
-      // Aumentamos temperatura para obtener respuesta más creativa y única
-      temperature: 0.7,
+      // Aumentamos temperatura al máximo para obtener respuesta más creativa y única
+      temperature: 0.9,
       // Aumentamos tokens máximos para permitir respuestas más elaboradas
       maxTokens: 4000,
       // Aumentamos los reintentos para casos de red inestable
