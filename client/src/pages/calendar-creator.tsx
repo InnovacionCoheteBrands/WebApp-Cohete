@@ -6,6 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
+import { DateInput } from "@/components/ui/date-input";
 
 
 import { 
@@ -704,34 +705,13 @@ export default function CalendarCreator() {
                           render={({ field }) => (
                             <FormItem className="space-y-2">
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Inicio</FormLabel>
-                              <div className="relative">
-                                <FormControl>
-                                  <div className="relative">
-                                    <div className="absolute left-0 top-0 w-full h-full overflow-hidden">
-                                      <input 
-                                        type="date" 
-                                        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" 
-                                        value={field.value || ''}
-                                        onChange={(e) => {
-                                          if (e.target.value) {
-                                            const selectedDate = new Date(e.target.value);
-                                            selectedDate.setHours(12);
-                                            field.onChange(selectedDate.toISOString().split('T')[0]);
-                                          }
-                                        }}
-                                      />
-                                    </div>
-                                    <Button 
-                                      type="button"
-                                      variant="outline"
-                                      className="w-full h-11 pl-10 justify-start text-left font-normal dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white pointer-events-none"
-                                    >
-                                      {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
-                                    </Button>
-                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
-                                  </div>
-                                </FormControl>
-                              </div>
+                              <FormControl>
+                                <DateInput 
+                                  value={field.value} 
+                                  onChange={field.onChange} 
+                                  placeholder="Seleccionar fecha de inicio"
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -743,34 +723,13 @@ export default function CalendarCreator() {
                           render={({ field }) => (
                             <FormItem className="space-y-2">
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Fin (opcional)</FormLabel>
-                              <div className="relative">
-                                <FormControl>
-                                  <div className="relative">
-                                    <div className="absolute left-0 top-0 w-full h-full overflow-hidden">
-                                      <input 
-                                        type="date" 
-                                        className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10" 
-                                        value={field.value || ''}
-                                        onChange={(e) => {
-                                          if (e.target.value) {
-                                            const selectedDate = new Date(e.target.value);
-                                            selectedDate.setHours(12);
-                                            field.onChange(selectedDate.toISOString().split('T')[0]);
-                                          }
-                                        }}
-                                      />
-                                    </div>
-                                    <Button 
-                                      type="button"
-                                      variant="outline"
-                                      className="w-full h-11 pl-10 justify-start text-left font-normal dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white pointer-events-none"
-                                    >
-                                      {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
-                                    </Button>
-                                    <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400 pointer-events-none" />
-                                  </div>
-                                </FormControl>
-                              </div>
+                              <FormControl>
+                                <DateInput 
+                                  value={field.value} 
+                                  onChange={field.onChange} 
+                                  placeholder="Seleccionar fecha de fin"
+                                />
+                              </FormControl>
                               <FormDescription className="text-xs flex items-center gap-1.5 text-amber-600 font-medium dark:text-amber-400">
                                 <AlertCircle className="h-3.5 w-3.5" />
                                 La fecha de fin se establecerá automáticamente según el tipo de periodo seleccionado (quincenal: 15 días, mensual: 31 días).
