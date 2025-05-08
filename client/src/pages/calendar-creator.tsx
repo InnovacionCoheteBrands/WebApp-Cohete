@@ -706,19 +706,18 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Inicio</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <div className="relative">
+                                  <div className="relative w-full cursor-pointer" onClick={() => {
+                                    // Simulamos un clic en el input de fecha para abrir el selector nativo
+                                    const dateInput = document.getElementById("date-input-startDate");
+                                    if (dateInput) {
+                                      dateInput.click();
+                                      dateInput.focus();
+                                    }
+                                  }}>
                                     <Button 
                                       type="button"
                                       variant="outline"
-                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
-                                      onClick={() => {
-                                        // Simulamos un clic en el input de fecha para abrir el selector nativo
-                                        const dateInput = document.getElementById("date-input-startDate");
-                                        if (dateInput) {
-                                          dateInput.click();
-                                          dateInput.focus();
-                                        }
-                                      }}
+                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] pointer-events-none"
                                     >
                                       {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
                                     </Button>
@@ -726,7 +725,7 @@ export default function CalendarCreator() {
                                     <Input 
                                       id="date-input-startDate"
                                       type="date" 
-                                      className="sr-only"
+                                      className="absolute inset-0 opacity-0 cursor-pointer"
                                       onChange={(e) => {
                                         if (e.target.value) {
                                           // Corrección del error off-by-one al seleccionar fechas
@@ -758,19 +757,18 @@ export default function CalendarCreator() {
                               <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Fin (opcional)</FormLabel>
                               <div className="relative">
                                 <FormControl>
-                                  <div className="relative">
+                                  <div className="relative w-full cursor-pointer" onClick={() => {
+                                    // Simulamos un clic en el input de fecha para abrir el selector nativo
+                                    const dateInput = document.getElementById("date-input-endDate");
+                                    if (dateInput) {
+                                      dateInput.click();
+                                      dateInput.focus();
+                                    }
+                                  }}>
                                     <Button 
                                       type="button"
                                       variant="outline"
-                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
-                                      onClick={() => {
-                                        // Simulamos un clic en el input de fecha para abrir el selector nativo
-                                        const dateInput = document.getElementById("date-input-endDate");
-                                        if (dateInput) {
-                                          dateInput.click();
-                                          dateInput.focus();
-                                        }
-                                      }}
+                                      className="h-11 w-full justify-start pl-10 font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] pointer-events-none"
                                     >
                                       {field.value ? new Date(field.value).toLocaleDateString('es-ES') : 'Seleccionar fecha'}
                                     </Button>
@@ -778,7 +776,7 @@ export default function CalendarCreator() {
                                     <Input 
                                       id="date-input-endDate"
                                       type="date" 
-                                      className="sr-only"
+                                      className="absolute inset-0 opacity-0 cursor-pointer"
                                       onChange={(e) => {
                                         if (e.target.value) {
                                           // Corrección del error off-by-one al seleccionar fechas
