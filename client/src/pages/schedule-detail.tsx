@@ -480,9 +480,19 @@ export default function ScheduleDetail({ id }: { id: number }) {
                       Comentarios
                     </h3>
                     <Button
-                      variant="outline"
+                      variant="default"
                       size="sm"
-                      onClick={handleSaveComments}
+                      onClick={() => {
+                        console.log("Botón de guardar comentarios clickeado");
+                        if (selectedEntry) {
+                          console.log("Guardando comentarios para la entrada:", selectedEntry.id);
+                          setIsSavingComments(true);
+                          updateCommentsMutation.mutate({
+                            entryId: selectedEntry.id,
+                            comments: commentText
+                          });
+                        }
+                      }}
                       disabled={isSavingComments}
                       className="gap-2"
                     >
