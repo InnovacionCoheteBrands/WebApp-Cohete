@@ -1256,18 +1256,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Añadir imágenes y diseños
           
-          // Fondo encabezado
+          // Fondo encabezado simplificado (sin bordes redondeados)
           doc.setFillColor(primaryLightColor[0], primaryLightColor[1], primaryLightColor[2]);
-          doc.roundedRect(10, 10, 277, 35, 3, 3, 'F');
+          doc.rect(10, 10, 277, 35, 'F');
           
           // Borde decorativo
           doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
           doc.setLineWidth(1.5);
           doc.line(10, 10, 287, 10);
           
-          // Fondo decorativo del lateral
-          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2], 0.05); // Color primario con transparencia
-          doc.rect(10, 10, 15, 190, 'F');
+          // Eliminamos el fondo decorativo lateral que podría estar causando los cuadros negros
           
           // Título con estilo mejorado
           doc.setFont('helvetica', 'bold');
@@ -1275,11 +1273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           doc.setFontSize(22);
           doc.text(schedule.name, 20, 25);
           
-          // Logo o marca
-          doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-          doc.circle(275, 20, 5, 'F');
-          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-          doc.circle(275, 20, 2, 'F');
+          // Eliminamos el logo circular que podría estar causando problemas
           
           // Subtítulo
           doc.setFont('helvetica', 'normal');
@@ -1309,9 +1303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Añadir tarjetas de información
           infoCards.forEach(card => {
-            // Fondo de tarjeta
+            // Fondo de tarjeta - usando rect simple en lugar de roundedRect para evitar problemas
             doc.setFillColor(0.98, 0.98, 0.98); // #fafafa
-            doc.roundedRect(cardX, 50, cardWidth, 20, 2, 2, 'F');
+            doc.rect(cardX, 50, cardWidth, 20, 'F');
             
             // Borde superior de color
             doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -1347,9 +1341,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const tableStartY = 78;
           let currentY = tableStartY;
           
-          // Área de tabla con fondo y bordes redondeados
-          doc.setFillColor(0.98, 0.98, 0.98); // #fafafa - fondo sutil
-          doc.roundedRect(10, currentY - 3, 277, 112, 3, 3, 'F');
+          // Simplificamos el área de tabla para eliminar posibles problemas con los cuadros negros
+          // En lugar de usar fondos con bordes redondeados, usamos líneas simples
+          doc.setDrawColor(0.9, 0.9, 0.9); // #e6e6e6 
+          doc.setLineWidth(0.5);
+          doc.rect(10, currentY - 3, 277, 112);
           
           // Títulos de columna
           const headers = [
@@ -1396,19 +1392,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (currentY > 178) { // Dejar espacio para el pie de página
               doc.addPage();
               
-              // Repetir diseño de cabecera en nueva página
-              doc.setFillColor(primaryLightColor[0], primaryLightColor[1], primaryLightColor[2]);
-              doc.roundedRect(10, 10, 277, 20, 3, 3, 'F');
+              // Simplificado diseño de cabecera en nueva página para evitar problemas con cuadros negros
+              doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+              doc.setLineWidth(1);
+              doc.line(10, 10, 287, 10);
               
               doc.setFont('helvetica', 'bold');
               doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
               doc.setFontSize(14);
               doc.text(schedule.name + ' (continuación)', 20, 22);
               
-              // Área de tabla 
+              // Área de tabla con líneas simples
               currentY = 40;
-              doc.setFillColor(0.98, 0.98, 0.98);
-              doc.roundedRect(10, currentY - 3, 277, 150, 3, 3, 'F');
+              doc.setDrawColor(0.9, 0.9, 0.9);
+              doc.setLineWidth(0.5);
+              doc.rect(10, currentY - 3, 277, 150);
               
               // Repetir encabezados
               colX = 15;
@@ -1459,10 +1457,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             doc.text(entry.postTime || '-', colX, currentY);
             colX += headers[1].width;
             
-            // Columna: Plataforma (con etiqueta)
+            // Columna: Plataforma (con etiqueta normal en lugar de redondeada)
             if (entry.platform) {
               doc.setFillColor(r, g, b);
-              doc.roundedRect(colX, currentY - 3.5, 20, 5, 1, 1, 'F');
+              doc.rect(colX, currentY - 3.5, 20, 5, 'F');
               doc.setTextColor(1, 1, 1);
               doc.setFont('helvetica', 'bold');
               doc.setFontSize(7.5);
