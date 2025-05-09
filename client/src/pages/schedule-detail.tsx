@@ -21,6 +21,8 @@ export default function ScheduleDetail({ id }: { id: number }) {
   const [selectedEntry, setSelectedEntry] = useState<ScheduleEntry | null>(null);
   const [isGeneratingImage, setIsGeneratingImage] = useState<number | null>(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
+  const [commentText, setCommentText] = useState<string>("");
+  const [isSavingComments, setIsSavingComments] = useState(false);
   
   // Fetch schedule data
   const { data: schedule, isLoading, error } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
@@ -125,6 +127,44 @@ export default function ScheduleDetail({ id }: { id: number }) {
     }
   };
   
+  // Mutation para guardar comentarios
+  const updateCommentsMutation = useMutation({
+    mutationFn: async ({ entryId, comments }: { entryId: number, comments: string }) => {
+      const response = await apiRequest("PATCH", `/api/schedule-entries/${entryId}/comments`, { comments });
+      return response.json();
+    },
+    onSuccess: () => {
+      // Actualiza la caché para reflejar los nuevos comentarios
+      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+      
+      toast({
+        title: "Comentarios guardados",
+        description: "Los comentarios se han guardado correctamente",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al guardar comentarios",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSavingComments(false);
+    }
+  });
+  
+  // Actualizar comentarios
+  const handleSaveComments = useCallback(() => {
+    if (!selectedEntry) return;
+    
+    setIsSavingComments(true);
+    updateCommentsMutation.mutate({
+      entryId: selectedEntry.id,
+      comments: commentText
+    });
+  }, [selectedEntry, commentText, updateCommentsMutation]);
+  
   // Función para determinar el formato según la plataforma
   const getFormatByPlatform = (platform: string | null): string => {
     if (!platform) return 'Formato estándar';
@@ -207,7 +247,11 @@ export default function ScheduleDetail({ id }: { id: number }) {
                     <Card 
                       key={entry.id}
                       className={`cursor-pointer transition-all ${selectedEntry?.id === entry.id ? 'border-primary' : ''}`}
-                      onClick={() => setSelectedEntry(entry)}
+                      onClick={() => {
+                        setSelectedEntry(entry);
+                        // Inicializar el campo de comentarios cuando se selecciona una entrada
+                        setCommentText(entry.comments || '');
+                      }}
                     >
                       <CardContent className="p-4">
                         <div className="flex justify-between items-start gap-2">
@@ -418,6 +462,41 @@ export default function ScheduleDetail({ id }: { id: number }) {
                       </div>
                     </div>
                   )}
+                </div>
+                
+                {/* Sección de comentarios */}
+                <div className="mt-8 border-t pt-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium flex items-center">
+                      <MessageSquare className="w-5 h-5 mr-2" />
+                      Comentarios
+                    </h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSaveComments}
+                      disabled={isSavingComments}
+                      className="gap-2"
+                    >
+                      {isSavingComments ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Guardando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4" />
+                          <span>Guardar</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <Textarea 
+                    placeholder="Añadir comentarios sobre esta publicación (notas internas, observaciones, cambios pendientes, etc.)"
+                    value={commentText}
+                    onChange={(e) => setCommentText(e.target.value)}
+                    className="min-h-[120px]"
+                  />
                 </div>
               </CardContent>
             </Card>
