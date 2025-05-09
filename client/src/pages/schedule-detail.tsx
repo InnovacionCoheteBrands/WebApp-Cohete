@@ -5,7 +5,7 @@ import { Schedule, ScheduleEntry } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Components
-import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon, Save, MessageSquare } from "lucide-react";
+import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon, Save, MessageSquare, Edit, AlertCircle, CheckCircle } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -15,6 +15,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+// Interfaz para los comentarios de revisión
+interface ReviewComments {
+  generalComments: string;
+  entryComments: Record<number, string>;
+}
 
 export default function ScheduleDetail({ id }: { id: number }) {
   const { toast } = useToast();
@@ -23,6 +30,14 @@ export default function ScheduleDetail({ id }: { id: number }) {
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
   const [commentText, setCommentText] = useState<string>("");
   const [isSavingComments, setIsSavingComments] = useState(false);
+  
+  // Estados para el modo de revisión
+  const [isReviewMode, setIsReviewMode] = useState(false);
+  const [reviewComments, setReviewComments] = useState<ReviewComments>({
+    generalComments: "",
+    entryComments: {}
+  });
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   
   // Fetch schedule data
   const { data: schedule, isLoading, error } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
@@ -189,6 +204,92 @@ export default function ScheduleDetail({ id }: { id: number }) {
     
     return formats[platform] || 'Formato estándar';
   };
+  
+  // Funciones para el modo de revisión
+  const handleEnterReviewMode = () => {
+    // Inicializa el estado con los comentarios existentes
+    if (schedule) {
+      const initialEntryComments: Record<number, string> = {};
+      schedule.entries.forEach(entry => {
+        if (entry.comments) {
+          initialEntryComments[entry.id] = entry.comments;
+        }
+      });
+      
+      setReviewComments({
+        generalComments: schedule.additionalInstructions || "",
+        entryComments: initialEntryComments
+      });
+    }
+    setIsReviewMode(true);
+  };
+  
+  const handleExitReviewMode = () => {
+    setIsReviewMode(false);
+  };
+  
+  const handleGeneralCommentsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setReviewComments(prev => ({
+      ...prev,
+      generalComments: e.target.value
+    }));
+  };
+  
+  const handleEntryCommentChange = (entryId: number, comment: string) => {
+    setReviewComments(prev => ({
+      ...prev,
+      entryComments: {
+        ...prev.entryComments,
+        [entryId]: comment
+      }
+    }));
+  };
+  
+  // Mutation para guardar comentarios en modo de revisión
+  const submitReviewMutation = useMutation({
+    mutationFn: async (data: { generalComments: string, entryComments: Record<number, string> }) => {
+      // Primero actualizamos las instrucciones adicionales del cronograma
+      const scheduleResponse = await apiRequest("PATCH", `/api/schedules/${id}/additional-instructions`, { 
+        additionalInstructions: data.generalComments 
+      });
+      
+      // Luego actualizamos los comentarios de cada entrada
+      const entryPromises = Object.entries(data.entryComments).map(([entryId, comments]) => {
+        return apiRequest("PATCH", `/api/schedule-entries/${entryId}/comments`, { comments });
+      });
+      
+      await Promise.all(entryPromises);
+      
+      return scheduleResponse.json();
+    },
+    onSuccess: () => {
+      // Actualiza la caché para reflejar los nuevos comentarios
+      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+      
+      toast({
+        title: "Revisión guardada",
+        description: "Los comentarios de revisión se han guardado correctamente",
+      });
+      
+      // Salir del modo de revisión
+      setIsReviewMode(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al guardar revisión",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSubmittingReview(false);
+    }
+  });
+  
+  const handleSubmitReview = () => {
+    setIsSubmittingReview(true);
+    submitReviewMutation.mutate(reviewComments);
+  };
 
   if (isLoading) {
     return (
@@ -221,6 +322,15 @@ export default function ScheduleDetail({ id }: { id: number }) {
         <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
+            size="sm" 
+            className="rounded-lg gap-1 transition-all duration-200 shadow-sm hover:shadow border-amber-200 hover:border-amber-300 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 interactive-element dark:border-amber-600/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+            onClick={handleEnterReviewMode}
+          >
+            <Edit className="h-3.5 w-3.5 mr-1" />
+            Revisar y Comentar
+          </Button>
+          <Button 
+            variant="outline" 
             onClick={() => window.open(`/api/schedules/${id}/download?format=excel`, '_blank')}
           >
             <Download className="w-4 h-4 mr-2" />
@@ -237,6 +347,111 @@ export default function ScheduleDetail({ id }: { id: number }) {
       </div>
 
       <Separator className="my-6" />
+      
+      {/* Modo de revisión */}
+      {isReviewMode && (
+        <div className="my-8 space-y-4">
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg dark:bg-amber-900/20 dark:border-amber-800/40 dark:text-amber-100">
+            <div className="flex items-start gap-3 mb-3">
+              <div className="p-1.5 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/50 dark:text-amber-300">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-amber-800 dark:text-amber-300">Modo de Revisión</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-200/80">
+                  Puedes agregar comentarios generales o específicos para cada publicación. Estos comentarios serán utilizados para mejorar el cronograma.
+                </p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              {/* Comentarios generales */}
+              <div>
+                <label htmlFor="general-comments" className="block text-sm font-medium text-amber-800 dark:text-amber-300 mb-1.5">
+                  Comentarios Generales
+                </label>
+                <Textarea 
+                  id="general-comments"
+                  placeholder="Añade cualquier comentario general sobre el cronograma..."
+                  value={reviewComments.generalComments}
+                  onChange={handleGeneralCommentsChange}
+                  rows={4}
+                  className="w-full resize-none border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white dark:focus:border-amber-600 dark:focus:ring-amber-600"
+                />
+              </div>
+              
+              {/* Comentarios específicos para cada entrada */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                  <Edit className="h-4 w-4" />
+                  Comentarios Específicos por Publicación
+                </h4>
+                
+                <Accordion type="single" collapsible className="w-full">
+                  {schedule.entries.map((entry) => (
+                    <AccordionItem 
+                      key={entry.id} 
+                      value={`entry-${entry.id}`}
+                      className="border-amber-200 dark:border-amber-800/40"
+                    >
+                      <AccordionTrigger 
+                        id={`entry-${entry.id}`} 
+                        className="text-sm text-amber-800 hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 text-left">
+                          <span className="font-medium">{entry.title}</span>
+                          <span className="text-xs opacity-80">{entry.platform} • {formatDate(entry.postDate)} • {entry.postTime}</span>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <Textarea 
+                          id={`entry-${entry.id}-textarea`}
+                          placeholder={`Comentarios para "${entry.title}"...`}
+                          value={reviewComments.entryComments[entry.id] || ''}
+                          onChange={(e) => handleEntryCommentChange(entry.id, e.target.value)}
+                          rows={3}
+                          className="w-full resize-none mt-2 border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white dark:focus:border-amber-600 dark:focus:ring-amber-600"
+                        />
+                        <div className="mt-2 text-xs text-amber-700 dark:text-amber-400/80">
+                          <p>Puedes comentar sobre el título, texto, horario o cualquier otro aspecto de esta publicación.</p>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </div>
+            </div>
+            
+            {/* Botones de acción */}
+            <div className="mt-5 flex justify-end gap-3">
+              <Button 
+                variant="outline" 
+                onClick={handleExitReviewMode}
+                className="border-amber-300 text-amber-700 hover:bg-amber-50 hover:text-amber-800 dark:border-amber-800/40 dark:text-amber-300 dark:hover:bg-amber-900/30"
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleSubmitReview}
+                disabled={isSubmittingReview}
+                className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:text-white dark:hover:bg-amber-700"
+              >
+                {isSubmittingReview ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-1.5" />
+                    Enviar Comentarios
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-3 gap-6">
         {/* Lista de entradas */}
