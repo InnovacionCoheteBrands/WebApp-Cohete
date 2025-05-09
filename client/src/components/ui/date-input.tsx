@@ -35,19 +35,18 @@ export function DateInput({ value, onChange, placeholder = "Seleccionar fecha" }
 
   return (
     <div className="relative">
-      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-10">
         <CalendarIcon className="h-5 w-5 text-muted-foreground" />
       </div>
       
       <div className="relative w-full h-11">
         <input
           type="date"
-          className="absolute inset-0 w-full h-11 cursor-pointer pl-10 pr-4 py-2 border rounded-md dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white"
+          className="absolute inset-0 w-full h-11 cursor-pointer opacity-0 z-20"
           value={value || ''}
           onChange={handleChange}
         />
-        {/* Esta div sólo es visual y muestra la fecha formateada */}
-        <div className="absolute inset-0 h-11 w-full flex items-center pointer-events-none px-3 pl-10 dark:text-white">
+        <div className="h-11 w-full flex items-center border rounded-md px-3 pl-10 relative z-0 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white">
           {getFormattedDate()}
         </div>
       </div>
