@@ -388,6 +388,54 @@ export default function ScheduleDetail({ id }: { id: number }) {
           </Button>
         </div>
       </div>
+      
+      {/* Panel de instrucciones adicionales para la IA */}
+      <Card className="shadow-sm border border-amber-200 bg-amber-50/80 dark:bg-amber-900/20 dark:border-amber-700/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2 text-amber-800 dark:text-amber-300">
+            <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            Instrucciones adicionales para la IA
+          </CardTitle>
+          <CardDescription className="text-amber-700 dark:text-amber-300/80">
+            Añade instrucciones específicas para guiar a la IA en la regeneración del contenido. Estas instrucciones se utilizarán cuando solicites regenerar el cronograma.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Textarea
+              value={additionalInstructions}
+              onChange={(e) => setAdditionalInstructions(e.target.value)}
+              placeholder="Ejemplo: 'Utiliza un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto', 'Agrega más hashtags relacionados con la temporada'..."
+              className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+            />
+            <div className="flex justify-end">
+              <Button 
+                onClick={handleSaveAdditionalInstructions}
+                disabled={isSavingInstructions || additionalInstructions === (schedule.additionalInstructions || '')}
+                className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:text-white dark:hover:bg-amber-700"
+              >
+                {isSavingInstructions ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-1.5" />
+                    Guardar Instrucciones
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="text-xs text-amber-600 dark:text-amber-400">
+              <p className="flex items-center">
+                <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                Estas instrucciones serán utilizadas como guía para la IA cuando se regenere el cronograma.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Separator className="my-6" />
       

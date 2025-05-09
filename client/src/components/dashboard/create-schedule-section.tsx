@@ -46,7 +46,7 @@ const createScheduleSchema = z.object({
   projectId: z.string().min(1, "Please select a project"),
   startDate: z.string().min(1, "Start date is required"),
   specifications: z.string().optional(),
-  additionalInstructions: z.string().optional(),
+  // Instrucciones adicionales removidas para ser añadidas en la vista detallada
   // Campo aiModel eliminado porque ya no se usa en la base de datos
 });
 
@@ -81,7 +81,7 @@ export default function CreateScheduleSection() {
       projectId: "",
       startDate: "",
       specifications: "",
-      additionalInstructions: "",
+      // additionalInstructions removido
       // Campo aiModel eliminado
     },
   });
@@ -97,7 +97,7 @@ export default function CreateScheduleSection() {
         {
           startDate: values.startDate,
           specifications: values.specifications,
-          additionalInstructions: values.additionalInstructions,
+          // Las instrucciones adicionales se añadirán directamente en la vista de detalles
           // El campo aiModel ha sido eliminado
         }
       );
@@ -290,32 +290,7 @@ export default function CreateScheduleSection() {
                     )}
                   />
                   
-                  <FormField
-                    control={form.control}
-                    name="additionalInstructions"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className="text-sm font-medium dark:text-slate-300">
-                          <div className="flex items-center gap-1.5">
-                            <Edit className="h-3.5 w-3.5" />
-                            <span>Instrucciones adicionales para la IA</span>
-                          </div>
-                        </FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Instrucciones específicas para la IA, por ejemplo: 'Usa un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto'..." 
-                            rows={3} 
-                            className="min-h-[100px] resize-none transition-all duration-200 hover:border-primary focus:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5] dark:focus:border-[#65cef5]"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormDescription className="text-xs text-muted-foreground dark:text-slate-500">
-                          Estas instrucciones serán enviadas directamente a la IA para personalizar la generación del cronograma.
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {/* Campo additionalInstructions removido - ahora estará en la vista de detalle del cronograma */}
                   
                   {/* La sección de selección de modelo de IA ha sido eliminada */}
 
