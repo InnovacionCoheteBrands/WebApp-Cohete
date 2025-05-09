@@ -74,6 +74,7 @@ type User = {
   fullName: string;
   username: string;
   isPrimary: boolean;
+  role?: string;
   createdAt: string;
 };
 
@@ -297,6 +298,10 @@ const UserManagementPage = () => {
                       <span>Tipo:</span>
                       <span>{user.isPrimary ? "Administrador" : "Estándar"}</span>
                     </div>
+                    <div className="flex justify-between mt-1">
+                      <span>Rol:</span>
+                      <span className="capitalize">{user.role || "No asignado"}</span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -318,7 +323,7 @@ const UserManagementPage = () => {
           <DialogHeader>
             <DialogTitle>Crear nuevo usuario</DialogTitle>
             <DialogDescription>
-              Completa el formulario para crear un nuevo usuario estándar
+              Completa el formulario para crear un nuevo usuario, selecciona su rol y tipo
             </DialogDescription>
           </DialogHeader>
           
