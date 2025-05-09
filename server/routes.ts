@@ -949,6 +949,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para regenerar contenido basado en instrucciones adicionales
+  app.post("/api/schedules/:id/regenerate", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const scheduleId = parseInt(req.params.id);
+      if (isNaN(scheduleId)) {
+        return res.status(400).json({ message: "ID de cronograma inválido" });
+      }
+      
+      // Obtener el cronograma actual con sus entradas
+      const schedule = await global.storage.getScheduleWithEntries(scheduleId);
+      if (!schedule) {
+        return res.status(404).json({ message: "Cronograma no encontrado" });
+      }
+      
+      // Verificar que el usuario tenga acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        schedule.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este cronograma" });
+      }
+      
+      // Obtener el proyecto asociado
+      const project = await global.storage.getProjectWithAnalysis(schedule.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Proyecto no encontrado" });
+      }
+      
+      // Obtener historial de contenido para evitar repeticiones
+      const contentHistory = await global.storage.listContentHistoryByProject(schedule.projectId);
+      const previousContent = contentHistory.map(entry => entry.content);
+      
+      console.log("[REGENERATE] Iniciando regeneración de cronograma:", scheduleId);
+      console.log("[REGENERATE] Instrucciones adicionales:", schedule.additionalInstructions || "Ninguna");
+      
+      // Extraer fecha de inicio
+      const startDate = schedule.startDate ? format(new Date(schedule.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+      
+      // Usar la función existente para generar un nuevo cronograma
+      const generatedSchedule = await generateSchedule(
+        project.name,
+        {
+          client: project.client,
+          description: project.description,
+          ...project.analysis
+        },
+        startDate,
+        schedule.specifications || "",
+        15, // Valor predeterminado para duración
+        previousContent,
+        schedule.additionalInstructions // Usar las instrucciones adicionales guardadas
+      );
+      
+      // Eliminar entradas existentes
+      await global.storage.deleteScheduleEntries(scheduleId);
+      
+      // Crear nuevas entradas
+      for (const entry of generatedSchedule.entries) {
+        await global.storage.createScheduleEntry({
+          scheduleId,
+          title: entry.title,
+          description: entry.description,
+          content: entry.content,
+          copyIn: entry.copyIn,
+          copyOut: entry.copyOut,
+          designInstructions: entry.designInstructions,
+          platform: entry.platform,
+          postDate: new Date(entry.postDate),
+          postTime: entry.postTime,
+          hashtags: entry.hashtags,
+        });
+      }
+      
+      // Actualizar el nombre del cronograma si es diferente
+      if (generatedSchedule.name !== schedule.name) {
+        await global.storage.updateSchedule(scheduleId, {
+          name: generatedSchedule.name
+        });
+      }
+      
+      // Obtener el cronograma actualizado con sus entradas
+      const updatedSchedule = await global.storage.getScheduleWithEntries(scheduleId);
+      
+      res.json(updatedSchedule);
+    } catch (error) {
+      console.error("Error al regenerar cronograma:", error);
+      res.status(500).json({ 
+        message: "Error al regenerar cronograma", 
+        error: (error as Error).message 
+      });
+    }
+  });
+
   app.get("/api/schedules/:id/download", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const scheduleId = parseInt(req.params.id);
