@@ -87,7 +87,7 @@ export interface IStorage {
   getScheduleWithEntries(id: number): Promise<(Schedule & { entries: ScheduleEntry[] }) | undefined>;
   updateSchedule(id: number, scheduleData: Partial<Schedule>): Promise<Schedule | undefined>;
   deleteSchedule(id: number): Promise<boolean>;
-  listSchedulesByProject(projectId: number): Promise<Schedule[]>;
+  listSchedulesByProject(projectId: number): Promise<(Schedule & { entries: ScheduleEntry[] })[]>;
   listRecentSchedules(limit?: number): Promise<(Schedule & { project: Project })[]>;
   
   // Schedule Entry methods
@@ -449,12 +449,47 @@ export class DatabaseStorage implements IStorage {
     return true;
   }
 
-  async listSchedulesByProject(projectId: number): Promise<Schedule[]> {
-    return await db
-      .select()
-      .from(schedules)
-      .where(eq(schedules.projectId, projectId))
-      .orderBy(desc(schedules.createdAt));
+  async listSchedulesByProject(projectId: number): Promise<(Schedule & { entries: ScheduleEntry[] })[]> {
+    try {
+      // Obtener los cronogramas del proyecto
+      const schedulesList = await db
+        .select()
+        .from(schedules)
+        .where(eq(schedules.projectId, projectId))
+        .orderBy(desc(schedules.createdAt));
+      
+      if (!schedulesList || schedulesList.length === 0) {
+        return [];
+      }
+      
+      // Para cada cronograma, obtener sus entradas
+      const results: (Schedule & { entries: ScheduleEntry[] })[] = [];
+      
+      for (const schedule of schedulesList) {
+        try {
+          // Obtener las entradas para este cronograma
+          const entries = await this.listEntriesBySchedule(schedule.id);
+          
+          // Combinar los resultados
+          results.push({
+            ...schedule,
+            entries: entries || [] // Asegurarnos que nunca es null
+          });
+        } catch (err) {
+          console.error(`Error obteniendo entradas para el cronograma ${schedule.id}:`, err);
+          // Si falla obtener las entradas, incluimos el cronograma con entradas vacías
+          results.push({
+            ...schedule,
+            entries: []
+          });
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.error("Error in listSchedulesByProject:", error);
+      return []; // Devolver array vacío en lugar de lanzar error
+    }
   }
 
   async listRecentSchedules(limit: number = 5): Promise<(Schedule & { project: Project, entries: ScheduleEntry[] })[]> {
