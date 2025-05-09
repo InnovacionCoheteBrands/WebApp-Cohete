@@ -156,10 +156,17 @@ export async function generateSchedule(
     // Modificamos el prompt para forzar una respuesta más estructurada
     const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Responde SOLO con el objeto JSON solicitado, sin texto adicional antes o después. No incluyas anotaciones, explicaciones, ni marcadores de código como \`\`\`json. Tu respuesta debe comenzar con '{' y terminar con '}'. Asegúrate de que el JSON sea válido: todas las propiedades y valores deben estar entre comillas dobles, excepto los números y booleanos. No uses comillas simples ni mezcles diferentes tipos de comillas.`;
     
+    // Incorporar instrucciones adicionales si existen
+    let finalPrompt = enhancedPrompt;
+    if (additionalInstructions) {
+      finalPrompt = `${enhancedPrompt}\n\n**INSTRUCCIONES ADICIONALES DEL USUARIO:**\n${additionalInstructions}`;
+      console.log(`[CALENDAR] Se añadieron instrucciones adicionales al prompt: "${additionalInstructions.substring(0, 100)}${additionalInstructions.length > 100 ? '...' : ''}"`);
+    }
+    
     // Usamos el formato JSON explícitamente para garantizar una respuesta estructurada
-    const scheduleText = await grokService.generateText(enhancedPrompt, {
-      // Aumentamos temperatura al máximo para obtener respuesta más creativa y única
-      temperature: 0.9,
+    const scheduleText = await grokService.generateText(finalPrompt, {
+      // Aumentamos temperatura a 1.2 para obtener respuesta más creativa y única
+      temperature: 1.2,
       // Aumentamos tokens máximos para permitir respuestas más elaboradas
       maxTokens: 4000,
       // Aumentamos los reintentos para casos de red inestable
