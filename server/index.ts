@@ -60,6 +60,11 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
+  // Add health check endpoint
+  app.get("/", (_req, res) => {
+    res.status(200).send("OK");
+  });
+
   server.listen({
     port,
     host: "0.0.0.0",
