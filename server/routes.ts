@@ -648,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Validate required data
-      const { startDate, specifications, periodType } = req.body;
+      const { startDate, specifications, periodType, additionalInstructions } = req.body;
       if (!startDate) {
         return res.status(400).json({ message: "Start date is required" });
       }
@@ -674,6 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate schedule using Grok AI, passing previous content
       console.log("[CALENDAR] Iniciando generación de cronograma");
+      console.log("[CALENDAR] Instrucciones adicionales: ", additionalInstructions || "Ninguna");
       
       // Intentamos generar el cronograma
       const generatedSchedule = await generateSchedule(
@@ -686,7 +687,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDate,
         specifications,
         periodDays, // Usar el número de días según el tipo de periodo seleccionado
-        previousContent
+        previousContent,
+        additionalInstructions // Pasamos las instrucciones adicionales a la función
       );
       
       // Save schedule to database
@@ -695,6 +697,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: generatedSchedule.name,
         startDate: new Date(startDate),
         specifications,
+        additionalInstructions, // Guardar instrucciones adicionales en la base de datos
         createdBy: req.user.id
         // Omitimos los campos aiModel y periodType que ya no existen en la base de datos
       };

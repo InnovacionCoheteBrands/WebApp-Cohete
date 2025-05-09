@@ -154,6 +154,7 @@ const formSchema = z.object({
   }).optional(),
   periodType: z.enum(["quincenal", "mensual"]).default("quincenal"),
   specifications: z.string().optional(),
+  additionalInstructions: z.string().optional(), // Nuevo campo de instrucciones adicionales
   aiModel: z.enum(["grok"]).default("grok"), // Forzamos siempre a usar Grok
   advanced: z.object({
     includeCopyIn: z.boolean().default(true),
@@ -248,6 +249,7 @@ export default function CalendarCreator() {
     defaultValues: {
       name: "",
       specifications: "",
+      additionalInstructions: "", // Valor por defecto para instrucciones adicionales
       periodType: "quincenal", // Por defecto usamos periodo quincenal
       aiModel: "grok", // Forzamos el uso de Grok
       advanced: {
