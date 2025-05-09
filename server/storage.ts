@@ -95,6 +95,7 @@ export interface IStorage {
   getScheduleEntry(id: number): Promise<ScheduleEntry | undefined>;
   updateScheduleEntry(id: number, entryData: Partial<ScheduleEntry>): Promise<ScheduleEntry | undefined>;
   deleteScheduleEntry(id: number): Promise<boolean>;
+  deleteScheduleEntries(scheduleId: number): Promise<boolean>;
   listEntriesBySchedule(scheduleId: number): Promise<ScheduleEntry[]>;
   
   // Chat methods
@@ -568,6 +569,11 @@ export class DatabaseStorage implements IStorage {
 
   async deleteScheduleEntry(id: number): Promise<boolean> {
     await db.delete(scheduleEntries).where(eq(scheduleEntries.id, id));
+    return true;
+  }
+  
+  async deleteScheduleEntries(scheduleId: number): Promise<boolean> {
+    await db.delete(scheduleEntries).where(eq(scheduleEntries.scheduleId, scheduleId));
     return true;
   }
 
