@@ -1,6 +1,6 @@
 import { User } from "@shared/schema";
 import { useState } from "react";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import { 
   Dialog, 
   DialogContent, 
@@ -20,7 +20,7 @@ export default function WelcomeSection({ user }: WelcomeSectionProps) {
   const [isTutorialOpen, setIsTutorialOpen] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const totalSteps = 5;
-  const navigate = useNavigate();
+  const [_, setLocation] = useLocation();
   
   const handleNextStep = () => {
     if (currentStep < totalSteps) {
@@ -38,7 +38,7 @@ export default function WelcomeSection({ user }: WelcomeSectionProps) {
   };
   
   const goToCreateProject = () => {
-    navigate("/projects");
+    setLocation("/projects");
   };
   
   return (
