@@ -5,7 +5,7 @@ import { Schedule, ScheduleEntry } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Components
-import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon, Save, MessageSquare, Edit, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon, Save, MessageSquare, Edit, AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -286,9 +286,52 @@ export default function ScheduleDetail({ id }: { id: number }) {
     }
   });
   
+  // Estado para la regeneración
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  
+  // Mutation para regenerar el cronograma con las instrucciones adicionales
+  const regenerateScheduleMutation = useMutation({
+    mutationFn: async () => {
+      // Enviamos una solicitud para regenerar el cronograma
+      const response = await apiRequest("POST", `/api/schedules/${id}/regenerate`);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Actualiza la caché para mostrar el cronograma regenerado
+      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+      
+      toast({
+        title: "Cronograma regenerado",
+        description: "El contenido se ha regenerado correctamente con las instrucciones proporcionadas",
+      });
+      
+      // Salir del modo de revisión
+      setIsReviewMode(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al regenerar cronograma",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsRegenerating(false);
+    }
+  });
+  
   const handleSubmitReview = () => {
     setIsSubmittingReview(true);
     submitReviewMutation.mutate(reviewComments);
+  };
+  
+  // Manejador para regenerar el cronograma
+  const handleRegenerateSchedule = () => {
+    // Confirmar con el usuario antes de regenerar
+    if (window.confirm("¿Estás seguro de regenerar todo el cronograma? Este proceso reemplazará todas las entradas actuales con contenido nuevo basado en las instrucciones adicionales proporcionadas.")) {
+      setIsRegenerating(true);
+      regenerateScheduleMutation.mutate();
+    }
   };
 
   if (isLoading) {
@@ -422,6 +465,41 @@ export default function ScheduleDetail({ id }: { id: number }) {
               </div>
             </div>
             
+            {/* Sección de regeneración */}
+            <div className="bg-amber-100/80 border border-amber-200 rounded-md p-4 mt-6 dark:bg-amber-900/30 dark:border-amber-700/50">
+              <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-1.5 mb-2">
+                <RefreshCw className="h-4 w-4" />
+                Regeneración de Contenido
+              </h4>
+              <p className="text-sm text-amber-700 dark:text-amber-200/80 mb-3">
+                Puedes regenerar todo el contenido del cronograma utilizando las instrucciones adicionales como guía para el asistente de IA.
+                Este proceso reemplazará todas las entradas actuales.
+              </p>
+              <Button 
+                variant="outline" 
+                onClick={handleRegenerateSchedule}
+                disabled={isRegenerating || !reviewComments.generalComments.trim()}
+                className="bg-amber-200 border-amber-300 text-amber-800 hover:bg-amber-300 hover:text-amber-900 dark:bg-amber-800/40 dark:border-amber-700/50 dark:text-amber-200 dark:hover:bg-amber-700/60"
+              >
+                {isRegenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Regenerando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Regenerar Cronograma
+                  </>
+                )}
+              </Button>
+              {!reviewComments.generalComments.trim() && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                  Debes agregar instrucciones generales para poder regenerar el cronograma.
+                </p>
+              )}
+            </div>
+
             {/* Botones de acción */}
             <div className="mt-5 flex justify-end gap-3">
               <Button 
