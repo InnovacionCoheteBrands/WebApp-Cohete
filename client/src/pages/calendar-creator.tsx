@@ -765,6 +765,32 @@ export default function CalendarCreator() {
                           </FormItem>
                         )}
                       />
+                      
+                      {/* Campo para instrucciones adicionales a la IA */}
+                      <FormField
+                        control={form.control}
+                        name="additionalInstructions"
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className="text-sm font-medium flex items-center gap-2 dark:text-slate-300">
+                              <Sparkles className="h-4 w-4 text-amber-500" />
+                              Instrucciones adicionales para la IA
+                            </FormLabel>
+                            <FormControl>
+                              <Textarea 
+                                placeholder="Instrucciones específicas para ajustar el tono, estilo o estructura de las publicaciones generadas por la IA"
+                                className="min-h-[150px] transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription className="text-xs flex items-center gap-1.5 text-muted-foreground dark:text-slate-500">
+                              <Info className="h-4 w-4 text-amber-500" />
+                              Estas instrucciones ayudarán a la IA a generar contenido más personalizado según tus necesidades específicas.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
                 </TabsContent>
