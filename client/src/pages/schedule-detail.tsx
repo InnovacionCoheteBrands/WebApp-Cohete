@@ -155,15 +155,23 @@ export default function ScheduleDetail({ id }: { id: number }) {
   });
   
   // Actualizar comentarios
-  const handleSaveComments = useCallback(() => {
-    if (!selectedEntry) return;
+  const handleSaveComments = () => {
+    if (!selectedEntry) {
+      toast({
+        title: "Error",
+        description: "No hay entrada seleccionada para guardar comentarios",
+        variant: "destructive"
+      });
+      return;
+    }
     
+    console.log("Guardando comentarios para la entrada:", selectedEntry.id, "texto:", commentText);
     setIsSavingComments(true);
     updateCommentsMutation.mutate({
       entryId: selectedEntry.id,
       comments: commentText
     });
-  }, [selectedEntry, commentText, updateCommentsMutation]);
+  };
   
   // Función para determinar el formato según la plataforma
   const getFormatByPlatform = (platform: string | null): string => {
