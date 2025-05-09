@@ -8,15 +8,30 @@ interface DateInputProps {
 }
 
 export function DateInput({ value, onChange, placeholder = "Seleccionar fecha" }: DateInputProps) {
+  // Esta función garantiza que la fecha seleccionada se preserve tal cual
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.value) {
-      const selectedDate = new Date(e.target.value);
-      selectedDate.setHours(12);
-      onChange(selectedDate.toISOString().split('T')[0]);
+      // Directamente usamos el valor del input, que ya viene en formato YYYY-MM-DD
+      // Evitamos crear un objeto Date para prevenir ajustes por zona horaria
+      onChange(e.target.value);
     }
   };
 
-  const formattedValue = value ? new Date(value).toLocaleDateString('es-ES') : placeholder;
+  // Para mostrar la fecha en formato español, necesitamos convertirla pero sólo para visualización
+  const getFormattedDate = () => {
+    if (!value) return placeholder;
+    
+    try {
+      // Separamos los componentes de la fecha directamente del string
+      const [year, month, day] = value.split('-').map(Number);
+      
+      // Creamos la fecha asegurando que se usa la fecha exacta
+      // Usamos mes-1 porque en JS los meses son base 0 (enero=0)
+      return new Date(year, month-1, day).toLocaleDateString('es-ES');
+    } catch (e) {
+      return placeholder;
+    }
+  };
 
   return (
     <div className="relative">
@@ -27,12 +42,13 @@ export function DateInput({ value, onChange, placeholder = "Seleccionar fecha" }
       <div className="relative w-full h-11">
         <input
           type="date"
-          className="absolute inset-0 opacity-0 w-full h-full cursor-pointer z-10"
+          className="absolute inset-0 w-full h-11 cursor-pointer pl-10 pr-4 py-2 border rounded-md dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white"
           value={value || ''}
           onChange={handleChange}
         />
-        <div className="h-11 w-full flex items-center border rounded-md px-3 pl-10 dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:text-white">
-          {formattedValue}
+        {/* Esta div sólo es visual y muestra la fecha formateada */}
+        <div className="absolute inset-0 h-11 w-full flex items-center pointer-events-none px-3 pl-10 dark:text-white">
+          {getFormattedDate()}
         </div>
       </div>
     </div>
