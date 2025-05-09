@@ -5,7 +5,7 @@ import { Schedule, ScheduleEntry } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 // Components
-import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon, Save, MessageSquare, Edit, AlertCircle, CheckCircle, RefreshCw } from "lucide-react";
+import { Loader2, Share2, Download, Copy, Clipboard, Calendar, Clock, ImageIcon, Save, MessageSquare, Edit, AlertCircle, CheckCircle, RefreshCw, Sparkles } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -44,6 +44,10 @@ export default function ScheduleDetail({ id }: { id: number }) {
     queryKey: [`/api/schedules/${id}`],
     refetchOnMount: true,
     // Aseguramos que se carguen los datos cada vez que se monta el componente
+    onSuccess: (data) => {
+      // Inicializar las instrucciones adicionales con el valor actual
+      setAdditionalInstructions(data.additionalInstructions || "");
+    }
   });
   
   // Mutation para generar imagen
@@ -285,6 +289,45 @@ export default function ScheduleDetail({ id }: { id: number }) {
       setIsSubmittingReview(false);
     }
   });
+  
+  // Estado para las instrucciones adicionales
+  const [additionalInstructions, setAdditionalInstructions] = useState<string>("");
+  const [isSavingInstructions, setIsSavingInstructions] = useState(false);
+  
+  // Mutation para guardar instrucciones adicionales
+  const saveInstructionsMutation = useMutation({
+    mutationFn: async (instructions: string) => {
+      const response = await apiRequest("PATCH", `/api/schedules/${id}/additional-instructions`, {
+        additionalInstructions: instructions
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      // Actualiza la caché para reflejar las nuevas instrucciones
+      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+      
+      toast({
+        title: "Instrucciones guardadas",
+        description: "Las instrucciones adicionales para la IA se han guardado correctamente",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al guardar instrucciones",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
+    },
+    onSettled: () => {
+      setIsSavingInstructions(false);
+    }
+  });
+  
+  // Manejador para guardar instrucciones adicionales
+  const handleSaveAdditionalInstructions = () => {
+    setIsSavingInstructions(true);
+    saveInstructionsMutation.mutate(additionalInstructions);
+  };
   
   // Estado para la regeneración
   const [isRegenerating, setIsRegenerating] = useState(false);
