@@ -175,8 +175,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "El nombre de usuario ya existe" });
       }
       
-      // Establecer como usuario secundario por defecto
-      userData.isPrimary = false;
+      // Los usuarios primarios solo pueden ser creados por otros usuarios primarios
+      // El valor de isPrimary vendrá directamente desde el frontend
       
       // Crear usuario
       const hashedPassword = await hashPassword(userData.password);

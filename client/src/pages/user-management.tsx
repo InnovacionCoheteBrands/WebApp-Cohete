@@ -43,6 +43,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Form schema for creating new users
 const createUserSchema = z.object({
@@ -54,6 +62,8 @@ const createUserSchema = z.object({
     .regex(/^[a-zA-Z0-9_]+$/, "El nombre de usuario solo puede contener letras, números y guiones bajos"),
   password: z.string()
     .min(6, "La contraseña debe tener al menos 6 caracteres"),
+  isPrimary: z.boolean().default(false),
+  role: z.enum(['admin', 'manager', 'designer', 'content_creator', 'analyst']).default('content_creator'),
 });
 
 type CreateUserFormValues = z.infer<typeof createUserSchema>;
@@ -100,6 +110,8 @@ const UserManagementPage = () => {
       fullName: "",
       username: "",
       password: "",
+      isPrimary: false,
+      role: "content_creator",
     },
   });
   
@@ -352,6 +364,58 @@ const UserManagementPage = () => {
                     <FormControl>
                       <Input type="password" placeholder="********" {...field} />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="isPrimary"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Usuario Administrador</FormLabel>
+                      <FormDescription>
+                        Acceso a todas las funciones del sistema, incluida la gestión de usuarios.
+                      </FormDescription>
+                    </div>
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Rol del Usuario</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccionar rol" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                        <SelectItem value="manager">Gerente</SelectItem>
+                        <SelectItem value="designer">Diseñador</SelectItem>
+                        <SelectItem value="content_creator">Creador de Contenido</SelectItem>
+                        <SelectItem value="analyst">Analista</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormDescription>
+                      El rol define los permisos y el acceso a las funciones del sistema.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
