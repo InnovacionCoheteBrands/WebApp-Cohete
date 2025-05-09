@@ -20,6 +20,7 @@ export interface ContentScheduleEntry {
 export interface ContentSchedule {
   name: string;
   entries: ContentScheduleEntry[];
+  additionalInstructions?: string;
 }
 
 /**
@@ -32,7 +33,8 @@ export async function generateSchedule(
   startDate: string,
   specifications?: string,
   durationDays: number = 15, // Periodo quincenal fijo (15 días)
-  previousContent: string[] = []
+  previousContent: string[] = [],
+  additionalInstructions?: string
 ): Promise<ContentSchedule> {
   console.log(`[CALENDAR] !! Iniciando generación de calendario para proyecto "${projectName}"`);
   console.log(`[CALENDAR] Parámetros: startDate=${startDate}, durationDays=${durationDays}, prevContent.length=${previousContent.length}`);

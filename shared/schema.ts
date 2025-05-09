@@ -95,6 +95,7 @@ export const schedules = pgTable("schedules", {
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   specifications: text("specifications"),
+  additionalInstructions: text("additional_instructions"),
   // aiModel: aiModelEnum("ai_model").default('grok'), // Removida - ya solo usamos Grok implícitamente
   // periodType: text("period_type").default('quincenal'), // Removida - Ahora se guarda en campo extendido
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
