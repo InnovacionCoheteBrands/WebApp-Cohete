@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Schedule, ScheduleEntry } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -44,11 +44,14 @@ export default function ScheduleDetail({ id }: { id: number }) {
     queryKey: [`/api/schedules/${id}`],
     refetchOnMount: true,
     // Aseguramos que se carguen los datos cada vez que se monta el componente
-    onSuccess: (data) => {
-      // Inicializar las instrucciones adicionales con el valor actual
-      setAdditionalInstructions(data.additionalInstructions || "");
-    }
   });
+  
+  // Efecto para inicializar las instrucciones adicionales cuando se cargan los datos
+  useEffect(() => {
+    if (schedule) {
+      setAdditionalInstructions(schedule.additionalInstructions || "");
+    }
+  }, [schedule]);
   
   // Mutation para generar imagen
   const generateImageMutation = useMutation({
@@ -451,10 +454,29 @@ export default function ScheduleDetail({ id }: { id: number }) {
               placeholder="Ejemplo: 'Utiliza un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto', 'Agrega más hashtags relacionados con la temporada'..."
               className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
             />
-            <div className="flex justify-end">
+            <div className="flex justify-between">
+              <Button 
+                onClick={handleRegenerateSchedule}
+                disabled={isRegenerating || !additionalInstructions.trim()}
+                variant="outline"
+                className="bg-amber-200 border-amber-300 text-amber-800 hover:bg-amber-300 hover:text-amber-900 dark:bg-amber-800/40 dark:border-amber-700/50 dark:text-amber-200 dark:hover:bg-amber-700/60"
+              >
+                {isRegenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                    Regenerando...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Regenerar Cronograma
+                  </>
+                )}
+              </Button>
+              
               <Button 
                 onClick={handleSaveAdditionalInstructions}
-                disabled={isSavingInstructions || additionalInstructions === (schedule.additionalInstructions || '')}
+                disabled={isSavingInstructions || (schedule && additionalInstructions === (schedule.additionalInstructions || ''))}
                 className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:text-white dark:hover:bg-amber-700"
               >
                 {isSavingInstructions ? (
@@ -470,11 +492,23 @@ export default function ScheduleDetail({ id }: { id: number }) {
                 )}
               </Button>
             </div>
-            <div className="text-xs text-amber-600 dark:text-amber-400">
+            <div className="text-xs text-amber-600 dark:text-amber-400 space-y-1 mt-2">
               <p className="flex items-center">
                 <AlertCircle className="h-3.5 w-3.5 mr-1" />
                 Estas instrucciones serán utilizadas como guía para la IA cuando se regenere el cronograma.
               </p>
+              {!additionalInstructions.trim() && (
+                <p className="flex items-center text-red-500 dark:text-red-400">
+                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                  Debes agregar instrucciones para poder regenerar el cronograma.
+                </p>
+              )}
+              {additionalInstructions.trim().length > 0 && (
+                <p className="flex items-center text-amber-700 dark:text-amber-300 mt-1">
+                  <AlertCircle className="h-3.5 w-3.5 mr-1" />
+                  ¡Importante! Al regenerar el cronograma, se reemplazarán todas las entradas actuales con nuevas basadas en estas instrucciones.
+                </p>
+              )}
             </div>
           </div>
         </CardContent>
