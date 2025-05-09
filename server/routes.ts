@@ -1206,7 +1206,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}.xlsx"`);
         res.send(buffer);
       } else if (format === 'pdf') {
-        // Generar archivo PDF usando jsPDF (método alternativo sin puppeteer)
+        // Generar archivo PDF mejorado usando jsPDF (método alternativo sin puppeteer)
         
         // Obtener el formato según la plataforma
         const getFormatByPlatform = (platform: string): string => {
@@ -1248,171 +1248,287 @@ export async function registerRoutes(app: Express): Promise<Server> {
             format: 'a4'
           });
           
-          // Definir colores
+          // Definir colores mejorados
           const primaryColor = [79/255, 70/255, 229/255]; // #4F46E5 en RGB
+          const primaryLightColor = [224/255, 231/255, 255/255]; // #E0E7FF en RGB
           const grayColor = [107/255, 114/255, 128/255]; // #6B7280 en RGB
+          const accentColor = [245/255, 158/255, 11/255]; // #F59E0B en RGB - Amber
           
-          // Configurar fuentes y estilos
+          // Añadir imágenes y diseños
+          
+          // Fondo encabezado
+          doc.setFillColor(primaryLightColor[0], primaryLightColor[1], primaryLightColor[2]);
+          doc.roundedRect(10, 10, 277, 35, 3, 3, 'F');
+          
+          // Borde decorativo
+          doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.setLineWidth(1.5);
+          doc.line(10, 10, 287, 10);
+          
+          // Fondo decorativo del lateral
+          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2], 0.05); // Color primario con transparencia
+          doc.rect(10, 10, 15, 190, 'F');
+          
+          // Título con estilo mejorado
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-          doc.setFontSize(18);
+          doc.setFontSize(22);
+          doc.text(schedule.name, 20, 25);
           
-          // Título
-          doc.text(schedule.name, 150, 20, { align: 'center' });
+          // Logo o marca
+          doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
+          doc.circle(275, 20, 5, 'F');
+          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.circle(275, 20, 2, 'F');
           
           // Subtítulo
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
           doc.setFontSize(12);
-          doc.text('Cohete Workflow - Cronograma de Contenido', 150, 28, { align: 'center' });
+          doc.text('Cohete Workflow - Cronograma de Contenido', 20, 33);
           
-          // Información del proyecto
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
-          doc.text(`Proyecto: ${project.name}`, 20, 40);
-          doc.text(`Cliente: ${project.client}`, 120, 40);
-          doc.text(`Total de publicaciones: ${sortedEntries.length}`, 20, 48);
-          
-          const startDateText = schedule.startDate 
-            ? `Fecha de inicio: ${new Date(schedule.startDate).toLocaleDateString('es-ES')}` 
-            : 'Fecha de inicio: No definida';
-          
-          doc.text(startDateText, 120, 48);
-          
-          // Línea separadora
-          doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-          doc.line(20, 52, 277, 52);
-          
-          // Configuración de la tabla
-          const colWidths = [25, 25, 25, 30, 40, 40, 40, 30]; // Ancho de cada columna en mm
-          const headers = [
-            'Fecha/Hora', 
-            'Plataforma', 
-            'Formato', 
-            'Título', 
-            'Copy In', 
-            'Copy Out',
-            'Instrucciones',
-            'Estado'
+          // Información del proyecto - Diseño en tarjetas
+          const infoCards = [
+            { title: 'PROYECTO', value: project.name },
+            { title: 'CLIENTE', value: project.client },
+            { title: 'TOTAL PUBLICACIONES', value: sortedEntries.length.toString() },
+            { 
+              title: 'FECHA DE INICIO', 
+              value: schedule.startDate 
+                ? new Date(schedule.startDate).toLocaleDateString('es-ES', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric' 
+                  })
+                : 'No definida'
+            }
           ];
           
-          const startY = 60;
-          let currentY = startY;
+          const cardWidth = 65;
+          const cardGap = 4;
+          const cardsStartX = 20;
+          let cardX = cardsStartX;
           
-          // Encabezados de tabla
-          doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-          doc.rect(20, currentY, 257, 10, 'F');
-          
-          doc.setFont('helvetica', 'bold');
-          doc.setTextColor(1, 1, 1); // Blanco
-          doc.setFontSize(9);
-          
-          let colX = 20;
-          headers.forEach((header, i) => {
-            doc.text(header, colX + 4, currentY + 6);
-            colX += colWidths[i];
+          // Añadir tarjetas de información
+          infoCards.forEach(card => {
+            // Fondo de tarjeta
+            doc.setFillColor(0.98, 0.98, 0.98); // #fafafa
+            doc.roundedRect(cardX, 50, cardWidth, 20, 2, 2, 'F');
+            
+            // Borde superior de color
+            doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.rect(cardX, 50, cardWidth, 1, 'F');
+            
+            // Título de tarjeta
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(7);
+            doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+            doc.text(card.title, cardX + 5, 55);
+            
+            // Valor de tarjeta
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(0.1, 0.1, 0.1); // Casi negro para mejor contraste
+            doc.text(card.value, cardX + 5, 62);
+            
+            // Avanzar a la siguiente tarjeta
+            cardX += cardWidth + cardGap;
           });
           
-          currentY += 10;
+          // Añadir fecha actual
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(8);
+          doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
+          const currentDate = new Date().toLocaleDateString('es-ES', { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
+          });
+          doc.text(`Generado el: ${currentDate}`, 260, 55, { align: 'right' });
+          
+          // Configuración de la tabla mejorada
+          const tableStartY = 78;
+          let currentY = tableStartY;
+          
+          // Área de tabla con fondo y bordes redondeados
+          doc.setFillColor(0.98, 0.98, 0.98); // #fafafa - fondo sutil
+          doc.roundedRect(10, currentY - 3, 277, 112, 3, 3, 'F');
+          
+          // Títulos de columna
+          const headers = [
+            { name: 'FECHA', width: 20 },
+            { name: 'HORA', width: 15 },
+            { name: 'PLATAFORMA', width: 25 },
+            { name: 'TÍTULO', width: 35 },
+            { name: 'COPY IN', width: 50 },
+            { name: 'COPY OUT', width: 50 },
+            { name: 'INSTRUCCIONES', width: 50 },
+            { name: 'HASHTAGS', width: 30 }
+          ];
+          
+          // Header de tabla con diseño mejorado
+          let colX = 15;
+          
+          // Encabezados con estilo
+          headers.forEach(header => {
+            // Título de columna
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.setFontSize(7);
+            doc.text(header.name, colX, currentY);
+            
+            // Línea decorativa bajo el título
+            doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+            doc.setLineWidth(0.5);
+            doc.line(colX, currentY + 1, colX + header.width - 5, currentY + 1);
+            
+            colX += header.width;
+          });
+          
+          currentY += 8;
           
           // Función para truncar texto
-          const truncateText = (text: string | null, maxLength: number = 35) => {
+          const truncateText = (text: string | null, maxLength: number = 45) => {
             if (!text) return '';
             return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
           };
           
-          // Agregar filas a la tabla
+          // Añadir filas de datos con diseño mejorado
           sortedEntries.forEach((entry, index) => {
             // Verificar si necesitamos una nueva página
-            if (currentY > 180) {
+            if (currentY > 178) { // Dejar espacio para el pie de página
               doc.addPage();
               
-              // Agregar cabecera en la nueva página
-              currentY = startY;
-              doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-              doc.rect(20, currentY, 257, 10, 'F');
+              // Repetir diseño de cabecera en nueva página
+              doc.setFillColor(primaryLightColor[0], primaryLightColor[1], primaryLightColor[2]);
+              doc.roundedRect(10, 10, 277, 20, 3, 3, 'F');
               
               doc.setFont('helvetica', 'bold');
-              doc.setTextColor(1, 1, 1);
-              doc.setFontSize(9);
+              doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+              doc.setFontSize(14);
+              doc.text(schedule.name + ' (continuación)', 20, 22);
               
-              colX = 20;
-              headers.forEach((header, i) => {
-                doc.text(header, colX + 4, currentY + 6);
-                colX += colWidths[i];
+              // Área de tabla 
+              currentY = 40;
+              doc.setFillColor(0.98, 0.98, 0.98);
+              doc.roundedRect(10, currentY - 3, 277, 150, 3, 3, 'F');
+              
+              // Repetir encabezados
+              colX = 15;
+              headers.forEach(header => {
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+                doc.setFontSize(7);
+                doc.text(header.name, colX, currentY);
+                doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+                doc.setLineWidth(0.5);
+                doc.line(colX, currentY + 1, colX + header.width - 5, currentY + 1);
+                colX += header.width;
               });
               
-              currentY += 10;
+              currentY += 8;
             }
             
-            // Alternar color de fondo para filas
-            if (index % 2 === 0) {
-              doc.setFillColor(0.97, 0.97, 0.97); // #f7f7f7
-              doc.rect(20, currentY, 257, 10, 'F');
+            // Línea de separación sutil entre filas
+            if (index > 0) {
+              doc.setDrawColor(0.9, 0.9, 0.9); // #e5e5e5
+              doc.setLineWidth(0.2);
+              doc.line(15, currentY - 4, 280, currentY - 4);
             }
             
             // Formatear fecha
             const dateFormatted = entry.postDate 
-              ? new Date(entry.postDate).toLocaleDateString('es-ES')
+              ? new Date(entry.postDate).toLocaleDateString('es-ES', {
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+                })
               : 'Sin fecha';
             
-            // Convertir color hexadecimal a RGB para jsPDF
-            const platformColorHex = getPlatformColor(entry.platform || '');
-            const r = parseInt(platformColorHex.slice(1, 3), 16) / 255;
-            const g = parseInt(platformColorHex.slice(3, 5), 16) / 255;
-            const b = parseInt(platformColorHex.slice(5, 7), 16) / 255;
+            // Convertir color de plataforma
+            const platformColor = getPlatformColor(entry.platform || '');
+            const r = parseInt(platformColor.slice(1, 3), 16) / 255;
+            const g = parseInt(platformColor.slice(3, 5), 16) / 255;
+            const b = parseInt(platformColor.slice(5, 7), 16) / 255;
             
-            // Texto de la fila
+            colX = 15;
+            
+            // Columna: Fecha
             doc.setFont('helvetica', 'normal');
-            doc.setTextColor(0, 0, 0);
             doc.setFontSize(8);
+            doc.setTextColor(0.2, 0.2, 0.2);
+            doc.text(dateFormatted, colX, currentY);
+            colX += headers[0].width;
             
-            // Columna 1: Fecha y hora
-            doc.text(`${dateFormatted}\n${entry.postTime || ''}`, 24, currentY + 5);
+            // Columna: Hora 
+            doc.text(entry.postTime || '-', colX, currentY);
+            colX += headers[1].width;
             
-            // Columna 2: Plataforma (con color)
-            doc.setFillColor(r, g, b);
-            doc.rect(45, currentY + 2, 20, 6, 'F');
-            doc.setTextColor(1, 1, 1);
+            // Columna: Plataforma (con etiqueta)
+            if (entry.platform) {
+              doc.setFillColor(r, g, b);
+              doc.roundedRect(colX, currentY - 3.5, 20, 5, 1, 1, 'F');
+              doc.setTextColor(1, 1, 1);
+              doc.setFont('helvetica', 'bold');
+              doc.setFontSize(7.5);
+              doc.text(entry.platform, colX + 10, currentY, { align: 'center' });
+            }
+            colX += headers[2].width;
+            
+            // Columna: Título
+            doc.setTextColor(0.1, 0.1, 0.1);
             doc.setFont('helvetica', 'bold');
-            doc.text(entry.platform || '', 50, currentY + 6, { align: 'center' });
+            doc.setFontSize(9);
+            doc.text(truncateText(entry.title, 30), colX, currentY);
+            colX += headers[3].width;
+            
+            // Resto de columnas con texto formateado
             doc.setFont('helvetica', 'normal');
-            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(7.5);
+            doc.setTextColor(0.2, 0.2, 0.2);
             
-            // Columna 3: Formato
-            doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-            doc.text(getFormatByPlatform(entry.platform || ''), 74, currentY + 5);
-            doc.setTextColor(0, 0, 0);
+            // Copy In con formato adecuado, usando splitTextToSize para ajustar largas líneas
+            const copyInLines = doc.splitTextToSize(truncateText(entry.copyIn, 80), headers[4].width - 5);
+            doc.text(copyInLines, colX, currentY);
+            colX += headers[4].width;
             
-            // Columna 4: Título
-            doc.setFont('helvetica', 'bold');
-            doc.text(truncateText(entry.title, 20), 104, currentY + 5);
-            doc.setFont('helvetica', 'normal');
+            // Copy Out
+            const copyOutLines = doc.splitTextToSize(truncateText(entry.copyOut, 80), headers[5].width - 5);
+            doc.text(copyOutLines, colX, currentY);
+            colX += headers[5].width;
             
-            // Columna 5: Copy In
-            doc.text(truncateText(entry.copyIn, 30), 134, currentY + 5);
+            // Instrucciones
+            const instructionsLines = doc.splitTextToSize(truncateText(entry.designInstructions, 80), headers[6].width - 5);
+            doc.text(instructionsLines, colX, currentY);
+            colX += headers[6].width;
             
-            // Columna 6: Copy Out
-            doc.text(truncateText(entry.copyOut, 30), 174, currentY + 5);
+            // Hashtags con formato especial
+            if (entry.hashtags) {
+              const hashtagsArr = entry.hashtags.split(' ');
+              const formattedHashtags = hashtagsArr.map(tag => {
+                return tag.startsWith('#') ? tag : '#' + tag;
+              }).join(' ');
+              
+              doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+              doc.setFont('helvetica', 'bold');
+              const hashtagLines = doc.splitTextToSize(truncateText(formattedHashtags, 50), headers[7].width - 5);
+              doc.text(hashtagLines, colX, currentY);
+            }
             
-            // Columna 7: Instrucciones
-            doc.text(truncateText(entry.designInstructions, 30), 214, currentY + 5);
-            
-            // Columna 8: Estado
-            doc.setFillColor(0.9, 0.9, 0.9); // #e5e5e5
-            doc.rect(254, currentY + 2, 18, 6, 'F');
-            doc.setTextColor(0.4, 0.4, 0.4);
-            doc.text('Pendiente', 263, currentY + 6, { align: 'center' });
-            doc.setTextColor(0, 0, 0);
-            
-            currentY += 10;
+            currentY += 10; // Espacio entre filas
           });
           
-          // Pie de página
+          // Añadir pie de página elegante
+          const footerY = 192;
+          
+          // Línea decorativa
+          doc.setDrawColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+          doc.setLineWidth(0.5);
+          doc.line(10, footerY - 2, 287, footerY - 2);
+          
+          // Texto de pie de página
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-          doc.setFontSize(8);
-          doc.text(`Generado con Cohete Workflow - ${new Date().toISOString().slice(0, 10)}`, 150, 190, { align: 'center' });
+          doc.setFontSize(7);
+          doc.text('Generado por Cohete Workflow © 2024-2025', 15, footerY);
+          
+          // Añadir número de página en el lado derecho
+          doc.text('Página 1 de 1', 280, footerY, { align: 'right' });
           
           // Obtener el PDF como buffer
           const pdfBuffer = doc.output('arraybuffer');
