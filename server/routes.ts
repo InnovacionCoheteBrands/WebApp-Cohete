@@ -909,6 +909,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch schedule" });
     }
   });
+  
+  // Endpoint para actualizar las instrucciones adicionales de un cronograma
+  app.patch("/api/schedules/:id/additional-instructions", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const scheduleId = parseInt(req.params.id);
+      if (isNaN(scheduleId)) {
+        return res.status(400).json({ message: "ID de cronograma inválido" });
+      }
+      
+      const { additionalInstructions } = req.body;
+      
+      // Verificar que el cronograma exista
+      const schedule = await global.storage.getSchedule(scheduleId);
+      if (!schedule) {
+        return res.status(404).json({ message: "Cronograma no encontrado" });
+      }
+      
+      // Verificar que el usuario tenga acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        schedule.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este cronograma" });
+      }
+      
+      // Actualizar el cronograma con las nuevas instrucciones adicionales
+      const updatedSchedule = await global.storage.updateSchedule(scheduleId, {
+        additionalInstructions: additionalInstructions || null
+      });
+      
+      res.json(updatedSchedule);
+    } catch (error) {
+      console.error("Error updating schedule additional instructions:", error);
+      res.status(500).json({ message: "Error al actualizar las instrucciones adicionales del cronograma" });
+    }
+  });
 
   app.get("/api/schedules/:id/download", isAuthenticated, async (req: Request, res: Response) => {
     try {
