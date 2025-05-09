@@ -118,6 +118,7 @@ export const scheduleEntries = pgTable("schedule_entries", {
   hashtags: text("hashtags"),
   referenceImagePrompt: text("reference_image_prompt"),
   referenceImageUrl: text("reference_image_url"),
+  comments: text("comments"), // Campo para comentarios adicionales de la publicación
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

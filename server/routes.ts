@@ -2309,6 +2309,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error al eliminar el producto" });
     }
   });
+  
+  // Actualizar comentarios de una entrada del cronograma
+  app.patch("/api/schedule-entries/:id/comments", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const entryId = parseInt(req.params.id);
+      const { comments } = req.body;
+      
+      if (isNaN(entryId)) {
+        return res.status(400).json({ message: "ID de entrada inválido" });
+      }
+      
+      // Verificar si la entrada existe
+      const entry = await global.storage.getScheduleEntry(entryId);
+      if (!entry) {
+        return res.status(404).json({ message: "Entrada no encontrada" });
+      }
+      
+      // Actualizar los comentarios
+      await global.storage.updateScheduleEntry(entryId, { comments });
+      
+      res.status(200).json({ 
+        message: "Comentarios actualizados correctamente",
+        entryId
+      });
+      
+    } catch (error) {
+      console.error("Error al actualizar comentarios:", error);
+      res.status(500).json({ message: "Error al actualizar comentarios", error: String(error) });
+    }
+  });
 
   // Set up WebSocket for real-time task updates
   const httpServer = createServer(app);
