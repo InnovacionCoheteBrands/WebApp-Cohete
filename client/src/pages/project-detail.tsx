@@ -27,12 +27,24 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("analysis");
 
+  // Define una interfaz para el tipo de proyecto esperado
+  interface ProjectWithAnalysis {
+    id: number;
+    name: string;
+    client: string;
+    description?: string;
+    startDate?: string;
+    endDate?: string;
+    status: string;
+    analysis?: any;
+  }
+
   // Fetch project details with analysis
   const { 
     data: project, 
     isLoading, 
     error 
-  } = useQuery({
+  } = useQuery<ProjectWithAnalysis>({
     queryKey: [`/api/projects/${id}`],
     staleTime: 60000,
   });
@@ -46,8 +58,9 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
   }
 
   if (error) {
+    console.error("Detailed project loading error:", error);
     toast({
-      title: "Error loading project",
+      title: "Error al cargar el proyecto",
       description: (error as Error).message,
       variant: "destructive",
     });
@@ -66,6 +79,16 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     );
   }
 
+  // Asegurarse de que project no sea indefinido y tenga las propiedades necesarias
+  const projectData = project || {
+    name: 'Cargando...',
+    client: '',
+    description: '',
+    analysis: null
+  };
+
+  console.log('Project render data:', projectData);
+
   return (
     <div className="flex flex-col">
       <header className="border-b bg-card px-4 py-3 md:px-6 -mx-4 md:-mx-6 mb-6">
@@ -79,7 +102,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-xl font-semibold">{project.name}</h1>
+            <h1 className="text-xl font-semibold">{projectData.name}</h1>
           </div>
           <div className="flex items-center gap-2">
             <Button 
@@ -88,7 +111,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
               className="hidden sm:flex"
             >
               <Download className="mr-2 h-4 w-4" />
-              Export Schedule
+              Exportar Calendario
             </Button>
             {user?.isPrimary && (
               <Button 
@@ -97,7 +120,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                 className="hidden sm:flex"
               >
                 <Pencil className="mr-2 h-4 w-4" />
-                Edit Project
+                Editar Proyecto
               </Button>
             )}
           </div>

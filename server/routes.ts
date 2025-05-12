@@ -372,8 +372,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:id", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.id);
+      console.log(`Fetching project details for ID: ${projectId}`);
+
       if (isNaN(projectId)) {
-        return res.status(400).json({ message: "Invalid project ID" });
+        console.error("Invalid project ID:", req.params.id);
+        return res.status(400).json({ message: "ID de proyecto inválido" });
       }
       
       // Check if user has access to project
@@ -383,19 +386,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.user.isPrimary
       );
       
+      console.log(`User ${req.user.id} access to project ${projectId}: ${hasAccess}`);
+      
       if (!hasAccess) {
-        return res.status(403).json({ message: "You don't have access to this project" });
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
       }
       
       const project = await global.storage.getProjectWithAnalysis(projectId);
+      console.log(`Project ${projectId} found:`, !!project);
+      
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        return res.status(404).json({ message: "Proyecto no encontrado" });
+      }
+      
+      // Verificar si el proyecto tiene todas las propiedades necesarias
+      if (!project.name || !project.client) {
+        console.error("Project data is incomplete:", project);
+        return res.status(500).json({ message: "Datos del proyecto incompletos" });
       }
       
       res.json(project);
     } catch (error) {
-      console.error("Error fetching project:", error);
-      res.status(500).json({ message: "Failed to fetch project" });
+      console.error("Error detallado al obtener proyecto:", error);
+      res.status(500).json({ message: "Error al cargar el proyecto" });
     }
   });
 

@@ -103,8 +103,15 @@ export const getQueryFn: <T>(options: {
       return null;
     }
 
-    await throwIfResNotOk(res);
-    return await res.json();
+    try {
+      await throwIfResNotOk(res);
+      const data = await res.json();
+      console.log('Successful response data:', url, data);
+      return data;
+    } catch (error) {
+      console.error('Error in query execution:', url, error);
+      throw error;
+    }
   };
 
 export const queryClient = new QueryClient({
