@@ -27,7 +27,7 @@ export class GrokService {
     let lastError: any = null;
     
     // Información para log
-    console.log(`Iniciando solicitud a Grok AI. Modelo: ${options.model || 'grok-3-beta'}, Temperatura: ${options.temperature || 0.7}, Max tokens: ${options.maxTokens || 2000}${options.responseFormat ? ', Formato: ' + options.responseFormat : ''}`);
+    console.log(`Iniciando solicitud a Grok AI. Modelo: ${options.model || 'grok-beta'}, Temperatura: ${options.temperature || 0.7}, Max tokens: ${options.maxTokens || 2000}${options.responseFormat ? ', Formato: ' + options.responseFormat : ''}`);
     
     // Intentar varias veces si se especificaron reintentos
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
