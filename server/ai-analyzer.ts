@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { grokService } from "./grok-integration";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
@@ -101,28 +102,38 @@ export async function processChatMessage(
   chatHistory?: { role: string; content: string }[]
 ): Promise<string> {
   try {
+    // Usar el servicio de Grok en lugar de OpenAI
     const systemPrompt = projectContext 
-      ? `You are a marketing assistant for a project named "${projectContext.name}" for client "${projectContext.client}". 
-         Use the following project context in your responses when relevant:
+      ? `Eres un asistente de marketing para un proyecto llamado "${projectContext.name}" para el cliente "${projectContext.client}". 
+         Utiliza el siguiente contexto del proyecto en tus respuestas cuando sea relevante:
          ${JSON.stringify(projectContext, null, 2)}`
-      : "You are a marketing assistant for Cohete Workflow, a marketing project management platform.";
+      : "Eres un asistente de marketing para Cohete Workflow, una plataforma de gestión de proyectos de marketing.";
 
-    const messages = [
-      { role: "system", content: systemPrompt },
-      ...(chatHistory || []),
-      { role: "user", content: message }
-    ];
+    // Preparar los mensajes para la API
+    let promptText = systemPrompt + "\n\n";
+    
+    // Añadir el historial de chat al prompt
+    if (chatHistory && chatHistory.length > 0) {
+      promptText += "Historial de conversación:\n";
+      for (const msg of chatHistory) {
+        promptText += `${msg.role === 'user' ? 'Usuario' : 'Asistente'}: ${msg.content}\n`;
+      }
+      promptText += "\n";
+    }
+    
+    // Añadir el mensaje actual
+    promptText += `Usuario: ${message}\n\nAsistente:`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: messages as { role: "system" | "user" | "assistant"; content: string }[],
+    // Usar el servicio de Grok con el modelo solicitado
+    const response = await grokService.generateText(promptText, {
+      model: "grok-3-mini-beta",
       temperature: 0.7,
-      max_tokens: 1000
+      maxTokens: 1000
     });
 
-    return response.choices[0].message.content || "I'm sorry, I couldn't process that request.";
+    return response || "Lo siento, no pude procesar esa solicitud.";
   } catch (error) {
-    console.error("Error processing chat message:", error);
-    throw new Error(`Failed to process chat message: ${(error as Error).message}`);
+    console.error("Error procesando mensaje de chat:", error);
+    throw new Error(`Error al procesar mensaje de chat: ${(error as Error).message}`);
   }
 }
