@@ -21,23 +21,40 @@ interface ProjectDetailProps {
   id: number;
 }
 
+// Define interfaces outside of component to avoid recreation on each render
+interface ProjectAnalysis {
+  id: number;
+  projectId: number;
+  mission?: string;
+  vision?: string;
+  objectives?: string;
+  targetAudience?: string;
+  brandTone?: string;
+  keywords?: string;
+  coreValues?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ProjectWithAnalysis {
+  id: number;
+  name: string;
+  client: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  status: string;
+  createdBy?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  analysis?: ProjectAnalysis | null;
+}
+
 export default function ProjectDetail({ id }: ProjectDetailProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("analysis");
-
-  // Define una interfaz para el tipo de proyecto esperado
-  interface ProjectWithAnalysis {
-    id: number;
-    name: string;
-    client: string;
-    description?: string;
-    startDate?: string;
-    endDate?: string;
-    status: string;
-    analysis?: any;
-  }
 
   // Fetch project details with analysis
   const { 
@@ -45,8 +62,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     isLoading, 
     error 
   } = useQuery<ProjectWithAnalysis>({
-    queryKey: [`/api/projects/${id}`],
-    staleTime: 60000,
+    queryKey: [`/api/projects/${id}`]
   });
 
   if (isLoading) {
@@ -165,23 +181,23 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
           </div>
           
           <TabsContent value="analysis" className="mt-0 pt-4">
-            <ProjectAnalysis project={project} isPrimary={user?.isPrimary || false} />
+            <ProjectAnalysis project={projectData} isPrimary={user?.isPrimary || false} />
           </TabsContent>
           
           <TabsContent value="workflows" className="mt-0 pt-4">
-            <ProjectWorkflows projectId={id} />
+            <ProjectWorkflows projectId={projectData.id} />
           </TabsContent>
           
           <TabsContent value="documents" className="mt-0 pt-4">
-            <ProjectDocuments projectId={id} />
+            <ProjectDocuments projectId={projectData.id} />
           </TabsContent>
           
           <TabsContent value="products" className="mt-0 pt-4">
-            <ProductList projectId={id} />
+            <ProductList projectId={projectData.id} />
           </TabsContent>
           
           <TabsContent value="chat" className="mt-0 pt-4">
-            <ProjectChat projectId={id} />
+            <ProjectChat projectId={projectData.id} />
           </TabsContent>
         </Tabs>
       </div>
