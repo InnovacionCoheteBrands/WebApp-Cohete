@@ -155,7 +155,13 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByIdentifier(identifier: string): Promise<User | undefined> {
     // Busca un usuario por nombre de usuario (email temporalmente deshabilitado)
+    console.log(`Buscando usuario con identifier: ${identifier}`);
     const [user] = await db.select().from(users).where(eq(users.username, identifier));
+    if (user) {
+      console.log(`Usuario encontrado con username: ${user.username}`);
+    } else {
+      console.log('No se encontró ningún usuario con ese identifier');
+    }
     return user;
   }
 
