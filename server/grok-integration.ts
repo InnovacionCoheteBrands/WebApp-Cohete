@@ -55,7 +55,7 @@ export class GrokService {
           
           // Construir payload con prompt truncado
           requestPayload = {
-            model: options.model || 'grok-3-beta',
+            model: options.model || 'grok-2-1212',
             messages: [
               {
                 role: 'user',
@@ -68,7 +68,7 @@ export class GrokService {
         } else {
           // Construir payload estándar
           requestPayload = {
-            model: options.model || 'grok-3-beta',
+            model: options.model || 'grok-2-1212',
             messages: [
               {
                 role: 'user',

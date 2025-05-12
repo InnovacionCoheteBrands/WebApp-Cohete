@@ -75,15 +75,16 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
       ${documentText}
     `;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [{ role: "user", content: prompt }],
-      response_format: { type: "json_object" }
+    // Usamos Grok en lugar de OpenAI
+    const analysisText = await grokService.generateText(prompt, {
+      model: "grok-2-1212",
+      temperature: 0.7,
+      maxTokens: 2000,
+      responseFormat: "json_object"
     });
-
-    const analysisText = response.choices[0].message.content;
+    
     if (!analysisText) {
-      throw new Error("Empty response from OpenAI");
+      throw new Error("Empty response from Grok AI");
     }
 
     return JSON.parse(analysisText) as DocumentAnalysisResult;
@@ -126,7 +127,7 @@ export async function processChatMessage(
 
     // Usar el servicio de Grok con el modelo solicitado
     const response = await grokService.generateText(promptText, {
-      model: "grok-3-mini-beta",
+      model: "grok-2-1212", // Actualizado a modelo disponible
       temperature: 0.7,
       maxTokens: 1000
     });
