@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, createContext, useContext } from 'react';
 import Joyride, { CallBackProps, Step, STATUS } from 'react-joyride';
 import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
@@ -103,6 +103,24 @@ const scheduleSteps: TourStep[] = [
 ];
 
 export type AppTourType = 'dashboard' | 'projects' | 'schedule' | 'tasks' | 'analytics';
+
+// Crear un contexto para el tour que pueda ser accedido desde cualquier componente
+export type AppTourContextType = {
+  startTour: (type?: AppTourType) => void;
+  tourType: AppTourType;
+  run: boolean;
+  setRun: (run: boolean) => void;
+};
+
+export const AppTourContext = createContext<AppTourContextType | null>(null);
+
+export function useAppTourContext() {
+  const context = useContext(AppTourContext);
+  if (!context) {
+    throw new Error("useAppTourContext debe ser usado dentro de un AppTourProvider");
+  }
+  return context;
+}
 
 export function useAppTour() {
   const [run, setRun] = useState(false);
@@ -240,4 +258,21 @@ export function useAppTour() {
     setRun,
     TourComponent,
   };
+}
+
+// Componente proveedor del tour
+export function AppTourProvider({ children }: { children: React.ReactNode }) {
+  const tourAPI = useAppTour();
+  
+  return (
+    <AppTourContext.Provider value={{
+      startTour: tourAPI.startTour,
+      tourType: tourAPI.tourType,
+      run: tourAPI.run,
+      setRun: tourAPI.setRun
+    }}>
+      {children}
+      <tourAPI.TourComponent />
+    </AppTourContext.Provider>
+  );
 }

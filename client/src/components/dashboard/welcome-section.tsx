@@ -2,7 +2,7 @@ import { User } from "@shared/schema";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { PlayCircle } from "lucide-react";
-import { useAppTourContext } from "@/App";
+import { useAppTourContext } from "@/hooks/use-app-tour";
 
 interface WelcomeSectionProps {
   user: Omit<User, 'password'> | null;
