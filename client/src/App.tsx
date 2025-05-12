@@ -17,6 +17,7 @@ import ForgotPassword from "@/pages/forgot-password";
 import ResetPassword from "@/pages/reset-password";
 import CreatePrimaryUser from "@/pages/create-primary-user";
 import Profile from "@/pages/profile";
+import SettingsPage from "@/pages/settings";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -103,6 +104,14 @@ function App() {
                   <ProtectedRoute>
                     <MainLayout>
                       <Profile />
+                    </MainLayout>
+                  </ProtectedRoute>
+                </Route>
+                
+                <Route path="/settings">
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <SettingsPage />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>

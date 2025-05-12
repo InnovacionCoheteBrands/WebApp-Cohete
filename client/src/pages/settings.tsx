@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Check, Save, RefreshCw, Sliders, Shield, Eye, AlertCircle, BellRing, Clock, LifeBuoy } from "lucide-react";
+import { Check, Save, RefreshCw, Sliders, Shield, Eye, AlertCircle, BellRing, Clock, LifeBuoy, PlayCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -48,6 +48,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useTheme } from "@/hooks/use-theme";
 import { useAppTourContext } from "@/hooks/use-app-tour";
+import { Textarea } from "@/components/ui/textarea";
 
 // Esquema para las configuraciones generales
 const generalSettingsSchema = z.object({
@@ -118,7 +119,7 @@ export default function SettingsPage() {
     resolver: zodResolver(appearanceSettingsSchema),
     defaultValues: {
       colorScheme: "amber",
-      theme: theme || "light",
+      theme: theme as string || "light",
       fontSize: "medium",
       reducedAnimations: false,
       highContrastMode: false,
@@ -153,7 +154,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const subscription = appearanceForm.watch((value) => {
       if (value.theme) {
-        setTheme(value.theme);
+        setTheme(value.theme as "light" | "dark" | "system");
       }
     });
     return () => subscription.unsubscribe();
