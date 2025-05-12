@@ -47,10 +47,15 @@ app.use((req, res, next) => {
     throw err;
   });
 
+  // Add health check endpoint at the start
+  app.get("/", (_req, res) => {
+    res.status(200).send("OK");
+  });
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (app.get("env") === "development") {
+  if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
@@ -60,10 +65,6 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = 5000;
-  // Add health check endpoint
-  app.get("/", (_req, res) => {
-    res.status(200).send("OK");
-  });
 
   server.listen({
     port,
