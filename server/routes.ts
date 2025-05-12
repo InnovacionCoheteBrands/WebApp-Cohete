@@ -36,14 +36,23 @@ declare global {
   var storage: DatabaseStorage;
 }
 
+// Obtener directorio actual compatible con ESM
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Definir ruta base para uploads
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDirPath = dirname(currentFilePath);
+const baseUploadDir = path.join(currentDirPath, '..', 'uploads');
+
 // Set up storage for file uploads
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    // Usar la ruta base definida arriba
+    if (!fs.existsSync(baseUploadDir)) {
+      fs.mkdirSync(baseUploadDir, { recursive: true });
     }
-    cb(null, uploadDir);
+    cb(null, baseUploadDir);
   },
   filename: (req, file, cb) => {
     // Create a unique filename
