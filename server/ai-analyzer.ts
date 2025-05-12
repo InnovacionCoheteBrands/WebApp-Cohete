@@ -75,9 +75,9 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
       ${documentText}
     `;
 
-    // Usamos Grok para el análisis de documentos
+    // Usamos Grok Vision para el análisis de documentos
     const analysisText = await grokService.generateText(prompt, {
-      model: "grok-3-mini-beta", // Usando modelo de la familia Grok 3
+      model: "grok-vision-beta", // Usando modelo de visión de Grok
       temperature: 0.7,
       maxTokens: 2000,
       responseFormat: "json_object"

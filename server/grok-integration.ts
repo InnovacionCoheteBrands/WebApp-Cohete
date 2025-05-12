@@ -251,7 +251,7 @@ export class GrokService {
       const response = await axios.post(
         `${this.baseURL}/chat/completions`,
         {
-          model: options.model || 'grok-2-vision-1212',
+          model: options.model || 'grok-vision-beta',
           messages: [
             {
               role: 'user',
