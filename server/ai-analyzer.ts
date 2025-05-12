@@ -75,9 +75,9 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
       ${documentText}
     `;
 
-    // Usamos Grok en lugar de OpenAI
+    // Usamos Grok para el análisis de documentos
     const analysisText = await grokService.generateText(prompt, {
-      model: "grok-1",
+      model: "grok-3-mini-beta", // Usando modelo de la familia Grok 3
       temperature: 0.7,
       maxTokens: 2000,
       responseFormat: "json_object"
@@ -127,7 +127,7 @@ export async function processChatMessage(
 
     // Usar el servicio de Grok con el modelo solicitado
     const response = await grokService.generateText(promptText, {
-      model: "grok-1", // Usado modelo Grok 1 según indicaciones
+      model: "grok-3-mini-beta", // Usando modelo de la familia Grok 3
       temperature: 0.7,
       maxTokens: 1000
     });

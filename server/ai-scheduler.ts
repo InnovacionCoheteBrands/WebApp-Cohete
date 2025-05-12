@@ -173,8 +173,8 @@ export async function generateSchedule(
       retryCount: 3,
       // Solicitar explícitamente respuesta en formato JSON para mayor compatibilidad
       responseFormat: 'json_object',
-      // Utilizamos el modelo Grok 1 que es compatible con la API key
-      model: 'grok-1'
+      // Utilizamos el modelo Grok 3 que es compatible con la API key
+      model: 'grok-3-mini-beta'
     });
     
     // Registramos una versión truncada para debug
