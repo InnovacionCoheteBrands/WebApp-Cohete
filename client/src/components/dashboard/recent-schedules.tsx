@@ -68,7 +68,7 @@ export default function RecentSchedules() {
   }
 
   return (
-    <div>
+    <div data-tour="recent-schedules">
       <h2 className="mb-4 text-xl font-semibold">Recent Schedules</h2>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {schedules.map((schedule) => (

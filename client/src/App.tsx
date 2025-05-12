@@ -43,11 +43,9 @@ export const useAppTourContext = () => {
   return context;
 };
 
-function AppWithProviders() {
-  const { startTour, tourType, run, setRun, TourComponent } = useAppTour();
-
+function AppContent() {
   return (
-    <AppTourContext.Provider value={{ startTour, tourType, run, setRun }}>
+    <>
       <Switch>
         {/* Protected routes */}
         <Route path="/">
@@ -143,8 +141,16 @@ function AppWithProviders() {
           return <CopilotButton />;
         }}
       </Route>
-      
-      {/* Componente del tour */}
+    </>
+  );
+}
+
+function AppTourProvider({ children }: { children: React.ReactNode }) {
+  const { startTour, tourType, run, setRun, TourComponent } = useAppTour();
+  
+  return (
+    <AppTourContext.Provider value={{ startTour, tourType, run, setRun }}>
+      {children}
       <TourComponent />
     </AppTourContext.Provider>
   );
@@ -155,7 +161,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <AppWithProviders />
+          <AppTourProvider>
+            <AppContent />
+          </AppTourProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

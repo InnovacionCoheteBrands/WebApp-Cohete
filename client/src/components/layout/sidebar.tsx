@@ -42,10 +42,13 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       )}
 
       {/* Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card/95 backdrop-blur-sm shadow-lg md:static md:z-0 transform transition-all duration-300 ease-in-out dark:border-r-[#2a3349] dark-glow",
-        open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-      )}>
+      <div 
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card/95 backdrop-blur-sm shadow-lg md:static md:z-0 transform transition-all duration-300 ease-in-out dark:border-r-[#2a3349] dark-glow",
+          open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        )}
+        data-tour="main-navigation"
+      >
         <div className="flex flex-col space-y-4 p-4 h-full">
           {/* Logo */}
           <div className="flex items-center gap-2 px-2 py-3 mb-2">

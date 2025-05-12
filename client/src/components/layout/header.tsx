@@ -81,9 +81,14 @@ export function Header({ onMenuClick }: HeaderProps) {
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="p-1 h-auto hover:bg-accent rounded-full" size="icon">
+              <Button 
+                variant="ghost" 
+                className="p-1 h-auto hover:bg-accent rounded-full" 
+                size="icon"
+                data-tour="user-menu"
+              >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.profileImage} />
+                  <AvatarImage src={typeof user?.profileImage === 'string' ? user.profileImage : undefined} />
                   <AvatarFallback className="text-xs">
                     {user?.fullName?.split(' ').map(n => n[0]).join('').toUpperCase() || user?.username?.substring(0, 2).toUpperCase()}
                   </AvatarFallback>
