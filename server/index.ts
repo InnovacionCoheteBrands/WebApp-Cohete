@@ -48,18 +48,13 @@ app.use((req, res, next) => {
   });
 
   // Add health check endpoint at the start
-  app.get("/", (_req, res) => {
+  app.get("/health", (_req, res) => {
     res.status(200).send("OK");
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "development") {
-    await setupVite(app, server);
-  } else {
-    serveStatic(app);
-  }
+  // Siempre usar Vite en este entorno de Replit
+  // Independientemente de la variable NODE_ENV
+  await setupVite(app, server);
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
