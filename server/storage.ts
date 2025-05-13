@@ -1,4 +1,4 @@
-import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products } from "@shared/schema";
+import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products, projectViews, automationRules, timeEntries, tags, collaborativeDocs } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
 import type { Store } from "express-session";
@@ -25,7 +25,17 @@ import {
   TaskComment,
   InsertTaskComment,
   Product,
-  InsertProduct
+  InsertProduct,
+  ProjectView,
+  InsertProjectView,
+  AutomationRule,
+  InsertAutomationRule,
+  TimeEntry,
+  InsertTimeEntry,
+  Tag,
+  InsertTag,
+  CollaborativeDoc,
+  InsertCollaborativeDoc
 } from "@shared/schema";
 
 // Interfaz para los tokens de recuperación

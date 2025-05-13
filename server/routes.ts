@@ -25,6 +25,11 @@ import {
   insertTaskSchema,
   insertUserSchema,
   insertProductSchema,
+  insertProjectViewSchema,
+  insertAutomationRuleSchema,
+  insertTimeEntrySchema,
+  insertTagSchema,
+  insertCollaborativeDocSchema,
   updateProfileSchema,
   scheduleEntries,
   Product
@@ -2532,6 +2537,722 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
   };
+
+  // Project Views API - Para los distintos tipos de vistas (lista, kanban, gantt, calendario)
+  app.get("/api/projects/:projectId/views", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const views = await global.storage.listProjectViews(projectId);
+      res.json(views);
+    } catch (error) {
+      console.error("Error al obtener vistas de proyecto:", error);
+      res.status(500).json({ message: "Error al obtener vistas de proyecto" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/views", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const viewData = insertProjectViewSchema.parse({
+        ...req.body,
+        projectId,
+        createdBy: req.user.id
+      });
+      
+      const newView = await global.storage.createProjectView(viewData);
+      
+      // Si esta vista es la predeterminada, actualizar otras vistas
+      if (viewData.isDefault) {
+        await global.storage.updateOtherViewsDefaultStatus(projectId, newView.id);
+      }
+      
+      res.status(201).json(newView);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error al crear vista de proyecto:", error);
+      res.status(500).json({ message: "Error al crear vista de proyecto" });
+    }
+  });
+
+  app.patch("/api/project-views/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const viewId = parseInt(req.params.id);
+      if (isNaN(viewId)) {
+        return res.status(400).json({ message: "ID de vista inválido" });
+      }
+      
+      // Obtener la vista para verificar acceso
+      const view = await global.storage.getProjectView(viewId);
+      if (!view) {
+        return res.status(404).json({ message: "Vista no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        view.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Actualizar vista
+      const updatedView = await global.storage.updateProjectView(viewId, req.body);
+      
+      // Si esta vista se establece como predeterminada, actualizar otras vistas
+      if (req.body.isDefault === true) {
+        await global.storage.updateOtherViewsDefaultStatus(view.projectId, viewId);
+      }
+      
+      res.json(updatedView);
+    } catch (error) {
+      console.error("Error al actualizar vista de proyecto:", error);
+      res.status(500).json({ message: "Error al actualizar vista de proyecto" });
+    }
+  });
+
+  app.delete("/api/project-views/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const viewId = parseInt(req.params.id);
+      if (isNaN(viewId)) {
+        return res.status(400).json({ message: "ID de vista inválido" });
+      }
+      
+      // Obtener la vista para verificar acceso
+      const view = await global.storage.getProjectView(viewId);
+      if (!view) {
+        return res.status(404).json({ message: "Vista no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        view.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // No permitir eliminar la vista predeterminada si es la única
+      if (view.isDefault) {
+        const projectViews = await global.storage.listProjectViews(view.projectId);
+        if (projectViews.length <= 1) {
+          return res.status(400).json({ message: "No puedes eliminar la única vista del proyecto" });
+        }
+      }
+      
+      // Eliminar vista
+      await global.storage.deleteProjectView(viewId);
+      
+      // Si la vista eliminada era la predeterminada, establecer otra como predeterminada
+      if (view.isDefault) {
+        const remainingViews = await global.storage.listProjectViews(view.projectId);
+        if (remainingViews.length > 0) {
+          await global.storage.updateProjectView(remainingViews[0].id, { isDefault: true });
+        }
+      }
+      
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error al eliminar vista de proyecto:", error);
+      res.status(500).json({ message: "Error al eliminar vista de proyecto" });
+    }
+  });
+
+  // Automation Rules API
+  app.get("/api/projects/:projectId/automation-rules", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const rules = await global.storage.listAutomationRules(projectId);
+      res.json(rules);
+    } catch (error) {
+      console.error("Error al obtener reglas de automatización:", error);
+      res.status(500).json({ message: "Error al obtener reglas de automatización" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/automation-rules", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const ruleData = insertAutomationRuleSchema.parse({
+        ...req.body,
+        projectId,
+        createdBy: req.user.id
+      });
+      
+      const newRule = await global.storage.createAutomationRule(ruleData);
+      res.status(201).json(newRule);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error al crear regla de automatización:", error);
+      res.status(500).json({ message: "Error al crear regla de automatización" });
+    }
+  });
+
+  app.patch("/api/automation-rules/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const ruleId = parseInt(req.params.id);
+      if (isNaN(ruleId)) {
+        return res.status(400).json({ message: "ID de regla inválido" });
+      }
+      
+      // Obtener la regla para verificar acceso
+      const rule = await global.storage.getAutomationRule(ruleId);
+      if (!rule) {
+        return res.status(404).json({ message: "Regla no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        rule.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Actualizar regla
+      const updatedRule = await global.storage.updateAutomationRule(ruleId, req.body);
+      res.json(updatedRule);
+    } catch (error) {
+      console.error("Error al actualizar regla de automatización:", error);
+      res.status(500).json({ message: "Error al actualizar regla de automatización" });
+    }
+  });
+
+  app.delete("/api/automation-rules/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const ruleId = parseInt(req.params.id);
+      if (isNaN(ruleId)) {
+        return res.status(400).json({ message: "ID de regla inválido" });
+      }
+      
+      // Obtener la regla para verificar acceso
+      const rule = await global.storage.getAutomationRule(ruleId);
+      if (!rule) {
+        return res.status(404).json({ message: "Regla no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        rule.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Eliminar regla
+      await global.storage.deleteAutomationRule(ruleId);
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error al eliminar regla de automatización:", error);
+      res.status(500).json({ message: "Error al eliminar regla de automatización" });
+    }
+  });
+
+  // Time Entries API
+  app.get("/api/tasks/:taskId/time-entries", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "ID de tarea inválido" });
+      }
+      
+      // Obtener la tarea para verificar acceso al proyecto
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Tarea no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const timeEntries = await global.storage.listTimeEntriesByTask(taskId);
+      res.json(timeEntries);
+    } catch (error) {
+      console.error("Error al obtener registros de tiempo:", error);
+      res.status(500).json({ message: "Error al obtener registros de tiempo" });
+    }
+  });
+
+  app.post("/api/tasks/:taskId/time-entries", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      if (isNaN(taskId)) {
+        return res.status(400).json({ message: "ID de tarea inválido" });
+      }
+      
+      // Obtener la tarea para verificar acceso al proyecto
+      const task = await global.storage.getTask(taskId);
+      if (!task) {
+        return res.status(404).json({ message: "Tarea no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        task.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const timeEntryData = insertTimeEntrySchema.parse({
+        ...req.body,
+        taskId,
+        userId: req.user.id
+      });
+      
+      const newTimeEntry = await global.storage.createTimeEntry(timeEntryData);
+      res.status(201).json(newTimeEntry);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error al crear registro de tiempo:", error);
+      res.status(500).json({ message: "Error al crear registro de tiempo" });
+    }
+  });
+
+  app.patch("/api/time-entries/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const entryId = parseInt(req.params.id);
+      if (isNaN(entryId)) {
+        return res.status(400).json({ message: "ID de registro inválido" });
+      }
+      
+      // Obtener el registro para verificar acceso
+      const timeEntry = await global.storage.getTimeEntry(entryId);
+      if (!timeEntry) {
+        return res.status(404).json({ message: "Registro de tiempo no encontrado" });
+      }
+      
+      // Solo permitir editar registros propios a menos que sea usuario primario
+      if (timeEntry.userId !== req.user.id && !req.user.isPrimary) {
+        return res.status(403).json({ message: "No puedes editar registros de tiempo de otros usuarios" });
+      }
+      
+      // Actualizar registro
+      const updatedEntry = await global.storage.updateTimeEntry(entryId, req.body);
+      res.json(updatedEntry);
+    } catch (error) {
+      console.error("Error al actualizar registro de tiempo:", error);
+      res.status(500).json({ message: "Error al actualizar registro de tiempo" });
+    }
+  });
+
+  app.delete("/api/time-entries/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const entryId = parseInt(req.params.id);
+      if (isNaN(entryId)) {
+        return res.status(400).json({ message: "ID de registro inválido" });
+      }
+      
+      // Obtener el registro para verificar acceso
+      const timeEntry = await global.storage.getTimeEntry(entryId);
+      if (!timeEntry) {
+        return res.status(404).json({ message: "Registro de tiempo no encontrado" });
+      }
+      
+      // Solo permitir eliminar registros propios a menos que sea usuario primario
+      if (timeEntry.userId !== req.user.id && !req.user.isPrimary) {
+        return res.status(403).json({ message: "No puedes eliminar registros de tiempo de otros usuarios" });
+      }
+      
+      // Eliminar registro
+      await global.storage.deleteTimeEntry(entryId);
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error al eliminar registro de tiempo:", error);
+      res.status(500).json({ message: "Error al eliminar registro de tiempo" });
+    }
+  });
+
+  // Tags API
+  app.get("/api/projects/:projectId/tags", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const tags = await global.storage.listTags(projectId);
+      res.json(tags);
+    } catch (error) {
+      console.error("Error al obtener etiquetas:", error);
+      res.status(500).json({ message: "Error al obtener etiquetas" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/tags", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const tagData = insertTagSchema.parse({
+        ...req.body,
+        projectId,
+        createdBy: req.user.id
+      });
+      
+      const newTag = await global.storage.createTag(tagData);
+      res.status(201).json(newTag);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error al crear etiqueta:", error);
+      res.status(500).json({ message: "Error al crear etiqueta" });
+    }
+  });
+
+  app.patch("/api/tags/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const tagId = parseInt(req.params.id);
+      if (isNaN(tagId)) {
+        return res.status(400).json({ message: "ID de etiqueta inválido" });
+      }
+      
+      // Obtener la etiqueta para verificar acceso
+      const tag = await global.storage.getTag(tagId);
+      if (!tag) {
+        return res.status(404).json({ message: "Etiqueta no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        tag.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Actualizar etiqueta
+      const updatedTag = await global.storage.updateTag(tagId, req.body);
+      res.json(updatedTag);
+    } catch (error) {
+      console.error("Error al actualizar etiqueta:", error);
+      res.status(500).json({ message: "Error al actualizar etiqueta" });
+    }
+  });
+
+  app.delete("/api/tags/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const tagId = parseInt(req.params.id);
+      if (isNaN(tagId)) {
+        return res.status(400).json({ message: "ID de etiqueta inválido" });
+      }
+      
+      // Obtener la etiqueta para verificar acceso
+      const tag = await global.storage.getTag(tagId);
+      if (!tag) {
+        return res.status(404).json({ message: "Etiqueta no encontrada" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        tag.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Eliminar etiqueta
+      await global.storage.deleteTag(tagId);
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error al eliminar etiqueta:", error);
+      res.status(500).json({ message: "Error al eliminar etiqueta" });
+    }
+  });
+
+  // Collaborative Docs API
+  app.get("/api/projects/:projectId/collaborative-docs", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const docs = await global.storage.listCollaborativeDocs(projectId);
+      res.json(docs);
+    } catch (error) {
+      console.error("Error al obtener documentos colaborativos:", error);
+      res.status(500).json({ message: "Error al obtener documentos colaborativos" });
+    }
+  });
+
+  app.post("/api/projects/:projectId/collaborative-docs", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      const docData = insertCollaborativeDocSchema.parse({
+        ...req.body,
+        projectId,
+        createdBy: req.user.id,
+        lastEditedBy: req.user.id
+      });
+      
+      const newDoc = await global.storage.createCollaborativeDoc(docData);
+      res.status(201).json(newDoc);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error al crear documento colaborativo:", error);
+      res.status(500).json({ message: "Error al crear documento colaborativo" });
+    }
+  });
+
+  app.get("/api/collaborative-docs/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const docId = parseInt(req.params.id);
+      if (isNaN(docId)) {
+        return res.status(400).json({ message: "ID de documento inválido" });
+      }
+      
+      // Obtener el documento
+      const doc = await global.storage.getCollaborativeDoc(docId);
+      if (!doc) {
+        return res.status(404).json({ message: "Documento no encontrado" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        doc.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      res.json(doc);
+    } catch (error) {
+      console.error("Error al obtener documento colaborativo:", error);
+      res.status(500).json({ message: "Error al obtener documento colaborativo" });
+    }
+  });
+
+  app.patch("/api/collaborative-docs/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const docId = parseInt(req.params.id);
+      if (isNaN(docId)) {
+        return res.status(400).json({ message: "ID de documento inválido" });
+      }
+      
+      // Obtener el documento para verificar acceso
+      const doc = await global.storage.getCollaborativeDoc(docId);
+      if (!doc) {
+        return res.status(404).json({ message: "Documento no encontrado" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        doc.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Actualizar documento con el usuario que lo editó por última vez
+      const updatedDoc = await global.storage.updateCollaborativeDoc(docId, {
+        ...req.body,
+        lastEditedBy: req.user.id
+      });
+      
+      // Notificar a todos los clientes conectados sobre la actualización
+      broadcastUpdate({
+        type: 'doc_updated',
+        docId,
+        projectId: doc.projectId,
+        editor: {
+          id: req.user.id,
+          fullName: req.user.fullName
+        }
+      });
+      
+      res.json(updatedDoc);
+    } catch (error) {
+      console.error("Error al actualizar documento colaborativo:", error);
+      res.status(500).json({ message: "Error al actualizar documento colaborativo" });
+    }
+  });
+
+  app.delete("/api/collaborative-docs/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const docId = parseInt(req.params.id);
+      if (isNaN(docId)) {
+        return res.status(400).json({ message: "ID de documento inválido" });
+      }
+      
+      // Obtener el documento para verificar acceso
+      const doc = await global.storage.getCollaborativeDoc(docId);
+      if (!doc) {
+        return res.status(404).json({ message: "Documento no encontrado" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user.id,
+        doc.projectId,
+        req.user.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Eliminar documento
+      await global.storage.deleteCollaborativeDoc(docId);
+      res.status(204).end();
+    } catch (error) {
+      console.error("Error al eliminar documento colaborativo:", error);
+      res.status(500).json({ message: "Error al eliminar documento colaborativo" });
+    }
+  });
 
   return httpServer;
 }
