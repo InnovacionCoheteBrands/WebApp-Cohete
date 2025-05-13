@@ -10,6 +10,7 @@ import ProjectDetail from "@/pages/project-detail";
 import ScheduleDetail from "@/pages/schedule-detail";
 import CalendarCreator from "@/pages/calendar-creator";
 import TaskManager from "@/pages/task-manager";
+import TaskManagerPage from "@/pages/task-manager-page";
 import UserManagement from "@/pages/user-management";
 import Analytics from "@/pages/analytics";
 import CreateAccount from "@/pages/create-account";
@@ -76,12 +77,12 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
-                <Route path="/tasks">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <TaskManager />
-                    </MainLayout>
-                  </ProtectedRoute>
+                <Route path="/projects/:projectId/tasks">
+                  {(params) => (
+                    <ProtectedRoute>
+                      <TaskManagerPage />
+                    </ProtectedRoute>
+                  )}
                 </Route>
 
                 <Route path="/users">

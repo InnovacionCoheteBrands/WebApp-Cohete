@@ -186,7 +186,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
           </div>
           
           <TabsContent value="tasks" className="mt-0 pt-4">
-            <ProjectViewContainer />
+            <ProjectViewContainer projectId={projectData.id} />
           </TabsContent>
           
           <TabsContent value="analysis" className="mt-0 pt-4">

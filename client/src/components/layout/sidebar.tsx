@@ -102,10 +102,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               onClick={onClose}
             />
             <NavItem 
-              href="/tasks" 
+              href="/projects/1" 
               icon={<ListChecks className="mr-2 h-5 w-5" />} 
               label="Gestor de Tareas" 
-              isActive={location === "/tasks"} 
+              isActive={location.startsWith("/projects/") && location !== "/projects"} 
               onClick={onClose}
             />
 

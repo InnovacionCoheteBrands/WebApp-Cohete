@@ -29,9 +29,17 @@ import ProjectKanbanView from "./views/project-kanban-view";
 import ProjectGanttView from "./views/project-gantt-view";
 import ProjectCalendarView from "./views/project-calendar-view";
 
-export default function ProjectViewContainer() {
-  const { projectId } = useParams();
+interface ProjectViewContainerProps {
+  projectId?: number;
+}
+
+export default function ProjectViewContainer({ projectId: propProjectId }: ProjectViewContainerProps) {
+  const params = useParams();
+  const urlProjectId = params.projectId;
   const [, navigate] = useLocation();
+  
+  // Usar el ID del proyecto de los props o de los parámetros de URL
+  const projectId = propProjectId?.toString() || urlProjectId;
   const { toast } = useToast();
   const [isCreatingView, setIsCreatingView] = useState(false);
   const [isEditingView, setIsEditingView] = useState(false);
