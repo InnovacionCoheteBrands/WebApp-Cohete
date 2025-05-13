@@ -177,7 +177,7 @@ export default function ProjectViewContainer() {
       name: formData.name,
       type: formData.type as any, // Convertir a enum
       isDefault: formData.isDefault || false,
-      configuration: formData.configuration || {},
+      config: formData.config || {},
     });
   };
 
@@ -190,7 +190,7 @@ export default function ProjectViewContainer() {
         name: formData.name,
         type: formData.type as any,
         isDefault: formData.isDefault,
-        configuration: formData.configuration,
+        config: formData.config,
       },
     });
   };
@@ -214,7 +214,7 @@ export default function ProjectViewContainer() {
       name: view.name,
       type: view.type,
       isDefault: view.isDefault,
-      configuration: view.configuration,
+      config: view.config,
     });
     setIsEditingView(true);
   };
