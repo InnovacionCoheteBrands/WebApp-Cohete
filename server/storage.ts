@@ -138,6 +138,48 @@ export interface IStorage {
   updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
   listProductsByProject(projectId: number): Promise<Product[]>;
+
+  // Project Views methods
+  getProjectView(id: number): Promise<ProjectView | undefined>;
+  listProjectViews(projectId: number): Promise<ProjectView[]>;
+  createProjectView(view: InsertProjectView): Promise<ProjectView>;
+  updateProjectView(id: number, viewData: Partial<ProjectView>): Promise<ProjectView | undefined>;
+  deleteProjectView(id: number): Promise<boolean>;
+  updateOtherViewsDefaultStatus(projectId: number, currentViewId: number): Promise<void>;
+
+  // Automation Rules methods
+  getAutomationRule(id: number): Promise<AutomationRule | undefined>;
+  listAutomationRules(projectId: number): Promise<AutomationRule[]>;
+  createAutomationRule(rule: InsertAutomationRule): Promise<AutomationRule>;
+  updateAutomationRule(id: number, ruleData: Partial<AutomationRule>): Promise<AutomationRule | undefined>;
+  deleteAutomationRule(id: number): Promise<boolean>;
+
+  // Time Entries methods
+  getTimeEntry(id: number): Promise<TimeEntry | undefined>;
+  listTimeEntriesByTask(taskId: number): Promise<TimeEntry[]>;
+  listTimeEntriesByUser(userId: number): Promise<TimeEntry[]>;
+  createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry>;
+  updateTimeEntry(id: number, entryData: Partial<TimeEntry>): Promise<TimeEntry | undefined>;
+  deleteTimeEntry(id: number): Promise<boolean>;
+
+  // Tags methods
+  getTag(id: number): Promise<Tag | undefined>;
+  listTags(projectId: number): Promise<Tag[]>;
+  createTag(tag: InsertTag): Promise<Tag>;
+  updateTag(id: number, tagData: Partial<Tag>): Promise<Tag | undefined>;
+  deleteTag(id: number): Promise<boolean>;
+
+  // Collaborative Docs methods
+  getCollaborativeDoc(id: number): Promise<CollaborativeDoc | undefined>;
+  listCollaborativeDocs(projectId: number): Promise<CollaborativeDoc[]>;
+  createCollaborativeDoc(doc: InsertCollaborativeDoc): Promise<CollaborativeDoc>;
+  updateCollaborativeDoc(id: number, docData: Partial<CollaborativeDoc>): Promise<CollaborativeDoc | undefined>;
+  deleteCollaborativeDoc(id: number): Promise<boolean>;
+
+  // Password reset methods
+  createPasswordResetToken(userId: number): Promise<PasswordResetToken>;
+  getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
+  deletePasswordResetToken(token: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -850,6 +892,274 @@ export class DatabaseStorage implements IStorage {
 
   async deletePasswordResetToken(token: string): Promise<boolean> {
     return this.passwordResetTokens.delete(token);
+  }
+
+  // Project Views methods
+  async getProjectView(id: number): Promise<ProjectView | undefined> {
+    const [view] = await db
+      .select()
+      .from(projectViews)
+      .where(eq(projectViews.id, id));
+    return view;
+  }
+
+  async listProjectViews(projectId: number): Promise<ProjectView[]> {
+    const views = await db
+      .select()
+      .from(projectViews)
+      .where(eq(projectViews.projectId, projectId))
+      .orderBy(asc(projectViews.name));
+    return views;
+  }
+
+  async createProjectView(view: InsertProjectView): Promise<ProjectView> {
+    const [newView] = await db
+      .insert(projectViews)
+      .values(view)
+      .returning();
+    return newView;
+  }
+
+  async updateProjectView(id: number, viewData: Partial<ProjectView>): Promise<ProjectView | undefined> {
+    const [updatedView] = await db
+      .update(projectViews)
+      .set(viewData)
+      .where(eq(projectViews.id, id))
+      .returning();
+    return updatedView;
+  }
+
+  async deleteProjectView(id: number): Promise<boolean> {
+    const result = await db
+      .delete(projectViews)
+      .where(eq(projectViews.id, id));
+    return !!result;
+  }
+
+  async updateOtherViewsDefaultStatus(projectId: number, currentViewId: number): Promise<void> {
+    await db
+      .update(projectViews)
+      .set({ isDefault: false })
+      .where(and(
+        eq(projectViews.projectId, projectId),
+        sql`${projectViews.id} != ${currentViewId}`
+      ));
+  }
+
+  // Automation Rules methods
+  async getAutomationRule(id: number): Promise<AutomationRule | undefined> {
+    const [rule] = await db
+      .select()
+      .from(automationRules)
+      .where(eq(automationRules.id, id));
+    return rule;
+  }
+
+  async listAutomationRules(projectId: number): Promise<AutomationRule[]> {
+    const rules = await db
+      .select()
+      .from(automationRules)
+      .where(eq(automationRules.projectId, projectId))
+      .orderBy(asc(automationRules.name));
+    return rules;
+  }
+
+  async createAutomationRule(rule: InsertAutomationRule): Promise<AutomationRule> {
+    const [newRule] = await db
+      .insert(automationRules)
+      .values(rule)
+      .returning();
+    return newRule;
+  }
+
+  async updateAutomationRule(id: number, ruleData: Partial<AutomationRule>): Promise<AutomationRule | undefined> {
+    const [updatedRule] = await db
+      .update(automationRules)
+      .set(ruleData)
+      .where(eq(automationRules.id, id))
+      .returning();
+    return updatedRule;
+  }
+
+  async deleteAutomationRule(id: number): Promise<boolean> {
+    const result = await db
+      .delete(automationRules)
+      .where(eq(automationRules.id, id));
+    return !!result;
+  }
+
+  // Time Entries methods
+  async getTimeEntry(id: number): Promise<TimeEntry | undefined> {
+    const [entry] = await db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.id, id));
+    return entry;
+  }
+
+  async listTimeEntriesByTask(taskId: number): Promise<TimeEntry[]> {
+    const entries = await db
+      .select()
+      .from(timeEntries)
+      .where(eq(timeEntries.taskId, taskId))
+      .orderBy(desc(timeEntries.startTime));
+    return entries;
+  }
+
+  async listTimeEntriesByUser(userId: number): Promise<TimeEntry[]> {
+    const entries = await db
+      .select({
+        ...timeEntries,
+        task: tasks
+      })
+      .from(timeEntries)
+      .innerJoin(tasks, eq(timeEntries.taskId, tasks.id))
+      .where(eq(timeEntries.userId, userId))
+      .orderBy(desc(timeEntries.startTime));
+    return entries;
+  }
+
+  async createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry> {
+    // Si no se proporciona la duración pero sí el inicio y fin, calcularla
+    let entryData = { ...entry };
+    
+    if (!entryData.duration && entryData.startTime && entryData.endTime) {
+      const startTime = new Date(entryData.startTime).getTime();
+      const endTime = new Date(entryData.endTime).getTime();
+      entryData.duration = Math.floor((endTime - startTime) / 1000); // duración en segundos
+    }
+    
+    const [newEntry] = await db
+      .insert(timeEntries)
+      .values(entryData)
+      .returning();
+    return newEntry;
+  }
+
+  async updateTimeEntry(id: number, entryData: Partial<TimeEntry>): Promise<TimeEntry | undefined> {
+    // Actualizar la duración si se modifican las fechas
+    let dataToUpdate = { ...entryData };
+    
+    if ((entryData.startTime || entryData.endTime) && !entryData.duration) {
+      // Obtener la entrada actual para acceder a los valores no modificados
+      const currentEntry = await this.getTimeEntry(id);
+      if (currentEntry) {
+        const startTime = entryData.startTime 
+          ? new Date(entryData.startTime).getTime() 
+          : new Date(currentEntry.startTime).getTime();
+        
+        const endTime = entryData.endTime 
+          ? new Date(entryData.endTime).getTime() 
+          : currentEntry.endTime 
+            ? new Date(currentEntry.endTime).getTime() 
+            : null;
+        
+        if (endTime && startTime) {
+          dataToUpdate.duration = Math.floor((endTime - startTime) / 1000);
+        }
+      }
+    }
+    
+    const [updatedEntry] = await db
+      .update(timeEntries)
+      .set(dataToUpdate)
+      .where(eq(timeEntries.id, id))
+      .returning();
+    return updatedEntry;
+  }
+
+  async deleteTimeEntry(id: number): Promise<boolean> {
+    const result = await db
+      .delete(timeEntries)
+      .where(eq(timeEntries.id, id));
+    return !!result;
+  }
+
+  // Tags methods
+  async getTag(id: number): Promise<Tag | undefined> {
+    const [tag] = await db
+      .select()
+      .from(tags)
+      .where(eq(tags.id, id));
+    return tag;
+  }
+
+  async listTags(projectId: number): Promise<Tag[]> {
+    const tagsList = await db
+      .select()
+      .from(tags)
+      .where(eq(tags.projectId, projectId))
+      .orderBy(asc(tags.name));
+    return tagsList;
+  }
+
+  async createTag(tag: InsertTag): Promise<Tag> {
+    const [newTag] = await db
+      .insert(tags)
+      .values(tag)
+      .returning();
+    return newTag;
+  }
+
+  async updateTag(id: number, tagData: Partial<Tag>): Promise<Tag | undefined> {
+    const [updatedTag] = await db
+      .update(tags)
+      .set(tagData)
+      .where(eq(tags.id, id))
+      .returning();
+    return updatedTag;
+  }
+
+  async deleteTag(id: number): Promise<boolean> {
+    const result = await db
+      .delete(tags)
+      .where(eq(tags.id, id));
+    return !!result;
+  }
+
+  // Collaborative Docs methods
+  async getCollaborativeDoc(id: number): Promise<CollaborativeDoc | undefined> {
+    const [doc] = await db
+      .select()
+      .from(collaborativeDocs)
+      .where(eq(collaborativeDocs.id, id));
+    return doc;
+  }
+
+  async listCollaborativeDocs(projectId: number): Promise<CollaborativeDoc[]> {
+    const docs = await db
+      .select()
+      .from(collaborativeDocs)
+      .where(eq(collaborativeDocs.projectId, projectId))
+      .orderBy(asc(collaborativeDocs.title));
+    return docs;
+  }
+
+  async createCollaborativeDoc(doc: InsertCollaborativeDoc): Promise<CollaborativeDoc> {
+    const [newDoc] = await db
+      .insert(collaborativeDocs)
+      .values(doc)
+      .returning();
+    return newDoc;
+  }
+
+  async updateCollaborativeDoc(id: number, docData: Partial<CollaborativeDoc>): Promise<CollaborativeDoc | undefined> {
+    const [updatedDoc] = await db
+      .update(collaborativeDocs)
+      .set({
+        ...docData,
+        updatedAt: new Date()
+      })
+      .where(eq(collaborativeDocs.id, id))
+      .returning();
+    return updatedDoc;
+  }
+
+  async deleteCollaborativeDoc(id: number): Promise<boolean> {
+    const result = await db
+      .delete(collaborativeDocs)
+      .where(eq(collaborativeDocs.id, id));
+    return !!result;
   }
 }
 
