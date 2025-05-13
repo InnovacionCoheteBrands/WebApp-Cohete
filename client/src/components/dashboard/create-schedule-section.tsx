@@ -414,7 +414,7 @@ export default function CreateScheduleSection() {
             
             <ScrollArea className="h-[450px] rounded-xl border shadow-sm overflow-hidden dark:border-[#3e4a6d] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
               <Table>
-                <TableHeader className="sticky top-0 bg-card shadow-sm dark:bg-[#1e293b] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
+                <TableHeader className="bg-card shadow-sm dark:bg-[#1e293b] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
                   <TableRow className="border-b-0 dark:border-b dark:border-b-[#2a3349]">
                     <TableHead className="w-[250px] font-medium text-foreground dark:text-[#65cef5]">Título</TableHead>
                     <TableHead className="font-medium text-foreground dark:text-[#65cef5]">Plataforma</TableHead>
