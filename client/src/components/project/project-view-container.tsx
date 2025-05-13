@@ -40,7 +40,7 @@ export default function ProjectViewContainer() {
     name: "",
     type: "list",
     isDefault: false,
-    configuration: {},
+    config: {},
   });
 
   // Obtener vistas del proyecto

@@ -16,6 +16,7 @@ import ProjectWorkflows from "@/components/projects/project-workflows";
 import ProjectDocuments from "@/components/projects/project-documents";
 import ProjectChat from "@/components/projects/project-chat";
 import ProductList from "@/components/products/product-list";
+import ProjectViewContainer from "@/components/project/project-view-container";
 
 interface ProjectDetailProps {
   id: number;
@@ -54,7 +55,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [_, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("analysis");
+  const [activeTab, setActiveTab] = useState("tasks");
 
   // Fetch project details with analysis
   const { 
@@ -146,6 +147,12 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
           <div className="border-b">
             <TabsList className="bg-transparent h-auto p-0">
               <TabsTrigger 
+                value="tasks" 
+                className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
+              >
+                Tareas
+              </TabsTrigger>
+              <TabsTrigger 
                 value="analysis" 
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
@@ -177,6 +184,10 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
               </TabsTrigger>
             </TabsList>
           </div>
+          
+          <TabsContent value="tasks" className="mt-0 pt-4">
+            <ProjectViewContainer />
+          </TabsContent>
           
           <TabsContent value="analysis" className="mt-0 pt-4">
             <ProjectAnalysis project={projectData} isPrimary={user?.isPrimary || false} />
