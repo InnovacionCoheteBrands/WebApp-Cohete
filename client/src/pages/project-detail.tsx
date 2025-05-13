@@ -107,41 +107,39 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
 
   return (
     <div className="flex flex-col">
-      <header className="border-b bg-card px-4 py-3 md:px-6 -mx-4 md:-mx-6 mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => navigate("/projects")}
+            className="mr-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-semibold">{projectData.name}</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="hidden sm:flex"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Exportar Calendario
+          </Button>
+          {user?.isPrimary && (
             <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={() => navigate("/projects")}
-              className="mr-2"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <h1 className="text-xl font-semibold">{projectData.name}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
+              variant="default" 
               size="sm"
               className="hidden sm:flex"
             >
-              <Download className="mr-2 h-4 w-4" />
-              Exportar Calendario
+              <Pencil className="mr-2 h-4 w-4" />
+              Editar Proyecto
             </Button>
-            {user?.isPrimary && (
-              <Button 
-                variant="default" 
-                size="sm"
-                className="hidden sm:flex"
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Editar Proyecto
-              </Button>
-            )}
-          </div>
+          )}
         </div>
-      </header>
+      </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
