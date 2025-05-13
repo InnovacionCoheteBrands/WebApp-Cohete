@@ -1,0 +1,60 @@
+FUNCIONES CLAVE:
+
+* Tableros dinámicos tipo lista, Kanban, Gantt y calendario con dependencias y subtareas. ([stackby.com][1])
+* Automatizaciones sin código basadas en disparadores y acciones (AI Blocks) para mover tareas, actualizar estados y notificar. ([monday.com][2])
+* Distribución visual de carga de trabajo y asignación automática según disponibilidad. ([monday.com][3])
+* Seguimiento de tiempo, registros de horas y reportes de productividad. ([Zapier][4])
+* Gestión multiproyecto y portafolio con hojas de ruta y KPIs. ([monday.com][3])
+* Documentos colaborativos, wikis y edición en tiempo real. ([Taskade][5])
+* Comunicación integrada: chat, comentarios, videollamadas y screen-sharing. ([Taskade][6])
+* Almacenamiento de archivos con versiones y control de permisos. ([ClickUp][7])
+* Dashboards personalizables con widgets, métricas y exportación. ([stackby.com][1])
+* Integraciones nativas y vía webhooks (email, Slack, Git, CRM, ERP). ([ClickUp][8])
+* Roles granulares, SSO, auditoría y cumplimiento de seguridad. ([stackby.com][1])
+* Apps web progresivas y móviles con modo offline y notificaciones push. ([ClickUp][7])
+* Soporte multilingüe y localización completa. ([All About AI][9])
+
+UX/UI PROPUESTA:
+
+* Layout modular con barra lateral plegable y sección principal que alterna vistas (lista, tablero, Gantt, calendario). ([ClickUp][7])
+* Paleta neutra con acentos por estatus; modo claro y oscuro intercambiable. ([ClickUp][7])
+* Interacción drag-and-drop para reordenar tareas y columnas. ([ClickUp][7])
+* Creación rápida mediante “/ comando” o botón flotante en cualquier vista. ([Taskade][5])
+* Edición in-place con panel lateral contextual para detalles y comentarios. ([ClickUp][7])
+* Búsqueda global semántica, filtros avanzados y vistas guardadas. ([Zapier][10])
+* Encabezado con breadcrumb y barra de progreso del proyecto. ([forecast.app][11])
+* Tarjetas compactas con etiquetas, prioridad, avatar y fecha límite visibles. ([ClickUp][7])
+* Accesibilidad AA, atajos de teclado y navegación solo con tab. ([Zapier][10])
+* Diseño responsive first para experiencia idéntica en desktop y móvil. ([ClickUp][7])
+
+FUNCIONES IA:
+
+* Creación de tareas y proyectos a partir de instrucciones en lenguaje natural. ([Zapier][10])
+* Recomendación de asignación y carga basada en skills y disponibilidad. ([monday.com][3])
+* Predicción de retrasos y alertas de riesgo antes de que ocurran. ([Asana][12], [AI Summit New York 2024][13])
+* Resúmenes automáticos de reuniones, chats y documentos extensos. ([monday.com][2])
+* Generación de plantillas y planes de hitos según briefing inicial. ([LinkedIn][14])
+* Creación automática de “next steps” y seguimiento basado en contexto. ([monday.com][2])
+* Etiquetado y clasificación inteligente de archivos mediante visión y NLP. ([middlewarehq.com][15])
+* Asistente conversacional para consultar estado, métricas y buenas prácticas. ([Taskade][5])
+* Análisis de sentimiento en comentarios para detectar bloqueos de equipo. ([monday.com][16])
+* Forecast de recursos, costos y timeline con modelos predictivos. ([forecast.app][11])
+* Traducción automática y transcripción de voz a texto en tiempo real. ([Zapier][10])
+* Actualización dinámica de roadmaps y diagramas Gantt cuando cambian las variables. ([monday.com][16])
+
+[1]: https://stackby.com/blog/monday-com-features/?utm_source=chatgpt.com "Monday.com Features 2025: Full Breakdown & Alternatives - Stackby"
+[2]: https://monday.com/blog/project-management/ai-project-management/?utm_source=chatgpt.com "How AI Project Management Ensures Faster Execution - Monday.com"
+[3]: https://monday.com/w/ai?utm_source=chatgpt.com "AI that works for you - monday.com"
+[4]: https://zapier.com/blog/clickup-vs-asana/?utm_source=chatgpt.com "ClickUp vs. Asana: Which is better? [2025] - Zapier"
+[5]: https://www.taskade.com/features?utm_source=chatgpt.com "Features | Taskade"
+[6]: https://www.taskade.com/?utm_source=chatgpt.com "Taskade: Autonomous AI Agents & Workflow Automation"
+[7]: https://clickup.com/blog/best-project-management-tools/?utm_source=chatgpt.com "15 Best Project Management Tools in 2025 | ClickUp"
+[8]: https://clickup.com/blog/asana-vs-monday/?utm_source=chatgpt.com "Asana Vs Monday: Project Management Tool Comparison 2025"
+[9]: https://www.allaboutai.com/ai-reviews/taskade/?utm_source=chatgpt.com "Taskade Review 2025: Real-time Collaboration with AI Assistant"
+[10]: https://zapier.com/blog/best-ai-project-management-tools/?utm_source=chatgpt.com "The 4 best AI project management tools in 2025 - Zapier"
+[11]: https://www.forecast.app/blog/10-best-ai-project-management-software?utm_source=chatgpt.com "The 10 Best AI Project Management Tools in 2025 - Forecast App"
+[12]: https://asana.com/product/ai/project-management?utm_source=chatgpt.com "Supercharge your project management with Asana AI"
+[13]: https://newyork.theaisummit.com/news/top-10-ai-project-management-tools-improve-performance?utm_source=chatgpt.com "Top 10 AI Project Management Tools to Improve Performance"
+[14]: https://www.linkedin.com/pulse/revolutionizing-project-management-latest-ai-tools-2025-brunella-mori-oquqc?utm_source=chatgpt.com "Revolutionizing Project Management: The Latest AI Tools of 2025"
+[15]: https://middlewarehq.com/blog/best-ai-tools-for-project-management-in-2025-boost-productivity-with-ai?utm_source=chatgpt.com "Top AI Tools for Project Management 2025 - Middleware"
+[16]: https://monday.com/blog/project-management/ai-workflow-automation-14-tools-to-boost-team-productivity-and-scale-faster/?utm_source=chatgpt.com "AI Workflow Automation: 14 Best Tools and Use Case Examples"

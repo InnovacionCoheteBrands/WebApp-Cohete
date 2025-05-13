@@ -4,14 +4,17 @@ import { z } from "zod";
 import { relations } from "drizzle-orm";
 
 // Enums
-export const projectStatusEnum = pgEnum('project_status', ['active', 'planning', 'completed', 'on_hold']);
-export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'review', 'completed', 'cancelled']);
-export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent']);
-export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom']);
+export const projectStatusEnum = pgEnum('project_status', ['active', 'planning', 'completed', 'on_hold', 'archived']);
+export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', 'review', 'completed', 'cancelled', 'blocked', 'deferred']);
+export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent', 'critical']);
+export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom', 'blocked', 'upcoming']);
 export const aiModelEnum = pgEnum('ai_model', ['grok']);
+export const viewTypeEnum = pgEnum('view_type', ['list', 'kanban', 'gantt', 'calendar', 'timeline']);
+export const automationTriggerEnum = pgEnum('automation_trigger', ['status_change', 'due_date_approaching', 'task_assigned', 'comment_added', 'subtask_completed', 'attachment_added']);
+export const automationActionEnum = pgEnum('automation_action', ['change_status', 'assign_task', 'send_notification', 'create_subtask', 'update_priority', 'move_to_group']);
 
 // Enum para roles de usuario
-export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'designer', 'content_creator', 'analyst']);
+export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'designer', 'content_creator', 'analyst', 'developer', 'stakeholder']);
 
 // Users Table
 export const users = pgTable("users", {
@@ -160,12 +163,19 @@ const tasksTable = {
   tags: text("tags").array(), // Etiquetas para categorizar tareas
   dueDate: timestamp("due_date"),
   completedAt: timestamp("completed_at"),
+  startDate: timestamp("start_date"), // Fecha de inicio para planificación Gantt
+  endDate: timestamp("end_date"), // Fecha de fin para planificación Gantt
   estimatedHours: integer("estimated_hours"),
+  actualHours: integer("actual_hours"), // Tiempo real dedicado a la tarea
   dependencies: integer("dependencies").array(), // IDs de tareas de las que depende
-  parentTaskId: integer("parent_task_id"), // Referencia a la propia tabla de tareas (añadida después)
+  parentTaskId: integer("parent_task_id"), // Referencia a la propia tabla de tareas
   progress: integer("progress").default(0), // Progreso de la tarea en porcentaje (0-100)
   attachments: jsonb("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
   reminderDate: timestamp("reminder_date"), // Fecha para enviar recordatorio
+  customFields: jsonb("custom_fields").default({}), // Campos personalizados para extender la funcionalidad
+  followers: integer("followers").array(), // Usuarios que siguen esta tarea
+  timeTracking: jsonb("time_tracking").default([]), // Registro de tiempo {startTime, endTime, duration, userId, notes}
+  workflowId: integer("workflow_id"), // ID del flujo de trabajo al que pertenece
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 };
@@ -198,6 +208,72 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// Tabla para vistas de proyecto (list, kanban, gantt, etc.)
+export const projectViews = pgTable("project_views", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  name: text("name").notNull(),
+  type: viewTypeEnum("type").default('list').notNull(),
+  config: jsonb("config").default({}), // Configuración específica de la vista
+  isDefault: boolean("is_default").default(false),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para automatizaciones de flujo de trabajo
+export const automationRules = pgTable("automation_rules", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  trigger: automationTriggerEnum("trigger").notNull(),
+  triggerConfig: jsonb("trigger_config").default({}), // Configuración del disparador
+  action: automationActionEnum("action").notNull(),
+  actionConfig: jsonb("action_config").default({}), // Configuración de la acción
+  isActive: boolean("is_active").default(true),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para seguimiento de tiempo de trabajo
+export const timeEntries = pgTable("time_entries", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"), // Duración en segundos
+  description: text("description"),
+  billable: boolean("billable").default(true),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para etiquetas personalizadas
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  name: text("name").notNull(),
+  color: text("color").default('#3498db'),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tabla para documentos colaborativos y wikis
+export const collaborativeDocs = pgTable("collaborative_docs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  title: text("title").notNull(),
+  content: text("content"),
+  contentJson: jsonb("content_json"), // Contenido estructurado para edición colaborativa
+  lastEditedBy: integer("last_edited_by").references(() => users.id, { onDelete: 'set null' }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Define table relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdProjects: many(projects),
@@ -206,6 +282,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   schedules: many(schedules),
   createdTasks: many(tasks, { relationName: "createdTasks" }),
   assignedTasks: many(tasks, { relationName: "assignedTasks" }),
+  timeEntries: many(timeEntries),
+  createdViews: many(projectViews, { relationName: "createdViews" }),
+  createdAutomations: many(automationRules, { relationName: "createdAutomations" }),
+  createdTags: many(tags, { relationName: "createdTags" }),
+  createdDocs: many(collaborativeDocs, { relationName: "createdDocs" }),
+  editedDocs: many(collaborativeDocs, { relationName: "editedDocs" }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -217,6 +299,10 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   contentHistory: many(contentHistory),
   tasks: many(tasks),
   products: many(products),
+  views: many(projectViews),
+  automationRules: many(automationRules),
+  tags: many(tags),
+  collaborativeDocs: many(collaborativeDocs),
 }));
 
 export const analysisResultsRelations = relations(analysisResults, ({ one }) => ({
@@ -264,6 +350,32 @@ export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
 export const productsRelations = relations(products, ({ one }) => ({
   project: one(projects, { fields: [products.projectId], references: [projects.id] }),
   creator: one(users, { fields: [products.createdBy], references: [users.id] }),
+}));
+
+export const projectViewsRelations = relations(projectViews, ({ one }) => ({
+  project: one(projects, { fields: [projectViews.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [projectViews.createdBy], references: [users.id] }),
+}));
+
+export const automationRulesRelations = relations(automationRules, ({ one }) => ({
+  project: one(projects, { fields: [automationRules.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [automationRules.createdBy], references: [users.id] }),
+}));
+
+export const timeEntriesRelations = relations(timeEntries, ({ one }) => ({
+  task: one(tasks, { fields: [timeEntries.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [timeEntries.userId], references: [users.id] }),
+}));
+
+export const tagsRelations = relations(tags, ({ one }) => ({
+  project: one(projects, { fields: [tags.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [tags.createdBy], references: [users.id] }),
+}));
+
+export const collaborativeDocsRelations = relations(collaborativeDocs, ({ one }) => ({
+  project: one(projects, { fields: [collaborativeDocs.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [collaborativeDocs.createdBy], references: [users.id] }),
+  lastEditor: one(users, { fields: [collaborativeDocs.lastEditedBy], references: [users.id] }),
 }));
 
 // Zod schemas for validation
