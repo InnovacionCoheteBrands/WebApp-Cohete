@@ -1,7 +1,8 @@
 // Script de migración para agregar las nuevas tablas y campos para el gestor de proyectos
 // al estilo Monday.com y Taskade
-import { db } from './server/db.js';
+import { db } from './server/db.ts';
 import { sql } from 'drizzle-orm';
+import { WebSocket } from 'ws';
 
 async function runMigration() {
   console.log('Iniciando migración para gestor de proyectos avanzado...');
