@@ -492,6 +492,36 @@ export const insertProductSchema = createInsertSchema(products).omit({
   updatedAt: true,
 });
 
+// Nuevos esquemas de validación para gestión de proyectos tipo Monday/Taskade
+export const insertProjectViewSchema = createInsertSchema(projectViews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertAutomationRuleSchema = createInsertSchema(automationRules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTimeEntrySchema = createInsertSchema(timeEntries).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTagSchema = createInsertSchema(tags).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertCollaborativeDocSchema = createInsertSchema(collaborativeDocs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -554,3 +584,19 @@ export type InsertTaskComment = z.infer<typeof insertTaskCommentSchema>;
 
 export type Product = typeof products.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
+
+// Nuevos tipos para gestión de proyectos tipo Monday/Taskade
+export type ProjectView = typeof projectViews.$inferSelect;
+export type InsertProjectView = z.infer<typeof insertProjectViewSchema>;
+
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type InsertAutomationRule = z.infer<typeof insertAutomationRuleSchema>;
+
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = z.infer<typeof insertTimeEntrySchema>;
+
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = z.infer<typeof insertTagSchema>;
+
+export type CollaborativeDoc = typeof collaborativeDocs.$inferSelect;
+export type InsertCollaborativeDoc = z.infer<typeof insertCollaborativeDocSchema>;
