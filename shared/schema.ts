@@ -423,6 +423,10 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  // Permitir que startDate y endDate sean strings o fechas
+  startDate: z.union([z.string(), z.date(), z.null()]).optional(),
+  endDate: z.union([z.string(), z.date(), z.null()]).optional(),
 });
 
 export const insertAnalysisResultsSchema = createInsertSchema(analysisResults).omit({
