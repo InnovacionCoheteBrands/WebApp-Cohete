@@ -246,7 +246,14 @@ export class DatabaseStorage implements IStorage {
 
   // Project methods
   async createProject(project: InsertProject): Promise<Project> {
-    const [newProject] = await db.insert(projects).values(project).returning();
+    // Convertir fechas para que sean compatibles con la base de datos
+    const processedProject = {
+      ...project,
+      startDate: project.startDate ? (typeof project.startDate === 'string' ? new Date(project.startDate) : project.startDate) : null,
+      endDate: project.endDate ? (typeof project.endDate === 'string' ? new Date(project.endDate) : project.endDate) : null
+    };
+    
+    const [newProject] = await db.insert(projects).values(processedProject).returning();
     return newProject;
   }
 
