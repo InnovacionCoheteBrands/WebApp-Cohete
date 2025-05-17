@@ -252,7 +252,7 @@ export class GrokService {
       const response = await axios.post(
         `${this.baseURL}/chat/completions`,
         {
-          model: options.model || 'grok-vision-beta',
+          model: options.model || 'grok-3-mini-beta', // Cambiado a grok-3-mini-beta según solicitud
           messages: [
             {
               role: 'user',
