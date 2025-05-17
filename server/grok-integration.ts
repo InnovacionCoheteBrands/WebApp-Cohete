@@ -334,4 +334,4 @@ export class GrokService {
 }
 
 // Exportamos una instancia del servicio para su uso en toda la aplicación
-export const grokService = new GrokService(process.env.GROK_API_KEY || '');
+export const grokService = new GrokService(process.env.GROK_API_KEY || process.env.XAI_API_KEY || '');
