@@ -9,7 +9,8 @@ export class GrokService {
   private baseURL = 'https://api.x.ai/v1';
 
   constructor(apiKey: string) {
-    this.apiKey = apiKey;
+    // Utilizamos la nueva clave API XAI_API_KEY en lugar de GROK_API_KEY si está disponible
+    this.apiKey = process.env.XAI_API_KEY || apiKey;
   }
 
   /**
