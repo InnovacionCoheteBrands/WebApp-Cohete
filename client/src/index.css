@@ -135,11 +135,25 @@
     --highlight-border: 1px solid rgba(101, 206, 245, 0.2);
   }
 
-  * {
-    @apply border-border;
+  /* --- NUEVAS REGLAS / MODIFICACIONES --- */
+  html {
+    height: 100%;
+    overflow-y: hidden; /* Previene el scroll vertical en el elemento html */
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground; /* Mantener existentes */
+    height: 100%; /* Asegura que body ocupe el 100% de la altura de html */
+    overflow-y: hidden; /* Previene el scroll vertical en el elemento body */
+    margin: 0; /* Asegura que no haya márgenes por defecto */
+  }
+
+  #root {
+    height: 100%; /* Asegura que el div root ocupe el 100% de la altura de body */
+  }
+  /* --- FIN DE NUEVAS REGLAS / MODIFICACIONES --- */
+
+  * {
+    @apply border-border;
   }
 }
