@@ -150,15 +150,16 @@ export default function SettingsPage() {
     },
   });
 
-  // Actualiza el tema cuando cambia en el formulario
+  // Actualiza el formulario cuando cambia el tema
   useEffect(() => {
-    const subscription = appearanceForm.watch((value) => {
-      if (value.theme) {
-        setTheme(value.theme as "light" | "dark" | "system");
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [appearanceForm.watch, setTheme]);
+    appearanceForm.setValue("theme", theme);
+  }, [theme, appearanceForm]);
+
+  // Maneja cambios manuales en el selector de tema
+  const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
+    setTheme(newTheme);
+    appearanceForm.setValue("theme", newTheme);
+  };
 
   // Función para guardar configuraciones generales
   function onGeneralSubmit(values: z.infer<typeof generalSettingsSchema>) {
@@ -419,7 +420,13 @@ export default function SettingsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tema</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleThemeChange(value as "light" | "dark" | "system");
+                          }}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona un tema" />
