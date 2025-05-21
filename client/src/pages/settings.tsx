@@ -119,7 +119,7 @@ export default function SettingsPage() {
     resolver: zodResolver(appearanceSettingsSchema),
     defaultValues: {
       colorScheme: "amber",
-      theme: theme as string || "light",
+      theme: theme as string,
       fontSize: "medium",
       reducedAnimations: false,
       highContrastMode: false,

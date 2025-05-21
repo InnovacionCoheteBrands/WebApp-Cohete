@@ -29,7 +29,7 @@ import { AppTourProvider } from "./hooks/use-app-tour";
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="system">
         <AuthProvider>
           <AppTourProvider>
             <>
