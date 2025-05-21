@@ -117,7 +117,7 @@ export function ThemeProvider({
     if (colorScheme === "amber") {
       document.documentElement.style.setProperty('--primary', '45 93% 47%');
     } else if (colorScheme === "blue") {
-      document.documentElement.style.setProperty('--primary', '195 89% 68%');
+      document.documentElement.style.setProperty('--primary', '210 40% 80%');
     } else if (colorScheme === "green") {
       document.documentElement.style.setProperty('--primary', '142 71% 45%');
     } else if (colorScheme === "purple") {
