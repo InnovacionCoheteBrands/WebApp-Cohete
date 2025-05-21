@@ -21,7 +21,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50 transition-all duration-200">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50 transition-all duration-200 min-h-0">
           {/* Menu toggle for mobile */}
           <div className="md:hidden flex items-center mb-4">
             <Button 
