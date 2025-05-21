@@ -215,6 +215,33 @@
   }
 
   /* --- NUEVAS REGLAS / MODIFICACIONES --- */
+  
+  /* Reglas para animaciones reducidas */
+  .reduced-animations * {
+    transition-duration: 0.05s !important;
+    animation-duration: 0.05s !important;
+  }
+
+  /* Reglas para modo de alto contraste */
+  .high-contrast {
+    --foreground: 0 0% 0%;
+    --background: 0 0% 100%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --border: 0 0% 0%;
+    --input: 0 0% 0%;
+  }
+  
+  .high-contrast.dark {
+    --foreground: 0 0% 100%;
+    --background: 0 0% 0%;
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --border: 0 0% 100%;
+    --input: 0 0% 100%;
+  }
+
+  /* Reglas para tamaños de fuente */
   html {
     height: 100%;
     overflow-y: hidden; /* Previene el scroll vertical en el elemento html */

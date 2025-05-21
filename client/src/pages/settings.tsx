@@ -98,7 +98,19 @@ const securitySettingsSchema = z.object({
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const { theme, setTheme } = useTheme();
+  const { 
+    theme, 
+    setTheme,
+    colorScheme,
+    setColorScheme,
+    fontSize,
+    setFontSize,
+    reducedAnimations,
+    setReducedAnimations,
+    highContrastMode,
+    setHighContrastMode,
+    updateAllThemeOptions
+  } = useTheme();
   const { startTour } = useAppTourContext();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -150,15 +162,39 @@ export default function SettingsPage() {
     },
   });
 
-  // Actualiza el formulario cuando cambia el tema
+  // Actualiza el formulario cuando cambia alguna opción de apariencia
   useEffect(() => {
     appearanceForm.setValue("theme", theme);
-  }, [theme, appearanceForm]);
+    appearanceForm.setValue("colorScheme", colorScheme);
+    appearanceForm.setValue("fontSize", fontSize);
+    appearanceForm.setValue("reducedAnimations", reducedAnimations);
+    appearanceForm.setValue("highContrastMode", highContrastMode);
+  }, [theme, colorScheme, fontSize, reducedAnimations, highContrastMode, appearanceForm]);
 
-  // Maneja cambios manuales en el selector de tema
+  // Manejadores para cambios en opciones de apariencia
   const handleThemeChange = (newTheme: "light" | "dark" | "system") => {
     setTheme(newTheme);
     appearanceForm.setValue("theme", newTheme);
+  };
+  
+  const handleColorSchemeChange = (newColorScheme: string) => {
+    setColorScheme(newColorScheme as any);
+    appearanceForm.setValue("colorScheme", newColorScheme);
+  };
+  
+  const handleFontSizeChange = (newFontSize: string) => {
+    setFontSize(newFontSize as any);
+    appearanceForm.setValue("fontSize", newFontSize);
+  };
+  
+  const handleReducedAnimationsChange = (newValue: boolean) => {
+    setReducedAnimations(newValue);
+    appearanceForm.setValue("reducedAnimations", newValue);
+  };
+  
+  const handleHighContrastChange = (newValue: boolean) => {
+    setHighContrastMode(newValue);
+    appearanceForm.setValue("highContrastMode", newValue);
   };
 
   // Función para guardar configuraciones generales
@@ -452,7 +488,13 @@ export default function SettingsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Esquema de color</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleColorSchemeChange(value);
+                          }}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona un esquema de color" />
