@@ -510,8 +510,8 @@ export default function SettingsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="amber">Ámbar (Predeterminado)</SelectItem>
-                            <SelectItem value="blue">Azul</SelectItem>
+                            <SelectItem value="blue">Azul (Predeterminado)</SelectItem>
+                            <SelectItem value="amber">Ámbar</SelectItem>
                             <SelectItem value="green">Verde</SelectItem>
                             <SelectItem value="purple">Púrpura</SelectItem>
                             <SelectItem value="red">Rojo</SelectItem>

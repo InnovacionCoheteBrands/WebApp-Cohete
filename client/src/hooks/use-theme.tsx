@@ -113,8 +113,18 @@ export function ThemeProvider({
     // Aplicar el nuevo esquema de color
     root.classList.add(`color-${colorScheme}`);
     
-    // Establecer el color primario predeterminado para todos los esquemas
-    document.documentElement.style.setProperty('--primary', '210 40% 80%');
+    // Actualizar variables CSS para el esquema de color
+    if (colorScheme === "amber") {
+      document.documentElement.style.setProperty('--primary', '45 93% 47%');
+    } else if (colorScheme === "blue") {
+      document.documentElement.style.setProperty('--primary', '210 40% 80%');
+    } else if (colorScheme === "green") {
+      document.documentElement.style.setProperty('--primary', '142 71% 45%');
+    } else if (colorScheme === "purple") {
+      document.documentElement.style.setProperty('--primary', '270 76% 55%');
+    } else if (colorScheme === "red") {
+      document.documentElement.style.setProperty('--primary', '0 91% 51%');
+    }
   }, [colorScheme]);
 
   // Aplicar tamaño de fuente
