@@ -130,7 +130,7 @@ export default function SettingsPage() {
   const appearanceForm = useForm<z.infer<typeof appearanceSettingsSchema>>({
     resolver: zodResolver(appearanceSettingsSchema),
     defaultValues: {
-      colorScheme: "amber",
+      colorScheme: "blue",
       theme: theme as string,
       fontSize: "medium",
       reducedAnimations: false,

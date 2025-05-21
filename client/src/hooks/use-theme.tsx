@@ -34,7 +34,7 @@ interface ThemeContextType {
 
 const initialState: ThemeContextType = {
   theme: "system",
-  colorScheme: "amber",
+  colorScheme: "blue",
   fontSize: "medium",
   reducedAnimations: false,
   highContrastMode: false,
@@ -60,7 +60,7 @@ export function ThemeProvider({
   );
   
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(
-    () => (localStorage.getItem(`${storageKey}-colorScheme`) as ColorScheme) || "amber"
+    () => (localStorage.getItem(`${storageKey}-colorScheme`) as ColorScheme) || "blue"
   );
   
   const [fontSize, setFontSizeState] = useState<FontSize>(
@@ -117,7 +117,7 @@ export function ThemeProvider({
     if (colorScheme === "amber") {
       document.documentElement.style.setProperty('--primary', '45 93% 47%');
     } else if (colorScheme === "blue") {
-      document.documentElement.style.setProperty('--primary', '217 91% 60%');
+      document.documentElement.style.setProperty('--primary', '195 89% 68%');
     } else if (colorScheme === "green") {
       document.documentElement.style.setProperty('--primary', '142 71% 45%');
     } else if (colorScheme === "purple") {

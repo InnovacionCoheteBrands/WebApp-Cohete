@@ -296,7 +296,7 @@ export default function CreateScheduleSection() {
 
                   <Button 
                     type="submit" 
-                    className="w-full h-11 mt-2 interactive-element dark:bg-[#65cef5] dark:text-[#1e293b] dark:hover:bg-[#5bb7dd] dark:font-medium"
+                    className="w-full h-11 mt-2 interactive-element bg-primary text-primary-foreground hover:bg-primary/90"
                     disabled={isGenerating || createScheduleMutation.isPending}
                   >
                     {isGenerating || createScheduleMutation.isPending
@@ -371,7 +371,7 @@ export default function CreateScheduleSection() {
                 <Button 
                   variant="default" 
                   size="sm" 
-                  className="rounded-lg transition-all duration-200 shadow-sm hover:shadow interactive-element dark:bg-[#65cef5] dark:text-[#1e293b] dark:hover:bg-[#5bb7dd] dark:font-medium"
+                  className="rounded-lg transition-all duration-200 shadow-sm hover:shadow interactive-element bg-primary text-primary-foreground hover:bg-primary/90"
                   onClick={() => window.open(`/schedules/${generatedSchedule.id}`, '_blank')}
                 >
                   Ver Completo
