@@ -216,6 +216,15 @@ export default function SettingsPage() {
   function onAppearanceSubmit(values: z.infer<typeof appearanceSettingsSchema>) {
     setIsSaving(true);
     
+    // Aplicar todos los cambios de apariencia de una vez
+    updateAllThemeOptions({
+      theme: values.theme as "light" | "dark" | "system",
+      colorScheme: values.colorScheme as "amber" | "blue" | "green" | "purple" | "red",
+      fontSize: values.fontSize as "small" | "medium" | "large",
+      reducedAnimations: values.reducedAnimations,
+      highContrastMode: values.highContrastMode
+    });
+    
     // Simular guardado
     setTimeout(() => {
       setIsSaving(false);
@@ -522,7 +531,13 @@ export default function SettingsPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tamaño de fuente</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            handleFontSizeChange(value);
+                          }}
+                          value={field.value}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Selecciona un tamaño" />
@@ -557,7 +572,10 @@ export default function SettingsPage() {
                           <FormControl>
                             <Switch
                               checked={field.value}
-                              onCheckedChange={field.onChange}
+                              onCheckedChange={(checked) => {
+                                field.onChange(checked);
+                                handleReducedAnimationsChange(checked);
+                              }}
                             />
                           </FormControl>
                         </FormItem>
