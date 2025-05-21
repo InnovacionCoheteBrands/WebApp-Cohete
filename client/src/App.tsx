@@ -80,7 +80,9 @@ function App() {
                 <Route path="/projects/:projectId/tasks">
                   {(params) => (
                     <ProtectedRoute>
-                      <TaskManagerPage />
+                      <MainLayout>
+                        <TaskManagerPage />
+                      </MainLayout>
                     </ProtectedRoute>
                   )}
                 </Route>
