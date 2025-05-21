@@ -1,0 +1,41 @@
+¡Hola! Quiero llevar la experiencia de usuario (UX) y la interfaz de usuario (UI) de mi aplicación "Cohete Workflow" al siguiente nivel, para que se sienta moderna, profesional y visualmente muy atractiva, como si la hubiera desarrollado una empresa de desarrollo web de élite.
+
+Mi aplicación está construida con React (Vite), Tailwind CSS, y usa componentes de Shadcn/UI. La gestión de datos del servidor se realiza con React Query.
+
+**Objetivo General:**
+Mejorar la estética visual y la calidad de la interacción en toda la aplicación, enfocándonos en los detalles que marcan la diferencia, sin necesidad de alterar la lógica de negocio principal, la API del backend (Hono.js) o la estructura de gestión de datos (React Query).
+
+**Te pido que sugieras e implementes mejoras en las siguientes áreas, aplicando tu creatividad y las mejores prácticas de UX/UI, utilizando las herramientas y tecnologías existentes en el proyecto:**
+
+**1. Refinamiento Estético y Visual:**
+    * **Paleta de Colores y Tema:** Revisa el uso actual de la paleta de colores (definida en `tailwind.config.ts` y las variables CSS en `client/src/index.css`). Propón y aplica formas más estratégicas de usar los colores primarios, secundarios y de acento para mejorar la jerarquía visual y guiar al usuario. Considera la profundidad visual usando diferentes tonos de neutros y opacidades (como el `bg-background/50` actual en `client/src/layouts/main-layout.tsx`).
+    * **Fondos y Texturas:** Evalúa dónde se podrían usar gradientes muy sutiles (como los ya definidos `.light-gradient-bg`, `.dark-gradient-bg` en `client/src/index.css`) o fondos con texturas casi imperceptibles para añadir un toque premium a secciones principales o tarjetas.
+    * **Tipografía:** Asegura una jerarquía tipográfica impecable y consistente en toda la aplicación. Verifica que los tamaños, pesos y espaciados sean óptimos para la legibilidad y el impacto visual.
+    * **Iconografía:** Revisa el uso de los iconos (actualmente `lucide-react`). Asegura que sean consistentes, significativos y que su tamaño y emplazamiento sean óptimos.
+
+**2. Layout y Espaciado:**
+    * **"Whitespace":** Identifica áreas donde un mayor uso de espacio en blanco (márgenes, paddings, gaps) podría mejorar la legibilidad, reducir la densidad visual y dar una sensación más pulcra y organizada.
+    * **Alineación y Consistencia:** Asegura que los elementos en las diferentes páginas y componentes sigan una alineación y estructura consistentes.
+
+**3. Componentes UI (Shadcn/UI):**
+    * **Sombras y Profundidad:** Refina el uso de sombras en componentes como tarjetas (`<Card>`), modales (`<Dialog>`), popovers (`<Popover>`), etc., para que sean más sutiles, modernas y contribuyan a una mejor jerarquía z-index. Puedes basarte o mejorar las variables de sombra existentes (ej. `--shadow-soft`, `--shadow-medium`, `.dark-glow` en `client/src/index.css`).
+    * **Bordes y Radios de Esquina:** Evalúa los `border-radius` (variable `--radius`) y los bordes de los componentes. Propón ajustes para una apariencia más cohesiva y moderna (ej. bordes más finos, radios ligeramente diferentes si es apropiado).
+    * **Estilos de Interacción:** Mejora los estilos para los estados `hover`, `focus`, y `active` de los elementos interactivos (botones, inputs, ítems de lista), haciéndolos más evidentes pero elegantes, usando las clases existentes como `.card-hover`, `.interactive-element` y `.transition-standard` en `client/src/index.css` como inspiración o base.
+
+**4. Microinteracciones y Animaciones Sutiles:**
+    * **Transiciones:** Aplica transiciones suaves y fluidas (usando `tailwindcss-animate` y las clases de transición CSS existentes) para cambios de estado, aparición/desaparición de elementos, y feedback de interacción.
+    * **Animaciones de Entrada:** Considera añadir animaciones sutiles de entrada (ej. fade-in, slide-up ligero) para elementos de la página o secciones cuando se cargan o aparecen en la vista, para dar una sensación más dinámica y pulida.
+    * **Feedback Visual:** Asegura que todas las acciones del usuario tengan un feedback visual inmediato y claro, por pequeño que sea.
+
+**5. Experiencia en Páginas Clave (ej. Dashboard, Lista de Proyectos, Detalle de Proyecto):**
+    * **Presentación de Datos:** Para páginas que muestran datos (listas, tablas, tarjetas), enfócate en que la información sea fácil de escanear, visualmente agradable y que los elementos importantes destaquen.
+    * **Estados de Carga:** Mejora la presentación de los estados de carga. Asegura que los `Skeleton loaders` (componente `client/src/components/ui/skeleton.tsx`) se usen de forma efectiva y que su diseño coincida con el contenido que reemplazan.
+    * **Estados Vacíos:** Para situaciones donde no hay datos (ej. una lista de proyectos vacía), en lugar de un mensaje simple, diseña y propón un componente de "estado vacío" más atractivo que incluya quizás una ilustración sutil (relacionada con "Cohete Workflow"), un mensaje amigable y una llamada a la acción clara.
+
+**Consideraciones Adicionales:**
+* **Consistencia:** Todos los cambios deben aplicarse de manera consistente a lo largo de toda la aplicación.
+* **Modularidad:** Intenta implementar las mejoras de forma que se puedan reutilizar (ej. creando nuevas variantes de componentes Shadcn, nuevas utilidades de Tailwind, o hooks personalizados si es necesario para animaciones complejas).
+* **Rendimiento:** Las mejoras visuales no deben impactar negativamente el rendimiento de la aplicación.
+* **Mantenimiento de Funcionalidad:** Es crucial que estas mejoras estéticas y de UX no alteren la funcionalidad existente ni rompan la lógica de la aplicación.
+
+Por favor, procede a analizar el código existente y luego describe los cambios que propones para un área o componente específico como ejemplo inicial, y si es posible, implementa ese primer conjunto de mejoras. Estoy abierto a discutir y refinar tus propuestas.
