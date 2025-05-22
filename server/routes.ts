@@ -108,6 +108,27 @@ const upload = multer({
   }
 });
 
+// Configuración específica para análisis de imágenes de marketing con IA
+const marketingImageUpload = multer({
+  storage: multerStorage,
+  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB limit para imágenes de marketing (algunas pueden ser de mayor calidad)
+  fileFilter: (req, file, cb) => {
+    // Aceptar solo formatos de imagen que funcionen bien con Grok Vision
+    const allowedTypes = [
+      'image/jpeg',
+      'image/jpg',
+      'image/png',
+      'image/webp'
+    ];
+    
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Tipo de archivo no válido para análisis de IA. Solo se permiten imágenes JPG, PNG o WEBP.') as any);
+    }
+  }
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   const { isAuthenticated, isPrimaryUser, sessionStore } = setupAuth(app);
@@ -503,6 +524,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       console.error("Error updating project analysis:", error);
       res.status(500).json({ message: "Failed to update project analysis" });
+    }
+  });
+
+  // Análisis de Imágenes de Marketing con Grok Vision
+  app.post("/api/projects/:projectId/analyze-image", isAuthenticated, marketingImageUpload.single('image'), async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "ID de proyecto inválido" });
+      }
+      
+      // Verificar acceso al proyecto
+      const hasAccess = await global.storage.checkUserProjectAccess(
+        req.user!.id,
+        projectId,
+        req.user!.isPrimary
+      );
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "No tienes acceso a este proyecto" });
+      }
+      
+      // Verificar que se haya subido una imagen
+      if (!req.file) {
+        return res.status(400).json({ message: "No se ha subido ninguna imagen" });
+      }
+      
+      // Validar el tipo de análisis solicitado
+      const analysisType = (req.body.analysisType || 'content') as 'brand' | 'content' | 'audience';
+      if (!['brand', 'content', 'audience'].includes(analysisType)) {
+        return res.status(400).json({ message: "Tipo de análisis inválido. Debe ser 'brand', 'content' o 'audience'" });
+      }
+      
+      // Realizar análisis de la imagen con Grok Vision
+      const analysisResult = await analyzeMarketingImage(req.file.path, analysisType);
+      
+      // Devolver el resultado del análisis
+      res.json({
+        success: true,
+        analysisType,
+        result: analysisResult,
+        imageInfo: {
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        }
+      });
+      
+    } catch (error) {
+      console.error("Error analizando imagen de marketing:", error);
+      res.status(500).json({ 
+        message: "Error al analizar la imagen", 
+        error: (error as Error).message 
+      });
     }
   });
 
