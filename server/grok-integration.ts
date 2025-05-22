@@ -1,4 +1,30 @@
 import axios from 'axios';
+import { Server } from 'http';
+import WebSocket from 'ws';
+
+/**
+ * Interfaces para streaming de respuestas
+ */
+interface StreamCallbacks {
+  onMessage: (chunk: string) => void;
+  onComplete: (fullResponse: string) => void;
+  onError: (error: Error) => void;
+}
+
+interface StreamResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  choices: {
+    delta: {
+      content?: string;
+      role?: string;
+    };
+    index: number;
+    finish_reason: string | null;
+  }[];
+}
 
 /**
  * Clase para la integración con la API de Grok
@@ -7,12 +33,229 @@ import axios from 'axios';
 export class GrokService {
   private apiKey: string;
   private baseURL = 'https://api.x.ai/v1';
+  private wss: WebSocket.Server | null = null;
 
   constructor(apiKey: string) {
     // Utilizamos la nueva clave API XAI_API_KEY en lugar de GROK_API_KEY si está disponible
     this.apiKey = process.env.XAI_API_KEY || apiKey;
   }
+  
+  /**
+   * Inicializa el servidor WebSocket para streaming
+   * @param server Servidor HTTP de Express
+   */
+  initWebSocketServer(server: Server) {
+    try {
+      console.log('[GROK-WS] Inicializando servidor WebSocket para streaming de IA...');
+      this.wss = new WebSocket.Server({ server });
+      
+      this.wss.on('connection', (ws: WebSocket) => {
+        console.log('[GROK-WS] Nueva conexión WebSocket establecida');
+        
+        ws.on('message', async (message: WebSocket.Data) => {
+          try {
+            const data = JSON.parse(message.toString());
+            console.log('[GROK-WS] Mensaje recibido:', JSON.stringify(data).substring(0, 200) + '...');
+            
+            if (data.type === 'stream-request') {
+              console.log('[GROK-WS] Iniciando streaming de respuesta IA...');
+              
+              // Configurar callbacks para streaming
+              const callbacks: StreamCallbacks = {
+                onMessage: (chunk) => {
+                  ws.send(JSON.stringify({ type: 'chunk', content: chunk }));
+                },
+                onComplete: (fullResponse) => {
+                  ws.send(JSON.stringify({ type: 'complete', content: fullResponse }));
+                },
+                onError: (error) => {
+                  console.error('[GROK-WS] Error en streaming:', error);
+                  ws.send(JSON.stringify({ 
+                    type: 'error', 
+                    error: error.message || 'Error desconocido en streaming'
+                  }));
+                }
+              };
+              
+              // Generar respuesta en streaming
+              try {
+                await this.generateTextStream(
+                  data.prompt,
+                  callbacks,
+                  {
+                    model: data.model,
+                    temperature: data.temperature,
+                    maxTokens: data.maxTokens,
+                    responseFormat: data.responseFormat
+                  }
+                );
+              } catch (error: any) {
+                callbacks.onError(error);
+              }
+            }
+          } catch (error) {
+            console.error('[GROK-WS] Error procesando mensaje WebSocket:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              error: 'Error procesando solicitud'
+            }));
+          }
+        });
+        
+        ws.on('close', () => {
+          console.log('[GROK-WS] Conexión WebSocket cerrada');
+        });
+        
+        ws.on('error', (error: Error) => {
+          console.error('[GROK-WS] Error en conexión WebSocket:', error);
+        });
+      });
+      
+      console.log('[GROK-WS] Servidor WebSocket inicializado correctamente');
+    } catch (error) {
+      console.error('[GROK-WS] Error inicializando servidor WebSocket:', error);
+    }
+  }
 
+  /**
+   * Genera texto en streaming usando el modelo de Grok
+   * @param prompt Prompt a enviar al modelo
+   * @param callbacks Funciones de callback para manejar chunks, finalización y errores
+   * @param options Opciones de configuración (modelo, temperatura, tokens, etc.)
+   */
+  async generateTextStream(
+    prompt: string,
+    callbacks: StreamCallbacks,
+    options: {
+      model?: string;
+      temperature?: number;
+      maxTokens?: number;
+      responseFormat?: string;
+    } = {}
+  ): Promise<void> {
+    console.log(`[GROK-STREAM] Iniciando generación de texto en streaming con Grok AI`);
+    console.log(`[GROK-STREAM] Modelo: ${options.model || 'grok-3-mini-beta'}, Temperatura: ${options.temperature || 0.7}`);
+    
+    try {
+      // Preparar el payload
+      const requestPayload: any = {
+        model: options.model || 'grok-3-mini-beta',
+        messages: [
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: options.temperature || 0.7,
+        max_tokens: options.maxTokens || 2000,
+        stream: true // Activar streaming
+      };
+      
+      // Configurar formato de respuesta si es necesario
+      if (options.responseFormat === 'json_object') {
+        console.log('[GROK-STREAM] Configurando formato de respuesta: JSON_OBJECT');
+        requestPayload.response_format = { type: "json_object" };
+      }
+      
+      // Realizar la solicitud con streaming
+      const response = await axios.post(
+        `${this.baseURL}/chat/completions`,
+        requestPayload,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.apiKey}`
+          },
+          responseType: 'stream'
+        }
+      );
+      
+      console.log('[GROK-STREAM] Conexión establecida, comenzando a recibir datos...');
+      
+      let fullResponse = '';
+      const stream = response.data;
+      
+      stream.on('data', (chunk: Buffer) => {
+        try {
+          const chunkStr = chunk.toString();
+          // Los chunks vienen en formato "data: {...JSON...}\n\n"
+          const lines = chunkStr.split('\n\n');
+          
+          for (const line of lines) {
+            if (line.trim() === '') continue;
+            if (line.trim() === 'data: [DONE]') continue;
+            
+            // Extraer el JSON de "data: {...JSON...}"
+            const jsonStr = line.replace(/^data: /, '').trim();
+            if (!jsonStr) continue;
+            
+            try {
+              const jsonData = JSON.parse(jsonStr) as StreamResponse;
+              
+              // Procesar el delta de contenido si existe
+              if (jsonData.choices && jsonData.choices.length > 0) {
+                const delta = jsonData.choices[0]?.delta?.content || '';
+                
+                if (delta) {
+                  fullResponse += delta;
+                  callbacks.onMessage(delta);
+                }
+                
+                // Verificar si es el final del streaming
+                if (jsonData.choices[0]?.finish_reason === 'stop') {
+                  console.log('[GROK-STREAM] Streaming completado por señal de finalización');
+                }
+              }
+            } catch (err) {
+              console.warn('[GROK-STREAM] Error parseando chunk JSON:', jsonStr);
+            }
+          }
+        } catch (err) {
+          console.error('[GROK-STREAM] Error procesando chunk:', err);
+        }
+      });
+      
+      stream.on('end', () => {
+        console.log('[GROK-STREAM] Streaming finalizado. Longitud total:', fullResponse.length);
+        callbacks.onComplete(fullResponse);
+      });
+      
+      stream.on('error', (err: Error) => {
+        console.error('[GROK-STREAM] Error en streaming:', err);
+        callbacks.onError(err);
+      });
+      
+    } catch (error: any) {
+      console.error('[GROK-STREAM] Error iniciando streaming:', error);
+      callbacks.onError(error);
+      
+      // Manejar errores similares a generateText para consistencia
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          const statusCode = error.response.status;
+          
+          if (statusCode >= 502 && statusCode <= 504) {
+            const serviceError = new Error(`Servicio de Grok AI temporalmente no disponible (Error ${statusCode}).`);
+            callbacks.onError(serviceError);
+            return;
+          }
+          
+          if (statusCode === 429) {
+            const rateLimitError = new Error(`Se ha excedido el límite de peticiones a Grok AI.`);
+            callbacks.onError(rateLimitError);
+            return;
+          }
+          
+          if (statusCode === 401 || statusCode === 403) {
+            const authError = new Error(`Error de autenticación con la API de Grok.`);
+            callbacks.onError(authError);
+            return;
+          }
+        }
+      }
+    }
+  }
+  
   /**
    * Genera texto usando el modelo de Grok
    */
