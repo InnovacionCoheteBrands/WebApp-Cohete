@@ -1748,7 +1748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get context from previous messages
         const previousMessages = await global.storage.listChatMessagesByProject(projectId);
         
-        // Convertir los mensajes anteriores al formato requerido por OpenAI
+        // Convertir los mensajes anteriores al formato requerido por Grok
         const formattedMessages = previousMessages.map(msg => {
           // En el schema tenemos 'role' pero la API necesita 'user' o 'assistant'
           return {

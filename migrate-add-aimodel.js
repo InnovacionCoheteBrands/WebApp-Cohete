@@ -11,12 +11,12 @@ async function runMigration() {
   try {
     console.log('Iniciando migración...');
 
-    // Crear el enum ai_model si no existe
+    // Crear el enum ai_model si no existe (solo Grok como opción)
     const createEnumQuery = `
       DO $$
       BEGIN
           IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'ai_model') THEN
-              CREATE TYPE ai_model AS ENUM ('mistral', 'openai', 'grok');
+              CREATE TYPE ai_model AS ENUM ('grok');
           END IF;
       END$$;
     `;
@@ -38,7 +38,7 @@ async function runMigration() {
       // Añadir la columna ai_model a la tabla schedules si no existe
       const addColumnQuery = `
         ALTER TABLE schedules 
-        ADD COLUMN ai_model ai_model DEFAULT 'openai' NOT NULL;
+        ADD COLUMN ai_model ai_model DEFAULT 'grok' NOT NULL;
       `;
       
       await pool.query(addColumnQuery);

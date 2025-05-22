@@ -2,7 +2,7 @@ import axios from 'axios';
 
 /**
  * Clase para la integración con la API de Grok
- * Sigue un patrón similar a la integración de Mistral para mantener consistencia
+ * Implementación principal para todas las funcionalidades de IA en la aplicación
  */
 export class GrokService {
   private apiKey: string;
