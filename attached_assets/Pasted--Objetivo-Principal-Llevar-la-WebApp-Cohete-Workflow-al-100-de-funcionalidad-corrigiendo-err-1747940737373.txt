@@ -1,0 +1,128 @@
+**Objetivo Principal:** Llevar la WebApp "Cohete Workflow" al 100% de funcionalidad, corrigiendo errores, completando características y optimizando el rendimiento. **El enfoque de Inteligencia Artificial debe ser EXCLUSIVAMENTE Grok.** Eliminar CUALQUIER rastro, archivo, configuración o referencia a Mistral y OpenAI.
+
+---
+## Tareas Pendientes para Cohete Workflow:
+
+### I. Backend (Directorio: `server/`)
+
+#### 1. Limpieza Exhaustiva de Modelos IA (Mistral y OpenAI) y Enfoque Único en Grok:
+    * **Eliminar Archivos de Integración y Pruebas de Mistral/OpenAI**:
+        * Borrar `server/mistral-integration.ts`.
+        * Borrar `mistral-test.mjs`, `mistral-test.js`, `mistral-methods.mjs` (raíz del proyecto).
+        * Buscar y eliminar cualquier archivo similar o configuración que pudiera estar relacionada con OpenAI (e.g., `openai-integration.ts` si existiera, o archivos de prueba).
+    * **Actualizar `server/ai-scheduler.ts`**:
+        * Modificar `generateContentForScheduleEntry` para usar **EXCLUSIVAMENTE Grok**. Eliminar toda lógica condicional o de selección que involucre a Mistral u OpenAI.
+        * Remover cualquier importación, dependencia o comentario relacionado con Mistral u OpenAI.
+    * **Actualizar `shared/schema.ts`**:
+        * En la tabla `scheduleEntries` (y en `projects` si también tiene un campo `ai_model_preference`), cambiar el valor por defecto del campo `aiModel` para que sea un modelo de Grok (e.g., `'grok-standard'`). Ejemplo: `text('ai_model').default('grok-standard')`.
+        * El campo `aiModel` debe reflejar únicamente la posibilidad de usar Grok (quizás diferentes modelos de Grok, pero ningún otro proveedor). Si solo se usará un único modelo Grok globalmente, simplificar eliminando el campo `aiModel` y la lógica de selección asociada. Por ahora, asumir flexibilidad entre modelos Grok si es sencillo de mantener.
+    * **Revisión General del Código (Backend y Frontend)**:
+        * Realizar una búsqueda exhaustiva y eliminar CUALQUIER otra referencia, importación, comentario, variable de entorno, configuración en `package.json` o lógica relacionada con Mistral y OpenAI en todo el proyecto. El único modelo IA referenciado debe ser Grok.
+
+#### 2. Funcionalidades de IA Exclusivamente con Grok:
+    * **Generación de Contenido con Grok (`server/ai-scheduler.ts`, `server/grok-integration.ts`)**:
+        * Asegurar implementación completa y robusta de `generateContentForScheduleEntry` usando Grok, considerando: `projectDetails`, `platform`, `contentType`, `toneOfVoice`, `targetAudience`, `specificInstructions`, y modelo Grok.
+        * Optimizar `server/grok-integration.ts` para la API de Grok.
+    * **Análisis de Proyectos con Grok (`server/ai-analyzer.ts`)**:
+        * Implementar `analyzeProjectData` usando Grok para ofrecer insights. Conectar con UI.
+    * **API Keys de Grok**: Asegurar gestión segura (Replit Secrets).
+    * **Robustez IA Grok**: Implementar reintentos, timeouts, y manejo de errores de la API Grok.
+
+#### 3. Gestión de Proyectos y Tareas (`server/routes.ts`, `shared/schema.ts`):
+    * **CRUD Completo**: Verificar y completar operaciones CRUD para `projects`, `tasks`, `subTasks`, `projectViews`, `taskDependencies` en API Hono. Incluir endpoint para crear proyecto con todos los campos.
+    * **Lógica de Vistas de Proyecto**: Asegurar correcta preparación de datos para vistas Kanban, Gantt, Calendario y Lista (UI se detalla en Frontend).
+    * **Actualización de Estado de Tareas**: Implementar lógica para drag-and-drop en Kanban.
+
+#### 4. Reglas de Automatización (Nueva Funcionalidad - Detectada por Replit):
+    * **Backend (`server/routes.ts`, `shared/schema.ts` referente a `automation_rules`)**:
+        * Diseñar e implementar la lógica de backend para definir y ejecutar reglas de automatización (e.g., "si tarea X se completa, cambiar estado de Y", "si fecha Z llega, notificar a usuario W").
+        * Crear API endpoints para CRUD de `automation_rules`.
+    * **Frontend (Nueva sección o componente en `client/src/`)**:
+        * Desarrollar UI para que los usuarios puedan crear, ver, editar y eliminar reglas de automatización.
+
+#### 5. Gestión de Documentos (Ampliación a "Colaborativa" si aplica):
+    * **Backend (`server/storage.ts`, `server/routes.ts` referente a `collaborative-docs` si es distinto):**
+        * Completar carga/descarga segura.
+        * Si "colaborativa" implica más que versionado básico (e.g., comentarios en documentos, no edición en tiempo real por ahora), implementar la lógica y endpoints necesarios.
+    * **Frontend (`client/src/components/projects/project-documents.tsx`)**:
+        * Completar UI para listar, cargar, visualizar/descargar, eliminar documentos.
+        * Añadir funcionalidades "colaborativas" definidas (e.g., sección de comentarios por documento si aplica).
+
+#### 6. Registro de Tiempo y Control de Horas (Nueva Funcionalidad - Detectada por Replit):
+    * **Backend (`server/routes.ts`, `shared/schema.ts` referente a `time_entries`)**:
+        * Implementar lógica de backend para registrar entradas de tiempo asociadas a tareas o proyectos.
+        * Crear API endpoints para CRUD de `time_entries`.
+        * Considerar campos como `user_id`, `task_id`, `project_id`, `start_time`, `end_time`, `duration`, `notes`.
+    * **Frontend (Nueva sección o componente en `client/src/`)**:
+        * Desarrollar UI para que los usuarios puedan registrar, ver, editar y eliminar sus entradas de tiempo.
+        * Integrar visualización de horas en vistas de tareas/proyectos.
+
+#### 7. Sistema de Etiquetado (Tags) (Nueva Funcionalidad - Detectada por Replit):
+    * **Backend (`server/routes.ts`, `shared/schema.ts` referente a `tags` y tablas de unión, e.g., `project_tags`, `task_tags`)**:
+        * Implementar lógica para crear tags y asociarlos a proyectos, tareas u otros elementos.
+        * Crear API endpoints para CRUD de tags y sus asociaciones.
+    * **Frontend (Integrar en vistas existentes y formularios en `client/src/`)**:
+        * Permitir a los usuarios añadir/quitar tags a proyectos/tareas.
+        * Implementar filtrado por tags en las vistas de listas.
+        * Mostrar tags en las tarjetas de tareas y detalles de proyecto.
+
+#### 8. Autenticación y API (`server/auth.ts`, `server/routes.ts`):
+    * Revisar robustez de autenticación (`lucia-auth`), protección de rutas.
+    * Auditar rutas Hono, manejo de estados HTTP.
+    * Implementar endpoint para `ProjectChat` y `CopilotDrawer` usando Grok.
+
+#### 9. Base de Datos (`server/db.ts`, `shared/schema.ts`, `migrations/`):
+    * Verificar consistencia del schema con nuevas funcionalidades (`automation_rules`, `time_entries`, `tags`).
+    * Asegurar que todas las migraciones sean correctas y estén aplicadas.
+
+---
+
+### II. Frontend (Directorio: `client/src/`)
+
+#### 1. Gestión de Proyectos y sus Vistas:
+    * **Formularios (`new-project-modal.tsx`)**: Completar para todos los campos. Asegurar que selectores de IA (si los hay) solo muestren Grok.
+    * **Vistas (`project-view-container.tsx`, `views/*`)**:
+        * **Kanban**: Completar drag-and-drop, creación de tareas in-situ.
+        * **Gantt**: Visualizar tareas, duraciones, dependencias. Interacción drag-and-resize si es viable.
+        * **Calendario**: Mostrar tareas/eventos, permitir creación.
+        * **Lista**: Columnas configurables, ordenamiento, filtrado (incluir filtrado por tags nuevos).
+
+#### 2. Gestión de Tareas (`task-form.tsx`, `draggable-task-card.tsx`):
+    * Completar formulario de tareas.
+    * Mejorar visualización y edición rápida en tarjetas. Incluir tags.
+    * UI para subtareas.
+
+#### 3. Creación de Calendarios IA (con Grok):
+    * Asegurar que formulario (`calendar-creator.tsx`) y lógica (`create-schedule-section.tsx`) usen Grok.
+    * Permitir edición de contenido generado por Grok.
+
+#### 4. Chat y Copilot (con Grok):
+    * Asegurar que `copilot-drawer.tsx` y `project-chat.tsx` funcionen con Grok.
+
+#### 5. Analíticas (con Grok):
+    * Implementar visualización (`analytics.tsx`, `project-analysis.tsx`) con datos de `ai-analyzer.ts` (Grok).
+
+#### 6. UX/UI General y Mejoras de Accesibilidad:
+    * **Consistencia y Limpieza**: Revisar todos los componentes UI. Eliminar cualquier opción o referencia a Mistral/OpenAI.
+    * **Accesibilidad**:
+        * Asegurar que el modo de alto contraste (`use-theme.tsx`) funcione perfectamente.
+        * Revisar toda la aplicación para cumplir con estándares WCAG AA (navegación por teclado, ARIA labels, contraste de colores además del modo específico).
+    * **Feedback al Usuario**: Usar toasts y esqueletos de carga.
+
+---
+
+### III. Tareas Generales y Refinamientos
+
+#### 1. Exportación de PDF/Cronogramas:
+    * Mejorar diseño y funcionalidad de la exportación a PDF (Ref: `pdf-section.txt`, `html-pdf-node`).
+
+#### 2. Optimización de Rendimiento:
+    * Enfocarse en rendimiento para proyectos grandes y con muchas entradas de cronograma/tareas. Optimizar queries y renderizado en cliente.
+
+#### 3. Pruebas Exhaustivas:
+    * Implementar un sistema de pruebas (unitarias, integración) para asegurar la calidad y estabilidad, especialmente para lógica de negocio crítica y funcionalidades de IA.
+
+#### 4. Calidad de Código y Finalización:
+    * Abordar TODOS los comentarios `// TODO:`, `// FIXME:`.
+    * Implementar manejo de errores robusto y validación de inputs en todo el sistema.
+    * Revisar y limpiar configuraciones (`drizzle.config.ts`, `vite.config.ts`, etc.) y dependencias (`package.json`).

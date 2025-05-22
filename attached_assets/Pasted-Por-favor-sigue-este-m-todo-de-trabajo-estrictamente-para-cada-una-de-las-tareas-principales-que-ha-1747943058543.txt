@@ -1,0 +1,30 @@
+Por favor, sigue este método de trabajo estrictamente para cada una de las tareas principales que has enlistado:
+
+**Proceso de Ejecución y Verificación por Tarea:**
+
+1.  **Tarea Actual: "Eliminar todas las integraciones de Mistral y OpenAI"**
+    * **Ejecución:** Comienza implementando esta primera tarea. Enfócate en realizar todas las modificaciones necesarias en el código para erradicar completamente cualquier rastro de Mistral y OpenAI, siguiendo las directrices detalladas en el plan que te proporcioné anteriormente (esto incluye eliminar archivos específicos, actualizar `server/ai-scheduler.ts`, `shared/schema.ts`, y realizar una búsqueda y eliminación exhaustiva de cualquier referencia restante en todo el código base).
+    * **Verificación Rigurosa (Post-Ejecución):** Una vez que consideres que has completado la implementación de ESTA tarea, y ANTES de notificar o pasar a la siguiente, realiza una **segunda revisión minuciosa y dedicada** de todos los cambios efectuados. El objetivo es corroborar que:
+        * Se han eliminado todos los archivos de integración y prueba relacionados con Mistral y OpenAI.
+        * El código modificado (especialmente en `server/ai-scheduler.ts`, `server/grok-integration.ts`, `shared/schema.ts`, y cualquier otro archivo afectado) ahora solo hace referencia a Grok y funciona correctamente con este modelo.
+        * No persisten importaciones, comentarios, variables de entorno, configuraciones en `package.json`, o cualquier otra mención residual de Mistral u OpenAI.
+        * La aplicación compila sin errores y las funcionalidades no directamente afectadas por la IA eliminada continúan operando como se esperaba.
+    * **Confirmación:** Una vez finalizada esta tarea y su respectiva verificación rigurosa, infórmame explícitamente que has completado "Tarea 1: Eliminar todas las integraciones de Mistral y OpenAI", confirma que el resultado ha sido satisfactorio, que no se introdujeron errores y que la limpieza es total.
+
+2.  **Siguientes Tareas (Procedimiento Iterativo):**
+    * Tras tu confirmación de la Tarea 1, te indicaré que procedas con la siguiente tarea de tu resumen: **"Asegurar que Grok sea el único modelo de IA utilizado"**.
+    * Aplicarás el mismo proceso de **Ejecución y Verificación Rigurosa (Post-Ejecución)** descrito para la Tarea 1.
+    * Me informarás de la finalización y verificación de esta segunda tarea, confirmando su éxito y ausencia de errores.
+    * Continuaremos de esta manera secuencial para CADA UNA de las tareas restantes en tu resumen:
+        * "Completar las funcionalidades de gestión de proyectos y tareas"
+        * "Implementar las reglas de automatización"
+        * "Mejorar la gestión de documentos"
+        * "Desarrollar el sistema de registro de tiempo"
+        * "Implementar el sistema de etiquetado (tags)"
+        * "Optimizar la autenticación y API"
+        * "Verificar la consistencia de la base de datos"
+        * "Completar todas las vistas del frontend (Kanban, Gantt, Calendario, Lista)"
+
+**Nota Importante:** Es crucial que cada tarea se complete y verifique individualmente antes de pasar a la siguiente. No agrupes tareas a menos que te lo indique explícitamente. La calidad y la verificación en cada paso son la prioridad.
+
+Por favor, comienza con la **Tarea 1: "Eliminar todas las integraciones de Mistral y OpenAI"** y su posterior verificación rigurosa. Espero tu confirmación.
