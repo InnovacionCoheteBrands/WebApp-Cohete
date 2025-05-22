@@ -6,7 +6,7 @@ import multer from "multer";
 import fs from "fs";
 import path from "path";
 import pdfParse from "pdf-parse";
-import { analyzeDocument, processChatMessage } from "./ai-analyzer";
+import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
