@@ -1,0 +1,74 @@
+**Objetivo Principal:** Llevar la WebApp "Cohete Workflow" al 100% de funcionalidad, corrigiendo errores, completando características y optimizando el rendimiento. **El enfoque de Inteligencia Artificial debe ser EXCLUSIVAMENTE Grok, aprovechando sus capacidades avanzadas.** Eliminar CUALQUIER rastro, archivo, configuración o referencia a Mistral y OpenAI.
+
+---
+## Tareas Pendientes para Cohete Workflow:
+
+### I. Limpieza Exhaustiva de Modelos IA (Mistral y OpenAI) y Enfoque Único en Grok:
+    * **1. Eliminar Archivos de Integración y Pruebas de Mistral**:
+        * Borrar `server/mistral-integration.ts`.
+        * Borrar `mistral-test.mjs` (raíz del proyecto).
+        * Borrar `mistral-test.js` (raíz del proyecto).
+        * Borrar `mistral-methods.mjs` (raíz del proyecto).
+    * **2. Asegurar Ausencia Total de OpenAI**:
+        * Realizar una búsqueda exhaustiva y eliminar cualquier archivo, configuración, comentario o referencia a OpenAI que pudiera existir. El objetivo es CERO rastros de OpenAI.
+    * **3. Actualizar `server/ai-scheduler.ts` para Grok Exclusivo**:
+        * Modificar `generateContentForScheduleEntry` y cualquier otra función relevante para usar **EXCLUSIVAMENTE Grok**. Eliminar toda lógica condicional o de selección que involucre a Mistral u OpenAI.
+        * Remover cualquier importación, dependencia o comentario relacionado con Mistral u OpenAI.
+    * **4. Actualizar `shared/schema.ts` para Grok**:
+        * En la tabla `scheduleEntries` (y en `projects` si aplica), cambiar el valor por defecto del campo `aiModel` a un modelo de Grok apropiado (e.g., `'grok-standard'`). Ejemplo: `text('ai_model').default('grok-standard')`.
+        * El campo `aiModel` debe reflejar únicamente la posibilidad de usar Grok. Si se decide mantener flexibilidad entre modelos Grok, asegurar que los valores por defecto y las opciones disponibles en la UI reflejen solo Grok.
+    * **5. Revisión General del Código (Backend y Frontend)**:
+        * Realizar una búsqueda adicional y eliminar CUALQUIER otra referencia (importaciones, comentarios, variables de entorno, configuraciones en `package.json`) relacionada con Mistral y OpenAI en todo el proyecto.
+
+---
+### II. Mejoras Avanzadas de IA con Grok (basado en Guías x.ai)
+    * ... (Mantener todos los puntos de la Sección II como estaban en el prompt anterior) ...
+        * **5. Implementar Visualización de Razonamiento de Grok (Reasoning) EXCLUSIVAMENTE en CopilotDrawer:**
+            * ... (Detalles específicos para el razonamiento en CopilotDrawer) ...
+
+---
+### III. Backend (Directorio: `server/`) (Funcionalidades a completar y potenciar)
+    * ... (Mantener todos los puntos de la Sección III como estaban en el prompt anterior, asegurando que las referencias a "COMPLETAR FUNCIONALIDAD" para tablas existentes como `automation_rules`, `time_entries`, `tags`, `collaborative_docs` son correctas según el análisis del commit `aac1092...`) ...
+
+---
+### IV. Frontend (Directorio: `client/src/`) (Funcionalidades a completar y desarrollar UI para nuevas capacidades)
+    * ... (Mantener todos los puntos de la Sección IV como estaban en el prompt anterior, asegurando que las referencias a "NUEVA UI o COMPLETAR" o "INTEGRAR UI" para funcionalidades como Automatización, Tiempo, Tags, Documentos son correctas) ...
+
+---
+### V. Tareas Generales y Refinamientos (Continuación)
+    * ... (Mantener todos los puntos de la Sección V como estaban en el prompt anterior) ...
+
+---
+**Proceso de Ejecución y Verificación por Tarea (Flujo Autónomo):**
+
+Utiliza el siguiente método de trabajo para CADA UNA de las **tareas principales** identificadas y agrupadas en las secciones I, II, III, IV y V de este plan. Las tareas principales son los puntos numerados dentro de cada sección (e.g., "I.1. Eliminar Archivos...", "II.1. Implementar Respuestas en Streaming...", "III.2. Módulo de Búsqueda de Tendencias...", etc.).
+
+**Para cada Tarea Principal:**
+
+1.  **Ejecución:**
+    * Enfócate en implementar COMPLETAMENTE la tarea actual asignada según las directrices detalladas en este documento.
+
+2.  **Verificación Rigurosa (Post-Ejecución Interna):**
+    * Una vez que consideres que has completado la implementación de la tarea actual, y ANTES de pasar a la siguiente, realiza una **segunda revisión minuciosa y dedicada INTERNAMENTE** de todos los cambios efectuados. El objetivo es corroborar que:
+        * La funcionalidad implementada o modificada cumple con todos los requisitos especificados para esa tarea.
+        * Se han eliminado todos los elementos no deseados (si aplica, como en la Tarea I).
+        * El código es limpio, sigue las buenas prácticas y está debidamente comentado donde es necesario.
+        * La aplicación compila sin errores.
+        * Las funcionalidades directamente relacionadas con la tarea actual operan como se espera y no se introdujeron regresiones en otras áreas (realiza pruebas básicas si es posible).
+
+3.  **Continuación Autónoma:**
+    * **Si la verificación interna es satisfactoria y no encuentras errores críticos que impidan continuar:** Procede **automáticamente** a la siguiente tarea principal en el orden establecido en este plan (primero todas las de la Sección I, luego todas las de la Sección II, y así sucesivamente). **NO necesitas esperar mi confirmación para pasar a la siguiente tarea si la verificación interna fue exitosa.**
+    * **Si encuentras un error crítico o una ambigüedad que te impide completar la tarea actual o su verificación de forma satisfactoria:** Detente en ese punto, infórmame detalladamente sobre el problema o la pregunta, y espera mis instrucciones antes de continuar con esa tarea o pasar a la siguiente.
+
+**Informe de Progreso (Opcional, al final de bloques significativos o si hay problemas):**
+* Aunque no necesitas mi confirmación para cada tarea individual (si todo va bien), sería útil un breve informe de progreso después de completar bloques de tareas significativos (por ejemplo, al finalizar toda la Sección I, o toda la Sección II).
+* **SIEMPRE infórmame inmediatamente si te encuentras con un bloqueo, error crítico o necesitas una aclaración urgente.**
+
+**Prioridad Inicial:**
+Comienza con la **Tarea I (Limpieza Exhaustiva de Modelos IA)** y sigue el flujo autónomo descrito.
+
+---
+**Prioridad de las Tareas (Recordatorio):**
+1.  **Tarea I (Limpieza de IA y Enfoque en Grok)** es la MÁXIMA PRIORIDAD INMEDIATA.
+2.  Luego, las **Tareas II (Mejoras Avanzadas de IA con Grok)** deben integrarse progresivamente mientras se desarrollan/completan las funcionalidades de Backend y Frontend.
+3.  Las **Tareas III y IV (Backend y Frontend)** deben abordarse para completar las funcionalidades ya iniciadas (Automatización, Tiempo, Tags, Documentos Colaborativos) y desarrollar las nuevas (Live Search), a la par que se potencian con las capacidades de la Tarea II.
