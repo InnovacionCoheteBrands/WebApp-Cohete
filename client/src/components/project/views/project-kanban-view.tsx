@@ -108,12 +108,17 @@ function TaskCard({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task)
 
   // Determinar si hay una persona asignada
   const hasAssignee = !!task.assignedToId;
+  
+  // Determinar si la tarea tiene dependencias
+  const hasDependencies = task.dependencies && task.dependencies.length > 0;
 
   return (
     <Card className="mb-2 shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="p-3 pb-0">
         <div className="flex justify-between items-start">
-          <CardTitle className="text-sm font-medium">{task.title}</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            {task.title}
+          </CardTitle>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8">
@@ -138,12 +143,27 @@ function TaskCard({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task)
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+        
+        {/* Indicador de dependencias */}
+        {hasDependencies && (
+          <div className="mt-1 flex items-center">
+            <div className="text-xs text-primary font-medium flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+              Tiene dependencias
+            </div>
+          </div>
+        )}
       </CardHeader>
+      
       <CardContent className="p-3 pt-1">
         <p className="text-xs text-muted-foreground line-clamp-2">
           {task.description || "Sin descripción"}
         </p>
       </CardContent>
+      
       <CardFooter className="p-3 pt-1 flex flex-col gap-2">
         <div className="flex justify-between items-center w-full">
           <Badge variant={getPriorityBadgeVariant(task.priority) as any} className="text-xs">
@@ -197,8 +217,10 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
+  const [newTaskStatus, setNewTaskStatus] = useState<string | null>(null);
 
   // Sensores para drag and drop
   const sensors = useSensors(
@@ -221,6 +243,15 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
         `/api/projects/${projectId}/tasks`
       );
       return (await res.json()) as Task[];
+    },
+  });
+  
+  // Obtener usuarios para asignar tareas
+  const { data: users = [] } = useQuery({
+    queryKey: ["/api/users"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/users");
+      return await res.json();
     },
   });
 
@@ -269,6 +300,32 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
     onError: (error: Error) => {
       toast({
         title: "Error al eliminar tarea",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Crear nueva tarea
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData: Partial<Task>) => {
+      const res = await apiRequest(
+        "POST",
+        `/api/projects/${projectId}/tasks`,
+        taskData
+      );
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      toast({
+        title: "Tarea creada",
+        description: "La tarea ha sido creada exitosamente.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al crear tarea",
         description: error.message,
         variant: "destructive",
       });
@@ -404,7 +461,14 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
           />
         </div>
 
-        <Button size="sm" variant="outline">
+        <Button 
+          size="sm" 
+          variant="outline"
+          onClick={() => {
+            setNewTaskStatus(null);
+            setIsCreateDialogOpen(true);
+          }}
+        >
           <Plus className="h-4 w-4 mr-2" />
           Nueva tarea
         </Button>
@@ -459,6 +523,10 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                   variant="ghost" 
                   size="sm" 
                   className="w-full mt-2 text-muted-foreground"
+                  onClick={() => {
+                    setNewTaskStatus(status);
+                    setIsCreateDialogOpen(true);
+                  }}
                 >
                   <Plus className="h-4 w-4 mr-1" /> Agregar tarea
                 </Button>
@@ -582,6 +650,36 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                   })}
                 />
               </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="dependencies" className="text-right text-sm font-medium">
+                  Depende de
+                </label>
+                <div className="col-span-3">
+                  <select
+                    id="dependencies"
+                    multiple
+                    className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    defaultValue={taskToEdit?.dependencies || []}
+                    onChange={(e) => {
+                      const selectedOptions = Array.from(e.target.selectedOptions).map(option => parseInt(option.value));
+                      setTaskToEdit({
+                        ...taskToEdit!,
+                        dependencies: selectedOptions
+                      });
+                    }}
+                  >
+                    {tasks?.filter(t => t.id !== taskToEdit?.id).map(task => (
+                      <option key={task.id} value={task.id}>
+                        {task.title}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Selecciona múltiples tareas manteniendo presionado Ctrl o Cmd
+                  </p>
+                </div>
+              </div>
             </div>
           )}
           
@@ -599,13 +697,162 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                     priority: taskToEdit.priority,
                     dueDate: taskToEdit.dueDate,
                     progress: taskToEdit.progress,
-                    estimatedHours: taskToEdit.estimatedHours
+                    estimatedHours: taskToEdit.estimatedHours,
+                    dependencies: taskToEdit.dependencies || []
                   }
                 });
                 setIsEditDialogOpen(false);
               }
             }}>
               Guardar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo para crear nueva tarea */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Crear nueva tarea</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-title" className="text-right text-sm font-medium">
+                Título
+              </label>
+              <Input
+                id="new-title"
+                placeholder="Título de la tarea"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-description" className="text-right text-sm font-medium">
+                Descripción
+              </label>
+              <Input
+                id="new-description"
+                placeholder="Descripción detallada de la tarea"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-priority" className="text-right text-sm font-medium">
+                Prioridad
+              </label>
+              <select
+                id="new-priority"
+                defaultValue="medium"
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+              >
+                <option value="low">Baja</option>
+                <option value="medium">Media</option>
+                <option value="high">Alta</option>
+                <option value="urgent">Urgente</option>
+                <option value="critical">Crítica</option>
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-status" className="text-right text-sm font-medium">
+                Estado
+              </label>
+              <select
+                id="new-status"
+                defaultValue={newTaskStatus || "pending"}
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+              >
+                <option value="pending">Pendiente</option>
+                <option value="in_progress">En progreso</option>
+                <option value="review">En revisión</option>
+                <option value="completed">Completada</option>
+                <option value="blocked">Bloqueada</option>
+                <option value="deferred">Aplazada</option>
+              </select>
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-dueDate" className="text-right text-sm font-medium">
+                Fecha límite
+              </label>
+              <Input
+                id="new-dueDate"
+                type="date"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-estimatedHours" className="text-right text-sm font-medium">
+                Horas estimadas
+              </label>
+              <Input
+                id="new-estimatedHours"
+                type="number"
+                min="0"
+                placeholder="0"
+                className="col-span-3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-4 items-center gap-4">
+              <label htmlFor="new-assignee" className="text-right text-sm font-medium">
+                Asignar a
+              </label>
+              <select
+                id="new-assignee"
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+              >
+                <option value="">Sin asignar</option>
+                {users.map((user: any) => (
+                  <option key={user.id} value={user.id}>
+                    {user.fullName || user.username}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              const titleInput = document.getElementById('new-title') as HTMLInputElement;
+              const descriptionInput = document.getElementById('new-description') as HTMLInputElement;
+              const priorityInput = document.getElementById('new-priority') as HTMLSelectElement;
+              const statusInput = document.getElementById('new-status') as HTMLSelectElement;
+              const dueDateInput = document.getElementById('new-dueDate') as HTMLInputElement;
+              const estimatedHoursInput = document.getElementById('new-estimatedHours') as HTMLInputElement;
+              const assigneeInput = document.getElementById('new-assignee') as HTMLSelectElement;
+              
+              if (!titleInput.value) {
+                toast({
+                  title: "Error",
+                  description: "El título es obligatorio",
+                  variant: "destructive",
+                });
+                return;
+              }
+              
+              createTaskMutation.mutate({
+                title: titleInput.value,
+                description: descriptionInput.value || null,
+                priority: priorityInput.value as any,
+                status: statusInput.value as any,
+                dueDate: dueDateInput.value ? new Date(dueDateInput.value) : null,
+                estimatedHours: estimatedHoursInput.value ? parseInt(estimatedHoursInput.value) : null,
+                assignedToId: assigneeInput.value ? parseInt(assigneeInput.value) : null,
+                projectId: projectId
+              });
+              
+              setIsCreateDialogOpen(false);
+            }}>
+              Crear tarea
             </Button>
           </DialogFooter>
         </DialogContent>
