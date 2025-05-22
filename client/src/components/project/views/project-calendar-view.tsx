@@ -1,196 +1,58 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Task, taskStatusEnum, taskPriorityEnum } from "@shared/schema";
-import { Loader2, ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Input } from "@/components/ui/input";
+import { Loader2, Calendar as CalendarIcon, Search, Plus } from "lucide-react";
+import { addDays, format, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
+import { es } from "date-fns/locale";
 
 interface ProjectCalendarViewProps {
   projectId: number;
   viewId: number;
 }
 
-interface CalendarDay {
-  date: Date;
-  isCurrentMonth: boolean;
-  tasks: Task[];
+interface Task {
+  id: number;
+  title: string;
+  description: string | null;
+  status: string;
+  priority: string;
+  dueDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  assignedToId: number | null;
 }
 
 export default function ProjectCalendarView({ projectId, viewId }: ProjectCalendarViewProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [date, setDate] = useState<Date>(new Date());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   // Obtener tareas del proyecto
-  const { data: tasks, isLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["/api/projects", projectId, "tasks"],
     queryFn: async () => {
-      const res = await apiRequest(
-        "GET",
-        `/api/projects/${projectId}/tasks`
-      );
-      return (await res.json()) as Task[];
+      const res = await apiRequest("GET", `/api/projects/${projectId}/tasks`);
+      return await res.json();
     },
   });
 
-  // Filtrar tareas por estado si es necesario
-  const filteredTasks = React.useMemo(() => {
-    if (!tasks) return [];
-    
-    if (!statusFilter) return tasks;
-    
-    return tasks.filter(task => task.status === statusFilter);
-  }, [tasks, statusFilter]);
-
-  // Generar datos del calendario
-  const calendarData = React.useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    // Primer día del mes
-    const firstDayOfMonth = new Date(year, month, 1);
-    // Último día del mes
-    const lastDayOfMonth = new Date(year, month + 1, 0);
-    
-    // Día de la semana del primer día (0 = domingo, 1 = lunes, ...)
-    const firstDayOfWeek = firstDayOfMonth.getDay();
-    // Ajustar para que la semana comience en lunes (0 = lunes, 6 = domingo)
-    const startingDayOfWeek = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-    
-    // Calcular días previos del mes anterior para completar la primera semana
-    const previousMonthDays: CalendarDay[] = [];
-    const daysFromPreviousMonth = startingDayOfWeek;
-    
-    if (daysFromPreviousMonth > 0) {
-      for (let i = daysFromPreviousMonth - 1; i >= 0; i--) {
-        const day = new Date(year, month, -i);
-        previousMonthDays.push({
-          date: day,
-          isCurrentMonth: false,
-          tasks: getTasksForDate(filteredTasks, day)
-        });
-      }
-    }
-    
-    // Días del mes actual
-    const currentMonthDays: CalendarDay[] = [];
-    for (let i = 1; i <= lastDayOfMonth.getDate(); i++) {
-      const day = new Date(year, month, i);
-      currentMonthDays.push({
-        date: day,
-        isCurrentMonth: true,
-        tasks: getTasksForDate(filteredTasks, day)
-      });
-    }
-    
-    // Calcular días del mes siguiente para completar la última semana
-    const nextMonthDays: CalendarDay[] = [];
-    const totalDaysDisplayed = previousMonthDays.length + currentMonthDays.length;
-    const remainingDays = 42 - totalDaysDisplayed; // 6 semanas x 7 días
-    
-    for (let i = 1; i <= remainingDays; i++) {
-      const day = new Date(year, month + 1, i);
-      nextMonthDays.push({
-        date: day,
-        isCurrentMonth: false,
-        tasks: getTasksForDate(filteredTasks, day)
-      });
-    }
-    
-    return [...previousMonthDays, ...currentMonthDays, ...nextMonthDays];
-  }, [currentDate, filteredTasks]);
-  
-  // Función para obtener tareas para una fecha específica
-  function getTasksForDate(tasks: Task[], date: Date): Task[] {
-    if (!tasks) return [];
-    
-    const dateWithoutTime = new Date(date);
-    dateWithoutTime.setHours(0, 0, 0, 0);
-    
-    return tasks.filter(task => {
-      // Si la tarea tiene fecha de inicio o fecha límite
-      if (task.startDate || task.dueDate) {
-        const taskStartDate = task.startDate ? new Date(task.startDate) : null;
-        const taskDueDate = task.dueDate ? new Date(task.dueDate) : null;
-        
-        if (taskStartDate) {
-          taskStartDate.setHours(0, 0, 0, 0);
-        }
-        
-        if (taskDueDate) {
-          taskDueDate.setHours(0, 0, 0, 0);
-        }
-        
-        // La tarea está en el día si:
-        // - La fecha es igual a la fecha de inicio
-        // - La fecha es igual a la fecha límite
-        // - La fecha está entre la fecha de inicio y la fecha límite
-        if (taskStartDate && taskDueDate) {
-          return dateWithoutTime >= taskStartDate && dateWithoutTime <= taskDueDate;
-        } else if (taskStartDate) {
-          return dateWithoutTime.getTime() === taskStartDate.getTime();
-        } else if (taskDueDate) {
-          return dateWithoutTime.getTime() === taskDueDate.getTime();
-        }
-      }
-      
-      return false;
-    });
-  }
-  
-  // Navegar al mes anterior
-  const goToPreviousMonth = () => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() - 1);
-      return newDate;
-    });
+  // Traducción de prioridades para mostrar en español
+  const translatePriority = (priority: string) => {
+    const priorityTranslations: Record<string, string> = {
+      low: "Baja",
+      medium: "Media",
+      high: "Alta",
+      urgent: "Urgente",
+      critical: "Crítica",
+    };
+    return priorityTranslations[priority] || priority;
   };
-  
-  // Navegar al mes siguiente
-  const goToNextMonth = () => {
-    setCurrentDate(prev => {
-      const newDate = new Date(prev);
-      newDate.setMonth(prev.getMonth() + 1);
-      return newDate;
-    });
-  };
-  
-  // Navegar al mes actual
-  const goToCurrentMonth = () => {
-    setCurrentDate(new Date());
-  };
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[300px]">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  // Nombre del mes y año
-  const monthYear = currentDate.toLocaleDateString("es-ES", {
-    month: "long",
-    year: "numeric",
-  });
-
-  // Nombres de los días de la semana
-  const weekdays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
   // Traducción de estados para mostrar en español
   const translateStatus = (status: string) => {
@@ -206,50 +68,191 @@ export default function ProjectCalendarView({ projectId, viewId }: ProjectCalend
     return statusTranslations[status] || status;
   };
 
-  // Obtener color según estado de tarea
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed": return "bg-green-500";
-      case "in_progress": return "bg-blue-500";
-      case "review": return "bg-yellow-500";
-      case "pending": return "bg-slate-500";
-      case "blocked": return "bg-red-500";
-      case "deferred": return "bg-gray-500";
-      default: return "bg-slate-500";
+  // Filtrar tareas por texto de búsqueda
+  const filteredTasks = React.useMemo(() => {
+    if (!tasks) return [];
+    
+    if (!searchTerm) return tasks;
+    
+    const term = searchTerm.toLowerCase();
+    return tasks.filter(
+      (task: Task) =>
+        task.title.toLowerCase().includes(term) ||
+        (task.description && task.description.toLowerCase().includes(term))
+    );
+  }, [tasks, searchTerm]);
+
+  // Función para obtener tareas para una fecha específica
+  const getTasksForDay = (day: Date) => {
+    return filteredTasks.filter((task: Task) => {
+      if (!task.dueDate) return false;
+      const dueDate = new Date(task.dueDate);
+      return isSameDay(dueDate, day);
+    });
+  };
+
+  // Lista de días para el calendario
+  const calendarDays = React.useMemo(() => {
+    if (!date) return [];
+    
+    const start = startOfMonth(date);
+    const end = endOfMonth(date);
+    
+    return eachDayOfInterval({ start, end });
+  }, [date]);
+
+  // Función para obtener el color según la prioridad de la tarea
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+      case "critical":
+        return "bg-red-500";
+      case "high":
+        return "bg-orange-500";
+      case "medium":
+        return "bg-yellow-500";
+      case "low":
+        return "bg-green-500";
+      default:
+        return "bg-blue-500";
     }
   };
+
+  // Organizar tareas por días para el mes actual
+  const tasksByDay = React.useMemo(() => {
+    const result: Record<string, Task[]> = {};
+    
+    if (!filteredTasks || filteredTasks.length === 0) return result;
+    
+    calendarDays.forEach(day => {
+      const formattedDay = format(day, "yyyy-MM-dd");
+      result[formattedDay] = [];
+    });
+    
+    filteredTasks.forEach((task: Task) => {
+      if (!task.dueDate) return;
+      
+      const dueDate = new Date(task.dueDate);
+      const formattedDueDate = format(dueDate, "yyyy-MM-dd");
+      
+      if (result[formattedDueDate]) {
+        result[formattedDueDate].push(task);
+      }
+    });
+    
+    return result;
+  }, [filteredTasks, calendarDays]);
+
+  // Renderizar el día con sus tareas
+  const renderDay = (day: Date) => {
+    const formattedDay = format(day, "yyyy-MM-dd");
+    const dayTasks = tasksByDay[formattedDay] || [];
+    const hasEvents = dayTasks.length > 0;
+    
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <div
+            className={`
+              h-full min-h-[100px] cursor-pointer p-1 border border-border/20 hover:bg-muted/50 
+              ${isSameDay(day, new Date()) ? "bg-blue-100/50 dark:bg-blue-900/20" : ""}
+              ${selectedDay && isSameDay(day, selectedDay) ? "ring-2 ring-primary" : ""}
+            `}
+            onClick={() => setSelectedDay(day)}
+          >
+            <div className="text-sm font-medium mb-1">
+              {format(day, "d", { locale: es })}
+            </div>
+            <div>
+              {dayTasks.slice(0, 3).map((task: Task) => (
+                <div 
+                  key={task.id} 
+                  className={`text-xs rounded px-1 py-0.5 truncate mb-1 text-white ${getPriorityColor(task.priority)}`}
+                >
+                  {task.title}
+                </div>
+              ))}
+              {dayTasks.length > 3 && (
+                <div className="text-xs text-muted-foreground">
+                  {dayTasks.length - 3} más...
+                </div>
+              )}
+            </div>
+          </div>
+        </PopoverTrigger>
+        {hasEvents && (
+          <PopoverContent className="w-80 p-0" align="start">
+            <div className="p-3 border-b">
+              <h3 className="font-medium">{format(day, "EEEE, d 'de' MMMM", { locale: es })}</h3>
+            </div>
+            <div className="p-2 max-h-[300px] overflow-y-auto">
+              {dayTasks.map((task: Task) => (
+                <div key={task.id} className="p-2 hover:bg-muted rounded-md">
+                  <div className="font-medium text-sm">{task.title}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="outline" className="text-xs">
+                      {translateStatus(task.status)}
+                    </Badge>
+                    <Badge 
+                      className={`text-xs ${
+                        task.priority === "urgent" || task.priority === "critical" 
+                          ? "bg-red-500" 
+                          : task.priority === "high" 
+                          ? "bg-orange-500" 
+                          : task.priority === "medium" 
+                          ? "bg-yellow-500" 
+                          : "bg-green-500"
+                      }`}
+                    >
+                      {translatePriority(task.priority)}
+                    </Badge>
+                  </div>
+                  {task.description && (
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                      {task.description}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </PopoverContent>
+        )}
+      </Popover>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-[300px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" onClick={goToPreviousMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <h3 className="capitalize text-lg font-medium w-36 text-center">{monthYear}</h3>
-          <Button variant="outline" size="sm" onClick={goToNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={goToCurrentMonth}>
-            Hoy
-          </Button>
+        <div className="flex items-center space-x-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-[300px]">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar tareas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 w-full pl-8"
+            />
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Select value={statusFilter || ""} onValueChange={(val) => setStatusFilter(val || null)}>
-            <SelectTrigger className="w-[150px] h-9">
-              <SelectValue placeholder="Estado" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">Todos los estados</SelectItem>
-              {Object.values(taskStatusEnum.enumValues).map((status) => (
-                <SelectItem key={status} value={status}>
-                  {translateStatus(status)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setDate(new Date())}
+          >
+            <CalendarIcon className="h-4 w-4 mr-2" />
+            Hoy
+          </Button>
           <Button size="sm" variant="outline">
             <Plus className="h-4 w-4 mr-2" />
             Nueva tarea
@@ -257,89 +260,60 @@ export default function ProjectCalendarView({ projectId, viewId }: ProjectCalend
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
-        {/* Cabecera con días de la semana */}
-        <div className="grid grid-cols-7 bg-muted/40 border-b">
-          {weekdays.map((day) => (
-            <div key={day} className="p-2 text-center font-medium">
-              {day}
-            </div>
-          ))}
-        </div>
-
-        {/* Días del calendario */}
-        <div className="grid grid-cols-7 min-h-[600px]">
-          {calendarData.map((day, index) => {
-            // Verificar si es hoy
-            const isToday = day.date.toDateString() === new Date().toDateString();
+      <div className="flex flex-col md:flex-row gap-4">
+        <Card className="md:w-80 shrink-0">
+          <CardHeader>
+            <CardTitle className="text-xl">Calendario</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={(date) => date && setDate(date)}
+              className="rounded-md border"
+              locale={es}
+            />
             
-            return (
-              <div
-                key={index}
-                className={`border-r border-b min-h-[100px] ${
-                  day.isCurrentMonth ? "bg-background" : "bg-muted/30"
-                } ${isToday ? "ring-2 ring-primary ring-inset" : ""}`}
-              >
-                {/* Número de día */}
-                <div className="p-1 sticky top-0 bg-inherit z-10 border-b flex justify-between items-center">
-                  <span className={`${isToday ? "font-bold text-primary" : ""}`}>
-                    {day.date.getDate()}
-                  </span>
-                  {day.isCurrentMonth && (
-                    <Button variant="ghost" size="icon" className="h-6 w-6">
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                  )}
+            <div className="mt-4 space-y-1">
+              <h3 className="font-medium text-sm">Prioridades</h3>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-full bg-red-500"></span>
+                  <span>Urgente / Crítica</span>
                 </div>
-
-                {/* Tareas del día */}
-                <div className="p-1 space-y-1 max-h-[150px] overflow-y-auto">
-                  {day.tasks.slice(0, 5).map((task) => (
-                    <TooltipProvider key={task.id}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div 
-                            className={`text-xs truncate px-1 py-0.5 rounded text-white cursor-pointer ${getStatusColor(task.status)}`}
-                          >
-                            {task.title}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="space-y-1 max-w-[300px]">
-                            <p className="font-medium">{task.title}</p>
-                            <div className="text-xs flex items-center space-x-2">
-                              <Badge variant="outline">{translateStatus(task.status)}</Badge>
-                              {task.startDate && task.dueDate && (
-                                <span>
-                                  {new Date(task.startDate).toLocaleDateString("es-ES", {
-                                    day: "2-digit",
-                                    month: "short",
-                                  })} - 
-                                  {new Date(task.dueDate).toLocaleDateString("es-ES", {
-                                    day: "2-digit",
-                                    month: "short",
-                                  })}
-                                </span>
-                              )}
-                            </div>
-                            {task.description && (
-                              <p className="text-xs text-muted-foreground">{task.description}</p>
-                            )}
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                  
-                  {day.tasks.length > 5 && (
-                    <div className="text-xs text-muted-foreground text-center">
-                      +{day.tasks.length - 5} más
-                    </div>
-                  )}
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-full bg-orange-500"></span>
+                  <span>Alta</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+                  <span>Media</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                  <span>Baja</span>
                 </div>
               </div>
-            );
-          })}
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className="flex-1 min-w-0">
+          <div className="grid grid-cols-7 gap-0 border border-border/20 rounded-md overflow-hidden">
+            {/* Días de la semana */}
+            {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
+              <div key={day} className="p-2 text-center font-medium bg-muted/50">
+                {day}
+              </div>
+            ))}
+            
+            {/* Rendereamos los días del mes con sus tareas */}
+            {calendarDays.map((day) => (
+              <div key={day.toISOString()}>
+                {renderDay(day)}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
