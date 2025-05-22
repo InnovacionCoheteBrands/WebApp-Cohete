@@ -65,6 +65,22 @@ interface AutomationRule {
   updatedAt: string;
 }
 
+// Tipo para la configuración del disparador
+type TriggerConfig = {
+  fromStatus?: string;
+  toStatus?: string;
+  daysRemaining?: number;
+  assignedTo?: number | 'any';
+};
+
+// Tipo para la configuración de la acción
+type ActionConfig = {
+  newStatus?: string;
+  assignTo?: number;
+  newPriority?: string;
+  message?: string;
+};
+
 export default function AutomationRulesPanel({ projectId }: AutomationRulesPanelProps) {
   const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
@@ -73,10 +89,10 @@ export default function AutomationRulesPanel({ projectId }: AutomationRulesPanel
   const [newRuleData, setNewRuleData] = useState({
     name: "",
     description: "",
-    trigger: "status_change" as const,
-    triggerConfig: {},
-    action: "change_status" as const,
-    actionConfig: {},
+    trigger: "status_change" as 'status_change' | 'due_date_approaching' | 'task_assigned' | 'comment_added' | 'subtask_completed' | 'attachment_added',
+    triggerConfig: {} as TriggerConfig,
+    action: "change_status" as 'change_status' | 'assign_task' | 'send_notification' | 'create_subtask' | 'update_priority' | 'move_to_group',
+    actionConfig: {} as ActionConfig,
     isActive: true
   });
 
@@ -261,218 +277,223 @@ export default function AutomationRulesPanel({ projectId }: AutomationRulesPanel
 
   // Renderizar formulario del disparador según el tipo
   const renderTriggerConfig = () => {
-    switch (newRuleData.trigger) {
-      case "status_change":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="fromStatus" className="text-right">
-                De estado
-              </Label>
-              <Select
-                value={newRuleData.triggerConfig.fromStatus || ""}
-                onValueChange={(value) => handleTriggerConfigChange("fromStatus", value)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona un estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Cualquiera</SelectItem>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="in_progress">En progreso</SelectItem>
-                  <SelectItem value="review">En revisión</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="blocked">Bloqueada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="toStatus" className="text-right">
-                A estado
-              </Label>
-              <Select
-                value={newRuleData.triggerConfig.toStatus || ""}
-                onValueChange={(value) => handleTriggerConfigChange("toStatus", value)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona un estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="in_progress">En progreso</SelectItem>
-                  <SelectItem value="review">En revisión</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="blocked">Bloqueada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    const triggerType = newRuleData.trigger;
+    
+    if (triggerType === "status_change") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="fromStatus" className="text-right">
+              De estado
+            </Label>
+            <Select
+              value={newRuleData.triggerConfig.fromStatus || ""}
+              onValueChange={(value) => handleTriggerConfigChange("fromStatus", value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona un estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Cualquiera</SelectItem>
+                <SelectItem value="pending">Pendiente</SelectItem>
+                <SelectItem value="in_progress">En progreso</SelectItem>
+                <SelectItem value="review">En revisión</SelectItem>
+                <SelectItem value="completed">Completada</SelectItem>
+                <SelectItem value="blocked">Bloqueada</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        );
-
-      case "due_date_approaching":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="daysRemaining" className="text-right">
-                Días restantes
-              </Label>
-              <div className="col-span-3 flex items-center gap-2">
-                <Input
-                  id="daysRemaining"
-                  type="number"
-                  min="1"
-                  value={newRuleData.triggerConfig.daysRemaining || ""}
-                  onChange={(e) => handleTriggerConfigChange("daysRemaining", parseInt(e.target.value))}
-                  className="w-24"
-                />
-                <span>días antes de la fecha límite</span>
-              </div>
-            </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="toStatus" className="text-right">
+              A estado
+            </Label>
+            <Select
+              value={newRuleData.triggerConfig.toStatus || ""}
+              onValueChange={(value) => handleTriggerConfigChange("toStatus", value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona un estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendiente</SelectItem>
+                <SelectItem value="in_progress">En progreso</SelectItem>
+                <SelectItem value="review">En revisión</SelectItem>
+                <SelectItem value="completed">Completada</SelectItem>
+                <SelectItem value="blocked">Bloqueada</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        );
-
-      case "task_assigned":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="assignedTo" className="text-right">
-                Asignado a
-              </Label>
-              <Select
-                value={(newRuleData.triggerConfig.assignedTo || "").toString()}
-                onValueChange={(value) => handleTriggerConfigChange("assignedTo", value === "any" ? "any" : parseInt(value))}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona un usuario" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Cualquier usuario</SelectItem>
-                  {users.map((user: any) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.fullName || user.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="py-2 text-sm text-muted-foreground">
-            No se requiere configuración adicional para este disparador.
-          </div>
-        );
+        </div>
+      );
     }
+    
+    if (triggerType === "due_date_approaching") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="daysRemaining" className="text-right">
+              Días restantes
+            </Label>
+            <div className="col-span-3 flex items-center gap-2">
+              <Input
+                id="daysRemaining"
+                type="number"
+                min="1"
+                value={newRuleData.triggerConfig.daysRemaining?.toString() || ""}
+                onChange={(e) => handleTriggerConfigChange("daysRemaining", parseInt(e.target.value))}
+                className="w-24"
+              />
+              <span>días antes de la fecha límite</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    if (triggerType === "task_assigned") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="assignedTo" className="text-right">
+              Asignado a
+            </Label>
+            <Select
+              value={(newRuleData.triggerConfig.assignedTo?.toString() || "")}
+              onValueChange={(value) => handleTriggerConfigChange("assignedTo", value === "any" ? "any" : parseInt(value))}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona un usuario" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="any">Cualquier usuario</SelectItem>
+                {users.map((user: any) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.fullName || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="py-2 text-sm text-muted-foreground">
+        No se requiere configuración adicional para este disparador.
+      </div>
+    );
   };
 
   // Renderizar formulario de la acción según el tipo
   const renderActionConfig = () => {
-    switch (newRuleData.action) {
-      case "change_status":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newStatus" className="text-right">
-                Nuevo estado
-              </Label>
-              <Select
-                value={newRuleData.actionConfig.newStatus || ""}
-                onValueChange={(value) => handleActionConfigChange("newStatus", value)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona un estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pendiente</SelectItem>
-                  <SelectItem value="in_progress">En progreso</SelectItem>
-                  <SelectItem value="review">En revisión</SelectItem>
-                  <SelectItem value="completed">Completada</SelectItem>
-                  <SelectItem value="blocked">Bloqueada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    const actionType = newRuleData.action;
+    
+    if (actionType === "change_status") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="newStatus" className="text-right">
+              Nuevo estado
+            </Label>
+            <Select
+              value={newRuleData.actionConfig.newStatus || ""}
+              onValueChange={(value) => handleActionConfigChange("newStatus", value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona un estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pending">Pendiente</SelectItem>
+                <SelectItem value="in_progress">En progreso</SelectItem>
+                <SelectItem value="review">En revisión</SelectItem>
+                <SelectItem value="completed">Completada</SelectItem>
+                <SelectItem value="blocked">Bloqueada</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        );
-
-      case "assign_task":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="assignTo" className="text-right">
-                Asignar a
-              </Label>
-              <Select
-                value={(newRuleData.actionConfig.assignTo || "").toString()}
-                onValueChange={(value) => handleActionConfigChange("assignTo", parseInt(value))}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona un usuario" />
-                </SelectTrigger>
-                <SelectContent>
-                  {users.map((user: any) => (
-                    <SelectItem key={user.id} value={user.id.toString()}>
-                      {user.fullName || user.username}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      case "update_priority":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="newPriority" className="text-right">
-                Nueva prioridad
-              </Label>
-              <Select
-                value={newRuleData.actionConfig.newPriority || ""}
-                onValueChange={(value) => handleActionConfigChange("newPriority", value)}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Selecciona una prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Baja</SelectItem>
-                  <SelectItem value="medium">Media</SelectItem>
-                  <SelectItem value="high">Alta</SelectItem>
-                  <SelectItem value="urgent">Urgente</SelectItem>
-                  <SelectItem value="critical">Crítica</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        );
-
-      case "send_notification":
-        return (
-          <div className="grid gap-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="message" className="text-right">
-                Mensaje
-              </Label>
-              <Input
-                id="message"
-                value={newRuleData.actionConfig.message || ""}
-                onChange={(e) => handleActionConfigChange("message", e.target.value)}
-                className="col-span-3"
-                placeholder="Ej: La tarea necesita atención"
-              />
-            </div>
-          </div>
-        );
-
-      default:
-        return (
-          <div className="py-2 text-sm text-muted-foreground">
-            No se requiere configuración adicional para esta acción.
-          </div>
-        );
+        </div>
+      );
     }
+
+    if (actionType === "assign_task") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="assignTo" className="text-right">
+              Asignar a
+            </Label>
+            <Select
+              value={(newRuleData.actionConfig.assignTo?.toString() || "")}
+              onValueChange={(value) => handleActionConfigChange("assignTo", parseInt(value))}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona un usuario" />
+              </SelectTrigger>
+              <SelectContent>
+                {users.map((user: any) => (
+                  <SelectItem key={user.id} value={user.id.toString()}>
+                    {user.fullName || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+    }
+
+    if (actionType === "update_priority") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="newPriority" className="text-right">
+              Nueva prioridad
+            </Label>
+            <Select
+              value={newRuleData.actionConfig.newPriority || ""}
+              onValueChange={(value) => handleActionConfigChange("newPriority", value)}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder="Selecciona una prioridad" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Baja</SelectItem>
+                <SelectItem value="medium">Media</SelectItem>
+                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="urgent">Urgente</SelectItem>
+                <SelectItem value="critical">Crítica</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      );
+    }
+
+    if (actionType === "send_notification") {
+      return (
+        <div className="grid gap-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="message" className="text-right">
+              Mensaje
+            </Label>
+            <Input
+              id="message"
+              value={newRuleData.actionConfig.message || ""}
+              onChange={(e) => handleActionConfigChange("message", e.target.value)}
+              className="col-span-3"
+              placeholder="Ej: La tarea necesita atención"
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="py-2 text-sm text-muted-foreground">
+        No se requiere configuración adicional para esta acción.
+      </div>
+    );
   };
 
   const getCardClassName = (isActive: boolean) => {
@@ -636,8 +657,6 @@ export default function AutomationRulesPanel({ projectId }: AutomationRulesPanel
                 })}
                 disabled={
                   !newRuleData.name || 
-                  !newRuleData.trigger || 
-                  !newRuleData.action ||
                   (newRuleData.trigger === "status_change" && (!newRuleData.triggerConfig.fromStatus || !newRuleData.triggerConfig.toStatus)) ||
                   (newRuleData.trigger === "due_date_approaching" && !newRuleData.triggerConfig.daysRemaining) ||
                   (newRuleData.action === "change_status" && !newRuleData.actionConfig.newStatus) ||
