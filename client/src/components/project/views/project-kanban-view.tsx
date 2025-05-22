@@ -51,7 +51,17 @@ interface ProjectKanbanViewProps {
 }
 
 // Componente para una tarjeta de tarea individual con soporte para arrastrar y soltar
-const SortableTaskCard = ({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task) => void, onDelete: (taskId: number) => void }) => {
+const SortableTaskCard = ({ 
+  task, 
+  onEdit, 
+  onDelete,
+  onTrackTime
+}: { 
+  task: Task, 
+  onEdit: (task: Task) => void, 
+  onDelete: (taskId: number) => void,
+  onTrackTime: (taskId: number) => void 
+}) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: `task-${task.id}`,
     data: {
@@ -69,13 +79,23 @@ const SortableTaskCard = ({ task, onEdit, onDelete }: { task: Task, onEdit: (tas
   
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TaskCard task={task} onEdit={onEdit} onDelete={onDelete} />
+      <TaskCard task={task} onEdit={onEdit} onDelete={onDelete} onTrackTime={onTrackTime} />
     </div>
   );
 };
 
 // Componente para una tarjeta de tarea individual
-function TaskCard({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task) => void, onDelete: (taskId: number) => void }) {
+function TaskCard({ 
+  task, 
+  onEdit, 
+  onDelete, 
+  onTrackTime 
+}: { 
+  task: Task, 
+  onEdit: (task: Task) => void, 
+  onDelete: (taskId: number) => void,
+  onTrackTime: (taskId: number) => void 
+}) {
   // Función para obtener el color de la etiqueta de prioridad
   const getPriorityBadgeVariant = (priority: string) => {
     switch (priority) {
@@ -133,6 +153,10 @@ function TaskCard({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task)
               <DropdownMenuItem>
                 <User className="h-4 w-4 mr-2" />
                 Asignar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onTrackTime(task.id)}>
+                <Clock className="h-4 w-4 mr-2" />
+                Registrar tiempo
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
@@ -210,6 +234,9 @@ function TaskCard({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task)
   );
 }
 
+// Importamos el componente de seguimiento de tiempo
+import TimeTrackingDialog from "../time-tracking-dialog";
+
 export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanViewProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -218,8 +245,10 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isTimeTrackingOpen, setIsTimeTrackingOpen] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
+  const [taskIdForTimeTracking, setTaskIdForTimeTracking] = useState<number | null>(null);
   const [newTaskStatus, setNewTaskStatus] = useState<string | null>(null);
 
   // Sensores para drag and drop
@@ -508,7 +537,11 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                       key={task.id} 
                       task={task} 
                       onEdit={handleEditTask} 
-                      onDelete={handleDeleteTask} 
+                      onDelete={handleDeleteTask}
+                      onTrackTime={(taskId) => {
+                        setTaskIdForTimeTracking(taskId);
+                        setIsTimeTrackingOpen(true);
+                      }}
                     />
                   ))}
                 </SortableContext>
@@ -539,7 +572,11 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
               <TaskCard 
                 task={activeTask} 
                 onEdit={handleEditTask} 
-                onDelete={handleDeleteTask} 
+                onDelete={handleDeleteTask}
+                onTrackTime={(taskId) => {
+                  setTaskIdForTimeTracking(taskId);
+                  setIsTimeTrackingOpen(true);
+                }}
               />
             )}
           </DragOverlay>
@@ -660,7 +697,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                     id="dependencies"
                     multiple
                     className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    defaultValue={taskToEdit?.dependencies || []}
+                    defaultValue={taskToEdit?.dependencies?.map(String) || []}
                     onChange={(e) => {
                       const selectedOptions = Array.from(e.target.selectedOptions).map(option => parseInt(option.value));
                       setTaskToEdit({
@@ -871,6 +908,19 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Diálogo de seguimiento de tiempo */}
+      {taskIdForTimeTracking && (
+        <TimeTrackingDialog
+          isOpen={isTimeTrackingOpen}
+          onClose={() => {
+            setIsTimeTrackingOpen(false);
+            setTaskIdForTimeTracking(null);
+          }}
+          taskId={taskIdForTimeTracking}
+          projectId={projectId}
+        />
+      )}
     </div>
   );
 }
