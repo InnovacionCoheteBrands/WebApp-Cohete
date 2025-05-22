@@ -1,18 +1,27 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Task, taskStatusEnum, taskPriorityEnum } from "@shared/schema";
-import { Loader2, Plus, MoreHorizontal } from "lucide-react";
+import { Loader2, Plus, MoreHorizontal, Edit, Check, Clock, Calendar, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 import {
   DndContext, 
   closestCenter,
@@ -20,13 +29,19 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  DragEndEvent
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  useDraggable,
+  useDroppable
 } from '@dnd-kit/core';
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  useSortable
 } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,8 +50,32 @@ interface ProjectKanbanViewProps {
   viewId: number;
 }
 
+// Componente para una tarjeta de tarea individual con soporte para arrastrar y soltar
+const SortableTaskCard = ({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task) => void, onDelete: (taskId: number) => void }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: `task-${task.id}`,
+    data: {
+      type: 'task',
+      task,
+    }
+  });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 100 : 1,
+  };
+  
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <TaskCard task={task} onEdit={onEdit} onDelete={onDelete} />
+    </div>
+  );
+};
+
 // Componente para una tarjeta de tarea individual
-function TaskCard({ task }: { task: Task }) {
+function TaskCard({ task, onEdit, onDelete }: { task: Task, onEdit: (task: Task) => void, onDelete: (taskId: number) => void }) {
   // Función para obtener el color de la etiqueta de prioridad
   const getPriorityBadgeVariant = (priority: string) => {
     switch (priority) {
@@ -67,8 +106,11 @@ function TaskCard({ task }: { task: Task }) {
     return priorityTranslations[priority] || priority;
   };
 
+  // Determinar si hay una persona asignada
+  const hasAssignee = !!task.assignedToId;
+
   return (
-    <Card className="mb-2 shadow-sm">
+    <Card className="mb-2 shadow-sm hover:shadow-md transition-shadow">
       <CardHeader className="p-3 pb-0">
         <div className="flex justify-between items-start">
           <CardTitle className="text-sm font-medium">{task.title}</CardTitle>
@@ -79,9 +121,18 @@ function TaskCard({ task }: { task: Task }) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Editar</DropdownMenuItem>
-              <DropdownMenuItem>Asignar</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
+              <DropdownMenuItem onClick={() => onEdit(task)}>
+                <Edit className="h-4 w-4 mr-2" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <User className="h-4 w-4 mr-2" />
+                Asignar
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem 
+                onClick={() => onDelete(task.id)} 
+                className="text-destructive">
                 Eliminar
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -93,18 +144,47 @@ function TaskCard({ task }: { task: Task }) {
           {task.description || "Sin descripción"}
         </p>
       </CardContent>
-      <CardFooter className="p-3 pt-0 flex justify-between items-center">
-        <Badge variant={getPriorityBadgeVariant(task.priority) as any} className="text-xs">
-          {translatePriority(task.priority)}
-        </Badge>
-        <div className="text-xs text-muted-foreground">
-          {task.dueDate
-            ? new Date(task.dueDate).toLocaleDateString("es-ES", {
-                day: "2-digit",
-                month: "short",
-              })
-            : "Sin fecha"}
+      <CardFooter className="p-3 pt-1 flex flex-col gap-2">
+        <div className="flex justify-between items-center w-full">
+          <Badge variant={getPriorityBadgeVariant(task.priority) as any} className="text-xs">
+            {translatePriority(task.priority)}
+          </Badge>
+          
+          {hasAssignee && (
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-xs bg-primary text-primary-foreground">
+                {task.assignedToId?.toString().substring(0, 2) || "?"}
+              </AvatarFallback>
+            </Avatar>
+          )}
         </div>
+        
+        {task.dueDate && (
+          <div className="flex items-center w-full text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3 mr-1" />
+            {new Date(task.dueDate).toLocaleDateString("es-ES", {
+              day: "2-digit",
+              month: "short",
+            })}
+            
+            {task.estimatedHours && (
+              <div className="ml-2 flex items-center">
+                <Clock className="h-3 w-3 mr-1" />
+                {task.estimatedHours}h
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Mostrar progreso si existe */}
+        {typeof task.progress === 'number' && task.progress > 0 && (
+          <div className="w-full bg-muted rounded-full h-1.5 mt-1">
+            <div 
+              className="bg-primary h-1.5 rounded-full" 
+              style={{ width: `${task.progress}%` }}
+            ></div>
+          </div>
+        )}
       </CardFooter>
     </Card>
   );
@@ -113,10 +193,20 @@ function TaskCard({ task }: { task: Task }) {
 export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanViewProps) {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<number | null>(null);
 
   // Sensores para drag and drop
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5, // Distancia mínima para activar el arrastre
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -136,11 +226,11 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
 
   // Actualizar tarea (cambio de estado)
   const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: number; status: string }) => {
+    mutationFn: async ({ taskId, data }: { taskId: number; data: Partial<Task> }) => {
       const res = await apiRequest(
         "PATCH",
         `/api/tasks/${taskId}`,
-        { status }
+        data
       );
       return await res.json();
     },
@@ -148,32 +238,76 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
       queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
       toast({
         title: "Tarea actualizada",
-        description: "La tarea ha sido movida exitosamente.",
+        description: "La tarea ha sido actualizada exitosamente.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Error al mover tarea",
+        title: "Error al actualizar tarea",
         description: error.message,
         variant: "destructive",
       });
     },
   });
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!active || !over) return;
-    
-    const taskId = parseInt(active.id.toString().split('-')[1]);
-    const newStatus = over.id.toString();
-    
-    if (isValidStatus(newStatus)) {
-      updateTaskMutation.mutate({ taskId, status: newStatus });
+  // Eliminar tarea
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: number) => {
+      const res = await apiRequest(
+        "DELETE",
+        `/api/tasks/${taskId}`
+      );
+      return true;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", projectId, "tasks"] });
+      toast({
+        title: "Tarea eliminada",
+        description: "La tarea ha sido eliminada exitosamente.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al eliminar tarea",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Eventos de arrastrar y soltar
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id.toString());
+    // Si es una tarea, obtener sus datos para el overlay
+    if (event.active.id.toString().startsWith('task-')) {
+      const taskId = parseInt(event.active.id.toString().split('-')[1]);
+      const task = tasks?.find(t => t.id === taskId);
+      if (task) {
+        setActiveTask(task);
+      }
     }
   };
 
-  const isValidStatus = (status: string): status is keyof typeof taskStatusEnum.enumValues => {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    setActiveId(null);
+    setActiveTask(null);
+    
+    if (!active || !over) return;
+    
+    // Si arrastras una tarea sobre una columna de estado
+    if (active.id.toString().startsWith('task-') && !over.id.toString().startsWith('task-')) {
+      const taskId = parseInt(active.id.toString().split('-')[1]);
+      const newStatus = over.id.toString();
+      
+      if (isValidStatus(newStatus)) {
+        updateTaskMutation.mutate({ taskId, data: { status: newStatus } });
+      }
+    }
+  };
+
+  const isValidStatus = (status: string): status is typeof taskStatusEnum.enumValues[number] => {
     return Object.values(taskStatusEnum.enumValues).includes(status as any);
   };
 
@@ -226,6 +360,25 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
     return statusTranslations[status] || status;
   };
 
+  // Funciones para manejar acciones de tareas
+  const handleEditTask = (task: Task) => {
+    setTaskToEdit(task);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDeleteTask = (taskId: number) => {
+    setTaskToDelete(taskId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteTask = () => {
+    if (taskToDelete) {
+      deleteTaskMutation.mutate(taskToDelete);
+      setIsDeleteDialogOpen(false);
+      setTaskToDelete(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-[300px]">
@@ -260,50 +413,217 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
       <DndContext 
         sensors={sensors}
         collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-          {columns.map(status => (
-            <div 
-              key={status} 
-              id={status}
-              className="bg-muted/40 rounded-lg p-3 min-h-[300px]"
-            >
-              <div className="font-medium mb-3 sticky top-0 bg-muted/40 p-2 rounded flex justify-between items-center">
-                <h3>{translateStatus(status)}</h3>
-                <span className="text-xs bg-muted px-2 py-1 rounded-full">
-                  {tasksByStatus[status]?.length || 0}
-                </span>
-              </div>
-              
-              <SortableContext 
-                items={tasksByStatus[status]?.map(task => `task-${task.id}`) || []}
-                strategy={verticalListSortingStrategy}
+          {columns.map(status => {
+            const { setNodeRef } = useDroppable({
+              id: status,
+            });
+            
+            return (
+              <div 
+                key={status} 
+                ref={setNodeRef}
+                className="bg-muted/40 rounded-lg p-3 min-h-[300px]"
               >
-                {tasksByStatus[status]?.map(task => (
-                  <div key={`task-${task.id}`} id={`task-${task.id}`}>
-                    <TaskCard task={task} />
-                  </div>
-                ))}
-              </SortableContext>
-              
-              {tasksByStatus[status]?.length === 0 && (
-                <div className="text-center p-4 text-sm text-muted-foreground">
-                  No hay tareas
+                <div className="font-medium mb-3 sticky top-0 bg-muted/40 p-2 rounded flex justify-between items-center">
+                  <h3>{translateStatus(status)}</h3>
+                  <span className="text-xs bg-muted px-2 py-1 rounded-full">
+                    {tasksByStatus[status]?.length || 0}
+                  </span>
                 </div>
-              )}
-              
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full mt-2 text-muted-foreground"
-              >
-                <Plus className="h-4 w-4 mr-1" /> Agregar tarea
-              </Button>
-            </div>
-          ))}
+                
+                <SortableContext 
+                  items={tasksByStatus[status]?.map(task => `task-${task.id}`) || []}
+                  strategy={verticalListSortingStrategy}
+                >
+                  {tasksByStatus[status]?.map(task => (
+                    <SortableTaskCard 
+                      key={task.id} 
+                      task={task} 
+                      onEdit={handleEditTask} 
+                      onDelete={handleDeleteTask} 
+                    />
+                  ))}
+                </SortableContext>
+                
+                {tasksByStatus[status]?.length === 0 && (
+                  <div className="text-center p-4 text-sm text-muted-foreground">
+                    No hay tareas
+                  </div>
+                )}
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="w-full mt-2 text-muted-foreground"
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Agregar tarea
+                </Button>
+              </div>
+            );
+          })}
+          
+          <DragOverlay>
+            {activeTask && (
+              <TaskCard 
+                task={activeTask} 
+                onEdit={handleEditTask} 
+                onDelete={handleDeleteTask} 
+              />
+            )}
+          </DragOverlay>
         </div>
       </DndContext>
+      
+      {/* Diálogo de edición de tarea */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar tarea</DialogTitle>
+          </DialogHeader>
+          
+          {taskToEdit && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="title" className="text-right text-sm font-medium">
+                  Título
+                </label>
+                <Input
+                  id="title"
+                  defaultValue={taskToEdit.title}
+                  className="col-span-3"
+                  onChange={(e) => setTaskToEdit({ ...taskToEdit, title: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="description" className="text-right text-sm font-medium">
+                  Descripción
+                </label>
+                <Input
+                  id="description"
+                  defaultValue={taskToEdit.description || ""}
+                  className="col-span-3"
+                  onChange={(e) => setTaskToEdit({ ...taskToEdit, description: e.target.value })}
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="priority" className="text-right text-sm font-medium">
+                  Prioridad
+                </label>
+                <select
+                  id="priority"
+                  defaultValue={taskToEdit.priority}
+                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                  onChange={(e) => setTaskToEdit({ ...taskToEdit, priority: e.target.value as any })}
+                >
+                  <option value="low">Baja</option>
+                  <option value="medium">Media</option>
+                  <option value="high">Alta</option>
+                  <option value="urgent">Urgente</option>
+                  <option value="critical">Crítica</option>
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="dueDate" className="text-right text-sm font-medium">
+                  Fecha límite
+                </label>
+                <Input
+                  id="dueDate"
+                  type="date"
+                  defaultValue={taskToEdit.dueDate ? new Date(taskToEdit.dueDate).toISOString().split('T')[0] : ""}
+                  className="col-span-3"
+                  onChange={(e) => setTaskToEdit({ 
+                    ...taskToEdit, 
+                    dueDate: e.target.value ? new Date(e.target.value) : null 
+                  })}
+                />
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="progress" className="text-right text-sm font-medium">
+                  Progreso
+                </label>
+                <div className="col-span-3 flex items-center gap-2">
+                  <Input
+                    id="progress"
+                    type="number"
+                    min="0"
+                    max="100"
+                    defaultValue={taskToEdit.progress || 0}
+                    className="w-20"
+                    onChange={(e) => setTaskToEdit({ 
+                      ...taskToEdit, 
+                      progress: parseInt(e.target.value) 
+                    })}
+                  />
+                  <span>%</span>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-4 items-center gap-4">
+                <label htmlFor="estimatedHours" className="text-right text-sm font-medium">
+                  Horas estimadas
+                </label>
+                <Input
+                  id="estimatedHours"
+                  type="number"
+                  min="0"
+                  defaultValue={taskToEdit.estimatedHours || ""}
+                  className="col-span-3"
+                  onChange={(e) => setTaskToEdit({ 
+                    ...taskToEdit, 
+                    estimatedHours: e.target.value ? parseInt(e.target.value) : null 
+                  })}
+                />
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              if (taskToEdit) {
+                updateTaskMutation.mutate({ 
+                  taskId: taskToEdit.id, 
+                  data: {
+                    title: taskToEdit.title,
+                    description: taskToEdit.description,
+                    priority: taskToEdit.priority,
+                    dueDate: taskToEdit.dueDate,
+                    progress: taskToEdit.progress,
+                    estimatedHours: taskToEdit.estimatedHours
+                  }
+                });
+                setIsEditDialogOpen(false);
+              }
+            }}>
+              Guardar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Diálogo de confirmación para eliminar tarea */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Eliminar tarea</DialogTitle>
+          </DialogHeader>
+          <p>¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={confirmDeleteTask}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
