@@ -1,8 +1,7 @@
 import { format, parseISO, addDays } from "date-fns";
-import { AIModel } from "@shared/schema";
 import { grokService } from "./grok-integration";
 
-// Solo usamos la integración de Grok para IA
+// Integración exclusiva con Grok para todas las funcionalidades de IA
 
 export interface ContentScheduleEntry {
   title: string;
