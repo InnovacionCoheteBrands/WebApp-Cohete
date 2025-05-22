@@ -19,6 +19,7 @@ import ResetPassword from "@/pages/reset-password";
 import CreatePrimaryUser from "@/pages/create-primary-user";
 import Profile from "@/pages/profile";
 import SettingsPage from "@/pages/settings";
+import ProjectImageAnalysisPage from "@/pages/project-image-analysis";
 import { ProtectedRoute } from "./lib/protected-route";
 import MainLayout from "./layouts/main-layout";
 import { AuthProvider } from "./hooks/use-auth";
@@ -64,6 +65,16 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <ScheduleDetail id={parseInt(params.id)} />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  )}
+                </Route>
+                
+                <Route path="/projects/:projectId/image-analysis">
+                  {(params) => (
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <ProjectImageAnalysisPage />
                       </MainLayout>
                     </ProtectedRoute>
                   )}
