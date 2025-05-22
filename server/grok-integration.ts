@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Server } from 'http';
-import WebSocket from 'ws';
+import { WebSocketServer, WebSocket } from 'ws';
 
 /**
  * Interfaces para streaming de respuestas
@@ -33,7 +33,7 @@ interface StreamResponse {
 export class GrokService {
   private apiKey: string;
   private baseURL = 'https://api.x.ai/v1';
-  private wss: WebSocket.Server | null = null;
+  private wss: WebSocketServer | null = null;
 
   constructor(apiKey: string) {
     // Utilizamos la nueva clave API XAI_API_KEY en lugar de GROK_API_KEY si está disponible
@@ -47,7 +47,7 @@ export class GrokService {
   initWebSocketServer(server: Server) {
     try {
       console.log('[GROK-WS] Inicializando servidor WebSocket para streaming de IA...');
-      this.wss = new WebSocket.Server({ server });
+      this.wss = new WebSocket.WebSocketServer({ server });
       
       this.wss.on('connection', (ws: WebSocket) => {
         console.log('[GROK-WS] Nueva conexión WebSocket establecida');

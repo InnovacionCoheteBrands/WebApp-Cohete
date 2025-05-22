@@ -62,8 +62,8 @@ app.use((req, res, next) => {
   // It is the only port that is not firewalled.
   const port = 5000;
 
-  // Inicializar el servidor WebSocket para streaming de respuestas IA con Grok
-  grokService.initWebSocketServer(server);
+  // Funcionalidad de streaming será implementada en una fase posterior
+  // para garantizar primero la estabilidad de las funcionalidades principales
 
   server.listen({
     port,

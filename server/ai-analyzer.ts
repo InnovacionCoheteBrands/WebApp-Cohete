@@ -1,4 +1,6 @@
 import { grokService } from "./grok-integration";
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // Usamos exclusivamente los modelos de Grok para todas las funcionalidades de IA
 
@@ -95,6 +97,131 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
 /**
  * Processes a chat message in the context of a marketing project
  */
+/**
+ * Analiza una imagen de marketing utilizando la capacidad de visión de Grok
+ * @param imagePath Ruta a la imagen a analizar
+ * @param analysisType Tipo de análisis a realizar: 'brand', 'content', o 'audience'
+ */
+export async function analyzeMarketingImage(
+  imagePath: string, 
+  analysisType: 'brand' | 'content' | 'audience' = 'content'
+): Promise<any> {
+  try {
+    // Verificar que el archivo existe
+    await fs.access(imagePath);
+    
+    // Leer archivo como Base64
+    const imageBuffer = await fs.readFile(imagePath);
+    const base64Image = imageBuffer.toString('base64');
+    
+    // Seleccionar el prompt según el tipo de análisis
+    let prompt: string;
+    
+    switch (analysisType) {
+      case 'brand':
+        prompt = `Analiza esta imagen desde una perspectiva de branding y marketing.
+        Identifica los siguientes elementos:
+        1. Elementos visuales de la marca (logo, colores, tipografía)
+        2. Mensaje visual principal
+        3. Posicionamiento de marca que transmite
+        4. Coherencia con estándares actuales de diseño
+        5. Sugerencias para mejorar la alineación de marca`;
+        break;
+      
+      case 'audience':
+        prompt = `Analiza esta imagen para identificar el público objetivo:
+        1. Perfil demográfico aproximado del público objetivo
+        2. Necesidades y deseos que la imagen intenta abordar
+        3. Nivel de conexión emocional que podría generar
+        4. Posible respuesta del público objetivo
+        5. Recomendaciones para mejorar la conexión con la audiencia`;
+        break;
+      
+      case 'content':
+      default:
+        prompt = `Analiza esta imagen como contenido de marketing:
+        1. Tipo de contenido (promocional, educativo, inspiracional, etc.)
+        2. Calidad visual y composición
+        3. Mensaje principal que transmite
+        4. Efectividad para captar atención
+        5. Plataformas de redes sociales donde sería más efectiva
+        6. Recomendaciones para optimizar su impacto`;
+        break;
+    }
+    
+    // Usar el modelo de visión de Grok para analizar la imagen
+    const analysisResult = await grokService.generateTextWithImage(
+      prompt,
+      base64Image,
+      {
+        model: "grok-vision-beta",
+        temperature: 0.5,
+        maxTokens: 1500
+      }
+    );
+    
+    // Analizar el resultado y estructurarlo si es posible
+    try {
+      // Intentar extraer datos estructurados del texto
+      const parsedResult = {
+        analysisType,
+        rawAnalysis: analysisResult,
+        structuredData: extractStructuredData(analysisResult)
+      };
+      
+      return parsedResult;
+    } catch (parseError) {
+      // Si no se puede estructurar, devolver el texto crudo
+      return {
+        analysisType,
+        rawAnalysis: analysisResult,
+        error: "No se pudo estructurar el análisis"
+      };
+    }
+  } catch (error) {
+    console.error("Error analizando imagen de marketing:", error);
+    throw new Error(`Error en análisis visual: ${(error as Error).message}`);
+  }
+}
+
+/**
+ * Extrae datos estructurados de un texto de análisis
+ */
+function extractStructuredData(text: string): any {
+  // Intentar detectar si el texto ya es JSON
+  try {
+    if (text.trim().startsWith('{') && text.trim().endsWith('}')) {
+      return JSON.parse(text);
+    }
+  } catch (e) {
+    // No es un JSON válido, seguimos con el análisis de texto
+  }
+  
+  // Proceso heurístico para extraer secciones numeradas
+  const result: Record<string, string> = {};
+  
+  // Buscar patrones comunes como "1. Título: Contenido"
+  const sectionRegex = /(\d+)[\.\)]\s*([^:]+):\s*([^\n]+)/g;
+  let match;
+  
+  while ((match = sectionRegex.exec(text)) !== null) {
+    const [_, number, title, content] = match;
+    result[title.trim()] = content.trim();
+  }
+  
+  // Si no encontramos secciones estructuradas, intentar dividir por líneas numeradas
+  if (Object.keys(result).length === 0) {
+    const lineRegex = /(\d+)[\.\)]\s*([^\n]+)/g;
+    
+    while ((match = lineRegex.exec(text)) !== null) {
+      const [_, number, content] = match;
+      result[`Punto ${number}`] = content.trim();
+    }
+  }
+  
+  return Object.keys(result).length > 0 ? result : { summary: text };
+}
+
 export async function processChatMessage(
   message: string,
   projectContext?: any,
