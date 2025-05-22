@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Upload, Camera, PenTool, Users } from 'lucide-react';
-import { queryClient, apiRequest } from '@/lib/queryClient';
+import { queryClient } from '@/lib/queryClient';
 import {
   Dialog,
   DialogContent,
@@ -48,13 +48,21 @@ export default function ImageAnalysisPanel() {
   // Mutation para subir y analizar la imagen
   const analyzeImageMutation = useMutation({
     mutationFn: async (formData: FormData) => {
-      return await apiRequest<ImageAnalysisResult>(`/api/projects/${projectId}/analyze-image`, {
+      const response = await fetch(`/api/projects/${projectId}/analyze-image`, {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || response.statusText);
+      }
+      
+      return await response.json();
     },
-    onSuccess: (data) => {
-      setAnalysisResult(data);
+    onSuccess: (data: any) => {
+      setAnalysisResult(data as ImageAnalysisResult);
       toast({
         title: 'Análisis completado',
         description: 'La imagen ha sido analizada con éxito',
