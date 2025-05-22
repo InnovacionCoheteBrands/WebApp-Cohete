@@ -1,8 +1,6 @@
-import OpenAI from "openai";
 import { grokService } from "./grok-integration";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+// Usamos exclusivamente los modelos de Grok para todas las funcionalidades de IA
 
 export interface DocumentAnalysisResult {
   mission?: string;
@@ -26,7 +24,7 @@ export interface DocumentAnalysisResult {
 }
 
 /**
- * Analyzes a document using GPT-4o to extract marketing insights
+ * Analyzes a document using Grok to extract marketing insights
  */
 export async function analyzeDocument(documentText: string): Promise<DocumentAnalysisResult> {
   try {
