@@ -730,8 +730,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/projects/:projectId/schedule", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
-      if (isNaN(projectId)) {
-        return res.status(400).json({ message: "Invalid project ID" });
+      if (isNaN(projectId) || !projectId) {
+        return res.status(400).json({ error: "El ID del proyecto es obligatorio." });
       }
 
       // Validate distribution preferences

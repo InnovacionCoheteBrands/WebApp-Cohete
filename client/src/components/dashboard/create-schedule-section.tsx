@@ -125,6 +125,16 @@ export default function CreateScheduleSection() {
 
   // Form submission
   const onSubmit = (values: z.infer<typeof createScheduleSchema>) => {
+    // Validación adicional para asegurar que se seleccionó un proyecto
+    if (!values.projectId) {
+      toast({
+        title: "Error",
+        description: "Por favor, selecciona un proyecto para poder generar el calendario.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createScheduleMutation.mutate(values);
   };
   
@@ -297,7 +307,7 @@ export default function CreateScheduleSection() {
                   <Button 
                     type="submit" 
                     className="w-full h-11 mt-2 interactive-element bg-primary text-primary-foreground hover:bg-primary/90"
-                    disabled={isGenerating || createScheduleMutation.isPending}
+                    disabled={isGenerating || createScheduleMutation.isPending || !form.watch("projectId")}
                   >
                     {isGenerating || createScheduleMutation.isPending
                       ? "Generando Calendario..."
