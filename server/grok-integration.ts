@@ -151,11 +151,7 @@ export class GrokService {
         stream: true // Activar streaming
       };
       
-      // Configurar formato de respuesta si es necesario
-      if (options.responseFormat === 'json_object') {
-        console.log('[GROK-STREAM] Configurando formato de respuesta: JSON_OBJECT');
-        requestPayload.response_format = { type: "json_object" };
-      }
+      // Grok no soporta response_format en streaming, se controla vía prompt
       
       // Realizar la solicitud con streaming
       const response = await axios.post(
@@ -324,11 +320,8 @@ export class GrokService {
           };
         }
         
-        // Si se solicita formato JSON, configurarlo explícitamente
-        if (options.responseFormat === 'json_object') {
-          console.log('[GROK] Configurando formato de respuesta: JSON_OBJECT');
-          requestPayload.response_format = { type: "json_object" };
-        }
+        // Grok no soporta response_format, omitimos esta configuración
+        // El formato se controla a través del prompt directamente
         
         // Registrar tamaño de la solicitud
         const requestSize = JSON.stringify(requestPayload).length;

@@ -162,7 +162,7 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Se añadieron instrucciones adicionales al prompt: "${additionalInstructions.substring(0, 100)}${additionalInstructions.length > 100 ? '...' : ''}"`);
     }
     
-    // Usamos el formato JSON explícitamente para garantizar una respuesta estructurada
+    // Usamos Grok sin formato específico ya que no soporta respuestas estructuradas
     const scheduleText = await grokService.generateText(finalPrompt, {
       // Aumentamos temperatura a 1.2 para obtener respuesta más creativa y única
       temperature: 1.2,
@@ -170,8 +170,6 @@ export async function generateSchedule(
       maxTokens: 4000,
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
-      // Solicitar explícitamente respuesta en formato JSON para mayor compatibilidad
-      responseFormat: 'json_object',
       // Utilizamos exclusivamente el modelo Grok 3 mini beta como solicitado
       model: 'grok-3-mini-beta'
     });
