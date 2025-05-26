@@ -83,7 +83,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               href="/projects" 
               icon={<Grid2X2 className="mr-2 h-5 w-5" />} 
               label="Proyectos" 
-              isActive={location === "/projects" || location.startsWith("/projects/")} 
+              isActive={location === "/projects" || (location.startsWith("/projects/") && !location.includes("/tasks"))} 
               onClick={onClose}
             />
 
