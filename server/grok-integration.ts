@@ -284,41 +284,27 @@ export class GrokService {
         // Preparar el payload de la solicitud
         let requestPayload: any;
         
-        // Verificar si el prompt es demasiado grande
+        // Construir payload completamente limpio - solo parámetros esenciales soportados por Grok
+        const finalPrompt = promptLength > 20000 ? 
+          `${prompt.substring(0, 10000)}\n\n[CONTENIDO TRUNCADO PARA OPTIMIZAR RENDIMIENTO]\n\n${prompt.substring(prompt.length - 5000)}` 
+          : prompt;
+        
         if (promptLength > 20000) {
-          console.warn(`[GROK] El prompt es extremadamente largo (${promptLength} caracteres), truncando para evitar errores de red`);
-          // Truncar conservando la estructura (inicio y fin)
-          const promptStart = prompt.substring(0, 10000);
-          const promptEnd = prompt.substring(prompt.length - 5000);
-          const truncatedPrompt = `${promptStart}\n\n[CONTENIDO TRUNCADO PARA OPTIMIZAR RENDIMIENTO]\n\n${promptEnd}`;
-          console.log(`[GROK] Prompt truncado a ${truncatedPrompt.length} caracteres`);
-          
-          // Construir payload con prompt truncado
-          requestPayload = {
-            model: options.model || 'grok-3-mini-beta',
-            messages: [
-              {
-                role: 'user',
-                content: truncatedPrompt
-              }
-            ],
-            temperature: options.temperature || 0.7,
-            max_tokens: options.maxTokens || 2000
-          };
-        } else {
-          // Construir payload estándar
-          requestPayload = {
-            model: options.model || 'grok-3-mini-beta',
-            messages: [
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            temperature: options.temperature || 0.7,
-            max_tokens: options.maxTokens || 2000
-          };
+          console.warn(`[GROK] El prompt fue truncado de ${promptLength} a ${finalPrompt.length} caracteres`);
         }
+        
+        // Payload minimalista - solo lo que Grok definitivamente soporta
+        requestPayload = {
+          model: options.model || 'grok-3-mini-beta',
+          messages: [
+            {
+              role: 'user',
+              content: finalPrompt
+            }
+          ],
+          temperature: options.temperature || 0.7,
+          max_tokens: options.maxTokens || 2000
+        };
         
         // Grok no soporta response_format, omitimos esta configuración
         // El formato se controla a través del prompt directamente
@@ -326,6 +312,7 @@ export class GrokService {
         // Registrar tamaño de la solicitud
         const requestSize = JSON.stringify(requestPayload).length;
         console.log(`Tamaño de la solicitud: ${requestSize} bytes`);
+        console.log(`[GROK DEBUG] Payload completo enviado a API:`, JSON.stringify(requestPayload, null, 2));
         
         // Si el tamaño es muy grande, podría causar problemas
         if (requestSize > 100000) {
