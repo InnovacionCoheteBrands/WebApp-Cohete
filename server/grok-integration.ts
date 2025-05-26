@@ -85,8 +85,8 @@ export class GrokService {
                   {
                     model: data.model,
                     temperature: data.temperature,
-                    maxTokens: data.maxTokens,
-                    responseFormat: data.responseFormat
+                    maxTokens: data.maxTokens
+                    // responseFormat removido - Grok no lo soporta
                   }
                 );
               } catch (error: any) {
