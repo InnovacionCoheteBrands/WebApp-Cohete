@@ -3737,9 +3737,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       })
       .from(schema.tasks)
       .leftJoin(schema.taskGroups, eq(schema.tasks.groupId, schema.taskGroups.id))
-      .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
+      .leftJoin(schema.users, eq(schema.tasks.createdById, schema.users.id))
       .where(eq(schema.tasks.projectId, projectId))
-      .orderBy(schema.taskGroups.position, schema.tasks.position);
+      .orderBy(asc(schema.taskGroups.position), asc(schema.tasks.id));
 
       // Get additional assignees for each task
       const taskIds = tasksWithDetails.map(t => t.task.id);
