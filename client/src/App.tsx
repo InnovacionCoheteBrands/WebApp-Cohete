@@ -130,6 +130,16 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                <Route path="/schedules/:id">
+                  {(params) => (
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <ScheduleDetail id={parseInt(params.id)} />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  )}
+                </Route>
+                
                 {/* Public routes */}
                 <Route path="/auth" component={AuthPage} />
                 <Route path="/cohete_account" component={CreateAccount} />

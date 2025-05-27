@@ -38,6 +38,31 @@
     @apply backdrop-blur-sm bg-white/80 dark:bg-card/80;
   }
 
+  /* Mejorar contraste en tema claro */
+  .light .text-muted-foreground {
+    @apply text-slate-600;
+  }
+  
+  .light .text-foreground {
+    @apply text-slate-900;
+  }
+  
+  .light .border {
+    @apply border-slate-300;
+  }
+  
+  .light .bg-muted {
+    @apply bg-slate-100;
+  }
+  
+  .light .bg-card {
+    @apply bg-white border-slate-200;
+  }
+  
+  .light .text-card-foreground {
+    @apply text-slate-900;
+  }
+
   /* Efectos de elevación y profundidad */
   .elevation-1 {
     @apply shadow-sm;
