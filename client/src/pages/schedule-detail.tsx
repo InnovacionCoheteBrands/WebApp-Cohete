@@ -98,6 +98,19 @@ export default function ScheduleDetail({ id }: { id: number }) {
     
     return `Para ${selectedKeys.slice(0, -1).join(", ")} y ${selectedKeys.slice(-1)}: combina las mejoras necesarias`;
   };
+
+  // Función para verificar si hay instrucciones válidas para regenerar
+  const hasValidInstructions = () => {
+    // Verificar si hay instrucciones generales
+    if (additionalInstructions.trim()) return true;
+    
+    // Verificar si hay instrucciones específicas en alguna área seleccionada
+    const hasSpecificInstructions = Object.entries(selectedAreas).some(([area, selected]) => {
+      return selected && specificInstructions[area as keyof typeof specificInstructions]?.trim();
+    });
+    
+    return hasSpecificInstructions;
+  };
   
   // Mutation para generar imagen
   const generateImageMutation = useMutation({
@@ -741,7 +754,7 @@ export default function ScheduleDetail({ id }: { id: number }) {
             <div className="flex justify-between">
               <Button 
                 onClick={handleRegenerateSchedule}
-                disabled={isRegenerating || !additionalInstructions.trim()}
+                disabled={isRegenerating || !hasValidInstructions()}
                 variant="outline"
                 className="bg-amber-200 border-amber-300 text-amber-800 hover:bg-amber-300 hover:text-amber-900 dark:bg-amber-800/40 dark:border-amber-700/50 dark:text-amber-200 dark:hover:bg-amber-700/60"
               >
