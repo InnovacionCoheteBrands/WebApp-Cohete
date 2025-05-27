@@ -13,10 +13,11 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
 import { db } from "./db";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, desc, and, or, sql, like, inArray } from "drizzle-orm";
 import * as htmlPdf from 'html-pdf-node';
 import { jsPDF } from 'jspdf';
 import { AIModel } from "@shared/schema";
+import * as schema from "@shared/schema";
 import { format } from "date-fns";
 import {
   insertProjectSchema,
@@ -3454,6 +3455,331 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     } catch (error) {
       console.error("Error al eliminar documento colaborativo:", error);
       res.status(500).json({ message: "Error al eliminar documento colaborativo" });
+    }
+  });
+
+  // ============ NUEVOS ENDPOINTS PARA SISTEMA MONDAY.COM ============
+
+  // Task Groups CRUD
+  app.get("/api/projects/:projectId/task-groups", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const taskGroups = await db.select().from(schema.taskGroups)
+        .where(eq(schema.taskGroups.projectId, projectId))
+        .orderBy(schema.taskGroups.position);
+      
+      res.json(taskGroups);
+    } catch (error) {
+      console.error('Error fetching task groups:', error);
+      res.status(500).json({ error: 'Failed to fetch task groups' });
+    }
+  });
+
+  app.post("/api/projects/:projectId/task-groups", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const taskGroupData = schema.insertTaskGroupSchema.parse({
+        ...req.body,
+        projectId,
+        createdBy: req.user?.id,
+      });
+
+      const [taskGroup] = await db.insert(schema.taskGroups)
+        .values(taskGroupData)
+        .returning();
+      
+      res.status(201).json(taskGroup);
+    } catch (error) {
+      console.error('Error creating task group:', error);
+      res.status(500).json({ error: 'Failed to create task group' });
+    }
+  });
+
+  app.patch("/api/task-groups/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const groupId = parseInt(req.params.id);
+      const updates = req.body;
+
+      const [updatedGroup] = await db.update(schema.taskGroups)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(schema.taskGroups.id, groupId))
+        .returning();
+
+      if (!updatedGroup) {
+        return res.status(404).json({ error: 'Task group not found' });
+      }
+
+      res.json(updatedGroup);
+    } catch (error) {
+      console.error('Error updating task group:', error);
+      res.status(500).json({ error: 'Failed to update task group' });
+    }
+  });
+
+  app.delete("/api/task-groups/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const groupId = parseInt(req.params.id);
+
+      await db.delete(schema.taskGroups)
+        .where(eq(schema.taskGroups.id, groupId));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting task group:', error);
+      res.status(500).json({ error: 'Failed to delete task group' });
+    }
+  });
+
+  // Project Column Settings CRUD
+  app.get("/api/projects/:projectId/columns", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const columns = await db.select().from(schema.projectColumnSettings)
+        .where(eq(schema.projectColumnSettings.projectId, projectId))
+        .orderBy(schema.projectColumnSettings.position);
+      
+      res.json(columns);
+    } catch (error) {
+      console.error('Error fetching project columns:', error);
+      res.status(500).json({ error: 'Failed to fetch project columns' });
+    }
+  });
+
+  app.post("/api/projects/:projectId/columns", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      const columnData = schema.insertProjectColumnSettingSchema.parse({
+        ...req.body,
+        projectId,
+        createdBy: req.user?.id,
+      });
+
+      const [column] = await db.insert(schema.projectColumnSettings)
+        .values(columnData)
+        .returning();
+      
+      res.status(201).json(column);
+    } catch (error) {
+      console.error('Error creating project column:', error);
+      res.status(500).json({ error: 'Failed to create project column' });
+    }
+  });
+
+  app.patch("/api/project-columns/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const columnId = parseInt(req.params.id);
+      const updates = req.body;
+
+      const [updatedColumn] = await db.update(schema.projectColumnSettings)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(schema.projectColumnSettings.id, columnId))
+        .returning();
+
+      if (!updatedColumn) {
+        return res.status(404).json({ error: 'Project column not found' });
+      }
+
+      res.json(updatedColumn);
+    } catch (error) {
+      console.error('Error updating project column:', error);
+      res.status(500).json({ error: 'Failed to update project column' });
+    }
+  });
+
+  app.delete("/api/project-columns/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const columnId = parseInt(req.params.id);
+
+      await db.delete(schema.projectColumnSettings)
+        .where(eq(schema.projectColumnSettings.id, columnId));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error deleting project column:', error);
+      res.status(500).json({ error: 'Failed to delete project column' });
+    }
+  });
+
+  // Task Column Values CRUD
+  app.get("/api/tasks/:taskId/column-values", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const columnValues = await db.select().from(schema.taskColumnValues)
+        .where(eq(schema.taskColumnValues.taskId, taskId));
+      
+      res.json(columnValues);
+    } catch (error) {
+      console.error('Error fetching task column values:', error);
+      res.status(500).json({ error: 'Failed to fetch task column values' });
+    }
+  });
+
+  app.post("/api/tasks/:taskId/column-values", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const valueData = schema.insertTaskColumnValueSchema.parse({
+        ...req.body,
+        taskId,
+      });
+
+      const [columnValue] = await db.insert(schema.taskColumnValues)
+        .values(valueData)
+        .returning();
+      
+      res.status(201).json(columnValue);
+    } catch (error) {
+      console.error('Error creating task column value:', error);
+      res.status(500).json({ error: 'Failed to create task column value' });
+    }
+  });
+
+  app.patch("/api/task-column-values/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const valueId = parseInt(req.params.id);
+      const updates = req.body;
+
+      const [updatedValue] = await db.update(schema.taskColumnValues)
+        .set({ ...updates, updatedAt: new Date() })
+        .where(eq(schema.taskColumnValues.id, valueId))
+        .returning();
+
+      if (!updatedValue) {
+        return res.status(404).json({ error: 'Task column value not found' });
+      }
+
+      res.json(updatedValue);
+    } catch (error) {
+      console.error('Error updating task column value:', error);
+      res.status(500).json({ error: 'Failed to update task column value' });
+    }
+  });
+
+  // Task Assignees CRUD
+  app.get("/api/tasks/:taskId/assignees", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const assignees = await db.select({
+        id: schema.taskAssignees.id,
+        taskId: schema.taskAssignees.taskId,
+        userId: schema.taskAssignees.userId,
+        assignedBy: schema.taskAssignees.assignedBy,
+        assignedAt: schema.taskAssignees.assignedAt,
+        user: {
+          id: schema.users.id,
+          fullName: schema.users.fullName,
+          username: schema.users.username,
+          profileImage: schema.users.profileImage,
+          role: schema.users.role,
+        }
+      })
+      .from(schema.taskAssignees)
+      .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
+      .where(eq(schema.taskAssignees.taskId, taskId));
+      
+      res.json(assignees);
+    } catch (error) {
+      console.error('Error fetching task assignees:', error);
+      res.status(500).json({ error: 'Failed to fetch task assignees' });
+    }
+  });
+
+  app.post("/api/tasks/:taskId/assignees", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      const { userId } = req.body;
+
+      const assigneeData = {
+        taskId,
+        userId,
+        assignedBy: req.user?.id,
+      };
+
+      const [assignee] = await db.insert(schema.taskAssignees)
+        .values(assigneeData)
+        .returning();
+      
+      res.status(201).json(assignee);
+    } catch (error) {
+      console.error('Error assigning task:', error);
+      res.status(500).json({ error: 'Failed to assign task' });
+    }
+  });
+
+  app.delete("/api/task-assignees/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const assigneeId = parseInt(req.params.id);
+
+      await db.delete(schema.taskAssignees)
+        .where(eq(schema.taskAssignees.id, assigneeId));
+
+      res.status(204).send();
+    } catch (error) {
+      console.error('Error removing task assignee:', error);
+      res.status(500).json({ error: 'Failed to remove task assignee' });
+    }
+  });
+
+  // Enhanced Tasks endpoint with groups and assignees
+  app.get("/api/projects/:projectId/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      // Get tasks with their groups and assignees
+      const tasksWithDetails = await db.select({
+        task: schema.tasks,
+        group: schema.taskGroups,
+        assignee: {
+          id: schema.users.id,
+          fullName: schema.users.fullName,
+          username: schema.users.username,
+          profileImage: schema.users.profileImage,
+        }
+      })
+      .from(schema.tasks)
+      .leftJoin(schema.taskGroups, eq(schema.tasks.groupId, schema.taskGroups.id))
+      .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
+      .where(eq(schema.tasks.projectId, projectId))
+      .orderBy(schema.taskGroups.position, schema.tasks.position);
+
+      // Get additional assignees for each task
+      const taskIds = tasksWithDetails.map(t => t.task.id);
+      const additionalAssignees = taskIds.length > 0 ? await db.select({
+        taskId: schema.taskAssignees.taskId,
+        user: {
+          id: schema.users.id,
+          fullName: schema.users.fullName,
+          username: schema.users.username,
+          profileImage: schema.users.profileImage,
+        }
+      })
+      .from(schema.taskAssignees)
+      .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
+      .where(inArray(schema.taskAssignees.taskId, taskIds)) : [];
+
+      // Group tasks by task group
+      const groupedTasks = tasksWithDetails.reduce((acc, item) => {
+        const groupId = item.group?.id || 'ungrouped';
+        if (!acc[groupId]) {
+          acc[groupId] = {
+            group: item.group,
+            tasks: []
+          };
+        }
+        
+        const task = {
+          ...item.task,
+          assignee: item.assignee,
+          additionalAssignees: additionalAssignees.filter(a => a.taskId === item.task.id).map(a => a.user)
+        };
+        
+        acc[groupId].tasks.push(task);
+        return acc;
+      }, {} as any);
+
+      res.json(Object.values(groupedTasks));
+    } catch (error) {
+      console.error('Error fetching tasks with groups:', error);
+      res.status(500).json({ error: 'Failed to fetch tasks with groups' });
     }
   });
 

@@ -28,6 +28,7 @@ import ProjectListView from "./views/project-list-view";
 import ProjectKanbanView from "./views/project-kanban-view";
 import ProjectGanttView from "./views/project-gantt-view";
 import ProjectCalendarView from "./views/project-calendar-view";
+import ProjectBoardView from "./views/project-board-view";
 
 interface ProjectViewContainerProps {
   projectId?: number;
