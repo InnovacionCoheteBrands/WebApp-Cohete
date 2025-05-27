@@ -1057,15 +1057,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/schedules/:id/regenerate", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const scheduleId = parseInt(req.params.id);
-      const { additionalInstructions: newInstructions, selectedAreas } = req.body;
+      const { additionalInstructions: newInstructions, selectedAreas, specificInstructions } = req.body;
       
       if (isNaN(scheduleId)) {
         return res.status(400).json({ message: "ID de cronograma inválido" });
       }
       
       console.log("[REGENERATE] Iniciando regeneración con áreas específicas:", scheduleId);
-      console.log("[REGENERATE] Nuevas instrucciones:", newInstructions || "Ninguna");
+      console.log("[REGENERATE] Instrucciones generales:", newInstructions || "Ninguna");
       console.log("[REGENERATE] Áreas seleccionadas:", selectedAreas || "Todas");
+      console.log("[REGENERATE] Instrucciones específicas:", specificInstructions || "Ninguna");
       
       // Obtener el cronograma actual con sus entradas
       const schedule = await global.storage.getScheduleWithEntries(scheduleId);
@@ -1117,7 +1118,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return areaNames[area as keyof typeof areaNames] || area;
           });
         
-        enhancedInstructions += `\n\nIMPORTANTE: Modifica específicamente estas áreas del cronograma: ${selectedAreasList.join(", ")}. Para el resto de elementos, mantén el estilo y enfoque actual pero mejora según las instrucciones proporcionadas.`;
+        enhancedInstructions += `\n\nIMPORTANTE: Modifica específicamente estas áreas del cronograma: ${selectedAreasList.join(", ")}. Para el resto de elementos, mantén el estilo y enfoque actual.`;
+        
+        // Agregar instrucciones específicas de cada área seleccionada
+        if (specificInstructions) {
+          Object.entries(selectedAreas).forEach(([area, selected]) => {
+            if (selected && specificInstructions[area] && specificInstructions[area].trim()) {
+              const areaNames = {
+                titles: "títulos",
+                descriptions: "descripciones", 
+                content: "contenido",
+                copyIn: "texto integrado",
+                copyOut: "texto descripción",
+                designInstructions: "instrucciones de diseño",
+                platforms: "plataformas",
+                hashtags: "hashtags"
+              };
+              const areaName = areaNames[area as keyof typeof areaNames] || area;
+              enhancedInstructions += `\n\nPara ${areaName}: ${specificInstructions[area]}`;
+            }
+          });
+        }
         
         console.log("[REGENERATE] Instrucciones mejoradas con áreas específicas:", enhancedInstructions);
       }

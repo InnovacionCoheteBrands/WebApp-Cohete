@@ -51,6 +51,18 @@ export default function ScheduleDetail({ id }: { id: number }) {
     hashtags: false
   });
   
+  // Estados para las instrucciones específicas de cada área
+  const [specificInstructions, setSpecificInstructions] = useState({
+    titles: "",
+    descriptions: "",
+    content: "",
+    copyIn: "",
+    copyOut: "",
+    designInstructions: "",
+    platforms: "",
+    hashtags: ""
+  });
+  
   // Fetch schedule data
   const { data: schedule, isLoading, error, refetch } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
     queryKey: [`/api/schedules/${id}`],
@@ -372,10 +384,11 @@ export default function ScheduleDetail({ id }: { id: number }) {
   // Mutation para regenerar el cronograma con las instrucciones adicionales
   const regenerateScheduleMutation = useMutation({
     mutationFn: async () => {
-      // Enviamos una solicitud para regenerar el cronograma con las áreas seleccionadas
+      // Enviamos una solicitud para regenerar el cronograma con las áreas seleccionadas e instrucciones específicas
       const response = await apiRequest("POST", `/api/schedules/${id}/regenerate`, {
         additionalInstructions,
-        selectedAreas: Object.values(selectedAreas).some(Boolean) ? selectedAreas : null
+        selectedAreas: Object.values(selectedAreas).some(Boolean) ? selectedAreas : null,
+        specificInstructions: Object.values(selectedAreas).some(Boolean) ? specificInstructions : null
       });
       return response.json();
     },
@@ -406,6 +419,16 @@ export default function ScheduleDetail({ id }: { id: number }) {
         designInstructions: false,
         platforms: false,
         hashtags: false
+      });
+      setSpecificInstructions({
+        titles: "",
+        descriptions: "",
+        content: "",
+        copyIn: "",
+        copyOut: "",
+        designInstructions: "",
+        platforms: "",
+        hashtags: ""
       });
     },
     onError: (error) => {
@@ -590,35 +613,131 @@ export default function ScheduleDetail({ id }: { id: number }) {
               </div>
             </div>
             
-            {/* Textarea que se muestra solo si hay elementos seleccionados */}
-            {Object.values(selectedAreas).some(Boolean) && (
-              <div className="space-y-2">
+            {/* Textareas específicos que aparecen cuando se selecciona cada área */}
+            {selectedAreas.titles && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
                 <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                  Instrucciones específicas para los elementos seleccionados:
+                  Instrucciones específicas para Títulos:
                 </h4>
                 <Textarea
-                  value={additionalInstructions}
-                  onChange={(e) => setAdditionalInstructions(e.target.value)}
-                  placeholder={`Ejemplo: ${getPlaceholderForSelectedAreas()}`}
-                  className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                  value={specificInstructions.titles}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, titles: e.target.value }))}
+                  placeholder="Ejemplo: 'Haz los títulos más llamativos y dinámicos', 'Incluye palabras de acción', 'Usa números cuando sea posible'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
                 />
               </div>
             )}
             
-            {/* Textarea general si no hay elementos específicos seleccionados */}
-            {!Object.values(selectedAreas).some(Boolean) && (
-              <div className="space-y-2">
+            {selectedAreas.descriptions && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
                 <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
-                  Instrucciones generales para todo el cronograma:
+                  Instrucciones específicas para Descripciones:
                 </h4>
                 <Textarea
-                  value={additionalInstructions}
-                  onChange={(e) => setAdditionalInstructions(e.target.value)}
-                  placeholder="Ejemplo: 'Utiliza un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto', 'Agrega más hashtags relacionados con la temporada'..."
-                  className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                  value={specificInstructions.descriptions}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, descriptions: e.target.value }))}
+                  placeholder="Ejemplo: 'Utiliza descripciones más persuasivas y emotivas', 'Enfócate en los beneficios', 'Sé más directo'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
                 />
               </div>
             )}
+            
+            {selectedAreas.content && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para Contenido:
+                </h4>
+                <Textarea
+                  value={specificInstructions.content}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, content: e.target.value }))}
+                  placeholder="Ejemplo: 'Agrega más detalles y beneficios específicos', 'Incluye testimonios', 'Más datos técnicos'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {selectedAreas.copyIn && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para Texto Integrado:
+                </h4>
+                <Textarea
+                  value={specificInstructions.copyIn}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, copyIn: e.target.value }))}
+                  placeholder="Ejemplo: 'Simplifica el texto integrado para mayor impacto', 'Usa frases más cortas', 'Más directo al grano'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {selectedAreas.copyOut && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para Texto Descripción:
+                </h4>
+                <Textarea
+                  value={specificInstructions.copyOut}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, copyOut: e.target.value }))}
+                  placeholder="Ejemplo: 'Incluye más emojis en el texto descripción', 'Haz preguntas para generar engagement', 'Más llamadas a la acción'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {selectedAreas.designInstructions && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para Instrucciones de Diseño:
+                </h4>
+                <Textarea
+                  value={specificInstructions.designInstructions}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, designInstructions: e.target.value }))}
+                  placeholder="Ejemplo: 'Especifica colores más vibrantes y modernos', 'Usa tipografías más llamativas', 'Añade elementos gráficos específicos'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {selectedAreas.platforms && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para Plataformas:
+                </h4>
+                <Textarea
+                  value={specificInstructions.platforms}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, platforms: e.target.value }))}
+                  placeholder="Ejemplo: 'Adapta mejor a Instagram y Facebook', 'Más contenido para LinkedIn', 'Enfoque en TikTok'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {selectedAreas.hashtags && (
+              <div className="space-y-2 p-3 bg-amber-50/50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700/50">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para Hashtags:
+                </h4>
+                <Textarea
+                  value={specificInstructions.hashtags}
+                  onChange={(e) => setSpecificInstructions(prev => ({ ...prev, hashtags: e.target.value }))}
+                  placeholder="Ejemplo: 'Agrega hashtags de temporada y trending', 'Incluye más hashtags de nicho', 'Menos hashtags pero más específicos'..."
+                  className="min-h-[80px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {/* Textarea general para instrucciones del cronograma completo */}
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                Instrucciones generales para todo el cronograma:
+              </h4>
+              <Textarea
+                value={additionalInstructions}
+                onChange={(e) => setAdditionalInstructions(e.target.value)}
+                placeholder="Ejemplo: 'Utiliza un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto', 'Agrega más hashtags relacionados con la temporada'..."
+                className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+              />
+            </div>
             <div className="flex justify-between">
               <Button 
                 onClick={handleRegenerateSchedule}
