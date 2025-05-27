@@ -79,6 +79,8 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     name: "",
     client: "",
     description: "",
+    startDate: "",
+    endDate: "",
     status: ""
   });
 
@@ -112,6 +114,8 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
         name: projectData.name || "",
         client: projectData.client || "",
         description: projectData.description || "",
+        startDate: projectData.startDate ? new Date(projectData.startDate).toISOString().split('T')[0] : "",
+        endDate: projectData.endDate ? new Date(projectData.endDate).toISOString().split('T')[0] : "",
         status: projectData.status || "planning"
       });
       setIsEditDialogOpen(true);
@@ -120,7 +124,13 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
 
   // Function to handle form submission
   const handleSaveProject = () => {
-    updateProjectMutation.mutate(editFormData);
+    // Convertir fechas a formato Date si existen
+    const dataToSubmit = {
+      ...editFormData,
+      startDate: editFormData.startDate ? new Date(editFormData.startDate) : null,
+      endDate: editFormData.endDate ? new Date(editFormData.endDate) : null,
+    };
+    updateProjectMutation.mutate(dataToSubmit);
   };
 
   // Fetch project details with analysis
@@ -279,67 +289,91 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
 
       {/* Edit Project Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Proyecto</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Nombre
-              </Label>
-              <Input
-                id="name"
-                value={editFormData.name}
-                onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
-                className="col-span-3"
-              />
+          <div className="grid gap-6 py-4">
+            {/* Información Básica */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Información Básica</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="name">Nombre del Proyecto</Label>
+                  <Input
+                    id="name"
+                    value={editFormData.name}
+                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                    placeholder="Nombre del proyecto"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="client">Cliente</Label>
+                  <Input
+                    id="client"
+                    value={editFormData.client}
+                    onChange={(e) => setEditFormData({...editFormData, client: e.target.value})}
+                    placeholder="Nombre del cliente"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                  placeholder="Descripción del proyecto"
+                  rows={3}
+                />
+              </div>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="client" className="text-right">
-                Cliente
-              </Label>
-              <Input
-                id="client"
-                value={editFormData.client}
-                onChange={(e) => setEditFormData({...editFormData, client: e.target.value})}
-                className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="description" className="text-right">
-                Descripción
-              </Label>
-              <Textarea
-                id="description"
-                value={editFormData.description}
-                onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
-                className="col-span-3"
-                rows={3}
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="status" className="text-right">
-                Estado
-              </Label>
-              <Select
-                value={editFormData.status}
-                onValueChange={(value) => setEditFormData({...editFormData, status: value})}
-              >
-                <SelectTrigger className="col-span-3">
-                  <SelectValue placeholder="Seleccionar estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planning">Planificación</SelectItem>
-                  <SelectItem value="active">Activo</SelectItem>
-                  <SelectItem value="on_hold">En Pausa</SelectItem>
-                  <SelectItem value="completed">Completado</SelectItem>
-                  <SelectItem value="cancelled">Cancelado</SelectItem>
-                </SelectContent>
-              </Select>
+
+            {/* Fechas y Estado */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">Fechas y Estado</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="startDate">Fecha de Inicio</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    value={editFormData.startDate}
+                    onChange={(e) => setEditFormData({...editFormData, startDate: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="endDate">Fecha de Finalización</Label>
+                  <Input
+                    id="endDate"
+                    type="date"
+                    value={editFormData.endDate}
+                    onChange={(e) => setEditFormData({...editFormData, endDate: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="status">Estado del Proyecto</Label>
+                  <Select
+                    value={editFormData.status}
+                    onValueChange={(value) => setEditFormData({...editFormData, status: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleccionar estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="planning">📋 Planificación</SelectItem>
+                      <SelectItem value="active">🚀 Activo</SelectItem>
+                      <SelectItem value="on_hold">⏸️ En Pausa</SelectItem>
+                      <SelectItem value="completed">✅ Completado</SelectItem>
+                      <SelectItem value="cancelled">❌ Cancelado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex justify-end space-x-2">
+          
+          <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => setIsEditDialogOpen(false)}
@@ -356,7 +390,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                   Guardando...
                 </>
               ) : (
-                "Guardar"
+                "Guardar Cambios"
               )}
             </Button>
           </div>
