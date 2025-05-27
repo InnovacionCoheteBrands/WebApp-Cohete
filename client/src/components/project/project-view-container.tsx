@@ -324,6 +324,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
                     <SelectItem value="gantt">Gantt</SelectItem>
                     <SelectItem value="calendar">Calendario</SelectItem>
                     <SelectItem value="timeline">Línea de tiempo</SelectItem>
+                    <SelectItem value="board">Tablero Monday</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -385,6 +386,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
                     <SelectItem value="gantt">Gantt</SelectItem>
                     <SelectItem value="calendar">Calendario</SelectItem>
                     <SelectItem value="timeline">Línea de tiempo</SelectItem>
+                    <SelectItem value="board">Tablero Monday</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -424,6 +426,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
           {activeView.type === "gantt" && <ProjectGanttView projectId={parseInt(projectId!)} viewId={activeView.id} />}
           {activeView.type === "calendar" && <ProjectCalendarView projectId={parseInt(projectId!)} viewId={activeView.id} />}
           {activeView.type === "timeline" && <div className="p-6 text-center">Vista de línea de tiempo (En desarrollo)</div>}
+          {activeView.type === "board" && <ProjectBoardView projectId={parseInt(projectId!)} viewId={activeView.id} />}
         </div>
       ) : (
         <div className="border rounded-lg p-8 text-center">
