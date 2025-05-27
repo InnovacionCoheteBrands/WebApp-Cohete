@@ -9,7 +9,7 @@ export const taskStatusEnum = pgEnum('task_status', ['pending', 'in_progress', '
 export const taskPriorityEnum = pgEnum('task_priority', ['low', 'medium', 'high', 'urgent', 'critical']);
 export const taskGroupEnum = pgEnum('task_group', ['backlog', 'sprint', 'doing', 'done', 'custom', 'blocked', 'upcoming']);
 export const aiModelEnum = pgEnum('ai_model', ['grok']);
-export const viewTypeEnum = pgEnum('view_type', ['list', 'kanban', 'gantt', 'calendar', 'timeline']);
+export const viewTypeEnum = pgEnum('view_type', ['list', 'kanban', 'gantt', 'calendar', 'timeline', 'board']);
 export const automationTriggerEnum = pgEnum('automation_trigger', ['status_change', 'due_date_approaching', 'task_assigned', 'comment_added', 'subtask_completed', 'attachment_added']);
 export const automationActionEnum = pgEnum('automation_action', ['change_status', 'assign_task', 'send_notification', 'create_subtask', 'update_priority', 'move_to_group']);
 
