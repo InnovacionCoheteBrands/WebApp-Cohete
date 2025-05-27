@@ -8,6 +8,7 @@ import path from "path";
 import pdfParse from "pdf-parse";
 import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
+import { grokService } from "./grok-integration";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
@@ -1151,51 +1152,117 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("[REGENERATE] Instrucciones estructuradas con áreas específicas:", enhancedInstructions);
       }
       
-      // Usar la función existente para generar un nuevo cronograma
-      const generatedSchedule = await generateSchedule(
-        project.name,
-        {
-          client: project.client,
-          description: project.description,
-          ...project.analysis
-        },
-        startDate,
-        schedule.specifications || "",
-        15, // Valor predeterminado para duración
-        previousContent,
-        enhancedInstructions // Usar las instrucciones mejoradas
-      );
+      // Nueva funcionalidad: Edición selectiva en lugar de regeneración completa
+      console.log("[REGENERATE] Iniciando edición selectiva de entradas específicas");
       
-      // Eliminar entradas existentes
-      await global.storage.deleteScheduleEntries(scheduleId);
+      // Obtener todas las entradas existentes
+      const existingEntries = schedule.entries || [];
+      console.log(`[REGENERATE] Encontradas ${existingEntries.length} entradas existentes para editar`);
       
-      // Crear nuevas entradas
-      for (const entry of generatedSchedule.entries) {
-        await global.storage.createScheduleEntry({
-          scheduleId,
-          title: entry.title,
-          description: entry.description,
-          content: entry.content,
-          copyIn: entry.copyIn,
-          copyOut: entry.copyOut,
-          designInstructions: entry.designInstructions,
-          platform: entry.platform,
-          postDate: new Date(entry.postDate),
-          postTime: entry.postTime,
-          hashtags: entry.hashtags,
-        });
+      if (existingEntries.length === 0) {
+        return res.status(400).json({ message: "No hay entradas para editar en este cronograma" });
       }
       
-      // Actualizar el nombre del cronograma si es diferente
-      if (generatedSchedule.name !== schedule.name) {
+      // Procesar cada entrada existente para aplicar modificaciones selectivas
+      for (let i = 0; i < existingEntries.length; i++) {
+        const entry = existingEntries[i];
+        console.log(`[REGENERATE] Procesando entrada ${i + 1}/${existingEntries.length}: "${entry.title}"`);
+        
+        // Construir prompt específico para editar solo las áreas seleccionadas
+        const editPrompt = `
+Eres un experto en marketing de contenidos. Tu tarea es EDITAR ÚNICAMENTE las áreas específicas de esta publicación según las instrucciones del usuario.
+
+PUBLICACIÓN ACTUAL:
+- Título: "${entry.title}"
+- Descripción: "${entry.description}"
+- Contenido: "${entry.content}"
+- Texto Integrado (copyIn): "${entry.copyIn}"
+- Texto Descripción (copyOut): "${entry.copyOut}"
+- Instrucciones de Diseño: "${entry.designInstructions}"
+- Plataforma: "${entry.platform}"
+- Hashtags: "${entry.hashtags}"
+
+${enhancedInstructions}
+
+RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO con esta estructura exacta:
+{
+  "title": "título editado o el mismo si no se modifica",
+  "description": "descripción editada o la misma si no se modifica",
+  "content": "contenido editado o el mismo si no se modifica",
+  "copyIn": "copyIn editado o el mismo si no se modifica",
+  "copyOut": "copyOut editado o el mismo si no se modifica",
+  "designInstructions": "instrucciones editadas o las mismas si no se modifican",
+  "platform": "plataforma editada o la misma si no se modifica",
+  "hashtags": "hashtags editados o los mismos si no se modifican"
+}
+
+IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el valor original EXACTAMENTE como está.`;
+
+        try {
+          const editedContentText = await grokService.generateText(editPrompt, {
+            temperature: 0.7,
+            maxTokens: 2000,
+            model: 'grok-3-mini-beta'
+          });
+          
+          console.log(`[REGENERATE] Respuesta de edición para entrada ${i + 1}:`, editedContentText.substring(0, 200));
+          
+          // Parsear la respuesta JSON
+          let editedContent;
+          try {
+            // Limpiar la respuesta para extraer solo el JSON
+            const jsonMatch = editedContentText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              editedContent = JSON.parse(jsonMatch[0]);
+            } else {
+              throw new Error("No se encontró JSON válido en la respuesta");
+            }
+          } catch (parseError) {
+            console.error(`[REGENERATE] Error parseando JSON para entrada ${i + 1}:`, parseError);
+            // Si falla el parsing, mantener la entrada original
+            editedContent = {
+              title: entry.title,
+              description: entry.description,
+              content: entry.content,
+              copyIn: entry.copyIn,
+              copyOut: entry.copyOut,
+              designInstructions: entry.designInstructions,
+              platform: entry.platform,
+              hashtags: entry.hashtags
+            };
+          }
+          
+          // Actualizar la entrada en la base de datos
+          await global.storage.updateScheduleEntry(entry.id, {
+            title: editedContent.title || entry.title,
+            description: editedContent.description || entry.description,
+            content: editedContent.content || entry.content,
+            copyIn: editedContent.copyIn || entry.copyIn,
+            copyOut: editedContent.copyOut || entry.copyOut,
+            designInstructions: editedContent.designInstructions || entry.designInstructions,
+            platform: editedContent.platform || entry.platform,
+            hashtags: editedContent.hashtags || entry.hashtags,
+          });
+          
+          console.log(`[REGENERATE] Entrada ${i + 1} actualizada exitosamente`);
+          
+        } catch (error) {
+          console.error(`[REGENERATE] Error editando entrada ${i + 1}:`, error);
+          // Continuar con la siguiente entrada si una falla
+        }
+      }
+      
+      // Actualizar las instrucciones adicionales si se proporcionaron
+      if (newInstructions && newInstructions.trim()) {
         await global.storage.updateSchedule(scheduleId, {
-          name: generatedSchedule.name
+          additionalInstructions: newInstructions
         });
       }
       
       // Obtener el cronograma actualizado con sus entradas
       const updatedSchedule = await global.storage.getScheduleWithEntries(scheduleId);
       
+      console.log("[REGENERATE] Edición selectiva completada exitosamente");
       res.json(updatedSchedule);
     } catch (error) {
       console.error("Error al regenerar cronograma:", error);
