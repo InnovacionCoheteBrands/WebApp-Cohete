@@ -405,11 +405,15 @@ export const contentHistoryRelations = relations(contentHistory, ({ one }) => ({
 
 export const tasksRelations = relations(tasks, ({ one, many }) => ({
   project: one(projects, { fields: [tasks.projectId], references: [projects.id] }),
+  group: one(taskGroups, { fields: [tasks.groupId], references: [taskGroups.id] }),
   assignedTo: one(users, { fields: [tasks.assignedToId], references: [users.id] }),
   createdBy: one(users, { fields: [tasks.createdById], references: [users.id] }),
   parentTask: one(tasks, { fields: [tasks.parentTaskId], references: [tasks.id] }),
   subtasks: many(tasks, { relationName: "subtasks" }),
   comments: many(taskComments),
+  // Nuevas relaciones Monday.com
+  assignees: many(taskAssignees),
+  columnValues: many(taskColumnValues),
 }));
 
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
@@ -446,6 +450,31 @@ export const collaborativeDocsRelations = relations(collaborativeDocs, ({ one })
   project: one(projects, { fields: [collaborativeDocs.projectId], references: [projects.id] }),
   creator: one(users, { fields: [collaborativeDocs.createdBy], references: [users.id] }),
   lastEditor: one(users, { fields: [collaborativeDocs.lastEditedBy], references: [users.id] }),
+}));
+
+// ============ NUEVAS RELACIONES PARA SISTEMA MONDAY.COM ============
+
+export const taskGroupsRelations = relations(taskGroups, ({ one, many }) => ({
+  project: one(projects, { fields: [taskGroups.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [taskGroups.createdBy], references: [users.id] }),
+  tasks: many(tasks),
+}));
+
+export const projectColumnSettingsRelations = relations(projectColumnSettings, ({ one, many }) => ({
+  project: one(projects, { fields: [projectColumnSettings.projectId], references: [projects.id] }),
+  creator: one(users, { fields: [projectColumnSettings.createdBy], references: [users.id] }),
+  columnValues: many(taskColumnValues),
+}));
+
+export const taskColumnValuesRelations = relations(taskColumnValues, ({ one }) => ({
+  task: one(tasks, { fields: [taskColumnValues.taskId], references: [tasks.id] }),
+  column: one(projectColumnSettings, { fields: [taskColumnValues.columnId], references: [projectColumnSettings.id] }),
+}));
+
+export const taskAssigneesRelations = relations(taskAssignees, ({ one }) => ({
+  task: one(tasks, { fields: [taskAssignees.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [taskAssignees.userId], references: [users.id] }),
+  assignedBy: one(users, { fields: [taskAssignees.assignedBy], references: [users.id] }),
 }));
 
 // Zod schemas for validation
@@ -596,6 +625,31 @@ export const insertCollaborativeDocSchema = createInsertSchema(collaborativeDocs
   updatedAt: true,
 });
 
+// ============ NUEVOS ESQUEMAS ZOD PARA SISTEMA MONDAY.COM ============
+
+export const insertTaskGroupSchema = createInsertSchema(taskGroups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTaskColumnValueSchema = createInsertSchema(taskColumnValues).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTaskAssigneeSchema = createInsertSchema(taskAssignees).omit({
+  id: true,
+  assignedAt: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -674,3 +728,17 @@ export type InsertTag = z.infer<typeof insertTagSchema>;
 
 export type CollaborativeDoc = typeof collaborativeDocs.$inferSelect;
 export type InsertCollaborativeDoc = z.infer<typeof insertCollaborativeDocSchema>;
+
+// ============ NUEVOS TIPOS PARA SISTEMA MONDAY.COM ============
+
+export type TaskGroup = typeof taskGroups.$inferSelect;
+export type InsertTaskGroup = z.infer<typeof insertTaskGroupSchema>;
+
+export type ProjectColumnSetting = typeof projectColumnSettings.$inferSelect;
+export type InsertProjectColumnSetting = z.infer<typeof insertProjectColumnSettingSchema>;
+
+export type TaskColumnValue = typeof taskColumnValues.$inferSelect;
+export type InsertTaskColumnValue = z.infer<typeof insertTaskColumnValueSchema>;
+
+export type TaskAssignee = typeof taskAssignees.$inferSelect;
+export type InsertTaskAssignee = z.infer<typeof insertTaskAssigneeSchema>;
