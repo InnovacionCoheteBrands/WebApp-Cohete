@@ -128,22 +128,31 @@ export async function generateSchedule(
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
       - HASHTAGS: Mezcla hashtags populares y específicos del nicho (entre 3-7 por publicación).
 
-      **FORMATO DE RESPUESTA:**
-      Devuelve ÚNICAMENTE un objeto JSON con esta estructura (todo en español):
+      **REQUISITOS CRÍTICOS DE CANTIDAD:**
+      - Genera EXACTAMENTE ${durationDays / 2} publicaciones (aproximadamente 7-8 entradas para el periodo)
+      - Distribuye las publicaciones uniformemente a lo largo del periodo
+      - NO generes menos de 6 entradas bajo ninguna circunstancia
+
+      **FORMATO DE RESPUESTA CRÍTICO:**
+      RESPONDE ÚNICAMENTE CON JSON VÁLIDO. NO agregues texto antes o después.
+      EVITA comillas dobles dentro del contenido de texto. Usa comillas simples si necesario.
+      ESCAPA todos los caracteres especiales que puedan romper el JSON.
+      
+      Estructura JSON requerida (todo en español):
       {
         "name": "Nombre estratégico del cronograma",
         "entries": [
           {
-            "title": "Título impactante y único",
+            "title": "Título impactante sin comillas dobles",
             "description": "Objetivo estratégico de la publicación",
-            "content": "Contenido principal extenso, desarrollando ideas completas con estructura narrativa clara",
-            "copyIn": "Texto conciso, memorable e impactante para incluir sobre la imagen",
-            "copyOut": "Texto externo detallado para la descripción del post, escrito en tono conversacional y persuasivo",
-            "designInstructions": "Instrucciones detalladas de diseño incluyendo elementos visuales, colores, composición y estilo",
-            "platform": "Plataforma específica",
+            "content": "Contenido principal extenso sin comillas dobles",
+            "copyIn": "Texto conciso para incluir sobre la imagen",
+            "copyOut": "Texto externo detallado para la descripción del post",
+            "designInstructions": "Instrucciones detalladas de diseño",
+            "platform": "Instagram",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "#hashtag1 #hashtag2 #hashtag3 #hashtag4"
+            "hashtags": "#hashtag1 #hashtag2 #hashtag3"
           }
         ]
       }
@@ -166,16 +175,16 @@ export async function generateSchedule(
     // Incorporar instrucciones adicionales si existen
     let finalPrompt = enhancedPrompt;
     if (additionalInstructions) {
-      finalPrompt = `${enhancedPrompt}\n\n**INSTRUCCIONES ADICIONALES DEL USUARIO:**\n${additionalInstructions}`;
-      console.log(`[CALENDAR] Se añadieron instrucciones adicionales al prompt: "${additionalInstructions.substring(0, 100)}${additionalInstructions.length > 100 ? '...' : ''}"`);
+      finalPrompt = `${enhancedPrompt}\n\n⚠️ **INSTRUCCIONES OBLIGATORIAS DEL USUARIO - PRIORIDAD MÁXIMA:**\n${additionalInstructions}\n\n⚠️ ESTAS INSTRUCCIONES SON CRÍTICAS Y DEBEN APLICARSE EXACTAMENTE. NO LAS IGNORES.\n⚠️ GENERA MÍNIMO 7 ENTRADAS COMPLETAS - NO MENOS.\n⚠️ SI SE ESPECIFICAN ÁREAS CONCRETAS, MODIFICA SOLO ESAS ÁREAS.\n⚠️ RESPETA CADA INSTRUCCIÓN ESPECÍFICA AL PIE DE LA LETRA.`;
+      console.log(`[CALENDAR] Se añadieron instrucciones críticas del usuario: "${additionalInstructions.substring(0, 200)}${additionalInstructions.length > 200 ? '...' : ''}"`);
     }
     
-    // Usamos Grok sin formato específico ya que no soporta respuestas estructuradas
+    // Usamos Grok con configuración optimizada para generación consistente
     const scheduleText = await grokService.generateText(finalPrompt, {
-      // Aumentamos temperatura a 1.2 para obtener respuesta más creativa y única
-      temperature: 1.2,
-      // Aumentamos tokens máximos para permitir respuestas más elaboradas
-      maxTokens: 4000,
+      // Reducimos temperatura para respuestas más consistentes y estructuradas
+      temperature: 0.8,
+      // Incrementamos tokens para permitir respuestas completas
+      maxTokens: 6000,
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
       // Utilizamos exclusivamente el modelo Grok 3 mini beta como solicitado
