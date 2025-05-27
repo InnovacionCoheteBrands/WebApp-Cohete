@@ -342,13 +342,17 @@ export default function ScheduleDetail({ id }: { id: number }) {
       const response = await apiRequest("POST", `/api/schedules/${id}/regenerate`);
       return response.json();
     },
-    onSuccess: () => {
-      // Actualiza múltiples cachés para asegurar que se refresque toda la información
-      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+    onSuccess: (data) => {
+      // Actualizar directamente los datos en la caché con la respuesta del servidor
+      queryClient.setQueryData([`/api/schedules/${id}`], data);
+      
+      // También invalidar otras cachés relacionadas
       queryClient.invalidateQueries({ queryKey: ["/api/schedules/recent"] });
       
-      // Forzar re-fetch inmediato del cronograma actual
-      queryClient.refetchQueries({ queryKey: [`/api/schedules/${id}`] });
+      // Forzar refresco después de un pequeño delay para asegurar sincronización
+      setTimeout(() => {
+        queryClient.refetchQueries({ queryKey: [`/api/schedules/${id}`] });
+      }, 100);
       
       toast({
         title: "Cronograma regenerado",
