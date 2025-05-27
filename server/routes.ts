@@ -1098,7 +1098,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extraer fecha de inicio
       const startDate = schedule.startDate ? format(new Date(schedule.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
       
-      // Construir instrucciones específicas basadas en las áreas seleccionadas
+      // Construir instrucciones estructuradas y específicas
       let enhancedInstructions = newInstructions || schedule.additionalInstructions || "";
       
       if (selectedAreas && Object.values(selectedAreas).some(Boolean)) {
@@ -1109,8 +1109,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               titles: "títulos",
               descriptions: "descripciones", 
               content: "contenido",
-              copyIn: "texto integrado",
-              copyOut: "texto descripción",
+              copyIn: "texto integrado (copyIn)",
+              copyOut: "texto descripción (copyOut)", 
               designInstructions: "instrucciones de diseño",
               platforms: "plataformas",
               hashtags: "hashtags"
@@ -1118,29 +1118,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return areaNames[area as keyof typeof areaNames] || area;
           });
         
-        enhancedInstructions += `\n\nIMPORTANTE: Modifica específicamente estas áreas del cronograma: ${selectedAreasList.join(", ")}. Para el resto de elementos, mantén el estilo y enfoque actual.`;
+        enhancedInstructions += `\n\n=== MODIFICACIONES ESPECÍFICAS REQUERIDAS ===\n`;
+        enhancedInstructions += `Modifica ÚNICAMENTE estos elementos: ${selectedAreasList.join(", ")}\n`;
+        enhancedInstructions += `MANTÉN sin cambios todos los demás elementos del cronograma.\n`;
         
-        // Agregar instrucciones específicas de cada área seleccionada
+        // Agregar instrucciones específicas con formato claro
         if (specificInstructions) {
+          enhancedInstructions += `\n=== INSTRUCCIONES DETALLADAS POR ÁREA ===\n`;
           Object.entries(selectedAreas).forEach(([area, selected]) => {
             if (selected && specificInstructions[area] && specificInstructions[area].trim()) {
               const areaNames = {
-                titles: "títulos",
-                descriptions: "descripciones", 
-                content: "contenido",
-                copyIn: "texto integrado",
-                copyOut: "texto descripción",
-                designInstructions: "instrucciones de diseño",
-                platforms: "plataformas",
-                hashtags: "hashtags"
+                titles: "TÍTULOS",
+                descriptions: "DESCRIPCIONES", 
+                content: "CONTENIDO",
+                copyIn: "TEXTO INTEGRADO (copyIn)",
+                copyOut: "TEXTO DESCRIPCIÓN (copyOut)",
+                designInstructions: "INSTRUCCIONES DE DISEÑO",
+                platforms: "PLATAFORMAS",
+                hashtags: "HASHTAGS"
               };
-              const areaName = areaNames[area as keyof typeof areaNames] || area;
-              enhancedInstructions += `\n\nPara ${areaName}: ${specificInstructions[area]}`;
+              const areaName = areaNames[area as keyof typeof areaNames] || area.toUpperCase();
+              enhancedInstructions += `\n${areaName}: ${specificInstructions[area]}\n`;
             }
           });
         }
         
-        console.log("[REGENERATE] Instrucciones mejoradas con áreas específicas:", enhancedInstructions);
+        enhancedInstructions += `\n=== FORMATO DE RESPUESTA CRÍTICO ===\n`;
+        enhancedInstructions += `Responde ÚNICAMENTE con JSON válido. NO agregues texto explicativo antes o después del JSON.\n`;
+        enhancedInstructions += `Asegúrate de que todas las comillas estén correctamente escapadas.\n`;
+        enhancedInstructions += `Verifica que no haya caracteres especiales que rompan el formato JSON.\n`;
+        
+        console.log("[REGENERATE] Instrucciones estructuradas con áreas específicas:", enhancedInstructions);
       }
       
       // Usar la función existente para generar un nuevo cronograma
