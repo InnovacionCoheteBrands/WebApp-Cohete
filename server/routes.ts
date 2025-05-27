@@ -3720,14 +3720,17 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
   });
 
   // Enhanced Tasks endpoint with groups and assignees
-  app.get("/api/projects/:projectId/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
+  app.get("/api/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const projectId = parseInt(req.params.projectId);
-      
-      // Get tasks with their groups and assignees
+      // Get tasks from all projects with their groups and assignees
       const tasksWithDetails = await db.select({
         task: schema.tasks,
         group: schema.taskGroups,
+        project: {
+          id: schema.projects.id,
+          name: schema.projects.name,
+          client: schema.projects.client,
+        },
         assignee: {
           id: schema.users.id,
           fullName: schema.users.fullName,
@@ -3737,8 +3740,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       })
       .from(schema.tasks)
       .leftJoin(schema.taskGroups, eq(schema.tasks.groupId, schema.taskGroups.id))
+      .leftJoin(schema.projects, eq(schema.tasks.projectId, schema.projects.id))
       .leftJoin(schema.users, eq(schema.tasks.createdById, schema.users.id))
-      .where(eq(schema.tasks.projectId, projectId))
       .orderBy(asc(schema.taskGroups.position), asc(schema.tasks.id));
 
       // Get additional assignees for each task
