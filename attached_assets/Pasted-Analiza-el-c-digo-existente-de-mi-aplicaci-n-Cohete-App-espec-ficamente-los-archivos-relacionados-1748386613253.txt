@@ -1,0 +1,76 @@
+Analiza el código existente de mi aplicación "Cohete App", específicamente los archivos relacionados con la gestión de proyectos y tareas (`ProductivityRocket-1/shared/schema.ts`, `ProductivityRocket-1/server/storage.ts`, `ProductivityRocket-1/server/routes.ts`, `ProductivityRocket-1/client/src/pages/projects.tsx` y `ProductivityRocket-1/client/src/components/projects/project-views.tsx`).
+
+Quiero evolucionar el actual sistema de "Tareas" hacia un "Gestor de Proyectos" más robusto y visual, inspirado en la funcionalidad y experiencia de usuario de Monday.com.
+
+**Objetivo Principal:**
+
+Transformar la página de un proyecto individual (`ProductivityRocket-1/client/src/components/projects/project-views.tsx`) para que ofrezca múltiples vistas de proyecto, siendo la vista principal por defecto un tablero estilo Monday.com. Este tablero debe ser altamente configurable y visual.
+
+**Requisitos Detallados para la Transformación:**
+
+1.  **Selector de Vistas del Proyecto:**
+    * Implementar un selector de vistas (ej. usando los `Tabs` de Shadcn/UI que ya existen en `project-views.tsx`) que permita al usuario cambiar entre:
+        * **Vista de Tablero (Board):** La nueva vista principal estilo Monday.com (detallada abajo).
+        * **Vista de Lista (List):** Mejorar la vista de lista actual para que sea más densa e informativa, integrando la nueva estructura de grupos y columnas.
+        * **Vista Kanban:** Adaptar la vista Kanban existente para que utilice los estados de las tareas y permita arrastrar y soltar entre columnas de estado.
+        * **Vista de Calendario:** Mostrar tareas en un calendario mensual/semanal según sus fechas de inicio/vencimiento.
+        * **Vista de Cronograma (Gantt):** (Si es posible en una segunda fase, indicar que es opcional por ahora) Una línea de tiempo visual para la duración de las tareas y sus dependencias.
+    * El estado de la vista seleccionada debe persistir para ese proyecto y usuario (ej. usando `localStorage` o guardándolo en el backend).
+
+2.  **Estructura del Tablero (Board) del Proyecto (Vista Principal):**
+    * **Grupos de Tareas (Items):** Un proyecto debe poder contener "Grupos" (similares a los grupos de Monday). Inicialmente, podría haber un grupo por defecto. Los usuarios deberían poder crear, renombrar, contraer/expandir y eliminar grupos.
+    * **Tareas (Items/Subitems):** Dentro de cada grupo, se listarán las tareas. Implementar la funcionalidad de "sub-tareas" o "sub-items" anidadas bajo una tarea principal, utilizando o mejorando la actual `parentTaskId`.
+
+3.  **Columnas Configurables en la Vista de Tablero y Lista:**
+    * **Columnas Predeterminadas:** Título de tarea, Asignado(s), Estado, Prioridad, Fecha de Vencimiento, Fecha de Creación.
+    * **Nuevos Tipos de Columnas (Inspirado en Monday):**
+        * **Columna de Personas:** Extender `assigneeId` para permitir múltiples asignados. El esquema actual en `tasks` tiene `assigneeId` como una referencia a un solo usuario. Esto necesitará un cambio a una relación muchos-a-muchos (ej. una tabla `task_assignees`).
+        * **Columna de Estado:** Mejorar visualmente la columna de estado, permitiendo una fácil actualización (selector de color/icono).
+        * **Columna de Fecha:** Además de `dueDate`, considerar añadir `startDate` para definir rangos de fechas.
+        * **Columna de Progreso (Tracking):** Una barra de progreso visual para cada tarea. Podría calcularse a partir de sub-tareas completadas o ser un valor manual.
+        * **Columna de Archivos:** Permitir adjuntar múltiples archivos a una tarea (requiere backend para almacenamiento de archivos y cambios en `schema.ts`).
+        * **Columna de Timeline (Mini-Gantt por fila):** Visualizar la duración de la tarea (si tiene `startDate` y `dueDate`) en una pequeña línea de tiempo horizontal dentro de la fila de la tarea.
+        * **Columna de Etiquetas (Tags):** Mejorar la actual `labels` (que es `jsonb`) para que sea más interactiva, permitiendo la creación/selección de múltiples etiquetas con colores personalizables. Considerar una tabla separada `tags` y una tabla de unión `task_tags`.
+        * **Columna de Números:** Para seguimiento de presupuesto, horas estimadas, esfuerzo, etc.
+        * **Columna de Texto Largo:** Para notas adicionales visibles directamente en el tablero.
+    * **Gestión de Columnas:** Permitir a los usuarios (con permisos adecuados) agregar nuevas columnas de los tipos definidos, reordenarlas visualmente (drag-and-drop), ocultarlas/mostrarlas y eliminarlas de la vista del proyecto.
+
+4.  **Interfaz de Usuario y Experiencia (UX) para el Tablero del Proyecto:**
+    * **Edición en Línea:** Permitir la edición rápida de la mayoría de los campos directamente en la celda de la tabla/tablero.
+    * **Arrastrar y Soltar (Drag-and-Drop):**
+        * Reordenar tareas dentro de un grupo.
+        * Mover tareas entre grupos.
+        * (Opcional) Reordenar columnas.
+    * **Actualizaciones en Tiempo Real:** Las modificaciones deben reflejarse para otros colaboradores (aprovechar WebSockets).
+    * **Resúmenes a Nivel de Grupo:** Mostrar agregaciones a nivel de grupo (ej. progreso promedio del grupo, suma de una columna numérica, recuento de tareas por estado).
+    * **Creación Rápida:** Botones "+" intuitivos para añadir nuevos grupos y tareas dentro de los grupos.
+
+5.  **Modificaciones al Esquema y Backend (`shared/schema.ts`, `server/storage.ts`, `server/routes.ts`):**
+    * **`task_groups` (Nuevo):** Tabla para definir los grupos dentro de un proyecto. Campos: `id`, `project_id`, `name`, `order`, `created_at`, `updated_at`.
+        * Modificar la tabla `tasks` para añadir `group_id` (FK a `task_groups.id`).
+    * **`project_column_settings` (Nuevo):** Tabla para almacenar la configuración de las columnas por proyecto. Campos: `id`, `project_id`, `column_type` (ej. 'text', 'status', 'person', 'date', 'progress', 'tags', 'number'), `name` (etiqueta de la columna), `order`, `settings_json` (para configuraciones específicas del tipo de columna, como opciones de un selector de estado).
+    * **`task_custom_fields` (Nuevo o Extensión):** Para almacenar los valores de las columnas personalizadas que no son campos directos en la tabla `tasks`. Podría ser una tabla `task_column_values` con `task_id`, `project_column_id`, `value_text`, `value_number`, `value_date`, etc. O, si se prefiere, añadir campos `jsonb` a `tasks` para datos adicionales, aunque menos estructurado.
+    * **Actualizar `tasks`:**
+        * Considerar `start_date` (timestamp).
+        * Cambiar `assigneeId` a una relación muchos-a-muchos (crear tabla `task_assignees` con `task_id` y `user_id`).
+        * Cambiar `labels` (jsonb) para usar una tabla `tags` y `task_tags` para mejor gestión y colores.
+    * **API Endpoints:** Crear/actualizar los endpoints necesarios en `server/routes.ts` y la lógica en `server/storage.ts` para:
+        * CRUD para `task_groups`.
+        * CRUD para `project_column_settings`.
+        * CRUD para `task_custom_fields` (o la alternativa elegida).
+        * Modificar endpoints de tareas para soportar múltiples asignados, nuevas fechas, etc.
+        * Endpoints para reordenar tareas y grupos.
+
+**Consideraciones Adicionales:**
+
+* **Priorización:**
+    1.  Implementación de la vista de Tablero (Board) con Grupos y las columnas básicas (Nombre, Asignado, Estado, Fecha).
+    2.  Selector de vistas (Tablero, Lista, Kanban).
+    3.  Capacidad de añadir y configurar algunos tipos de columnas personalizadas (ej. Progreso, Etiquetas mejoradas).
+    4.  Edición en línea básica.
+* **Rendimiento:** Asegurar que las vistas sean fluidas, especialmente la de Tablero con muchos elementos.
+* **Reutilización:** Aprovechar los componentes de Shadcn/UI y la lógica de `react-query` existente.
+
+**Resultado Esperado:**
+
+Un conjunto de recomendaciones y modificaciones de código (frontend y backend) para transformar la vista de proyecto actual. El objetivo es que `project-views.tsx` se convierta en un componente contenedor que gestione el selector de vistas y renderice la vista activa (Tablero, Lista, Kanban, etc.). La vista de Tablero será la más elaborada, ofreciendo una experiencia similar a Monday.com, utilizando los componentes de Shadcn/UI y Tailwind CSS.

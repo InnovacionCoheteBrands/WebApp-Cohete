@@ -13,6 +13,10 @@ export const viewTypeEnum = pgEnum('view_type', ['list', 'kanban', 'gantt', 'cal
 export const automationTriggerEnum = pgEnum('automation_trigger', ['status_change', 'due_date_approaching', 'task_assigned', 'comment_added', 'subtask_completed', 'attachment_added']);
 export const automationActionEnum = pgEnum('automation_action', ['change_status', 'assign_task', 'send_notification', 'create_subtask', 'update_priority', 'move_to_group']);
 
+// Nuevos enums para el sistema Monday.com
+export const columnTypeEnum = pgEnum('column_type', ['text', 'status', 'person', 'date', 'progress', 'tags', 'number', 'timeline', 'files', 'dropdown', 'checkbox']);
+export const taskGroupTypeEnum = pgEnum('task_group_type', ['default', 'sprint', 'epic', 'milestone', 'custom']);
+
 // Enum para roles de usuario
 export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'designer', 'content_creator', 'analyst', 'developer', 'stakeholder']);
 
@@ -150,13 +154,14 @@ export const contentHistory = pgTable("content_history", {
 const tasksTable = {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  groupId: integer("group_id").references(() => taskGroups.id, { onDelete: 'set null' }), // Nuevo: Referencia al grupo
   assignedToId: integer("assigned_to_id").references(() => users.id, { onDelete: 'set null' }),
   createdById: integer("created_by_id").references(() => users.id, { onDelete: 'set null' }),
   title: text("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").default('pending').notNull(),
   priority: taskPriorityEnum("priority").default('medium').notNull(),
-  group: taskGroupEnum("group").default('backlog'),  // Grupo para organización estilo Monday
+  group: taskGroupEnum("group").default('backlog'),  // Mantenemos por compatibilidad
   position: integer("position").default(0), // Para ordenar dentro del grupo
   aiGenerated: boolean("ai_generated").default(false),
   aiSuggestion: text("ai_suggestion"),
@@ -274,6 +279,63 @@ export const collaborativeDocs = pgTable("collaborative_docs", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+// ============ NUEVAS TABLAS PARA SISTEMA MONDAY.COM ============
+
+// Tabla para grupos de tareas (Task Groups) - Estilo Monday.com
+export const taskGroups = pgTable("task_groups", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").default('#4285f4'), // Color del grupo
+  type: taskGroupTypeEnum("type").default('default'),
+  position: integer("position").default(0), // Para ordenar grupos
+  isCollapsed: boolean("is_collapsed").default(false), // Si está contraído
+  settings: jsonb("settings").default({}), // Configuraciones adicionales
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para configuración de columnas de proyecto (Project Column Settings)
+export const projectColumnSettings = pgTable("project_column_settings", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
+  columnType: columnTypeEnum("column_type").notNull(),
+  name: text("name").notNull(), // Nombre de la columna (ej. "Estado", "Asignado")
+  position: integer("position").default(0), // Orden de la columna
+  width: integer("width").default(150), // Ancho en píxeles
+  isVisible: boolean("is_visible").default(true), // Si está visible
+  isRequired: boolean("is_required").default(false), // Si es obligatoria
+  settings: jsonb("settings").default({}), // Configuraciones específicas del tipo
+  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para valores de columnas personalizadas (Task Column Values)
+export const taskColumnValues = pgTable("task_column_values", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+  columnId: integer("column_id").references(() => projectColumnSettings.id, { onDelete: 'cascade' }).notNull(),
+  valueText: text("value_text"), // Para valores de texto
+  valueNumber: numeric("value_number", { precision: 10, scale: 2 }), // Para valores numéricos
+  valueDate: timestamp("value_date"), // Para valores de fecha
+  valueBool: boolean("value_bool"), // Para valores booleanos
+  valueJson: jsonb("value_json"), // Para valores complejos (arrays, objetos)
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para asignaciones múltiples de tareas (Task Assignees)
+export const taskAssignees = pgTable("task_assignees", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  assignedBy: integer("assigned_by").references(() => users.id, { onDelete: 'set null' }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+});
+
 // Define table relations
 export const usersRelations = relations(users, ({ many }) => ({
   createdProjects: many(projects),
@@ -288,6 +350,11 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdTags: many(tags, { relationName: "createdTags" }),
   createdDocs: many(collaborativeDocs, { relationName: "createdDocs" }),
   editedDocs: many(collaborativeDocs, { relationName: "editedDocs" }),
+  // Nuevas relaciones Monday.com
+  createdTaskGroups: many(taskGroups, { relationName: "createdTaskGroups" }),
+  createdColumns: many(projectColumnSettings, { relationName: "createdColumns" }),
+  taskAssignments: many(taskAssignees, { relationName: "taskAssignments" }),
+  assignedByTasks: many(taskAssignees, { relationName: "assignedByTasks" }),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
@@ -303,6 +370,9 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   automationRules: many(automationRules),
   tags: many(tags),
   collaborativeDocs: many(collaborativeDocs),
+  // Nuevas relaciones Monday.com
+  taskGroups: many(taskGroups),
+  columnSettings: many(projectColumnSettings),
 }));
 
 export const analysisResultsRelations = relations(analysisResults, ({ one }) => ({
