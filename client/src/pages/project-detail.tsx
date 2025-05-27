@@ -199,7 +199,6 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
             <Button 
               variant="default" 
               size="sm"
-              className="hidden sm:flex"
               onClick={handleEditProject}
             >
               <Pencil className="mr-2 h-4 w-4" />
