@@ -638,17 +638,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Process with AI in the background
+      console.log(`Starting AI analysis for document ${document.id}`);
       analyzeDocument(extractedText)
         .then(async (analysis) => {
+          console.log(`AI analysis completed successfully for document ${document.id}`);
           await global.storage.updateDocument(document.id, {
             analysisResults: analysis,
             analysisStatus: 'completed'
           });
         })
         .catch(async (error) => {
-          console.error("AI analysis error:", error);
+          console.error(`AI analysis failed for document ${document.id}:`, error);
           await global.storage.updateDocument(document.id, {
-            analysisStatus: 'failed'
+            analysisStatus: 'failed',
+            analysisError: error.message
           });
         });
       

@@ -75,22 +75,37 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
       ${documentText}
     `;
 
-    // Usamos Grok Vision para el análisis de documentos
+    // Usamos Grok para el análisis de documentos
     const analysisText = await grokService.generateText(prompt, {
-      model: "grok-vision-beta", // Usando modelo de visión de Grok
+      model: "grok-beta", // Usando modelo principal de Grok
       temperature: 0.7,
-      maxTokens: 2000,
-      responseFormat: "json_object"
+      maxTokens: 2000
     });
     
     if (!analysisText) {
       throw new Error("Empty response from Grok AI");
     }
 
-    return JSON.parse(analysisText) as DocumentAnalysisResult;
+    // Intentar parsear la respuesta JSON
+    try {
+      const parsedResult = JSON.parse(analysisText) as DocumentAnalysisResult;
+      console.log("Document analysis completed successfully");
+      return parsedResult;
+    } catch (parseError) {
+      console.error("Error parsing JSON response:", parseError);
+      console.error("Raw response:", analysisText);
+      
+      // Si el JSON falla, crear un resultado básico con el texto como resumen
+      return {
+        summary: analysisText.substring(0, 1000) + (analysisText.length > 1000 ? "..." : "")
+      };
+    }
   } catch (error) {
     console.error("Error analyzing document:", error);
-    throw new Error(`Failed to analyze document: ${(error as Error).message}`);
+    
+    // Crear un resultado de error más específico
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to analyze document: ${errorMessage}`);
   }
 }
 
