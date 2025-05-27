@@ -343,8 +343,12 @@ export default function ScheduleDetail({ id }: { id: number }) {
       return response.json();
     },
     onSuccess: () => {
-      // Actualiza la caché para mostrar el cronograma regenerado
+      // Actualiza múltiples cachés para asegurar que se refresque toda la información
       queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/schedules/recent"] });
+      
+      // Forzar re-fetch inmediato del cronograma actual
+      queryClient.refetchQueries({ queryKey: [`/api/schedules/${id}`] });
       
       toast({
         title: "Cronograma regenerado",
