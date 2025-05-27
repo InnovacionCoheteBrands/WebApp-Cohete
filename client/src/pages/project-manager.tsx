@@ -93,12 +93,12 @@ export default function ProjectManager() {
   const queryClient = useQueryClient();
 
   // Consulta para obtener todas las tareas con detalles
-  const { data: tasksData = [], isLoading } = useQuery({
+  const { data: tasksData = [], isLoading } = useQuery<TaskWithDetails[]>({
     queryKey: ['/api/tasks-with-groups'],
   });
 
   // Consulta para obtener todos los proyectos
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
   });
 

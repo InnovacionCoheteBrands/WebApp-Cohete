@@ -11,6 +11,7 @@ import ScheduleDetail from "@/pages/schedule-detail";
 import CalendarCreator from "@/pages/calendar-creator";
 import TaskManager from "@/pages/task-manager";
 import TaskManagerPage from "@/pages/task-manager-page";
+import ProjectManager from "@/pages/project-manager";
 import UserManagement from "@/pages/user-management";
 import Analytics from "@/pages/analytics";
 import CreateAccount from "@/pages/create-account";
@@ -84,6 +85,14 @@ function App() {
                   <ProtectedRoute>
                     <MainLayout>
                       <CalendarCreator />
+                    </MainLayout>
+                  </ProtectedRoute>
+                </Route>
+
+                <Route path="/project-manager">
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <ProjectManager />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
