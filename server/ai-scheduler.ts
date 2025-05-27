@@ -152,8 +152,16 @@ export async function generateSchedule(
     // Usamos exclusivamente Grok AI para generar el cronograma
     console.log("[CALENDAR] Generando cronograma con Grok AI");
     
-    // Modificamos el prompt para forzar una respuesta más estructurada
-    const enhancedPrompt = `${prompt}\n\nIMPORTANTE: Responde SOLO con el objeto JSON solicitado, sin texto adicional antes o después. No incluyas anotaciones, explicaciones, ni marcadores de código como \`\`\`json. Tu respuesta debe comenzar con '{' y terminar con '}'. Asegúrate de que el JSON sea válido: todas las propiedades y valores deben estar entre comillas dobles, excepto los números y booleanos. No uses comillas simples ni mezcles diferentes tipos de comillas.`;
+    // Modificamos el prompt para forzar una respuesta más estructurada y evitar errores de formato
+    const enhancedPrompt = `${prompt}\n\nCRÍTICO: Responde EXCLUSIVAMENTE con el objeto JSON solicitado. No incluyas texto extra, anotaciones, ni marcadores de código. Formato estricto requerido:
+    - Inicia con '{' y termina con '}'
+    - TODAS las propiedades entre comillas dobles: "propertyName"
+    - TODOS los valores string entre comillas dobles: "value"
+    - NO uses comillas simples
+    - NO incluyas campos como "Objetivo" - usa solo los campos especificados en el esquema
+    - Hora en formato "HH:MM" (ejemplo: "14:30")
+    - Fecha en formato "YYYY-MM-DD"
+    - JSON válido sin errores de sintaxis`;
     
     // Incorporar instrucciones adicionales si existen
     let finalPrompt = enhancedPrompt;
@@ -216,6 +224,17 @@ export async function generateSchedule(
           jsonContent = jsonContent.replace(/"time":\s*"([^"]+)"/g, '"postTime": "$1"');
           jsonContent = jsonContent.replace(/,\s*}/g, '}');
           jsonContent = jsonContent.replace(/,\s*]/g, ']');
+          
+          // Corregir problema específico con campo "Objetivo" mal formateado
+          jsonContent = jsonContent.replace(/"Objetivo":\s*"([^"]+)"/g, '"objective": "$1"');
+          jsonContent = jsonContent.replace(/""Objetivo""/g, '"objective"');
+          
+          // Limpiar comillas dobles consecutivas
+          jsonContent = jsonContent.replace(/""+/g, '"');
+          
+          // Arreglar separadores malformados
+          jsonContent = jsonContent.replace(/"\s*:\s*"/g, '": "');
+          jsonContent = jsonContent.replace(/"\s*,\s*"/g, '", "');
           
           // Registrar longitud para depuración
           console.log(`[CALENDAR] Longitud del contenido JSON procesado: ${jsonContent.length} caracteres`);
@@ -458,12 +477,20 @@ export async function generateSchedule(
                           
                           // Intentar reparar basado en patrones específicos
                           if (errorMsg.includes("Expected ',' or '}'")) {
-                            // Reparar problema específico con campos de tiempo mal formateados
+                            // Reparar problema específico con campos mal formateados
                             entryStr = entryStr.replace(/"(\d{2})":\s*(\d{2})"/g, '"$1:$2"');
                             entryStr = entryStr.replace(/:\s*"(\d{2})":\s*(\d{2})"/g, ': "$1:$2"');
                             entryStr = entryStr.replace(/"ime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
                             entryStr = entryStr.replace(/"time":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
                             entryStr = entryStr.replace(/"postTime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
+                            
+                            // Corregir campo "Objetivo" problemático
+                            entryStr = entryStr.replace(/""Objetivo""\s*:\s*"([^"]+)"/g, '"objective": "$1"');
+                            entryStr = entryStr.replace(/"Objetivo"\s*:\s*"([^"]+)"/g, '"objective": "$1"');
+                            entryStr = entryStr.replace(/""Objetivo""/g, '"objective"');
+                            
+                            // Limpiar comillas dobles consecutivas
+                            entryStr = entryStr.replace(/""+/g, '"');
                             // Intentar arreglar insertando la coma o llave faltante
                             let fixedStr = entryStr.substring(0, errorPosition) + '}' + entryStr.substring(errorPosition);
                             try {
