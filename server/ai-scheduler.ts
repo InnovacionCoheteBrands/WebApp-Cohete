@@ -206,10 +206,20 @@ export async function generateSchedule(
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         try {
           console.log(`[CALENDAR] Ejecutando estrategia 1: Extracción directa de JSON`);
-          const jsonContent = scheduleText.substring(jsonStart, jsonEnd);
+          let jsonContent = scheduleText.substring(jsonStart, jsonEnd);
+          
+          // Pre-procesamiento para corregir errores comunes de formato
+          console.log(`[CALENDAR] Aplicando correcciones de formato antes del parsing`);
+          jsonContent = jsonContent.replace(/"(\d{2})":\s*(\d{2})"/g, '"$1:$2"');
+          jsonContent = jsonContent.replace(/:\s*"(\d{2})":\s*(\d{2})"/g, ': "$1:$2"');
+          jsonContent = jsonContent.replace(/"ime":\s*"([^"]+)"/g, '"postTime": "$1"');
+          jsonContent = jsonContent.replace(/"time":\s*"([^"]+)"/g, '"postTime": "$1"');
+          jsonContent = jsonContent.replace(/,\s*}/g, '}');
+          jsonContent = jsonContent.replace(/,\s*]/g, ']');
+          
           // Registrar longitud para depuración
-          console.log(`[CALENDAR] Longitud del contenido JSON extraído: ${jsonContent.length} caracteres`);
-          console.log(`[CALENDAR] Primeros 100 caracteres del JSON extraído: ${jsonContent.substring(0, 100)}...`);
+          console.log(`[CALENDAR] Longitud del contenido JSON procesado: ${jsonContent.length} caracteres`);
+          console.log(`[CALENDAR] Primeros 100 caracteres del JSON procesado: ${jsonContent.substring(0, 100)}...`);
           
           console.log(`[CALENDAR] Intentando parsear JSON con JSON.parse()`);
           const parsedContent = JSON.parse(jsonContent);
@@ -448,6 +458,12 @@ export async function generateSchedule(
                           
                           // Intentar reparar basado en patrones específicos
                           if (errorMsg.includes("Expected ',' or '}'")) {
+                            // Reparar problema específico con campos de tiempo mal formateados
+                            entryStr = entryStr.replace(/"(\d{2})":\s*(\d{2})"/g, '"$1:$2"');
+                            entryStr = entryStr.replace(/:\s*"(\d{2})":\s*(\d{2})"/g, ': "$1:$2"');
+                            entryStr = entryStr.replace(/"ime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
+                            entryStr = entryStr.replace(/"time":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
+                            entryStr = entryStr.replace(/"postTime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
                             // Intentar arreglar insertando la coma o llave faltante
                             let fixedStr = entryStr.substring(0, errorPosition) + '}' + entryStr.substring(errorPosition);
                             try {
