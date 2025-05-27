@@ -39,10 +39,24 @@ export default function ScheduleDetail({ id }: { id: number }) {
   });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   
+  // Estados para la selección de áreas a modificar
+  const [selectedAreas, setSelectedAreas] = useState({
+    titles: false,
+    descriptions: false,
+    content: false,
+    copyIn: false,
+    copyOut: false,
+    designInstructions: false,
+    platforms: false,
+    hashtags: false
+  });
+  
   // Fetch schedule data
-  const { data: schedule, isLoading, error } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
+  const { data: schedule, isLoading, error, refetch } = useQuery<Schedule & { entries: ScheduleEntry[] }>({
     queryKey: [`/api/schedules/${id}`],
     refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    staleTime: 0, // Los datos siempre se consideran obsoletos
     // Aseguramos que se carguen los datos cada vez que se monta el componente
   });
   
@@ -52,6 +66,26 @@ export default function ScheduleDetail({ id }: { id: number }) {
       setAdditionalInstructions(schedule.additionalInstructions || "");
     }
   }, [schedule]);
+  
+  // Función para generar placeholder dinámico según las áreas seleccionadas
+  const getPlaceholderForSelectedAreas = () => {
+    const selectedKeys = Object.keys(selectedAreas).filter(key => selectedAreas[key as keyof typeof selectedAreas]);
+    const placeholders: Record<string, string> = {
+      titles: "Haz los títulos más llamativos y dinámicos",
+      descriptions: "Utiliza descripciones más persuasivas y emotivas",
+      content: "Agrega más detalles y beneficios específicos",
+      copyIn: "Simplifica el texto integrado para mayor impacto",
+      copyOut: "Incluye más emojis en el texto descripción",
+      designInstructions: "Especifica colores más vibrantes y modernos",
+      platforms: "Adapta mejor a Instagram y Facebook",
+      hashtags: "Agrega hashtags de temporada y trending"
+    };
+    
+    if (selectedKeys.length === 0) return "Agrega instrucciones específicas...";
+    if (selectedKeys.length === 1) return placeholders[selectedKeys[0]];
+    
+    return `Para ${selectedKeys.slice(0, -1).join(", ")} y ${selectedKeys.slice(-1)}: combina las mejoras necesarias`;
+  };
   
   // Mutation para generar imagen
   const generateImageMutation = useMutation({
@@ -343,24 +377,33 @@ export default function ScheduleDetail({ id }: { id: number }) {
       return response.json();
     },
     onSuccess: (data) => {
-      // Actualizar directamente los datos en la caché con la respuesta del servidor
+      // Forzar actualización inmediata de los datos
       queryClient.setQueryData([`/api/schedules/${id}`], data);
       
-      // También invalidar otras cachés relacionadas
+      // Invalidar y refrescar todas las queries relacionadas
+      queryClient.invalidateQueries({ queryKey: [`/api/schedules/${id}`] });
       queryClient.invalidateQueries({ queryKey: ["/api/schedules/recent"] });
       
-      // Forzar refresco después de un pequeño delay para asegurar sincronización
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: [`/api/schedules/${id}`] });
-      }, 100);
+      // Forzar re-fetch inmediato para asegurar datos actualizados
+      refetch();
       
       toast({
         title: "Cronograma regenerado",
         description: "El contenido se ha regenerado correctamente con las instrucciones proporcionadas",
       });
       
-      // Salir del modo de revisión
+      // Salir del modo de revisión y limpiar selecciones
       setIsReviewMode(false);
+      setSelectedAreas({
+        titles: false,
+        descriptions: false,
+        content: false,
+        copyIn: false,
+        copyOut: false,
+        designInstructions: false,
+        platforms: false,
+        hashtags: false
+      });
     },
     onError: (error) => {
       toast({
@@ -456,12 +499,123 @@ export default function ScheduleDetail({ id }: { id: number }) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <Textarea
-              value={additionalInstructions}
-              onChange={(e) => setAdditionalInstructions(e.target.value)}
-              placeholder="Ejemplo: 'Utiliza un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto', 'Agrega más hashtags relacionados con la temporada'..."
-              className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
-            />
+            {/* Cuadros de selección para especificar qué modificar */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                Selecciona qué elementos del cronograma deseas modificar:
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.titles}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, titles: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Títulos</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.descriptions}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, descriptions: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Descripciones</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.content}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, content: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Contenido</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.copyIn}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, copyIn: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Texto Integrado</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.copyOut}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, copyOut: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Texto Descripción</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.designInstructions}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, designInstructions: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Instrucciones de Diseño</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.platforms}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, platforms: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Plataformas</span>
+                </label>
+                
+                <label className="flex items-center space-x-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedAreas.hashtags}
+                    onChange={(e) => setSelectedAreas(prev => ({ ...prev, hashtags: e.target.checked }))}
+                    className="rounded border-amber-300 text-amber-600 focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-amber-700 dark:text-amber-300">Hashtags</span>
+                </label>
+              </div>
+            </div>
+            
+            {/* Textarea que se muestra solo si hay elementos seleccionados */}
+            {Object.values(selectedAreas).some(Boolean) && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones específicas para los elementos seleccionados:
+                </h4>
+                <Textarea
+                  value={additionalInstructions}
+                  onChange={(e) => setAdditionalInstructions(e.target.value)}
+                  placeholder={`Ejemplo: ${getPlaceholderForSelectedAreas()}`}
+                  className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
+            
+            {/* Textarea general si no hay elementos específicos seleccionados */}
+            {!Object.values(selectedAreas).some(Boolean) && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                  Instrucciones generales para todo el cronograma:
+                </h4>
+                <Textarea
+                  value={additionalInstructions}
+                  onChange={(e) => setAdditionalInstructions(e.target.value)}
+                  placeholder="Ejemplo: 'Utiliza un tono más formal', 'Incluye más emojis', 'Enfócate en los beneficios del producto', 'Agrega más hashtags relacionados con la temporada'..."
+                  className="min-h-[100px] border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white"
+                />
+              </div>
+            )}
             <div className="flex justify-between">
               <Button 
                 onClick={handleRegenerateSchedule}
