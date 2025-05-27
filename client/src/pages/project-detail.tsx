@@ -10,7 +10,25 @@ import {
   TabsTrigger 
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, ArrowLeft, Download, Pencil } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import ProjectAnalysis from "@/components/projects/project-analysis";
 import ProjectWorkflows from "@/components/projects/project-workflows";
 import ProjectDocuments from "@/components/projects/project-documents";
@@ -56,6 +74,54 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
   const { toast } = useToast();
   const [_, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState("tasks");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: "",
+    client: "",
+    description: "",
+    status: ""
+  });
+
+  // Mutation for updating project
+  const updateProjectMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest(`/api/projects/${id}`, "PATCH", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/projects/${id}`] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Proyecto actualizado",
+        description: "Los datos del proyecto se han actualizado correctamente.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error al actualizar",
+        description: error.message || "No se pudo actualizar el proyecto.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Function to open edit dialog with current project data
+  const handleEditProject = () => {
+    if (projectData) {
+      setEditFormData({
+        name: projectData.name || "",
+        client: projectData.client || "",
+        description: projectData.description || "",
+        status: projectData.status || "planning"
+      });
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  // Function to handle form submission
+  const handleSaveProject = () => {
+    updateProjectMutation.mutate(editFormData);
+  };
 
   // Fetch project details with analysis
   const { 
@@ -134,6 +200,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
               variant="default" 
               size="sm"
               className="hidden sm:flex"
+              onClick={handleEditProject}
             >
               <Pencil className="mr-2 h-4 w-4" />
               Editar Proyecto
