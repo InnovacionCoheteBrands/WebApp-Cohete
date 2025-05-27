@@ -1057,9 +1057,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/schedules/:id/regenerate", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const scheduleId = parseInt(req.params.id);
+      const { additionalInstructions: newInstructions, selectedAreas } = req.body;
+      
       if (isNaN(scheduleId)) {
         return res.status(400).json({ message: "ID de cronograma inválido" });
       }
+      
+      console.log("[REGENERATE] Iniciando regeneración con áreas específicas:", scheduleId);
+      console.log("[REGENERATE] Nuevas instrucciones:", newInstructions || "Ninguna");
+      console.log("[REGENERATE] Áreas seleccionadas:", selectedAreas || "Todas");
       
       // Obtener el cronograma actual con sus entradas
       const schedule = await global.storage.getScheduleWithEntries(scheduleId);
@@ -1088,11 +1094,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentHistory = await global.storage.listContentHistoryByProject(schedule.projectId);
       const previousContent = contentHistory.map(entry => entry.content);
       
-      console.log("[REGENERATE] Iniciando regeneración de cronograma:", scheduleId);
-      console.log("[REGENERATE] Instrucciones adicionales:", schedule.additionalInstructions || "Ninguna");
-      
       // Extraer fecha de inicio
       const startDate = schedule.startDate ? format(new Date(schedule.startDate), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+      
+      // Construir instrucciones específicas basadas en las áreas seleccionadas
+      let enhancedInstructions = newInstructions || schedule.additionalInstructions || "";
+      
+      if (selectedAreas && Object.values(selectedAreas).some(Boolean)) {
+        const selectedAreasList = Object.entries(selectedAreas)
+          .filter(([_, selected]) => selected)
+          .map(([area, _]) => {
+            const areaNames = {
+              titles: "títulos",
+              descriptions: "descripciones", 
+              content: "contenido",
+              copyIn: "texto integrado",
+              copyOut: "texto descripción",
+              designInstructions: "instrucciones de diseño",
+              platforms: "plataformas",
+              hashtags: "hashtags"
+            };
+            return areaNames[area as keyof typeof areaNames] || area;
+          });
+        
+        enhancedInstructions += `\n\nIMPORTANTE: Modifica específicamente estas áreas del cronograma: ${selectedAreasList.join(", ")}. Para el resto de elementos, mantén el estilo y enfoque actual pero mejora según las instrucciones proporcionadas.`;
+        
+        console.log("[REGENERATE] Instrucciones mejoradas con áreas específicas:", enhancedInstructions);
+      }
       
       // Usar la función existente para generar un nuevo cronograma
       const generatedSchedule = await generateSchedule(
@@ -1106,7 +1134,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         schedule.specifications || "",
         15, // Valor predeterminado para duración
         previousContent,
-        schedule.additionalInstructions // Usar las instrucciones adicionales guardadas
+        enhancedInstructions // Usar las instrucciones mejoradas
       );
       
       // Eliminar entradas existentes

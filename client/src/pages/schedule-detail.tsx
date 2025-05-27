@@ -372,8 +372,11 @@ export default function ScheduleDetail({ id }: { id: number }) {
   // Mutation para regenerar el cronograma con las instrucciones adicionales
   const regenerateScheduleMutation = useMutation({
     mutationFn: async () => {
-      // Enviamos una solicitud para regenerar el cronograma
-      const response = await apiRequest("POST", `/api/schedules/${id}/regenerate`);
+      // Enviamos una solicitud para regenerar el cronograma con las áreas seleccionadas
+      const response = await apiRequest("POST", `/api/schedules/${id}/regenerate`, {
+        additionalInstructions,
+        selectedAreas: Object.values(selectedAreas).some(Boolean) ? selectedAreas : null
+      });
       return response.json();
     },
     onSuccess: (data) => {
