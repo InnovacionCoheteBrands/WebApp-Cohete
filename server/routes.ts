@@ -3806,5 +3806,176 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  // ============ NUEVAS RUTAS PARA SISTEMA DE COLABORACIÓN ============
+
+  // Obtener comentarios de una tarea
+  app.get('/api/tasks/:taskId/comments', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const comments = await global.storage.getTaskComments(taskId);
+      res.json(comments);
+    } catch (error) {
+      console.error('Error obteniendo comentarios:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Crear comentario en una tarea
+  app.post('/api/tasks/:taskId/comments', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const { content, mentionedUsers = [] } = req.body;
+      
+      const comment = await global.storage.createTaskComment({
+        taskId,
+        userId: req.user.id,
+        content,
+        mentionedUsers
+      });
+
+      // Crear notificaciones para usuarios mencionados
+      if (mentionedUsers && mentionedUsers.length > 0) {
+        for (const userId of mentionedUsers) {
+          await global.storage.createNotification({
+            userId,
+            type: 'mentioned_in_comment',
+            title: 'Te mencionaron en un comentario',
+            message: `${req.user.fullName} te mencionó en un comentario`,
+            relatedTaskId: taskId,
+            relatedCommentId: comment.id
+          });
+        }
+      }
+
+      res.status(201).json(comment);
+    } catch (error) {
+      console.error('Error creando comentario:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Obtener notificaciones del usuario
+  app.get('/api/notifications', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const notifications = await global.storage.getUserNotifications(req.user.id);
+      res.json(notifications);
+    } catch (error) {
+      console.error('Error obteniendo notificaciones:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Marcar notificación como leída
+  app.patch('/api/notifications/:id/read', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const notificationId = parseInt(req.params.id);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      await global.storage.markNotificationAsRead(notificationId, req.user.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marcando notificación:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Obtener miembros de un proyecto
+  app.get('/api/projects/:projectId/members', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const members = await global.storage.getProjectMembers(projectId);
+      res.json(members);
+    } catch (error) {
+      console.error('Error obteniendo miembros:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Agregar miembro a un proyecto
+  app.post('/api/projects/:projectId/members', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const { userId, role = 'member' } = req.body;
+      
+      const member = await global.storage.addProjectMember({
+        projectId,
+        userId,
+        role
+      });
+
+      res.status(201).json(member);
+    } catch (error) {
+      console.error('Error agregando miembro:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Obtener dependencias de una tarea
+  app.get('/api/tasks/:taskId/dependencies', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const dependencies = await global.storage.getTaskDependencies(taskId);
+      res.json(dependencies);
+    } catch (error) {
+      console.error('Error obteniendo dependencias:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Crear dependencia entre tareas
+  app.post('/api/tasks/:taskId/dependencies', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const { dependsOnTaskId } = req.body;
+      
+      const dependency = await global.storage.createTaskDependency({
+        taskId,
+        dependsOnTaskId
+      });
+
+      res.status(201).json(dependency);
+    } catch (error) {
+      console.error('Error creando dependencia:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
   return httpServer;
 }

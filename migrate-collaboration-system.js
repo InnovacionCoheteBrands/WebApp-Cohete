@@ -120,16 +120,14 @@ async function runMigration() {
 }
 
 // Ejecutar migración si se llama directamente
-if (require.main === module) {
-  runMigration()
-    .then(() => {
-      console.log('🎉 Migración ejecutada exitosamente');
-      process.exit(0);
-    })
-    .catch((error) => {
-      console.error('💥 Error en la migración:', error);
-      process.exit(1);
-    });
-}
+runMigration()
+  .then(() => {
+    console.log('🎉 Migración ejecutada exitosamente');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('💥 Error en la migración:', error);
+    process.exit(1);
+  });
 
-module.exports = { runMigration };
+export { runMigration };
