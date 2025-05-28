@@ -416,10 +416,9 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
           </Button>
         </div>
       </div>
-
       {/* Encabezados de columnas */}
       {columns && columns.length > 0 && (
-        <div className="bg-gray-50 border-b p-4">
+        <div className="border-b p-4 bg-[#10141c] text-[#ffffff]">
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
             {columns.map((column) => (
               <div key={column.id} className="text-sm font-medium text-gray-700 flex items-center">
@@ -434,7 +433,6 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
           </div>
         </div>
       )}
-
       {/* Contenido del tablero */}
       <div className="flex-1 overflow-auto p-4">
         <DndContext
