@@ -362,11 +362,11 @@ export default function ProjectManager() {
                           <Badge className={priorityColors[item.task.priority]} variant="secondary">
                             {item.task.priority}
                           </Badge>
-                          {item.task.tags.map((tag, index) => (
+                          {item.task.tags?.map((tag, index) => (
                             <Badge key={index} variant="outline" className="text-xs">
                               {tag}
                             </Badge>
-                          ))}
+                          )) || []}
                         </div>
                       </div>
                     </div>
