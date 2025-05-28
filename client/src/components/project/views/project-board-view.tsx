@@ -4,7 +4,7 @@ import { DndContext, DragEndEvent, DragOverEvent, closestCenter, PointerSensor, 
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Plus, MoreHorizontal, Users, Calendar, Flag, BarChart3, Tag, Settings } from 'lucide-react';
+import { Plus, MoreHorizontal, Users, Calendar, Flag, BarChart3, Tag, Settings, MessageCircle, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +17,8 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { TaskGroup, InsertTaskGroup, Task, ProjectColumnSetting, User } from '@shared/schema';
+import TaskComments from '@/components/collaboration/task-comments';
+import TaskAssignment from '@/components/collaboration/task-assignment';
 
 interface ProjectBoardViewProps {
   projectId: number;

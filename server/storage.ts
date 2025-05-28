@@ -1099,6 +1099,126 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
+  // Collaboration methods implementation
+  async getTaskComments(taskId: number): Promise<any[]> {
+    const comments = await db
+      .select({
+        id: notifications.id,
+        content: notifications.message,
+        userId: notifications.userId,
+        createdAt: notifications.createdAt,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profileImage: users.profileImage
+        }
+      })
+      .from(notifications)
+      .leftJoin(users, eq(notifications.userId, users.id))
+      .where(and(
+        eq(notifications.type, 'comment'),
+        eq(notifications.relatedEntityId, taskId),
+        eq(notifications.relatedEntityType, 'task')
+      ))
+      .orderBy(notifications.createdAt);
+    
+    return comments;
+  }
+
+  async createTaskComment(comment: any): Promise<any> {
+    const [newComment] = await db
+      .insert(notifications)
+      .values({
+        type: 'comment',
+        message: comment.content,
+        userId: comment.userId,
+        relatedEntityType: 'task',
+        relatedEntityId: comment.taskId,
+        isRead: false
+      })
+      .returning();
+    
+    return newComment;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [newNotification] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+    
+    return newNotification;
+  }
+
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    const userNotifications = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+    
+    return userNotifications;
+  }
+
+  async markNotificationAsRead(notificationId: number): Promise<boolean> {
+    const result = await db
+      .update(notifications)
+      .set({ isRead: true })
+      .where(eq(notifications.id, notificationId));
+    
+    return !!result;
+  }
+
+  async getProjectMembers(projectId: number): Promise<ProjectMember[]> {
+    const members = await db
+      .select({
+        id: projectMembers.id,
+        projectId: projectMembers.projectId,
+        userId: projectMembers.userId,
+        role: projectMembers.role,
+        joinedAt: projectMembers.joinedAt,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profileImage: users.profileImage
+        }
+      })
+      .from(projectMembers)
+      .leftJoin(users, eq(projectMembers.userId, users.id))
+      .where(eq(projectMembers.projectId, projectId));
+    
+    return members as ProjectMember[];
+  }
+
+  async addProjectMember(member: InsertProjectMember): Promise<ProjectMember> {
+    const [newMember] = await db
+      .insert(projectMembers)
+      .values(member)
+      .returning();
+    
+    return newMember;
+  }
+
+  async getTaskDependencies(taskId: number): Promise<TaskDependency[]> {
+    const dependencies = await db
+      .select()
+      .from(taskDependencies)
+      .where(eq(taskDependencies.taskId, taskId));
+    
+    return dependencies;
+  }
+
+  async createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency> {
+    const [newDependency] = await db
+      .insert(taskDependencies)
+      .values(dependency)
+      .returning();
+    
+    return newDependency;
+  }
+
   // Tags methods
   async getTag(id: number): Promise<Tag | undefined> {
     const [tag] = await db
