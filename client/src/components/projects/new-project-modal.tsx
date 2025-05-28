@@ -309,38 +309,38 @@ export default function NewProjectModal({ isOpen, onClose }: NewProjectModalProp
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
             <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-              <TabsList className="grid w-full grid-cols-8 mb-4">
-                <TabsTrigger value="general" className="flex flex-col items-center gap-1">
-                  <FileText className="h-4 w-4" />
-                  <span className="text-xs">General</span>
+              <TabsList className="grid w-full grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-1 h-auto p-1 mb-4">
+                <TabsTrigger value="general" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'general' ? 'active' : 'inactive'}>
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">General</span>
                 </TabsTrigger>
-                <TabsTrigger value="objetivos" className="flex flex-col items-center gap-1">
-                  <Target className="h-4 w-4" />
-                  <span className="text-xs">Objetivos</span>
+                <TabsTrigger value="objetivos" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'objetivos' ? 'active' : 'inactive'}>
+                  <Target className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">Objetivos</span>
                 </TabsTrigger>
-                <TabsTrigger value="personas" className="flex flex-col items-center gap-1">
-                  <Users className="h-4 w-4" />
-                  <span className="text-xs">Persona</span>
+                <TabsTrigger value="personas" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'personas' ? 'active' : 'inactive'}>
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">Persona</span>
                 </TabsTrigger>
-                <TabsTrigger value="estrategias" className="flex flex-col items-center gap-1">
-                  <Megaphone className="h-4 w-4" />
-                  <span className="text-xs">Estrategias</span>
+                <TabsTrigger value="estrategias" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'estrategias' ? 'active' : 'inactive'}>
+                  <Megaphone className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">Estrategias</span>
                 </TabsTrigger>
-                <TabsTrigger value="comunicacion" className="flex flex-col items-center gap-1">
-                  <Palette className="h-4 w-4" />
-                  <span className="text-xs">Comunicación</span>
+                <TabsTrigger value="comunicacion" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'comunicacion' ? 'active' : 'inactive'}>
+                  <Palette className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">Comunicación</span>
                 </TabsTrigger>
-                <TabsTrigger value="mision" className="flex flex-col items-center gap-1">
-                  <FileText className="h-4 w-4" />
-                  <span className="text-xs">MVV</span>
+                <TabsTrigger value="mision" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'mision' ? 'active' : 'inactive'}>
+                  <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">MVV</span>
                 </TabsTrigger>
-                <TabsTrigger value="politicas" className="flex flex-col items-center gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="text-xs">Políticas</span>
+                <TabsTrigger value="politicas" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'politicas' ? 'active' : 'inactive'}>
+                  <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">Políticas</span>
                 </TabsTrigger>
-                <TabsTrigger value="productos" className="flex flex-col items-center gap-1">
-                  <ShoppingBag className="h-4 w-4" />
-                  <span className="text-xs">Productos</span>
+                <TabsTrigger value="productos" className="flex flex-col items-center gap-1 h-auto py-2 px-1 min-h-[60px]" data-state={selectedTab === 'productos' ? 'active' : 'inactive'}>
+                  <ShoppingBag className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">Productos</span>
                 </TabsTrigger>
               </TabsList>
 
