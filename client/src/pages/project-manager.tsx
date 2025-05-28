@@ -136,20 +136,30 @@ export default function ProjectManager() {
     },
   });
 
+  // Extraer todas las tareas de los grupos
+  const allTasks = tasksData.flatMap((group: any) => 
+    group.tasks?.map((task: any) => ({
+      task,
+      group: group.group,
+      project: { id: task.projectId, name: projects.find((p: any) => p.id === task.projectId)?.name || 'Proyecto', client: projects.find((p: any) => p.id === task.projectId)?.client || 'Cliente' },
+      assignee: task.assignee
+    })) || []
+  );
+
   // Filtrar tareas
-  const filteredTasks = tasksData.filter((item: TaskWithDetails) => {
-    const matchesSearch = item.task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.project.client.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || item.task.status === filterStatus;
-    const matchesProject = filterProject === 'all' || item.task.projectId.toString() === filterProject;
+  const filteredTasks = allTasks.filter((item: any) => {
+    const matchesSearch = item.task?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.project?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         item.project?.client?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === 'all' || item.task?.status === filterStatus;
+    const matchesProject = filterProject === 'all' || item.task?.projectId?.toString() === filterProject;
     
     return matchesSearch && matchesStatus && matchesProject;
   });
 
   // Agrupar tareas por proyecto
-  const tasksByProject = filteredTasks.reduce((acc: any, item: TaskWithDetails) => {
-    const projectId = item.task.projectId;
+  const tasksByProject = filteredTasks.reduce((acc: any, item: any) => {
+    const projectId = item.task?.projectId;
     if (!acc[projectId]) {
       acc[projectId] = {
         project: item.project,
@@ -257,7 +267,7 @@ export default function ProjectManager() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Tareas</p>
-                <p className="text-2xl font-bold">{tasksData.length}</p>
+                <p className="text-2xl font-bold">{allTasks.length}</p>
               </div>
               <FolderPlus className="w-8 h-8 text-blue-600" />
             </div>
@@ -270,7 +280,7 @@ export default function ProjectManager() {
               <div>
                 <p className="text-sm text-gray-600">En Progreso</p>
                 <p className="text-2xl font-bold">
-                  {tasksData.filter((t: TaskWithDetails) => t.task.status === 'in_progress').length}
+                  {allTasks.filter((t: any) => t.task?.status === 'in_progress').length}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-orange-600" />
@@ -284,7 +294,7 @@ export default function ProjectManager() {
               <div>
                 <p className="text-sm text-gray-600">Completadas</p>
                 <p className="text-2xl font-bold">
-                  {tasksData.filter((t: TaskWithDetails) => t.task.status === 'completed').length}
+                  {allTasks.filter((t: any) => t.task?.status === 'completed').length}
                 </p>
               </div>
               <CheckCircle2 className="w-8 h-8 text-green-600" />
