@@ -102,15 +102,6 @@ export default function ProjectManager() {
     queryKey: ['/api/projects'],
   });
 
-  // Salir temprano si aún está cargando o no hay datos
-  if (isLoading || !tasksData || !projects) {
-    return (
-      <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   // Crear nueva tarea
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: Partial<Task>) => {
@@ -192,7 +183,7 @@ export default function ProjectManager() {
     }
   };
 
-  if (isLoading) {
+  if (isLoading || !tasksData || !projects) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
