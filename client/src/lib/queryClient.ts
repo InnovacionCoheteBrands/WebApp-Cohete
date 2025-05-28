@@ -3,24 +3,29 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     try {
-      // Intentar analizar como JSON primero
+      // Clonar la respuesta para poder leerla múltiples veces si es necesario
+      const resClone = res.clone();
       const contentType = res.headers.get('content-type');
+      
       if (contentType && contentType.includes('application/json')) {
-        const errorData = await res.json();
-        if (errorData.message) {
-          throw new Error(`${res.status}: ${errorData.message}`);
+        try {
+          const errorData = await res.json();
+          if (errorData.message) {
+            throw new Error(`${res.status}: ${errorData.message}`);
+          }
+        } catch {
+          // Si falla el JSON, usar el clon para obtener texto
+          const text = await resClone.text();
+          throw new Error(`${res.status}: ${text || res.statusText}`);
         }
+      } else {
+        const text = await res.text();
+        throw new Error(`${res.status}: ${text || res.statusText}`);
       }
-      
-      // Si no es JSON o no tiene message, usar el texto
-      const text = await res.text();
-      throw new Error(`${res.status}: ${text || res.statusText}`);
-    } catch (jsonError) {
-      if (jsonError instanceof Error) {
-        throw jsonError;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
       }
-      
-      // Fallback si hay un error procesando la respuesta
       throw new Error(`${res.status}: ${res.statusText}`);
     }
   }

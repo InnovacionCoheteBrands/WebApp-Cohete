@@ -3724,7 +3724,20 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     try {
       // Get tasks from all projects with their groups and assignees
       const tasksWithDetails = await db.select({
-        task: schema.tasks,
+        task: {
+          id: schema.tasks.id,
+          projectId: schema.tasks.projectId,
+          title: schema.tasks.title,
+          description: schema.tasks.description,
+          status: schema.tasks.status,
+          priority: schema.tasks.priority,
+          progress: schema.tasks.progress,
+          dueDate: schema.tasks.dueDate,
+          tags: schema.tasks.tags,
+          groupId: schema.tasks.groupId,
+          createdById: schema.tasks.createdById,
+          createdAt: schema.tasks.createdAt,
+        },
         group: schema.taskGroups,
         project: {
           id: schema.projects.id,
@@ -3742,7 +3755,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       .leftJoin(schema.taskGroups, eq(schema.tasks.groupId, schema.taskGroups.id))
       .leftJoin(schema.projects, eq(schema.tasks.projectId, schema.projects.id))
       .leftJoin(schema.users, eq(schema.tasks.createdById, schema.users.id))
-      .orderBy(asc(schema.taskGroups.position), asc(schema.tasks.id));
+      .orderBy(asc(schema.tasks.id));
 
       // Get additional assignees for each task
       const taskIds = tasksWithDetails.map(t => t.task.id);
