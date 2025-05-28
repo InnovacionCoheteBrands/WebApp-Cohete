@@ -218,11 +218,13 @@ function ConfigurableCell({
 function SortableTaskItem({ 
   task, 
   columns, 
-  onTaskUpdate 
+  onTaskUpdate,
+  onOpenComments 
 }: { 
   task: TaskWithDetails;
   columns: ProjectColumnSetting[];
   onTaskUpdate: (taskId: number, field: string, value: any) => void;
+  onOpenComments: (taskId: number) => void;
 }) {
   const {
     attributes,
@@ -243,21 +245,50 @@ function SortableTaskItem({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
-      className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow cursor-move"
+      className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow group"
     >
-      <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
-        {columns.map((column) => (
-          <div key={column.id} className="min-w-0">
-            <ConfigurableCell
-              columnType={column.columnType}
-              value={getTaskValue(task, column.columnType)}
-              task={task}
-              onUpdate={onTaskUpdate}
-            />
-          </div>
-        ))}
+      {/* Área de arrastre principal */}
+      <div {...attributes} {...listeners} className="cursor-move">
+        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
+          {columns.map((column) => (
+            <div key={column.id} className="min-w-0">
+              <ConfigurableCell
+                columnType={column.columnType}
+                value={getTaskValue(task, column.columnType)}
+                task={task}
+                onUpdate={onTaskUpdate}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+      
+      {/* Botones de colaboración */}
+      <div className="flex items-center justify-end gap-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenComments(task.id);
+          }}
+          className="h-7 px-2"
+        >
+          <MessageCircle className="h-3 w-3 mr-1" />
+          Comentarios
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            // Aquí se abriría el modal de asignación
+          }}
+          className="h-7 px-2"
+        >
+          <UserPlus className="h-3 w-3 mr-1" />
+          Asignar
+        </Button>
       </div>
     </div>
   );
@@ -497,6 +528,7 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
                           task={task}
                           columns={columns || []}
                           onTaskUpdate={handleTaskUpdate}
+                          onOpenComments={handleOpenComments}
                         />
                       ))}
                     </div>
@@ -556,6 +588,15 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
           </div>
         </DndContext>
       </div>
+
+      {/* Modal de comentarios de tarea */}
+      {selectedTaskForComments && (
+        <TaskComments
+          taskId={selectedTaskForComments}
+          isOpen={showTaskComments}
+          onClose={handleCloseComments}
+        />
+      )}
     </div>
   );
 }
