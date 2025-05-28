@@ -3738,7 +3738,14 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           createdById: schema.tasks.createdById,
           createdAt: schema.tasks.createdAt,
         },
-        group: schema.taskGroups,
+        group: {
+          id: schema.taskGroups.id,
+          projectId: schema.taskGroups.projectId,
+          name: schema.taskGroups.name,
+          description: schema.taskGroups.description,
+          color: schema.taskGroups.color,
+          position: schema.taskGroups.position,
+        },
         project: {
           id: schema.projects.id,
           name: schema.projects.name,
