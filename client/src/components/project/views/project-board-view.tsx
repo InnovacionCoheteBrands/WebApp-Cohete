@@ -289,6 +289,8 @@ function getTaskValue(task: TaskWithDetails, columnType: string): any {
 export default function ProjectBoardView({ projectId, viewId }: ProjectBoardViewProps) {
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [selectedTaskForComments, setSelectedTaskForComments] = useState<number | null>(null);
+  const [showTaskComments, setShowTaskComments] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -380,6 +382,17 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
         position: (taskGroups?.length || 0),
       });
     }
+  };
+
+  // Manejar comentarios de tarea
+  const handleOpenComments = (taskId: number) => {
+    setSelectedTaskForComments(taskId);
+    setShowTaskComments(true);
+  };
+
+  const handleCloseComments = () => {
+    setShowTaskComments(false);
+    setSelectedTaskForComments(null);
   };
 
   if (isLoadingTasks || isLoadingColumns) {
