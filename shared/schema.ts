@@ -20,6 +20,9 @@ export const taskGroupTypeEnum = pgEnum('task_group_type', ['default', 'sprint',
 // Enum para roles de usuario
 export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'designer', 'content_creator', 'analyst', 'developer', 'stakeholder']);
 
+// Enum para tipos de notificaciones
+export const notificationTypeEnum = pgEnum('notification_type', ['task_assigned', 'mentioned_in_comment', 'task_status_changed', 'comment_added', 'due_date_approaching']);
+
 // Users Table
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -742,3 +745,106 @@ export type InsertTaskColumnValue = z.infer<typeof insertTaskColumnValueSchema>;
 
 export type TaskAssignee = typeof taskAssignees.$inferSelect;
 export type InsertTaskAssignee = z.infer<typeof insertTaskAssigneeSchema>;
+
+// ============ NUEVAS TABLAS PARA SISTEMA DE COLABORACIÓN ============
+
+// Actualizar tabla de comentarios existente para el sistema de colaboración
+// La tabla taskComments ya existe, solo actualizamos las relaciones
+
+// Notifications Table - Sistema de notificaciones
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  type: notificationTypeEnum("type").notNull(),
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  relatedTaskId: integer("related_task_id").references(() => tasks.id, { onDelete: 'cascade' }),
+  relatedCommentId: integer("related_comment_id").references(() => taskComments.id, { onDelete: 'cascade' }),
+  isRead: boolean("is_read").default(false).notNull(),
+  data: jsonb("data").default({}), // Datos adicionales específicos por tipo
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Task Dependencies Table - Dependencias entre tareas
+export const taskDependencies = pgTable("task_dependencies", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  dependsOnTaskId: integer("depends_on_task_id").notNull().references(() => tasks.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Project Members Table - Miembros de proyecto (para asignaciones)
+export const projectMembers = pgTable("project_members", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: 'cascade' }),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  role: text("role").default("member"), // owner, admin, member, viewer
+  joinedAt: timestamp("joined_at").defaultNow().notNull(),
+});
+
+// ============ RELACIONES PARA NUEVAS TABLAS ============
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+  }),
+  relatedTask: one(tasks, {
+    fields: [notifications.relatedTaskId],
+    references: [tasks.id],
+  }),
+  relatedComment: one(taskComments, {
+    fields: [notifications.relatedCommentId],
+    references: [taskComments.id],
+  }),
+}));
+
+export const taskDependenciesRelations = relations(taskDependencies, ({ one }) => ({
+  task: one(tasks, {
+    fields: [taskDependencies.taskId],
+    references: [tasks.id],
+  }),
+  dependsOnTask: one(tasks, {
+    fields: [taskDependencies.dependsOnTaskId],
+    references: [tasks.id],
+  }),
+}));
+
+export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
+  project: one(projects, {
+    fields: [projectMembers.projectId],
+    references: [projects.id],
+  }),
+  user: one(users, {
+    fields: [projectMembers.userId],
+    references: [users.id],
+  }),
+}));
+
+// ============ ESQUEMAS ZOD PARA NUEVAS TABLAS ============
+
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertTaskDependencySchema = createInsertSchema(taskDependencies).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertProjectMemberSchema = createInsertSchema(projectMembers).omit({
+  id: true,
+  joinedAt: true,
+});
+
+// ============ TIPOS PARA NUEVAS TABLAS ============
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
+export type TaskDependency = typeof taskDependencies.$inferSelect;
+export type InsertTaskDependency = z.infer<typeof insertTaskDependencySchema>;
+
+export type ProjectMember = typeof projectMembers.$inferSelect;
+export type InsertProjectMember = z.infer<typeof insertProjectMemberSchema>;

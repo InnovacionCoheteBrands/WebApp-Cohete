@@ -1,0 +1,57 @@
+ Vamos a evolucionar el gestor de proyectos para convertirlo en una herramienta colaborativa y robusta. El objetivo es implementar las funciones faltantes, asegurar que los proyectos sean espacios de trabajo claros y separados, y añadir un sistema completo de asignaciones, comentarios y notificaciones, junto con capacidades de IA.
+
+Concéntrate en los siguientes archivos y directivas.
+
+1. Backend y Base de Datos
+Necesitamos un esquema de datos que soporte las nuevas funcionalidades de colaboración.
+
+Archivo: shared/schema.ts
+Acción: Modifica este archivo para definir las tablas y relaciones necesarias para soportar:
+La asignación de uno o múltiples usuarios a una sola tarea.
+Un sistema de comentarios para cada tarea. Este sistema debe poder registrar qué usuario hizo el comentario y a qué tarea pertenece.
+Un campo en los comentarios para registrar las menciones a otros usuarios (etiquetado).
+Una tabla para las notificaciones del sistema. Debe registrar a quién se le notifica, el tipo de notificación (ej. task_assigned, mentioned_in_comment), un mensaje y si ya ha sido leída.
+Paso final: Una vez actualizado el esquema, genera y ejecuta la nueva migración de la base de datos.
+2. API de Backend
+El frontend necesitará nuevos endpoints para interactuar con las nuevas funcionalidades.
+
+Archivo: server/routes.ts
+Acción: Implementa los endpoints de la API necesarios para gestionar las siguientes acciones:
+Crear una nueva tarea asociada a un proyecto específico.
+Asignar o desasignar usuarios de una tarea.
+Publicar comentarios en una tarea. La lógica debe ser capaz de procesar las menciones a usuarios para generar notificaciones.
+Obtener el listado de notificaciones para el usuario que ha iniciado sesión.
+Marcar una notificación específica como leída.
+3. Interfaz de Usuario (Frontend)
+Implementemos las funcionalidades visibles para el usuario.
+
+Aislamiento de Proyectos:
+
+Archivo: client/src/pages/project-detail.tsx y su componente client/src/components/project/project-header.tsx.
+Acción: Asegúrate de que, al navegar a un proyecto, su nombre y detalles se muestren de forma prominente. El diseño debe dejar claro en todo momento dentro de qué proyecto se está trabajando para evitar confusiones.
+Gestión de Tareas:
+
+Archivos: client/src/components/project/views/project-board-view.tsx y client/src/components/project/views/project-list-view.tsx.
+Acción: En estas vistas de proyecto, agrega un botón intuitivo y accesible para que el usuario pueda crear una nueva tarea.
+Detalle de Tarea y Colaboración:
+
+Acción: Crea un nuevo componente reutilizable TaskDetailModal.tsx.
+Este modal deberá abrirse cuando el usuario haga clic en una tarea desde client/src/components/tasks/draggable-task-card.tsx.
+Dentro del nuevo modal, implementa las siguientes interfaces:
+Asignación de usuarios: Un control de UI (como un dropdown o un buscador) para asignar la tarea a los miembros del proyecto.
+Sección de comentarios: Un área para visualizar el historial de comentarios y un campo de texto para agregar nuevos.
+Menciones de usuarios: La funcionalidad de que, al escribir @ en el campo de comentario, se despliegue una lista de usuarios del proyecto para poder etiquetarlos.
+Sistema de Notificaciones:
+
+Archivo: client/src/components/layout/header.tsx.
+Acción: Activa el ícono de la campana de notificaciones. Debe:
+Consultar el endpoint de notificaciones para ver si hay notificaciones sin leer y mostrar un indicador visual.
+Al hacer clic, desplegar una lista con las notificaciones recibidas.
+Permitir al usuario marcar las notificaciones como leídas al interactuar con ellas.
+4. Funciones de Inteligencia Artificial (IA)
+Para hacer la herramienta súper robusta, añade capacidades de IA.
+
+Acción: Implementa las siguientes tres funciones de IA. Esto requerirá la creación de nuevos endpoints en el backend y componentes de UI en el frontend.
+Generador Inteligente de Subtareas: En la interfaz de creación de tareas, añade un botón que permita al usuario describir un objetivo complejo (ej. "Lanzar nueva campaña en redes sociales") y que la IA sugiera una lista de subtareas accionables.
+Resumen de Conversaciones: En la vista de detalle de una tarea que tenga una gran cantidad de comentarios, añade un botón que utilice IA para generar un resumen de la discusión, extrayendo puntos clave y decisiones.
+Priorización Automática de Tareas: Crea una función a nivel de proyecto que utilice IA para analizar los títulos, descripciones y fechas de todas las tareas para sugerir un nivel de prioridad (Baja, Media, Alta) para cada una.
