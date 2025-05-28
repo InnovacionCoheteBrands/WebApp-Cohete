@@ -182,6 +182,17 @@ export interface IStorage {
   updateCollaborativeDoc(id: number, docData: Partial<CollaborativeDoc>): Promise<CollaborativeDoc | undefined>;
   deleteCollaborativeDoc(id: number): Promise<boolean>;
 
+  // Collaboration methods
+  getTaskComments(taskId: number): Promise<any[]>;
+  createTaskComment(comment: InsertNotification): Promise<any>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  getUserNotifications(userId: number): Promise<Notification[]>;
+  markNotificationAsRead(notificationId: number): Promise<boolean>;
+  getProjectMembers(projectId: number): Promise<ProjectMember[]>;
+  addProjectMember(member: InsertProjectMember): Promise<ProjectMember>;
+  getTaskDependencies(taskId: number): Promise<TaskDependency[]>;
+  createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency>;
+
   // Password reset methods
   createPasswordResetToken(userId: number): Promise<PasswordResetToken>;
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
