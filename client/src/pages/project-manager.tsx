@@ -102,6 +102,15 @@ export default function ProjectManager() {
     queryKey: ['/api/projects'],
   });
 
+  // Salir temprano si aún está cargando o no hay datos
+  if (isLoading || !tasksData || !projects) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   // Crear nueva tarea
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: Partial<Task>) => {
@@ -136,15 +145,19 @@ export default function ProjectManager() {
     },
   });
 
-  // Extraer todas las tareas de los grupos
-  const allTasks = tasksData.flatMap((group: any) => 
-    group.tasks?.map((task: any) => ({
+  // Extraer todas las tareas de los grupos con validaciones
+  const allTasks = tasksData?.flatMap((group: any) => 
+    group?.tasks?.map((task: any) => ({
       task,
       group: group.group,
-      project: { id: task.projectId, name: projects.find((p: any) => p.id === task.projectId)?.name || 'Proyecto', client: projects.find((p: any) => p.id === task.projectId)?.client || 'Cliente' },
+      project: { 
+        id: task.projectId, 
+        name: projects?.find((p: any) => p.id === task.projectId)?.name || 'Proyecto', 
+        client: projects?.find((p: any) => p.id === task.projectId)?.client || 'Cliente' 
+      },
       assignee: task.assignee
     })) || []
-  );
+  ) || [];
 
   // Filtrar tareas
   const filteredTasks = allTasks.filter((item: any) => {
