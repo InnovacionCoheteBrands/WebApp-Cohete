@@ -19,6 +19,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { TaskGroup, InsertTaskGroup, Task, ProjectColumnSetting, User } from '@shared/schema';
 import TaskComments from '@/components/collaboration/task-comments';
 import TaskAssignment from '@/components/collaboration/task-assignment';
+import NewTaskModal from '@/components/tasks/new-task-modal';
 
 interface ProjectBoardViewProps {
   projectId: number;
@@ -322,6 +323,8 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
   const [newGroupName, setNewGroupName] = useState('');
   const [selectedTaskForComments, setSelectedTaskForComments] = useState<number | null>(null);
   const [showTaskComments, setShowTaskComments] = useState(false);
+  const [showNewTaskModal, setShowNewTaskModal] = useState(false);
+  const [selectedGroupForNewTask, setSelectedGroupForNewTask] = useState<number | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -383,6 +386,18 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
     },
   });
 
+  // Mutación para crear nueva tarea
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData: any) => {
+      const res = await apiRequest('POST', '/api/tasks', taskData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', projectId, 'tasks-with-groups'] });
+      setShowNewTaskModal(false);
+    },
+  });
+
   // Manejar actualización de tarea
   const handleTaskUpdate = (taskId: number, field: string, value: any) => {
     updateTaskMutation.mutate({
@@ -426,6 +441,20 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
     setSelectedTaskForComments(null);
   };
 
+  // Manejar creación de nueva tarea
+  const handleNewTask = (groupId?: number) => {
+    setSelectedGroupForNewTask(groupId || null);
+    setShowNewTaskModal(true);
+  };
+
+  const handleCreateTask = (taskData: any) => {
+    createTaskMutation.mutate({
+      ...taskData,
+      projectId,
+      groupId: selectedGroupForNewTask,
+    });
+  };
+
   if (isLoadingTasks || isLoadingColumns) {
     return (
       <div className="p-6">
@@ -456,7 +485,7 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
             <Settings className="h-4 w-4 mr-2" />
             Configurar columnas
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => handleNewTask()}>
             <Plus className="h-4 w-4 mr-2" />
             Nueva tarea
           </Button>
@@ -539,6 +568,7 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
                     variant="ghost"
                     className="w-full mt-3 border-dashed border"
                     size="sm"
+                    onClick={() => handleNewTask(groupData.group?.id)}
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Agregar tarea
@@ -597,6 +627,18 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
           onClose={handleCloseComments}
         />
       )}
+
+      {/* Modal de nueva tarea */}
+      <NewTaskModal
+        isOpen={showNewTaskModal}
+        onClose={() => setShowNewTaskModal(false)}
+        onSubmit={handleCreateTask}
+        groupName={
+          selectedGroupForNewTask 
+            ? taskGroups?.find(g => g.id === selectedGroupForNewTask)?.name 
+            : undefined
+        }
+      />
     </div>
   );
 }
