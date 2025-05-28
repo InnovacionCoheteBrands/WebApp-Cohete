@@ -398,7 +398,7 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
   return (
     <div className="h-full flex flex-col">
       {/* Encabezado del tablero */}
-      <div className="flex items-center justify-between p-4 border-b bg-white">
+      <div className="flex items-center justify-between p-4 border-b bg-[#10141c]">
         <div className="flex items-center space-x-4">
           <h2 className="text-lg font-semibold">Tablero de Proyecto</h2>
           <Badge variant="secondary">
@@ -421,7 +421,7 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
         <div className="border-b p-4 bg-[#10141c] text-[#ffffff]">
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
             {columns.map((column) => (
-              <div key={column.id} className="text-sm font-medium text-gray-700 flex items-center">
+              <div key={column.id} className="text-sm font-medium flex items-center text-[#f8fafc]">
                 {column.columnType === 'person' && <Users className="h-4 w-4 mr-1" />}
                 {column.columnType === 'date' && <Calendar className="h-4 w-4 mr-1" />}
                 {column.columnType === 'dropdown' && <Flag className="h-4 w-4 mr-1" />}

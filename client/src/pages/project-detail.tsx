@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Download, Pencil } from "lucide-react";
+import { Loader2, ArrowLeft, ArrowRight, Download, Pencil } from "lucide-react";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import ProjectAnalysis from "@/components/projects/project-analysis";
@@ -262,7 +262,21 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
           </div>
           
           <TabsContent value="tasks" className="mt-0 pt-4">
-            <ProjectViewContainer projectId={projectData.id} />
+            <div className="text-center py-12 bg-card rounded-lg border">
+              <div className="max-w-md mx-auto">
+                <h3 className="text-lg font-semibold mb-2">Gestión Avanzada de Tareas</h3>
+                <p className="text-muted-foreground mb-6">
+                  Accede al gestor completo de tareas con vistas Kanban, Lista, Gantt y más funcionalidades colaborativas.
+                </p>
+                <Button 
+                  onClick={() => window.location.href = '/project-manager'}
+                  className="gap-2"
+                >
+                  <ArrowRight className="h-4 w-4" />
+                  Ir al Gestor de Proyectos
+                </Button>
+              </div>
+            </div>
           </TabsContent>
           
           <TabsContent value="analysis" className="mt-0 pt-4">
