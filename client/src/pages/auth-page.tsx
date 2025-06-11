@@ -175,7 +175,7 @@ export default function AuthPage() {
                     type="button"
                     variant="outline"
                     className="w-full mt-4"
-                    onClick={() => window.location.href = '/api/login'}
+                    onClick={() => window.location.href = '/api/auth/google'}
                   >
                     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                       <path

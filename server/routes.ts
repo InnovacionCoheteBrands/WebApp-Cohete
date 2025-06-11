@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth as setupReplitAuth, isAuthenticated } from "./replitAuth";
+import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
 import { storage } from "./storage";
 import bcrypt from "bcryptjs";
 import multer from "multer";
@@ -146,15 +146,26 @@ const marketingImageUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup Replit OAuth authentication
-  await setupReplitAuth(app);
+  // Setup Google OAuth authentication
+  await setupGoogleAuth(app);
 
   // Authentication routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      res.json(req.user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Legacy user endpoint for compatibility
+  app.get('/api/user', async (req: any, res) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
