@@ -54,7 +54,7 @@ import { WebSocketServer } from "ws";
 
 // Global declaration for storage
 declare global {
-  var storage: DatabaseStorage;
+  var storage: any;
 }
 
 // Obtener directorio actual compatible con ESM
@@ -162,13 +162,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Legacy user endpoint for compatibility
   app.get('/api/user', async (req: any, res) => {
     try {
-      if (!req.isAuthenticated()) {
-        return res.status(401).json({ message: "Unauthorized" });
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ error: "Unauthorized" });
       }
       res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      res.status(401).json({ error: "Unauthorized" });
     }
   });
 
