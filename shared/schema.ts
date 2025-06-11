@@ -23,14 +23,23 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'manager', 'designer',
 // Enum para tipos de notificaciones
 export const notificationTypeEnum = pgEnum('notification_type', ['task_assigned', 'mentioned_in_comment', 'task_status_changed', 'comment_added', 'due_date_approaching']);
 
-// Users Table
+// Sessions table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  }
+);
+
+// Users Table - Updated for OAuth support
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: varchar("id").primaryKey().notNull(), // Changed to varchar for OAuth IDs
   fullName: text("full_name").notNull(),
   username: text("username").notNull().unique(),
-  // Nota: el campo email no existe en la base de datos actualmente
-  // email: text("email").unique(),
-  password: text("password").notNull(),
+  email: text("email").unique(), // Added email field for OAuth
+  password: text("password"), // Made optional for OAuth users
   isPrimary: boolean("is_primary").default(false).notNull(),
   role: userRoleEnum("role").default('content_creator'),
   bio: text("bio"),
@@ -41,7 +50,12 @@ export const users = pgTable("users", {
   preferredLanguage: text("preferred_language").default("es"),
   theme: text("theme").default("light"),
   lastLogin: timestamp("last_login"),
+  // OAuth fields
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Projects Table
@@ -490,7 +504,7 @@ export const insertUserSchema = z.object({
     .max(20, "El nombre de usuario debe tener como máximo 20 caracteres")
     .regex(/^[a-zA-Z0-9_]+$/, "El nombre de usuario solo puede contener letras, números y guiones bajos"),
   email: z.string().email("Debe ser un correo electrónico válido").optional(),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres").optional(),
   isPrimary: z.boolean().optional().default(false),
   role: z.enum(['admin', 'manager', 'designer', 'content_creator', 'analyst']).optional().default('content_creator'),
   bio: z.string().optional(),
@@ -500,6 +514,18 @@ export const insertUserSchema = z.object({
   phoneNumber: z.string().optional(),
   preferredLanguage: z.string().optional().default("es"),
   theme: z.string().optional().default("light"),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  profileImageUrl: z.string().optional(),
+});
+
+// Schema for OAuth user upsert
+export const upsertUserSchema = z.object({
+  id: z.string(),
+  email: z.string().email().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  profileImageUrl: z.string().optional(),
 });
 
 // Schema para actualizar perfil (sin contraseña)
@@ -656,6 +682,7 @@ export const insertTaskAssigneeSchema = createInsertSchema(taskAssignees).omit({
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = z.infer<typeof upsertUserSchema>;
 export type UpdateProfile = z.infer<typeof updateProfileSchema>;
 export type LoginData = z.infer<typeof loginSchema>;
 

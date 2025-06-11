@@ -5,6 +5,7 @@ import type { Store } from "express-session";
 import {
   User,
   InsertUser,
+  UpsertUser,
   Project,
   InsertProject,
   AnalysisResult,
@@ -56,14 +57,15 @@ export interface IStorage {
   sessionStore: Store;
 
   // User methods
-  getUser(id: number): Promise<User | undefined>;
+  getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByIdentifier(identifier: string): Promise<User | undefined>; // Busca por username o email
   createUser(user: InsertUser): Promise<User>;
+  upsertUser(user: UpsertUser): Promise<User>;
   listUsers(): Promise<User[]>;
-  updateUser(id: number, userData: Partial<User>): Promise<User | undefined>;
-  deleteUser(id: number): Promise<boolean>;
+  updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
   
   // Password reset methods
   createPasswordResetToken(userId: number): Promise<PasswordResetToken>;
