@@ -2,7 +2,21 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupAuth as setupReplitAuth, isAuthenticated } from "./replitAuth";
 import { storage } from "./storage";
+import bcrypt from "bcryptjs";
 import multer from "multer";
+
+// Helper function for password hashing
+const hashPassword = async (password: string): Promise<string> => {
+  return await bcrypt.hash(password, 10);
+};
+
+// Helper middleware for primary user check
+const isPrimaryUser = (req: any, res: Response, next: NextFunction) => {
+  if (!req.user || !req.user.isPrimary) {
+    return res.status(403).json({ message: "Acceso denegado. Solo usuarios primarios." });
+  }
+  next();
+};
 import fs from "fs";
 import path from "path";
 import pdfParse from "pdf-parse";
@@ -132,11 +146,20 @@ const marketingImageUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication
-  const { isAuthenticated, isPrimaryUser, sessionStore } = setupAuth(app);
-  
-  // Initialize storage with session store
-  global.storage = new DatabaseStorage(sessionStore);
+  // Setup Replit OAuth authentication
+  await setupReplitAuth(app);
+
+  // Authentication routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   // User Management API
   
