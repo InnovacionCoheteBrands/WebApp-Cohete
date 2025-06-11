@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, hashPassword, comparePasswords } from "./auth";
-import { DatabaseStorage } from "./storage";
+import { setupAuth as setupReplitAuth, isAuthenticated } from "./replitAuth";
+import { storage } from "./storage";
 import multer from "multer";
 import fs from "fs";
 import path from "path";

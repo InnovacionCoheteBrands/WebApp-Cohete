@@ -209,7 +209,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // User methods
-  async getUser(id: number): Promise<User | undefined> {
+  async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user;
   }
@@ -237,9 +237,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    // Filtrar el campo email ya que no existe en la base de datos
-    const { email, ...filteredUser } = user as any;
-    const [newUser] = await db.insert(users).values(filteredUser).returning();
+    // Ahora incluimos el campo email ya que está en la base de datos
+    const [newUser] = await db.insert(users).values(user).returning();
+    return newUser;
+  }
+
+  async upsertUser(user: UpsertUser): Promise<User> {
+    const [newUser] = await db
+      .insert(users)
+      .values({
+        ...user,
+        fullName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email || 'Usuario OAuth',
+        username: user.email || user.id,
+        isPrimary: false,
+        role: 'content_creator',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .onConflictDoUpdate({
+        target: users.id,
+        set: {
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
     return newUser;
   }
 
@@ -247,7 +272,7 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
-  async updateUser(id: number, userData: Partial<User>): Promise<User | undefined> {
+  async updateUser(id: string, userData: Partial<User>): Promise<User | undefined> {
     // Filtrar el campo email ya que no existe en la base de datos
     const { email, ...filteredUserData } = userData as any;
     const [updatedUser] = await db
@@ -258,7 +283,7 @@ export class DatabaseStorage implements IStorage {
     return updatedUser;
   }
 
-  async deleteUser(id: number): Promise<boolean> {
+  async deleteUser(id: string): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
     return true;
   }
@@ -1309,4 +1334,10 @@ export class DatabaseStorage implements IStorage {
   }
 }
 
-// The storage instantiation is moved to routes.ts because we need the session store from auth
+// Create a mock session store for the storage instance
+import MemoryStore from "memorystore";
+import session from "express-session";
+const SessionStore = MemoryStore(session);
+const mockStore = new SessionStore({ checkPeriod: 86400000 });
+
+export const storage = new DatabaseStorage(mockStore);
