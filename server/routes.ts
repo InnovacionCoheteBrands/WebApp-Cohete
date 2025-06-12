@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
 import { storage } from "./storage";
+import express from "express";
 import bcrypt from "bcryptjs";
 import multer from "multer";
 
@@ -148,6 +149,14 @@ const marketingImageUpload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Google OAuth authentication
   await setupGoogleAuth(app);
+
+  // Serve static files for privacy policy
+  app.use('/static', express.static(path.join(currentDirPath, 'public')));
+  
+  // Privacy policy route
+  app.get('/privacy-policy', (req, res) => {
+    res.sendFile(path.join(currentDirPath, 'public', 'privacy-policy.html'));
+  });
 
   // Authentication routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
