@@ -3,7 +3,9 @@ import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
-import { storage } from "./storage";
+import { db } from "./db";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -27,7 +29,7 @@ export function getSession() {
   });
 }
 
-export async function setupGoogleAuth(app: Express) {
+export async function setupSimpleGoogleAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
   app.use(passport.initialize());
@@ -41,28 +43,58 @@ export async function setupGoogleAuth(app: Express) {
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
-      // Generate username from email or name
+      // Generate user data from Google profile
       const email = profile.emails?.[0]?.value || '';
       const firstName = profile.name?.givenName || '';
       const lastName = profile.name?.familyName || '';
-      const fullName = `${firstName} ${lastName}`.trim();
+      const fullName = `${firstName} ${lastName}`.trim() || email;
       
-      // Generate username from email (before @) or from name
+      // Generate username from email or name
       let username = email.split('@')[0] || firstName.toLowerCase();
       if (!username) {
         username = `user_${profile.id}`;
       }
       
-      // Create or update user based on Google profile
-      const user = await storage.upsertUser({
-        id: profile.id,
-        email: email,
-        firstName: firstName,
-        lastName: lastName,
-        profileImageUrl: profile.photos?.[0]?.value || ''
-      });
+      // Try to find existing user first
+      const [existingUser] = await db.select().from(users).where(eq(users.id, profile.id));
       
-      return done(null, user);
+      if (existingUser) {
+        // Update existing user
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            email: email,
+            firstName: firstName,
+            lastName: lastName,
+            profileImageUrl: profile.photos?.[0]?.value || '',
+            updatedAt: new Date(),
+          })
+          .where(eq(users.id, profile.id))
+          .returning();
+        return done(null, updatedUser);
+      } else {
+        // Create new user
+        const [newUser] = await db
+          .insert(users)
+          .values({
+            id: profile.id,
+            fullName: fullName,
+            username: username,
+            email: email,
+            password: null,
+            isPrimary: false,
+            role: 'content_creator',
+            firstName: firstName,
+            lastName: lastName,
+            profileImageUrl: profile.photos?.[0]?.value || '',
+            preferredLanguage: 'es',
+            theme: 'light',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning();
+        return done(null, newUser);
+      }
     } catch (error) {
       console.error('Error in Google Auth strategy:', error);
       return done(error, false);
@@ -73,7 +105,7 @@ export async function setupGoogleAuth(app: Express) {
   
   passport.deserializeUser(async (id: string, cb) => {
     try {
-      const user = await storage.getUser(id);
+      const [user] = await db.select().from(users).where(eq(users.id, id));
       return cb(null, user || false);
     } catch (error) {
       return cb(error);
