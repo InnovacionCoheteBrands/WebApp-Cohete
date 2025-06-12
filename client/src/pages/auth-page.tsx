@@ -128,9 +128,9 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-muted/30">
-      <div className="flex items-center justify-center min-h-screen py-8">
-        <div className="grid w-full max-w-5xl grid-cols-1 md:grid-cols-2 gap-8 p-4">
+    <div className="w-full bg-muted/30">
+      <div className="container mx-auto py-8 px-4">
+        <div className="grid w-full max-w-5xl mx-auto grid-cols-1 md:grid-cols-2 gap-8">
           {/* Auth Forms */}
           <Card className="w-full">
             <CardHeader className="text-center">
