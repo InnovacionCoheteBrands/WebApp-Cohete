@@ -158,6 +158,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(path.join(currentDirPath, 'public', 'privacy-policy.html'));
   });
 
+  // Terms of service route
+  app.get('/terms-of-service', (req, res) => {
+    res.sendFile(path.join(currentDirPath, 'public', 'terms-of-service.html'));
+  });
+
   // Authentication routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
