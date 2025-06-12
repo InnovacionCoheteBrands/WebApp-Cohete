@@ -67,7 +67,7 @@ export const projects = pgTable("projects", {
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
   status: projectStatusEnum("status").default('active'),
-  createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -93,7 +93,7 @@ export const analysisResults = pgTable("analysis_results", {
 export const projectAssignments = pgTable("project_assignments", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
-  userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
 });
 
@@ -101,7 +101,7 @@ export const projectAssignments = pgTable("project_assignments", {
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
-  uploadedBy: integer("uploaded_by").references(() => users.id, { onDelete: 'set null' }),
+  uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: 'set null' }),
   filename: text("filename").notNull(),
   originalName: text("original_name").notNull(),
   mimeType: text("mime_type").notNull(),
