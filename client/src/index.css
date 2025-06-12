@@ -269,18 +269,18 @@
   /* Reglas para tamaños de fuente */
   html {
     height: 100%;
-    overflow-y: hidden; /* Previene el scroll vertical en el elemento html */
+    overflow-y: auto; /* Permite el scroll vertical en el elemento html */
   }
 
   body {
     @apply font-sans antialiased bg-background text-foreground; /* Mantener existentes */
-    height: 100%; /* Asegura que body ocupe el 100% de la altura de html */
-    overflow-y: hidden; /* Previene el scroll vertical en el elemento body */
+    min-height: 100%; /* Cambiado de height a min-height para permitir contenido más alto */
+    overflow-y: auto; /* Permite el scroll vertical en el elemento body */
     margin: 0; /* Asegura que no haya márgenes por defecto */
   }
 
   #root {
-    height: 100%; /* Asegura que el div root ocupe el 100% de la altura de body */
+    min-height: 100%; /* Cambiado de height a min-height para permitir contenido más alto */
   }
   /* --- FIN DE NUEVAS REGLAS / MODIFICACIONES --- */
 

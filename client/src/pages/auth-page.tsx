@@ -128,9 +128,24 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="w-full bg-muted/30">
-      <div className="container mx-auto py-8 px-4">
-        <div className="grid w-full max-w-5xl mx-auto grid-cols-1 md:grid-cols-2 gap-8">
+    <div 
+      className="w-full bg-muted/30" 
+      style={{ 
+        minHeight: '100vh',
+        height: 'auto',
+        overflow: 'visible',
+        position: 'relative'
+      }}
+    >
+      <div 
+        className="container mx-auto py-8 px-4" 
+        style={{ 
+          height: 'auto',
+          minHeight: '100vh',
+          overflow: 'visible'
+        }}
+      >
+        <div className="grid w-full max-w-5xl mx-auto grid-cols-1 md:grid-cols-2 gap-8" style={{ height: 'auto' }}>
           {/* Auth Forms */}
           <Card className="w-full">
             <CardHeader className="text-center">
