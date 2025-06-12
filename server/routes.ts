@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { setupGoogleAuth, isAuthenticated } from "./googleAuth";
+import { setupSimpleGoogleAuth, isAuthenticated } from "./simple-oauth";
 import { storage } from "./storage";
 import express from "express";
 import bcrypt from "bcryptjs";
@@ -148,7 +148,7 @@ const marketingImageUpload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup Google OAuth authentication
-  await setupGoogleAuth(app);
+  await setupSimpleGoogleAuth(app);
 
   // Serve static files for privacy policy
   app.use('/static', express.static(path.join(currentDirPath, 'public')));
@@ -163,28 +163,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.sendFile(path.join(currentDirPath, 'public', 'terms-of-service.html'));
   });
 
-  // Authentication routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      res.json(req.user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Authentication routes are now handled in simple-oauth.ts
 
-  // Legacy user endpoint for compatibility
-  app.get('/api/user', async (req: any, res) => {
-    try {
-      if (!req.isAuthenticated || !req.isAuthenticated()) {
-        return res.status(401).json({ error: "Unauthorized" });
-      }
-      res.json(req.user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(401).json({ error: "Unauthorized" });
-    }
-  });
+  // Legacy user endpoint removed - handled by simple-oauth.ts
 
   // User Management API
   

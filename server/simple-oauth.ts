@@ -39,7 +39,7 @@ export async function setupSimpleGoogleAuth(app: Express) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    callbackURL: `${process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'http://localhost:5000'}/api/auth/google/callback`
+    callbackURL: `/api/auth/google/callback`
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
@@ -132,6 +132,26 @@ export async function setupSimpleGoogleAuth(app: Express) {
       }
       res.redirect("/auth");
     });
+  });
+
+  // Auth user endpoint
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      res.json(req.user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Legacy user endpoint for compatibility 
+  app.get('/api/user', isAuthenticated, async (req: any, res) => {
+    try {
+      res.json(req.user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
   });
 }
 
