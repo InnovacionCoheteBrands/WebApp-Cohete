@@ -34,13 +34,13 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen w-full overflow-hidden">
       {/* Sidebar mejorado - hidden on mobile unless toggled */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Main content con mejoras visuales */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-background/50 transition-all duration-300 min-h-0 subtle-pattern">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-background/50 transition-all duration-300 min-h-0 subtle-pattern">
           {/* Menu toggle para móvil con animaciones mejoradas */}
           <div className="md:hidden flex items-center mb-6">
             <Button 
@@ -60,7 +60,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
           {/* Contenedor principal con transiciones y elevación */}
           <div 
-            className={`container mx-auto max-w-7xl transition-all duration-300 fade-in-effect ${
+            className={`w-full max-w-7xl mx-auto transition-all duration-300 fade-in-effect ${
               scrolled ? 'pt-2' : 'pt-3'
             }`}
           >
