@@ -1,16 +1,23 @@
 #!/usr/bin/env node
 
 import { build } from 'esbuild';
+import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-async function buildServer() {
+async function deployBuild() {
   try {
-    console.log('Building server with bundled dependencies...');
+    console.log('Building for deployment...');
     
+    // Build frontend with Vite (faster approach)
+    console.log('Building frontend...');
+    execSync('npx vite build --mode production', { stdio: 'inherit' });
+    
+    // Build server with all dependencies bundled
+    console.log('Building server...');
     await build({
       entryPoints: [join(__dirname, 'server/index.ts')],
       bundle: true,
@@ -18,17 +25,19 @@ async function buildServer() {
       format: 'esm',
       outdir: 'dist',
       external: [
-        // Only externalize problematic native modules
+        // Externalize only problematic native modules
         'pg-native',
         'bufferutil',
         'utf-8-validate',
         'fsevents',
         'sharp',
         'lightningcss',
-        '@babel/preset-typescript'
+        '@babel/preset-typescript',
+        'esbuild',
+        'vite'
       ],
       target: 'node18',
-      minify: false, // Disable minification to avoid issues
+      minify: false,
       sourcemap: false,
       define: {
         'process.env.NODE_ENV': '"production"'
@@ -38,7 +47,6 @@ async function buildServer() {
         '.ts': 'ts',
         '.js': 'js'
       },
-      // Handle module resolution issues
       banner: {
         js: `
 import { createRequire } from 'module';
@@ -49,15 +57,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
         `.trim()
       },
-      // Ignore build warnings for optional dependencies
       logLevel: 'warning'
     });
     
-    console.log('Server build completed successfully!');
+    console.log('✅ Deployment build completed successfully!');
+    console.log('The server bundle includes all dependencies (cors, express, etc.)');
+    console.log('Ready for deployment with: NODE_ENV=production node dist/index.js');
+    
   } catch (error) {
-    console.error('Build failed:', error);
+    console.error('❌ Deployment build failed:', error.message);
     process.exit(1);
   }
 }
 
-buildServer();
+deployBuild();
