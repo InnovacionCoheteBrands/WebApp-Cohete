@@ -11,6 +11,11 @@ const hashPassword = async (password: string): Promise<string> => {
   return await bcrypt.hash(password, 10);
 };
 
+// Helper function for password comparison
+const comparePasswords = async (supplied: string, stored: string): Promise<boolean> => {
+  return await bcrypt.compare(supplied, stored);
+};
+
 // Helper middleware for primary user check
 const isPrimaryUser = (req: any, res: Response, next: NextFunction) => {
   if (!req.user || !req.user.isPrimary) {
@@ -57,6 +62,9 @@ import { WebSocketServer } from "ws";
 declare global {
   var storage: any;
 }
+
+// Initialize global storage
+global.storage = storage;
 
 // Obtener directorio actual compatible con ESM
 import { fileURLToPath } from 'url';
@@ -175,9 +183,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Buscar usuario por username o email
-      let user = await global.storage.getUserByUsername(identifier);
+      let user = await storage.getUserByUsername(identifier);
       if (!user && identifier.includes('@')) {
-        user = await global.storage.getUserByEmail(identifier);
+        user = await storage.getUserByEmail(identifier);
       }
       
       if (!user) {
@@ -440,12 +448,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener usuario actual
-      const user = await global.storage.getUser(req.user.id);
+      const user = await storage.getUser(req.user.id);
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
       }
       
       // Verificar contraseña actual
+      if (!user.password) {
+        return res.status(400).json({ message: "Este usuario no tiene contraseña configurada" });
+      }
+      
       const isPasswordValid = await comparePasswords(currentPassword, user.password);
       if (!isPasswordValid) {
         return res.status(400).json({ message: "La contraseña actual es incorrecta" });
@@ -453,7 +465,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Actualizar contraseña
       const hashedPassword = await hashPassword(newPassword);
-      await global.storage.updateUser(req.user.id, { password: hashedPassword });
+      await storage.updateUser(req.user.id, { password: hashedPassword });
       
       res.json({ message: "Contraseña actualizada correctamente" });
     } catch (error) {
