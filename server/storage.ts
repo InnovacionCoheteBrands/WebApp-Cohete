@@ -47,7 +47,7 @@ import {
 
 // Interfaz para los tokens de recuperación
 export interface PasswordResetToken {
-  userId: number;
+  userId: string;
   token: string;
   expires: Date;
 }
@@ -79,7 +79,7 @@ export interface IStorage {
   updateProject(id: number, projectData: Partial<Project>): Promise<Project | undefined>;
   deleteProject(id: number): Promise<boolean>;
   listProjects(): Promise<Project[]>;
-  listProjectsByUser(userId: number, isPrimary: boolean): Promise<Project[]>;
+  listProjectsByUser(userId: string, isPrimary: boolean): Promise<Project[]>;
   
   // Project Analysis methods
   createAnalysisResult(analysis: InsertAnalysisResult): Promise<AnalysisResult>;
@@ -87,10 +87,10 @@ export interface IStorage {
   updateAnalysisResult(projectId: number, analysisData: Partial<InsertAnalysisResult>): Promise<AnalysisResult | undefined>;
   
   // Project Assignment methods
-  assignUserToProject(projectId: number, userId: number): Promise<ProjectAssignment>;
-  removeUserFromProject(projectId: number, userId: number): Promise<boolean>;
+  assignUserToProject(projectId: number, userId: string): Promise<ProjectAssignment>;
+  removeUserFromProject(projectId: number, userId: string): Promise<boolean>;
   getProjectAssignments(projectId: number): Promise<User[]>;
-  checkUserProjectAccess(userId: number, projectId: number, isPrimary: boolean): Promise<boolean>;
+  checkUserProjectAccess(userId: string, projectId: number, isPrimary: boolean): Promise<boolean>;
   
   // Document methods
   createDocument(document: InsertDocument): Promise<Document>;
