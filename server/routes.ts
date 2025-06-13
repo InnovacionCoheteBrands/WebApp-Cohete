@@ -164,8 +164,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Authentication routes are now handled in simple-oauth.ts
-
-  // Legacy user endpoint removed - handled by simple-oauth.ts
+  
+  // Traditional login/logout routes (in addition to Google OAuth)
+  app.post("/api/login", async (req: Request, res: Response) => {
+    try {
+      const { identifier, password } = req.body;
+      
+      if (!identifier || !password) {
+        return res.status(400).json({ message: "Usuario y contraseña son requeridos" });
+      }
+      
+      // Buscar usuario por username o email
+      let user = await global.storage.getUserByUsername(identifier);
+      if (!user && identifier.includes('@')) {
+        user = await global.storage.getUserByEmail(identifier);
+      }
+      
+      if (!user) {
+        return res.status(401).json({ message: "Credenciales inválidas" });
+      }
+      
+      // Verificar contraseña (solo para usuarios con contraseña, no para OAuth)
+      if (!user.password) {
+        return res.status(401).json({ message: "Este usuario debe iniciar sesión con Google" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Credenciales inválidas" });
+      }
+      
+      // Crear sesión
+      req.login(user, (err) => {
+        if (err) {
+          console.error("Error creating session:", err);
+          return res.status(500).json({ message: "Error al crear sesión" });
+        }
+        
+        // Eliminar password del response
+        const { password: _, ...userWithoutPassword } = user;
+        res.json(userWithoutPassword);
+      });
+      
+    } catch (error) {
+      console.error("Error in login:", error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+  
+  app.post("/api/register", async (req: Request, res: Response) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Verificar si el usuario ya existe
+      const existingUser = await global.storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ message: "El nombre de usuario ya existe" });
+      }
+      
+      // Verificar si el email ya existe (si se proporciona)
+      if (userData.email) {
+        const existingEmail = await global.storage.getUserByEmail(userData.email);
+        if (existingEmail) {
+          return res.status(400).json({ message: "El email ya está registrado" });
+        }
+      }
+      
+      // Crear usuario
+      const hashedPassword = await hashPassword(userData.password);
+      const newUser = await global.storage.createUser({
+        ...userData,
+        password: hashedPassword,
+        isPrimary: false, // Los usuarios registrados normalmente no son primarios
+        role: userData.role || 'content_creator'
+      });
+      
+      // Crear sesión automáticamente
+      req.login(newUser, (err) => {
+        if (err) {
+          console.error("Error creating session after registration:", err);
+          return res.status(500).json({ message: "Usuario creado pero error al iniciar sesión" });
+        }
+        
+        // Eliminar password del response
+        const { password: _, ...userWithoutPassword } = newUser;
+        res.status(201).json(userWithoutPassword);
+      });
+      
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      console.error("Error in registration:", error);
+      res.status(500).json({ message: "Error al crear cuenta" });
+    }
+  });
 
   // User Management API
   
