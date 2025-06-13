@@ -71,14 +71,13 @@ export default function RecentProjects() {
   const recentProjects = projects ? projects.slice(0, 3) : [];
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="mb-3 flex items-center justify-between flex-shrink-0">
-        <h2 className="text-lg font-semibold">Recent Projects</h2>
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Recent Projects</h2>
         {user?.isPrimary && (
           <Button
             onClick={() => setIsModalOpen(true)}
             className="inline-flex items-center gap-1"
-            size="sm"
           >
             <Plus className="h-4 w-4" />
             New Project
@@ -86,16 +85,16 @@ export default function RecentProjects() {
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-lg border bg-card shadow-sm flex flex-col">
-        <div className="flex-1 overflow-hidden">
+      <div className="overflow-hidden rounded-lg border bg-card shadow-sm">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="border-b bg-muted/50 text-left">
-                <TableHead className="h-10">Project</TableHead>
-                <TableHead className="h-10">Client</TableHead>
-                <TableHead className="h-10">Status</TableHead>
-                <TableHead className="h-10">Last Modified</TableHead>
-                <TableHead className="h-10">Actions</TableHead>
+                <TableHead>Project</TableHead>
+                <TableHead>Client</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Last Modified</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -115,35 +114,35 @@ export default function RecentProjects() {
                 </TableRow>
               ) : recentProjects.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                     No projects found
                   </TableCell>
                 </TableRow>
               ) : (
                 recentProjects.map((project) => (
                   <TableRow key={project.id} className="border-b">
-                    <TableCell className="whitespace-nowrap px-4 py-2 text-sm font-medium">
+                    <TableCell className="whitespace-nowrap px-4 py-3 text-sm font-medium">
                       {project.name}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-4 py-2 text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
                       {project.client}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-4 py-2 text-sm">
+                    <TableCell className="whitespace-nowrap px-4 py-3 text-sm">
                       <StatusBadge status={project.status} />
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-4 py-2 text-sm text-muted-foreground">
+                    <TableCell className="whitespace-nowrap px-4 py-3 text-sm text-muted-foreground">
                       {format(parseISO(project.updatedAt), 'MMM d, yyyy')}
                     </TableCell>
-                    <TableCell className="whitespace-nowrap px-4 py-2 text-sm">
-                      <div className="flex items-center gap-1">
+                    <TableCell className="whitespace-nowrap px-4 py-3 text-sm">
+                      <div className="flex items-center gap-2">
                         <Link href={`/projects/${project.id}`}>
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <Eye className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Eye className="h-4 w-4" />
                           </Button>
                         </Link>
                         {user?.isPrimary && (
-                          <Button variant="ghost" size="icon" className="h-7 w-7">
-                            <Pencil className="h-3 w-3" />
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Pencil className="h-4 w-4" />
                           </Button>
                         )}
                       </div>
@@ -154,8 +153,8 @@ export default function RecentProjects() {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between border-t px-4 py-2 flex-shrink-0">
-          <p className="text-xs text-muted-foreground">
+        <div className="flex items-center justify-between border-t px-4 py-3">
+          <p className="text-sm text-muted-foreground">
             Showing <strong>{recentProjects.length}</strong> of <strong>{projects?.length || 0}</strong> projects
           </p>
           <Link href="/projects">

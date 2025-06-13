@@ -40,7 +40,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Main content con mejoras visuales */}
-        <main className="flex-1 overflow-hidden p-4 md:p-6 bg-background/50 transition-all duration-300 min-h-0 subtle-pattern hide-scrollbar">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-background/50 transition-all duration-300 min-h-0 subtle-pattern hide-scrollbar">
           {/* Menu toggle para móvil con animaciones mejoradas */}
           <div className="md:hidden flex items-center mb-6">
             <Button 

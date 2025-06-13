@@ -62,23 +62,13 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      <div className="flex-shrink-0">
-        <WelcomeSection user={user} />
-      </div>
-      <div className="flex-shrink-0 mt-4">
-        <QuickActions />
-      </div>
-      <div className="flex-shrink-0 mt-4">
-        <CreateScheduleSection />
-      </div>
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4 min-h-0">
-        <div className="overflow-hidden">
-          <RecentProjects projects={projects || []} />
-        </div>
-        <div className="overflow-hidden">
-          <RecentSchedules schedules={schedules || []} />
-        </div>
+    <div className="space-y-6 hide-scrollbar">
+      <WelcomeSection user={user} />
+      <QuickActions />
+      <CreateScheduleSection />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <RecentProjects />
+        <RecentSchedules />
       </div>
     </div>
   );
