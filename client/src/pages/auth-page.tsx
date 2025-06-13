@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Rocket, Users, Zap, TrendingUp, Loader2 } from "lucide-react";
+import { Rocket, Users, Zap, TrendingUp, Loader2, Eye, EyeOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -35,6 +35,9 @@ type RegisterForm = z.infer<typeof registerSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
 
   const loginForm = useForm<LoginForm>({
@@ -183,7 +186,27 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Contraseña</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Ingresa tu contraseña" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showLoginPassword ? "text" : "password"} 
+                                  placeholder="Ingresa tu contraseña" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowLoginPassword(!showLoginPassword)}
+                                  aria-label={showLoginPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                >
+                                  {showLoginPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -284,7 +307,27 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Contraseña</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Crea una contraseña" {...field} />
+                              <div className="relative">
+                                <Input 
+                                  type={showRegisterPassword ? "text" : "password"} 
+                                  placeholder="Crea una contraseña" 
+                                  {...field} 
+                                />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                                  onClick={() => setShowRegisterPassword(!showRegisterPassword)}
+                                  aria-label={showRegisterPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                >
+                                  {showRegisterPassword ? (
+                                    <EyeOff className="h-4 w-4" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
