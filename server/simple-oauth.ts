@@ -35,11 +35,23 @@ export async function setupSimpleGoogleAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Configure Google OAuth strategy
+  // Configure Google OAuth strategy with dynamic callback URL
+  const getCallbackURL = (req: any) => {
+    const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+    const host = req.get('host');
+    return `${protocol}://${host}/api/auth/google/callback`;
+  };
+
+  // Dynamic callback URL based on current host
+  const currentHost = process.env.REPLIT_DOMAINS || 'localhost:5000';
+  const callbackURL = currentHost.includes('localhost') 
+    ? `http://${currentHost}/api/auth/google/callback`
+    : `https://${currentHost}/api/auth/google/callback`;
+
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    callbackURL: `/api/auth/google/callback`
+    callbackURL: callbackURL
   },
   async (accessToken, refreshToken, profile, done) => {
     try {
