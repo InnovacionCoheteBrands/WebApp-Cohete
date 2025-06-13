@@ -1,0 +1,51 @@
+La WebApp ya cuenta con una base para el gestor de proyectos, pero carece de funcionalidades esenciales. A continuación, se describen los cambios necesarios. Por favor, implementa estas funcionalidades paso a paso, asegurándote de que el código sea limpio, eficiente y siga las mejores prácticas.
+
+Tarea 1: Mejorar el Modelo de Datos
+
+Modifica el archivo shared/schema.ts para añadir los siguientes campos a la tabla tasks:
+
+assigneeId: Un campo de tipo string que almacenará el ID del usuario al que se le asigna la tarea.
+dueDate: Un campo de tipo date para la fecha de vencimiento de la tarea.
+Añade también las siguientes tablas nuevas:
+
+comments: Una tabla para almacenar comentarios en las tareas. Debe tener los campos: id, content, taskId, userId y createdAt.
+attachments: Una tabla para los archivos adjuntos. Debe tener los campos: id, fileName, fileUrl, taskId y uploadedAt.
+activityLog: Una tabla para el registro de actividad. Debe tener los campos: id, description, projectId, taskId, userId y createdAt.
+Tarea 2: Implementar la Funcionalidad de Tareas Detalladas
+
+Crea un nuevo componente en client/src/components/tasks/ llamado task-detail-modal.tsx.
+Este modal deberá mostrarse al hacer clic en una tarjeta de tarea en el tablero Kanban.
+Dentro del modal, muestra la siguiente información de la tarea:
+Nombre de la tarea.
+Descripción completa.
+Asignado a (inicialmente "Sin asignar").
+Fecha de vencimiento (inicialmente "Sin fecha").
+Sección de comentarios.
+Sección de archivos adjuntos.
+Tarea 3: Añadir Funcionalidades de Edición y Asignación
+
+Dentro de task-detail-modal.tsx, permite la edición del nombre y la descripción de la tarea.
+Añade un menú desplegable para asignar la tarea a un usuario registrado en la aplicación.
+Implementa un selector de fecha para establecer o modificar la fecha de vencimiento de la tarea.
+Crea o actualiza los endpoints de la API en server/routes.ts para manejar estas actualizaciones.
+Tarea 4: Implementar Comentarios en las Tareas
+
+En la sección de comentarios de task-detail-modal.tsx, añade un campo de texto y un botón para que los usuarios puedan añadir comentarios.
+Muestra la lista de comentarios existentes, incluyendo el nombre del autor y la fecha de creación.
+Crea los endpoints necesarios en la API para guardar y recuperar los comentarios de una tarea.
+Tarea 5: Implementar Archivos Adjuntos
+
+En la sección de archivos adjuntos de task-detail-modal.tsx, añade un botón para subir archivos.
+Al subir un archivo, guárdalo en el almacenamiento (puedes usar el sistema de archivos local para empezar) y registra la información en la tabla attachments.
+Muestra una lista de los archivos adjuntos, permitiendo su descarga.
+Crea los endpoints de la API para manejar la subida y recuperación de archivos.
+Tarea 6: Desarrollar el Registro de Actividad
+
+Crea un nuevo componente en client/src/components/projects/ llamado project-activity-log.tsx.
+Este componente mostrará una lista cronológica de todas las actividades del proyecto (creación de tareas, cambios de estado, nuevos comentarios, etc.).
+En el backend, cada vez que se realice una acción importante (crear/actualizar tarea, añadir comentario, etc.), inserta un nuevo registro en la tabla activityLog.
+Tarea 7: Implementar Búsqueda y Filtrado
+
+En la página de listado de proyectos (client/src/pages/projects.tsx), añade una barra de búsqueda para encontrar proyectos por su nombre.
+Dentro de la vista de un proyecto, añade filtros para las tareas, permitiendo filtrar por asignado y por fecha de vencimiento.
+Confirmación: Por favor, confirma cada paso a medida que lo completes. Si tienes alguna pregunta o necesitas alguna aclaración sobre la estructura del código existente, no dudes en preguntar. ¡Empecemos con la Tarea 1!

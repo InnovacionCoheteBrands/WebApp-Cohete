@@ -172,8 +172,8 @@ const tasksTable = {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }).notNull(),
   groupId: integer("group_id").references(() => taskGroups.id, { onDelete: 'set null' }), // Nuevo: Referencia al grupo
-  assignedToId: integer("assigned_to_id").references(() => users.id, { onDelete: 'set null' }),
-  createdById: integer("created_by_id").references(() => users.id, { onDelete: 'set null' }),
+  assignedToId: varchar("assigned_to_id").references(() => users.id, { onDelete: 'set null' }),
+  createdById: varchar("created_by_id").references(() => users.id, { onDelete: 'set null' }),
   title: text("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").default('pending').notNull(),
@@ -209,11 +209,28 @@ export const tasks = pgTable("tasks", tasksTable);
 export const taskComments = pgTable("task_comments", {
   id: serial("id").primaryKey(),
   taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
-  userId: integer("user_id").references(() => users.id, { onDelete: 'set null' }),
-  comment: text("comment").notNull(),
-  attachments: jsonb("attachments").default([]), // Lista de archivos adjuntos {name, url, type}
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla para archivos adjuntos de tareas
+export const taskAttachments = pgTable("task_attachments", {
+  id: serial("id").primaryKey(),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }).notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
+// Tabla para registro de actividad
+export const activityLog = pgTable("activity_log", {
+  id: serial("id").primaryKey(),
+  description: text("description").notNull(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: 'cascade' }),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: 'set null' }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Tabla para productos de proyectos
@@ -428,6 +445,7 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
   parentTask: one(tasks, { fields: [tasks.parentTaskId], references: [tasks.id] }),
   subtasks: many(tasks, { relationName: "subtasks" }),
   comments: many(taskComments),
+  attachments: many(taskAttachments),
   // Nuevas relaciones Monday.com
   assignees: many(taskAssignees),
   columnValues: many(taskColumnValues),
@@ -436,6 +454,16 @@ export const tasksRelations = relations(tasks, ({ one, many }) => ({
 export const taskCommentsRelations = relations(taskComments, ({ one }) => ({
   task: one(tasks, { fields: [taskComments.taskId], references: [tasks.id] }),
   user: one(users, { fields: [taskComments.userId], references: [users.id] }),
+}));
+
+export const taskAttachmentsRelations = relations(taskAttachments, ({ one }) => ({
+  task: one(tasks, { fields: [taskAttachments.taskId], references: [tasks.id] }),
+}));
+
+export const activityLogRelations = relations(activityLog, ({ one }) => ({
+  project: one(projects, { fields: [activityLog.projectId], references: [projects.id] }),
+  task: one(tasks, { fields: [activityLog.taskId], references: [tasks.id] }),
+  user: one(users, { fields: [activityLog.userId], references: [users.id] }),
 }));
 
 export const productsRelations = relations(products, ({ one }) => ({
