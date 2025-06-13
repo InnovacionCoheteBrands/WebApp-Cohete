@@ -177,6 +177,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
       const { identifier, password } = req.body;
+      console.log("Login attempt for:", identifier);
       
       if (!identifier || !password) {
         return res.status(400).json({ message: "Usuario y contraseña son requeridos" });
@@ -184,20 +185,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Buscar usuario por username o email
       let user = await storage.getUserByUsername(identifier);
+      console.log("User found by username:", !!user);
+      
       if (!user && identifier.includes('@')) {
         user = await storage.getUserByEmail(identifier);
+        console.log("User found by email:", !!user);
       }
       
       if (!user) {
+        console.log("No user found for identifier:", identifier);
         return res.status(401).json({ message: "Credenciales inválidas" });
       }
+      
+      console.log("User found:", user.username, "has password:", !!user.password);
       
       // Verificar contraseña (solo para usuarios con contraseña, no para OAuth)
       if (!user.password) {
         return res.status(401).json({ message: "Este usuario debe iniciar sesión con Google" });
       }
       
+      console.log("Comparing passwords...");
       const isValidPassword = await bcrypt.compare(password, user.password);
+      console.log("Password valid:", isValidPassword);
+      
       if (!isValidPassword) {
         return res.status(401).json({ message: "Credenciales inválidas" });
       }
