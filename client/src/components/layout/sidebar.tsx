@@ -49,14 +49,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         )}
         data-tour="main-navigation"
       >
-        <div className="flex flex-col space-y-4 p-4 h-full overflow-hidden hide-scrollbar">
+        <div className="flex flex-col p-4 h-full overflow-hidden hide-scrollbar">
           {/* Logo */}
-          <div className="flex items-center gap-2 px-2 py-3 mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary shadow-sm transition-all duration-200 hover:shadow-md">
-              <Rocket className="h-6 w-6 text-primary-foreground" />
+          <div className="flex items-center gap-2 px-2 py-2 mb-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm transition-all duration-200 hover:shadow-md">
+              <Rocket className="h-5 w-5 text-primary-foreground" />
             </div>
             <div className="flex flex-col">
-              <h1 className="text-lg font-bold tracking-tight text-primary">Cohete Workflow</h1>
+              <h1 className="text-base font-bold tracking-tight text-primary">Cohete Workflow</h1>
               <p className="text-xs text-muted-foreground">Gestión de Marketing</p>
             </div>
             {/* Close button - mobile only */}
@@ -66,12 +66,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               className="ml-auto md:hidden interactive-element"
               onClick={onClose}
             >
-              <X className="h-5 w-5" />
+              <X className="h-4 w-4" />
             </Button>
           </div>
 
           {/* Navigation */}
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1 min-h-0">
             <NavItem 
               href="/" 
               icon={<LayoutDashboard className="mr-2 h-5 w-5" />} 
@@ -111,20 +111,20 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
             {/* Admin section for Primary users only */}
             {isPrimary && (
-              <div className="mt-4 border-t pt-4">
+              <div className="mt-3 border-t pt-3">
                 <h2 className="mb-1 px-3 text-xs font-medium text-primary">
                   Administración
                 </h2>
                 <NavItem 
                   href="/users" 
-                  icon={<Users className="mr-2 h-5 w-5" />} 
+                  icon={<Users className="mr-2 h-4 w-4" />} 
                   label="Gestión de Usuarios" 
                   isActive={location === "/users"} 
                   onClick={onClose}
                 />
                 <NavItem 
                   href="/settings" 
-                  icon={<Settings className="mr-2 h-5 w-5" />} 
+                  icon={<Settings className="mr-2 h-4 w-4" />} 
                   label="Configuración" 
                   isActive={location === "/settings"} 
                   onClick={onClose}
@@ -134,29 +134,29 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           {/* User Profile */}
-          <div className="mt-auto border-t pt-4">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/30 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-sm">
-                <Users className="h-6 w-6" />
+          <div className="border-t pt-3 mt-auto">
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/30 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-sm">
+                <Users className="h-4 w-4" />
               </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium truncate max-w-[120px]">{user?.fullName}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="text-sm font-medium truncate">{user?.fullName}</span>
+                <span className="text-xs text-muted-foreground flex items-center gap-1">
                   <span className={cn(
-                    "h-2 w-2 rounded-full", 
+                    "h-1.5 w-1.5 rounded-full", 
                     user?.isPrimary ? "bg-green-500" : "bg-primary"
                   )}></span>
-                  {user?.isPrimary ? 'Usuario Principal' : 'Usuario Secundario'}
+                  {user?.isPrimary ? 'Principal' : 'Secundario'}
                 </span>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="ml-auto rounded-md p-1.5 hover:bg-accent interactive-element"
+                className="rounded-md p-1 hover:bg-accent interactive-element"
                 onClick={handleLogout}
                 title="Cerrar sesión"
               >
-                <LogOut className="h-4 w-4" />
+                <LogOut className="h-3 w-3" />
               </Button>
             </div>
           </div>
@@ -179,7 +179,7 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
     <Link href={href}>
       <div
         className={cn(
-          "flex w-full items-center rounded-md px-3 py-2.5 text-sm font-medium transition-all duration-200 relative overflow-hidden group",
+          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative overflow-hidden group",
           isActive
             ? "bg-accent text-accent-foreground shadow-sm"
             : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground interactive-element"
@@ -203,7 +203,7 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
           </span>
           {isActive && (
             <div className="ml-auto">
-              <div className="h-2 w-2 rounded-full bg-primary" />
+              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
             </div>
           )}
         </div>
