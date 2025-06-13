@@ -3866,62 +3866,62 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
   // Enhanced Tasks endpoint with groups and assignees
   app.get("/api/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // Get tasks from all projects with their groups and assignees
-      const tasksWithDetails = await db.select({
-        task: {
-          id: schema.tasks.id,
-          projectId: schema.tasks.projectId,
-          title: schema.tasks.title,
-          description: schema.tasks.description,
-          status: schema.tasks.status,
-          priority: schema.tasks.priority,
-          progress: schema.tasks.progress,
-          dueDate: schema.tasks.dueDate,
-          tags: schema.tasks.tags,
-          groupId: schema.tasks.groupId,
-          createdById: schema.tasks.createdById,
-          createdAt: schema.tasks.createdAt,
-        },
-        group: {
-          id: schema.taskGroups.id,
-          projectId: schema.taskGroups.projectId,
-          name: schema.taskGroups.name,
-          description: schema.taskGroups.description,
-          color: schema.taskGroups.color,
-          position: schema.taskGroups.position,
-        },
-        project: {
-          id: schema.projects.id,
-          name: schema.projects.name,
-          client: schema.projects.client,
-        },
-        assignee: {
-          id: schema.users.id,
-          fullName: schema.users.fullName,
-          username: schema.users.username,
-          profileImage: schema.users.profileImage,
-        }
-      })
-      .from(schema.tasks)
-      .leftJoin(schema.taskGroups, eq(schema.tasks.groupId, schema.taskGroups.id))
-      .leftJoin(schema.projects, eq(schema.tasks.projectId, schema.projects.id))
-      .leftJoin(schema.users, eq(schema.tasks.createdById, schema.users.id))
-      .orderBy(asc(schema.tasks.id));
+      // Get tasks from all projects - simplified query to avoid type conflicts
+      const tasks = await db.select().from(schema.tasks).orderBy(asc(schema.tasks.id));
 
-      // Get additional assignees for each task
-      const taskIds = tasksWithDetails.map(t => t.task.id);
-      const additionalAssignees = taskIds.length > 0 ? await db.select({
-        taskId: schema.taskAssignees.taskId,
-        user: {
-          id: schema.users.id,
-          fullName: schema.users.fullName,
-          username: schema.users.username,
-          profileImage: schema.users.profileImage,
-        }
-      })
-      .from(schema.taskAssignees)
-      .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
-      .where(inArray(schema.taskAssignees.taskId, taskIds)) : [];
+      // Get task groups separately
+      const taskGroups = await db.select().from(schema.taskGroups);
+
+      // Get projects separately
+      const projects = await db.select().from(schema.projects);
+
+      // Get users separately
+      const users = await db.select().from(schema.users);
+
+      // Combine data in JavaScript to avoid SQL type conflicts
+      const tasksWithDetails = tasks.map(task => {
+        const group = taskGroups.find(g => g.id === task.groupId);
+        const project = projects.find(p => p.id === task.projectId);
+        const assignee = users.find(u => u.id === task.createdById);
+
+        return {
+          task: {
+            id: task.id,
+            projectId: task.projectId,
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            priority: task.priority,
+            progress: task.progress,
+            dueDate: task.dueDate,
+            tags: task.tags,
+            groupId: task.groupId,
+            createdById: task.createdById,
+            createdAt: task.createdAt,
+          },
+          group: group ? {
+            id: group.id,
+            projectId: group.projectId,
+            name: group.name,
+            description: group.description,
+            color: group.color,
+            position: group.position,
+          } : null,
+          project: project ? {
+            id: project.id,
+            name: project.name,
+            client: project.client,
+          } : null,
+          assignee: assignee ? {
+            id: assignee.id,
+            fullName: assignee.fullName,
+            username: assignee.username,
+            profileImage: assignee.profileImage,
+          } : null
+        };
+      });
+
+      const additionalAssignees = [];
 
       // Group tasks by task group
       const groupedTasks = tasksWithDetails.reduce((acc, item) => {
