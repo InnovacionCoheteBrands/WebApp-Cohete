@@ -2,8 +2,22 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { grokService } from "./grok-integration";
+import cors from 'cors'; // Import the cors middleware
+import path from 'path';
 
 const app = express();
+const port = parseInt(process.env.PORT || "5000");
+
+// Configuración CORS mejorada para despliegue
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? [process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://localhost:5000']
+    : ['http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -60,10 +74,32 @@ app.use((req, res, next) => {
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = 5000;
 
   // Funcionalidad de streaming será implementada en una fase posterior
   // para garantizar primero la estabilidad de las funcionalidades principales
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  });
+
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('Server error:', err);
+    res.status(500).json({
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
+    });
+  });
+
+  // Catch-all handler for React routes
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ message: 'API endpoint not found' });
+    }
+    // Para rutas que no son API, servir la aplicación React
+    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+  });
 
   server.listen({
     port,
