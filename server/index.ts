@@ -9,13 +9,35 @@ const app = express();
 const port = parseInt(process.env.PORT || "5000");
 
 // Configuración CORS mejorada para despliegue
+const allowedOrigins = [];
+
+if (process.env.NODE_ENV === 'production') {
+  // Configuración para Replit deployment
+  if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+    allowedOrigins.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+  }
+  // Agregar el dominio actual del deployment
+  allowedOrigins.push(`https://${process.env.REPL_SLUG || 'localhost'}.replit.dev`);
+  allowedOrigins.push(`https://${process.env.REPL_ID || 'localhost'}.replit.app`);
+} else {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000');
+}
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? [process.env.REPL_SLUG ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co` : 'https://localhost:5000']
-    : ['http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000'],
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como mobile apps, postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With']
 }));
 
 app.use(express.json());
@@ -54,22 +76,56 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    res.status(status).json({ message });
-    throw err;
+    // Log detallado del error
+    console.error('Server Error:', {
+      error: err,
+      path: req.path,
+      method: req.method,
+      headers: req.headers,
+      body: req.body,
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(status).json({ 
+      message,
+      path: req.path,
+      timestamp: new Date().toISOString()
+    });
   });
+
+  // Configurar trust proxy para Replit
+  app.set('trust proxy', 1);
 
   // Add health check endpoint at the start
   app.get("/health", (_req, res) => {
-    res.status(200).send("OK");
+    res.status(200).json({ 
+      status: "OK", 
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development'
+    });
   });
 
-  // Siempre usar Vite en este entorno de Replit
-  // Independientemente de la variable NODE_ENV
-  await setupVite(app, server);
+  // Configuración específica para producción en Replit
+  if (process.env.NODE_ENV === 'production') {
+    // Servir archivos estáticos del build de producción
+    const staticPath = path.join(__dirname, '../client/dist');
+    app.use(express.static(staticPath));
+    
+    // Catch-all handler para React routes en producción
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api/')) {
+        return next(); // Dejar que las rutas API se manejen normalmente
+      }
+      res.sendFile(path.join(staticPath, 'index.html'));
+    });
+  } else {
+    // Usar Vite solo en desarrollo
+    await setupVite(app, server);
+  }
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
@@ -92,14 +148,7 @@ app.use((req, res, next) => {
     });
   });
 
-  // Catch-all handler for React routes
-  app.get('*', (req, res) => {
-    if (req.path.startsWith('/api/')) {
-      return res.status(404).json({ message: 'API endpoint not found' });
-    }
-    // Para rutas que no son API, servir la aplicación React
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-  });
+  
 
   server.listen({
     port,
