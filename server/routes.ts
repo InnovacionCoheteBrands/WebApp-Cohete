@@ -4121,5 +4121,148 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  // Update a specific task
+  app.patch('/api/tasks/:taskId', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const updates = req.body;
+      
+      // Update task in database
+      const updatedTask = await db.update(schema.tasks)
+        .set({
+          ...updates,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.tasks.id, taskId))
+        .returning();
+
+      if (updatedTask.length === 0) {
+        return res.status(404).json({ message: "Tarea no encontrada" });
+      }
+
+      // Log activity
+      if (req.user && req.user.id) {
+        await db.insert(schema.activityLog).values({
+          description: `Tarea actualizada: ${updatedTask[0].title}`,
+          taskId: taskId,
+          projectId: updatedTask[0].projectId,
+          userId: req.user.id
+        });
+      }
+
+      res.json(updatedTask[0]);
+    } catch (error) {
+      console.error('Error actualizando tarea:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Get task attachments
+  app.get('/api/tasks/:taskId/attachments', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const attachments = await db.select()
+        .from(schema.taskAttachments)
+        .where(eq(schema.taskAttachments.taskId, taskId))
+        .orderBy(desc(schema.taskAttachments.uploadedAt));
+
+      res.json(attachments);
+    } catch (error) {
+      console.error('Error obteniendo archivos adjuntos:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Upload task attachment
+  app.post('/api/tasks/:taskId/attachments', isAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No se proporcionó archivo" });
+      }
+
+      // Save attachment to database
+      const attachment = await db.insert(schema.taskAttachments).values({
+        fileName: req.file.originalname,
+        fileUrl: `/uploads/${req.file.filename}`,
+        taskId: taskId
+      }).returning();
+
+      // Log activity
+      if (req.user && req.user.id) {
+        const task = await db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).limit(1);
+        if (task.length > 0) {
+          await db.insert(schema.activityLog).values({
+            description: `Archivo adjunto añadido: ${req.file.originalname}`,
+            taskId: taskId,
+            projectId: task[0].projectId,
+            userId: req.user.id
+          });
+        }
+      }
+
+      res.status(201).json(attachment[0]);
+    } catch (error) {
+      console.error('Error subiendo archivo:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Get single task with details
+  app.get('/api/tasks/:taskId', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const taskWithDetails = await db.select({
+        id: schema.tasks.id,
+        title: schema.tasks.title,
+        description: schema.tasks.description,
+        status: schema.tasks.status,
+        priority: schema.tasks.priority,
+        assignedToId: schema.tasks.assignedToId,
+        dueDate: schema.tasks.dueDate,
+        createdAt: schema.tasks.createdAt,
+        updatedAt: schema.tasks.updatedAt,
+        assignedTo: {
+          id: schema.users.id,
+          fullName: schema.users.fullName,
+          username: schema.users.username
+        }
+      })
+      .from(schema.tasks)
+      .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
+      .where(eq(schema.tasks.id, taskId))
+      .limit(1);
+
+      if (taskWithDetails.length === 0) {
+        return res.status(404).json({ message: "Tarea no encontrada" });
+      }
+
+      res.json(taskWithDetails[0]);
+    } catch (error) {
+      console.error('Error obteniendo tarea:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
   return httpServer;
 }

@@ -26,7 +26,8 @@ async function runMigration() {
     for (const column of columnInfo) {
       if (column.data_type === 'integer') {
         console.log(`Updating ${column.column_name} from integer to varchar...`);
-        await sql`ALTER TABLE tasks ALTER COLUMN ${sql(column.column_name)} TYPE varchar USING ${sql(column.column_name)}::varchar`;
+        const columnName = column.column_name;
+        await sql`ALTER TABLE tasks ALTER COLUMN ${sql.unsafe(columnName)} TYPE varchar USING ${sql.unsafe(columnName)}::varchar`;
       }
     }
 
