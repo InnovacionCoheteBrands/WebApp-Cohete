@@ -9,7 +9,7 @@ const app = express();
 const port = parseInt(process.env.PORT || "5000");
 
 // Configuración CORS mejorada para despliegue
-const allowedOrigins = [];
+const allowedOrigins: string[] = [];
 
 if (process.env.NODE_ENV === 'production') {
   // Configuración para Replit deployment
@@ -74,87 +74,70 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  const server = await registerRoutes(app);
+  try {
+    const server = await registerRoutes(app);
 
-  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+    app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
+      const status = err.status || err.statusCode || 500;
+      const message = err.message || "Internal Server Error";
 
-    // Log detallado del error
-    console.error('Server Error:', {
-      error: err,
-      path: req.path,
-      method: req.method,
-      headers: req.headers,
-      body: req.body,
-      timestamp: new Date().toISOString()
+      // Log detallado del error
+      console.error('Server Error:', {
+        error: err,
+        path: req.path,
+        method: req.method,
+        headers: req.headers,
+        body: req.body,
+        timestamp: new Date().toISOString()
+      });
+
+      res.status(status).json({ 
+        message,
+        path: req.path,
+        timestamp: new Date().toISOString()
+      });
     });
 
-    res.status(status).json({ 
-      message,
-      path: req.path,
-      timestamp: new Date().toISOString()
+    // Configurar trust proxy para Replit
+    app.set('trust proxy', 1);
+
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
     });
-  });
 
-  // Configurar trust proxy para Replit
-  app.set('trust proxy', 1);
+    // Configuración específica para producción en Replit
+    if (process.env.NODE_ENV === 'production') {
+      // Servir archivos estáticos del build de producción
+      const staticPath = path.join(__dirname, '../client/dist');
+      app.use(express.static(staticPath));
+      
+      // Catch-all handler para React routes en producción
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api/')) {
+          return next(); // Dejar que las rutas API se manejen normalmente
+        }
+        res.sendFile(path.join(staticPath, 'index.html'));
+      });
+    } else {
+      // Usar Vite solo en desarrollo
+      await setupVite(app, server);
+    }
 
-  // Add health check endpoint at the start
-  app.get("/health", (_req, res) => {
-    res.status(200).json({ 
-      status: "OK", 
-      timestamp: new Date().toISOString(),
-      env: process.env.NODE_ENV || 'development'
+    // ALWAYS serve the app on port 5000
+    // this serves both the API and the client.
+    // It is the only port that is not firewalled.
+
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
     });
-  });
-
-  // Configuración específica para producción en Replit
-  if (process.env.NODE_ENV === 'production') {
-    // Servir archivos estáticos del build de producción
-    const staticPath = path.join(__dirname, '../client/dist');
-    app.use(express.static(staticPath));
     
-    // Catch-all handler para React routes en producción
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api/')) {
-        return next(); // Dejar que las rutas API se manejen normalmente
-      }
-      res.sendFile(path.join(staticPath, 'index.html'));
-    });
-  } else {
-    // Usar Vite solo en desarrollo
-    await setupVite(app, server);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
-
-  // Funcionalidad de streaming será implementada en una fase posterior
-  // para garantizar primero la estabilidad de las funcionalidades principales
-
-  // Health check endpoint
-  app.get('/health', (req, res) => {
-    res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
-  });
-
-  // Error handling middleware
-  app.use((err: any, req: any, res: any, next: any) => {
-    console.error('Server error:', err);
-    res.status(500).json({
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-    });
-  });
-
-  
-
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`serving on port ${port}`);
-  });
 })();
