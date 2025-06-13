@@ -16,6 +16,19 @@ import { Eye, Pencil, Plus } from "lucide-react";
 import { useState } from "react";
 import NewProjectModal from "@/components/projects/new-project-modal";
 
+type Project = {
+  id: number;
+  name: string;
+  client: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdBy?: number | null;
+};
+
 // Project status badges
 const StatusBadge = ({ status }: { status: string }) => {
   const getStatusProps = () => {
@@ -62,7 +75,7 @@ export default function RecentProjects() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Fetch projects
-  const { data: projects, isLoading, error } = useQuery({
+  const { data: projects, isLoading, error } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
     staleTime: 60000,
   });
@@ -119,7 +132,7 @@ export default function RecentProjects() {
                   </TableCell>
                 </TableRow>
               ) : (
-                recentProjects.map((project) => (
+                recentProjects.map((project: Project) => (
                   <TableRow key={project.id} className="border-b">
                     <TableCell className="whitespace-nowrap px-4 py-3 text-sm font-medium">
                       {project.name}
