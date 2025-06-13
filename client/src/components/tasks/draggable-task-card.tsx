@@ -20,10 +20,11 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from "@/components/ui/popover";
-import { Calendar, MoreHorizontal, Pencil, Trash2, UserCircle2 } from "lucide-react";
+import { Calendar, MoreHorizontal, Pencil, Trash2, UserCircle2, Eye } from "lucide-react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Task } from '@shared/schema';
+import { TaskDetailModal } from './task-detail-modal';
 
 interface DraggableTaskCardProps {
   task: Task;
@@ -78,6 +79,12 @@ export function DraggableTaskCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <TaskDetailModal taskId={task.id}>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    Ver detalles
+                  </DropdownMenuItem>
+                </TaskDetailModal>
                 <DropdownMenuItem onClick={() => onEdit(task.id)}>
                   <Pencil className="mr-2 h-4 w-4" />
                   Editar
