@@ -2,17 +2,34 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevenir scrollbars múltiples y horizontales */
+/* Eliminar completamente scrollbars de toda la aplicación */
 html, body {
-  overflow-x: hidden;
+  overflow: hidden;
   width: 100%;
+  height: 100%;
   max-width: 100vw;
+  max-height: 100vh;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar, 
+body::-webkit-scrollbar {
+  display: none;
 }
 
 #root {
-  overflow-x: hidden;
+  overflow: hidden;
   width: 100%;
+  height: 100vh;
   max-width: 100vw;
+  max-height: 100vh;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+#root::-webkit-scrollbar {
+  display: none;
 }
 
 /* Asegurar que todos los elementos respeten el ancho de pantalla */
@@ -20,8 +37,14 @@ html, body {
   box-sizing: border-box;
 }
 
-*:not(main):not([role="scrollbar"]) {
-  overflow-x: hidden;
+/* Eliminar scrollbars de todos los elementos por defecto */
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 /* Ocultar scrollbars pero mantener funcionalidad de scroll */

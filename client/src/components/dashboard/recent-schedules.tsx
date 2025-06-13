@@ -68,78 +68,65 @@ export default function RecentSchedules() {
   }
 
   return (
-    <div data-tour="recent-schedules">
-      <h2 className="mb-4 text-xl font-semibold">Recent Schedules</h2>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {schedules.map((schedule) => (
-          <Card key={schedule.id} className="shadow-sm">
-            <CardContent className="border-b p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">{schedule.name}</h3>
-                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-                  New
-                </Badge>
-              </div>
-              <p className="mt-1 text-sm text-muted-foreground">{schedule.project.client}</p>
-            </CardContent>
-            
-            <div className="space-y-3 p-4">
-              {/* Show placeholder if no entries are available */}
-              {!schedule.entries || schedule.entries.length === 0 ? (
-                <div className="flex items-center justify-center h-24 text-sm text-muted-foreground">
-                  Loading schedule entries...
+    <div className="h-full flex flex-col overflow-hidden" data-tour="recent-schedules">
+      <h2 className="mb-3 text-lg font-semibold flex-shrink-0">Recent Schedules</h2>
+      <div className="flex-1 overflow-hidden">
+        <div className="grid gap-3 grid-cols-1 h-full">
+          {schedules.slice(0, 2).map((schedule) => (
+            <Card key={schedule.id} className="shadow-sm h-fit">
+              <CardContent className="border-b p-3">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-sm truncate">{schedule.name}</h3>
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs">
+                    New
+                  </Badge>
                 </div>
-              ) : (
-                // Show first 2 entries from the schedule
-                schedule.entries.slice(0, 2).map((entry) => (
-                  <div key={entry.id} className="flex items-start gap-3 rounded-md border p-3">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                      <Calendar className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <div className="font-medium">{entry.title}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {format(parseISO(entry.postDate), "MMM d, yyyy")} • {entry.platform}
-                      </div>
-                      <div className="mt-2 text-xs">{entry.hashtags}</div>
-                    </div>
+                <p className="mt-1 text-xs text-muted-foreground">{schedule.project.client}</p>
+              </CardContent>
+              
+              <div className="space-y-2 p-3">
+                {/* Show placeholder if no entries are available */}
+                {!schedule.entries || schedule.entries.length === 0 ? (
+                  <div className="flex items-center justify-center h-16 text-xs text-muted-foreground">
+                    Loading schedule entries...
                   </div>
-                ))
-              )}
-            </div>
-            
-            <CardFooter className="flex items-center justify-between border-t p-4">
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=excel`, '_blank')}
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="text-xs">Excel</span>
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="flex items-center gap-1 text-muted-foreground hover:text-foreground"
-                  onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=pdf`, '_blank')}
-                >
-                  <Download className="h-4 w-4" />
-                  <span className="text-xs">PDF</span>
-                </Button>
+                ) : (
+                  // Show first entry from the schedule
+                  schedule.entries.slice(0, 1).map((entry) => (
+                    <div key={entry.id} className="flex items-start gap-2 rounded-md border p-2">
+                      <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Calendar className="h-3 w-3" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-xs truncate">{entry.title}</div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {format(parseISO(entry.postDate), "MMM d")} • {entry.platform}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground hidden sm:inline">
-                  {format(parseISO(schedule.createdAt), "MMM d, yyyy")}
-                </span>
+              
+              <CardFooter className="flex items-center justify-between border-t p-2">
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="flex items-center gap-1 text-muted-foreground hover:text-foreground h-6 px-2"
+                    onClick={() => window.open(`/api/schedules/${schedule.id}/download?format=excel`, '_blank')}
+                  >
+                    <Download className="h-3 w-3" />
+                    <span className="text-xs">Excel</span>
+                  </Button>
+                </div>
                 <Link href={`/projects/${schedule.project.id}?tab=workflows`}>
-                  <Button variant="secondary" size="sm">Ver</Button>
+                  <Button variant="secondary" size="sm" className="h-6 px-2 text-xs">Ver</Button>
                 </Link>
-              </div>
-            </CardFooter>
-          </Card>
-        ))}
+              </CardFooter>
+            </Card>
+          ))}
+        </div>
       </div>
     </div>
   );
