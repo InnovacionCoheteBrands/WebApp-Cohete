@@ -3604,6 +3604,50 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
   // ============ NUEVOS ENDPOINTS PARA SISTEMA MONDAY.COM ============
 
+  // Project Tasks API
+  app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      // Get tasks for the specific project
+      const tasks = await db.select().from(schema.tasks)
+        .where(eq(schema.tasks.projectId, projectId))
+        .orderBy(asc(schema.tasks.id));
+      
+      res.json(tasks);
+    } catch (error) {
+      console.error('Error fetching project tasks:', error);
+      res.status(500).json({ error: 'Failed to fetch project tasks' });
+    }
+  });
+
+  app.post("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const taskData = {
+        ...req.body,
+        projectId,
+        createdById: req.user.id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const [task] = await db.insert(schema.tasks)
+        .values(taskData)
+        .returning();
+      
+      res.status(201).json(task);
+    } catch (error) {
+      console.error('Error creating task:', error);
+      res.status(500).json({ error: 'Failed to create task' });
+    }
+  });
+
   // Task Groups CRUD
   app.get("/api/projects/:projectId/task-groups", isAuthenticated, async (req: Request, res: Response) => {
     try {
