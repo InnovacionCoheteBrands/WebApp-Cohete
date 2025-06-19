@@ -179,9 +179,8 @@ const TaskManager = () => {
 
   // Actualizar tarea
   const updateTaskMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const { id, ...taskData } = data;
-      const res = await apiRequest('PATCH', `/api/tasks/${id}`, taskData);
+    mutationFn: async ({ taskId, updates }: { taskId: number; updates: any }) => {
+      const res = await apiRequest('PATCH', `/api/tasks/${taskId}`, updates);
       return await res.json();
     },
     onSuccess: () => {
@@ -201,23 +200,7 @@ const TaskManager = () => {
     },
   });
 
-  // Actualizar tarea
-  const updateTaskMutation = useMutation({
-    mutationFn: async ({ taskId, updates }: { taskId: number; updates: any }) => {
-      const res = await apiRequest('PATCH', `/api/tasks/${taskId}`, updates);
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/projects', selectedProject, 'tasks'] });
-    },
-    onError: (error) => {
-      toast({
-        title: "Error al actualizar la tarea",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Eliminar tarea
   const deleteTaskMutation = useMutation({

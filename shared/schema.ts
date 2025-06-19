@@ -185,10 +185,7 @@ const tasksTable = {
   tags: text("tags").array(), // Etiquetas para categorizar tareas
   dueDate: timestamp("due_date"),
   completedAt: timestamp("completed_at"),
-  startDate: timestamp("start_date"), // Fecha de inicio para planificación Gantt
-  endDate: timestamp("end_date"), // Fecha de fin para planificación Gantt
   estimatedHours: integer("estimated_hours"),
-  actualHours: integer("actual_hours"), // Tiempo real dedicado a la tarea
   dependencies: integer("dependencies").array(), // IDs de tareas de las que depende
   parentTaskId: integer("parent_task_id"), // Referencia a la propia tabla de tareas
   progress: integer("progress").default(0), // Progreso de la tarea en porcentaje (0-100)
