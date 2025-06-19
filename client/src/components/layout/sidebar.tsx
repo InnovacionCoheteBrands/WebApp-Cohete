@@ -94,13 +94,14 @@ export function Sidebar({ open, onClose }: SidebarProps) {
               isActive={location === "/calendar-creator"} 
               onClick={onClose}
             />
-            <NavItem 
+            {/* Temporalmente oculto hasta implementar integraciones con redes sociales */}
+            {/* <NavItem 
               href="/analytics" 
               icon={<LineChart className="mr-2 h-5 w-5" />} 
               label="Analíticas" 
               isActive={location === "/analytics"} 
               onClick={onClose}
-            />
+            /> */}
             <NavItem 
               href="/project-manager" 
               icon={<ListChecks className="mr-2 h-5 w-5" />} 
