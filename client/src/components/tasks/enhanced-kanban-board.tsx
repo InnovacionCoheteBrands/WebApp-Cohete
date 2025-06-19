@@ -154,7 +154,7 @@ function SortableTaskCard({ task, users, onEdit, onDelete }: TaskCardProps) {
       {...listeners}
       className="cursor-grab active:cursor-grabbing"
     >
-      <Card className={`mb-3 hover:shadow-md transition-shadow ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
+      <Card className={`mb-3 ${isOverdue ? 'border-red-300 bg-red-50' : ''}`}>
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between">
             <CardTitle className="text-sm font-medium line-clamp-2">

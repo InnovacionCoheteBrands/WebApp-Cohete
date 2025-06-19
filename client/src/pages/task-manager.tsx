@@ -1145,7 +1145,7 @@ const TaskCard = ({
   const assignedUser = users.find(user => user.id === task.assignedToId);
   
   return (
-    <Card className={`${task.aiGenerated ? 'border-blue-200 bg-blue-50' : ''}`}>
+    <Card className={task.aiGenerated ? 'border-blue-200 bg-blue-50' : ''}>
       <CardHeader className="pb-2">
         <div className="flex justify-between">
           <div className="flex gap-2">
