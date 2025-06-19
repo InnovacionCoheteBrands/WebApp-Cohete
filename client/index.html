@@ -5,14 +5,28 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <!-- Script simple para suprimir mensajes DOMException -->
     <script>
-      // Solo interceptar errores específicos de WebSocket DOMException
+      // Interceptar errores específicos de WebSocket DOMException
       window.addEventListener('unhandledrejection', function(event) {
-        // Si el rechazo proviene de una DOMException, suprimirlo discretamente
+        // Verificar si es un error de DOMException relacionado con WebSocket/Vite
         if (event.reason && 
             (event.reason.name === 'DOMException' || 
-             (event.reason.toString && event.reason.toString().includes('DOMException')))
+             (event.reason.toString && event.reason.toString().includes('DOMException')) ||
+             (event.reason.message && event.reason.message.includes('WebSocket')) ||
+             (event.reason.code === 11) // INVALID_STATE_ERR
+            )
         ) {
           // Evitar que aparezca en la consola
+          event.preventDefault();
+        }
+      });
+
+      // También interceptar errores generales que puedan escapar
+      window.addEventListener('error', function(event) {
+        if (event.error && 
+            (event.error.name === 'DOMException' ||
+             (event.error.message && event.error.message.includes('WebSocket'))
+            )
+        ) {
           event.preventDefault();
         }
       });
