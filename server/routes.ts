@@ -3939,8 +3939,23 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
   // Enhanced Tasks endpoint with groups and assignees
   app.get("/api/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // Get tasks from all projects - simplified query to avoid type conflicts
-      const tasks = await db.select().from(schema.tasks).orderBy(asc(schema.tasks.id));
+      // Get tasks from all projects with only existing columns
+      const tasks = await db.select({
+        id: schema.tasks.id,
+        projectId: schema.tasks.projectId,
+        title: schema.tasks.title,
+        description: schema.tasks.description,
+        status: schema.tasks.status,
+        priority: schema.tasks.priority,
+        progress: schema.tasks.progress,
+        dueDate: schema.tasks.dueDate,
+        tags: schema.tasks.tags,
+        groupId: schema.tasks.groupId,
+        createdById: schema.tasks.createdById,
+        assignedToId: schema.tasks.assignedToId,
+        createdAt: schema.tasks.createdAt,
+        updatedAt: schema.tasks.updatedAt,
+      }).from(schema.tasks).orderBy(asc(schema.tasks.id));
 
       // Get task groups separately
       const taskGroups = await db.select().from(schema.taskGroups);
@@ -3955,7 +3970,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       const tasksWithDetails = tasks.map(task => {
         const group = taskGroups.find(g => g.id === task.groupId);
         const project = projects.find(p => p.id === task.projectId);
-        const assignee = users.find(u => u.id === task.createdById);
+        const assignee = users.find(u => u.id === task.assignedToId || u.id === task.createdById);
 
         return {
           task: {
@@ -3970,7 +3985,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             tags: task.tags,
             groupId: task.groupId,
             createdById: task.createdById,
+            assignedToId: task.assignedToId,
             createdAt: task.createdAt,
+            updatedAt: task.updatedAt,
           },
           group: group ? {
             id: group.id,
@@ -3994,8 +4011,6 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         };
       });
 
-      const additionalAssignees = [];
-
       // Group tasks by task group
       const groupedTasks = tasksWithDetails.reduce((acc, item) => {
         const groupId = item.group?.id || 'ungrouped';
@@ -4009,7 +4024,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         const task = {
           ...item.task,
           assignee: item.assignee,
-          additionalAssignees: additionalAssignees.filter(a => a.taskId === item.task.id).map(a => a.user)
+          additionalAssignees: []
         };
         
         acc[groupId].tasks.push(task);

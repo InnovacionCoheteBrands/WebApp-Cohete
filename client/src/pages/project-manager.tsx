@@ -92,9 +92,21 @@ export default function ProjectManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Consulta para obtener todas las tareas con detalles
+  // Obtener tareas agrupadas
   const { data: tasksData = [], isLoading } = useQuery<TaskWithDetails[]>({
     queryKey: ['/api/tasks-with-groups'],
+    queryFn: async () => {
+      const response = await fetch('/api/tasks-with-groups', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error al obtener tareas: ${errorText}`);
+      }
+      return response.json();
+    },
+    retry: 1,
+    staleTime: 30000, // 30 seconds
   });
 
   // Consulta para obtener todos los proyectos
@@ -157,7 +169,7 @@ export default function ProjectManager() {
                          item.project?.client?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || item.task?.status === filterStatus;
     const matchesProject = filterProject === 'all' || item.task?.projectId?.toString() === filterProject;
-    
+
     return matchesSearch && matchesStatus && matchesProject;
   });
 
@@ -232,7 +244,7 @@ export default function ProjectManager() {
                 />
               </div>
             </div>
-            
+
             <Select value={filterStatus} onValueChange={setFilterStatus}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Estado" />
@@ -277,7 +289,7 @@ export default function ProjectManager() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -291,7 +303,7 @@ export default function ProjectManager() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -305,7 +317,7 @@ export default function ProjectManager() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -370,7 +382,7 @@ export default function ProjectManager() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       {item.task.progress > 0 && (
                         <div className="w-24">
@@ -378,7 +390,7 @@ export default function ProjectManager() {
                           <p className="text-xs text-gray-600 mt-1">{item.task.progress}%</p>
                         </div>
                       )}
-                      
+
                       {item.assignee && (
                         <Avatar className="w-8 h-8">
                           <AvatarImage src={item.assignee.profileImage} />
@@ -387,14 +399,14 @@ export default function ProjectManager() {
                           </AvatarFallback>
                         </Avatar>
                       )}
-                      
+
                       {item.task.dueDate && (
                         <div className="text-sm text-gray-600">
                           <Calendar className="w-4 h-4 inline mr-1" />
                           {new Date(item.task.dueDate).toLocaleDateString()}
                         </div>
                       )}
-                      
+
                       <Button variant="ghost" size="sm">
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
@@ -405,7 +417,7 @@ export default function ProjectManager() {
             </CardContent>
           </Card>
         ))}
-        
+
         {filteredTasks.length === 0 && (
           <Card>
             <CardContent className="p-8 text-center">

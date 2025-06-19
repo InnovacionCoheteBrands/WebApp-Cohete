@@ -6,7 +6,7 @@ async function throwIfResNotOk(res: Response) {
       // Clonar la respuesta para poder leerla múltiples veces si es necesario
       const resClone = res.clone();
       const contentType = res.headers.get('content-type');
-      
+
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await res.json();
@@ -32,28 +32,31 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
   url: string,
-  data?: unknown | undefined,
-  options?: { isFormData?: boolean },
+  data?: any
 ): Promise<Response> {
-  const isFormData = options?.isFormData || false;
-  
-  // No establecer Content-Type para FormData, el navegador lo configurará automáticamente con boundary
-  const headers: HeadersInit = {};
-  if (data && !isFormData) {
-    headers["Content-Type"] = "application/json";
-  }
-  
-  const res = await fetch(url, {
+  const config: RequestInit = {
     method,
-    headers,
-    body: data ? (isFormData ? data as FormData : JSON.stringify(data)) : undefined,
-    credentials: "include",
-  });
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  };
 
-  await throwIfResNotOk(res);
-  return res;
+  if (data && method !== 'GET') {
+    config.body = JSON.stringify(data);
+  }
+
+  console.log(`Requesting URL:`, url);
+  const response = await fetch(url, config);
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+  }
+
+  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -64,7 +67,7 @@ export const getQueryFn: <T>(options: {
   async ({ queryKey }) => {
     // Convert queryKey to a URL string
     let url: string;
-    
+
     if (typeof queryKey[0] === 'string' && queryKey[0].startsWith('/api/')) {
       // First element is already the base URL
       if (queryKey.length > 1) {
@@ -73,7 +76,7 @@ export const getQueryFn: <T>(options: {
         const additionalSegments = queryKey.slice(1)
           .filter(segment => segment !== undefined && segment !== null)
           .map(segment => encodeURIComponent(String(segment)));
-        
+
         // Join with proper separators
         url = additionalSegments.length > 0 
           ? `${baseUrl}/${additionalSegments.join('/')}` 
@@ -88,7 +91,7 @@ export const getQueryFn: <T>(options: {
         .filter(segment => segment !== undefined && segment !== null)
         .map(segment => encodeURIComponent(String(segment)))
         .join('/');
-      
+
       // Ensure we have a leading slash
       if (!url.startsWith('/')) {
         url = '/' + url;
@@ -97,9 +100,9 @@ export const getQueryFn: <T>(options: {
       // Just use first element as string
       url = String(queryKey[0]);
     }
-    
+
     console.log('Requesting URL:', url);
-    
+
     const res = await fetch(url, {
       credentials: "include",
     });
@@ -122,14 +125,32 @@ export const getQueryFn: <T>(options: {
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: 60 * 1000, // 1 minuto de tiempo de vida - para que los datos se refresquen periódicamente
-      retry: 1, // Intentar una vez más en caso de fallos
-    },
-    mutations: {
-      retry: false,
+      queryFn: async ({ queryKey, signal }) => {
+        const url = queryKey[0] as string;
+        console.log(`Fetching: ${url}`);
+        try {
+          const response = await fetch(url, {
+            signal,
+            credentials: 'include',
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log(`Successful response data:`, url, data);
+          return data;
+        } catch (error) {
+          console.log(`Error in query execution:`, url, error);
+          throw error;
+        }
+      },
+      retry: (failureCount, error: any) => {
+        console.log(`Query failed (attempt ${failureCount}):`, error?.message || error);
+        return failureCount < 3;
+      },
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });

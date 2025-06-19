@@ -336,10 +336,17 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
 
   // Obtener grupos de tareas con tareas incluidas
   const { data: groupedTasks, isLoading: isLoadingTasks } = useQuery({
-    queryKey: ['/api/projects', projectId, 'tasks-with-groups'],
+    queryKey: ['/api/tasks-with-groups'],
     queryFn: async () => {
-      const res = await apiRequest('GET', `/api/projects/${projectId}/tasks-with-groups`);
-      return await res.json() as GroupedTasks[];
+      const response = await fetch('/api/tasks-with-groups', {
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      return await response.json() as GroupedTasks[];
     },
   });
 
