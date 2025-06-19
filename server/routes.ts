@@ -3648,6 +3648,35 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  app.patch("/api/tasks/:taskId", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const taskId = parseInt(req.params.taskId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const updateData = {
+        ...req.body,
+        updatedAt: new Date(),
+      };
+
+      const [updatedTask] = await db.update(schema.tasks)
+        .set(updateData)
+        .where(eq(schema.tasks.id, taskId))
+        .returning();
+      
+      if (!updatedTask) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      res.json(updatedTask);
+    } catch (error) {
+      console.error('Error updating task:', error);
+      res.status(500).json({ error: 'Failed to update task' });
+    }
+  });
+
   // Task Groups CRUD
   app.get("/api/projects/:projectId/task-groups", isAuthenticated, async (req: Request, res: Response) => {
     try {

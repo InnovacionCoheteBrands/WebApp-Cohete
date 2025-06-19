@@ -79,6 +79,7 @@ import { es } from 'date-fns/locale';
 
 // Importaciones para los componentes de Kanban
 import { TaskForm } from '@/components/tasks/task-form';
+import { CreateTaskDialog } from '@/components/tasks/create-task-dialog';
 import { 
   DndContext, 
   DragOverlay, 
@@ -95,6 +96,7 @@ import {
   sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
 import { KanbanBoard } from '@/components/tasks/kanban-board';
+import { EnhancedKanbanBoard } from '@/components/tasks/enhanced-kanban-board';
 
 // Definir el esquema de validación para crear/editar tareas
 const taskSchema = z.object({
@@ -189,6 +191,24 @@ const TaskManager = () => {
       });
       queryClient.invalidateQueries({ queryKey: ['/api/projects', selectedProject, 'tasks'] });
       setIsEditTaskDialogOpen(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al actualizar la tarea",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Actualizar tarea
+  const updateTaskMutation = useMutation({
+    mutationFn: async ({ taskId, updates }: { taskId: number; updates: any }) => {
+      const res = await apiRequest('PATCH', `/api/tasks/${taskId}`, updates);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/projects', selectedProject, 'tasks'] });
     },
     onError: (error) => {
       toast({
@@ -431,14 +451,14 @@ const TaskManager = () => {
               </SelectContent>
             </Select>
   
-            <Button
-              variant="default"
-              onClick={() => setIsNewTaskDialogOpen(true)}
-              disabled={!selectedProject}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nueva Tarea
-            </Button>
+            {selectedProject && (
+              <CreateTaskDialog projectId={selectedProject}>
+                <Button variant="default">
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Nueva Tarea
+                </Button>
+              </CreateTaskDialog>
+            )}
   
             <Button
               variant="outline"
@@ -570,22 +590,20 @@ const TaskManager = () => {
           {/* Vista Kanban */}
           {activeView === 'kanban' && (
             <div className="kanban-board h-[calc(100vh-250px)]">
-              <KanbanBoard
+              <EnhancedKanbanBoard
                 tasks={tasks}
                 users={users}
-                onTaskMove={(taskId: number, newStatus: string, newGroup: string) => {
-                  const updateData: any = { id: taskId };
-                  
-                  if (newStatus) updateData.status = newStatus;
-                  if (newGroup) updateData.taskGroup = newGroup;
-                  
-                  updateTaskMutation.mutate(updateData);
-                }}
-                onEditTask={handleEditTask}
-                onDeleteTask={(id: number) => {
+                onEdit={handleEditTask}
+                onDelete={(taskId: number) => {
                   if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
-                    deleteTaskMutation.mutate(id);
+                    deleteTaskMutation.mutate(taskId);
                   }
+                }}
+                onUpdateTaskStatus={(taskId: number, newStatus: string) => {
+                  updateTaskMutation.mutate({
+                    taskId,
+                    updates: { status: newStatus }
+                  });
                 }}
                 groupBy={groupBy === 'assignee' ? 'assignee' : (groupBy === 'priority' ? 'priority' : 'status')}
               />
