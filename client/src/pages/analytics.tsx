@@ -268,42 +268,42 @@ export default function AnalyticsPage() {
           <TabsContent value="overview" className="space-y-6">
             {/* Métricas Principales */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
+              <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-md font-medium text-muted-foreground dark:text-slate-400">Total Publicaciones</CardTitle>
+                  <CardTitle className="text-md font-medium text-muted-foreground">Total Publicaciones</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold dark:text-white">{formatNumber(data.totalPosts)}</div>
-                    <div className="p-2 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                    <div className="text-3xl font-bold">{formatNumber(data.totalPosts)}</div>
+                    <div className="p-2 rounded-full bg-blue-100 text-blue-700">
                       <Calendar className="h-5 w-5" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
+              <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-md font-medium text-muted-foreground dark:text-slate-400">Engagement Total</CardTitle>
+                  <CardTitle className="text-md font-medium text-muted-foreground">Engagement Total</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold dark:text-white">{formatNumber(data.performance.engagement)}</div>
-                    <div className="p-2 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                    <div className="text-3xl font-bold">{formatNumber(data.performance.engagement)}</div>
+                    <div className="p-2 rounded-full bg-amber-100 text-amber-700">
                       <ArrowUpRight className="h-5 w-5" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
               
-              <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
+              <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-md font-medium text-muted-foreground dark:text-slate-400">Impresiones</CardTitle>
+                  <CardTitle className="text-md font-medium text-muted-foreground">Impresiones</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between">
-                    <div className="text-3xl font-bold dark:text-white">{formatNumber(data.performance.impressions)}</div>
-                    <div className="p-2 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                    <div className="text-3xl font-bold">{formatNumber(data.performance.impressions)}</div>
+                    <div className="p-2 rounded-full bg-green-100 text-green-700">
                       <BarChart4 className="h-5 w-5" />
                     </div>
                   </div>
@@ -312,7 +312,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Distribución de tiempo */}
-            <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -362,7 +362,7 @@ export default function AnalyticsPage() {
 
           {/* Distribución de Tipos de Contenido */}
           <TabsContent value="content" className="space-y-6">
-            <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <PieChart className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -430,7 +430,7 @@ export default function AnalyticsPage() {
 
           {/* Tendencias */}
           <TabsContent value="trends" className="space-y-6">
-            <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
+            <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
