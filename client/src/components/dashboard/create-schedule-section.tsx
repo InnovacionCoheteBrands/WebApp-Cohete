@@ -137,10 +137,10 @@ export default function CreateScheduleSection() {
       });
       return;
     }
-    
+
     createScheduleMutation.mutate(values);
   };
-  
+
   // Format date for display
   const formatDate = (dateString: string) => {
     try {
@@ -150,7 +150,7 @@ export default function CreateScheduleSection() {
       return dateString;
     }
   };
-  
+
   // Función para manejar la entrada en modo revisión
   const handleEnterReviewMode = () => {
     setIsReviewMode(true);
@@ -163,7 +163,7 @@ export default function CreateScheduleSection() {
       description: "Puedes agregar comentarios generales o específicos para cada publicación",
     });
   };
-  
+
   // Función para manejar la salida del modo revisión
   const handleExitReviewMode = () => {
     setIsReviewMode(false);
@@ -172,7 +172,7 @@ export default function CreateScheduleSection() {
       description: "Has salido del modo de revisión",
     });
   };
-  
+
   // Función para actualizar los comentarios generales
   const handleGeneralCommentsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setReviewComments((prev) => ({
@@ -180,7 +180,7 @@ export default function CreateScheduleSection() {
       generalComments: e.target.value
     }));
   };
-  
+
   // Función para actualizar los comentarios específicos de una entrada
   const handleEntryCommentChange = (entryId: number, comment: string) => {
     setReviewComments((prev) => ({
@@ -191,7 +191,7 @@ export default function CreateScheduleSection() {
       }
     }));
   };
-  
+
   // Función para enviar los comentarios de revisión
   const handleSubmitReview = async () => {
     try {
@@ -269,13 +269,18 @@ export default function CreateScheduleSection() {
                             <FormControl>
                               <Button
                                 variant="outline"
-                                className="w-full h-11 pl-10 justify-start text-left font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                                className="w-full h-11 justify-start text-left font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
                               >
-                                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
                                 {field.value ? (
-                                  format(new Date(field.value), "dd 'de' MMMM 'de' yyyy", { locale: es })
+                                  <span className="flex items-center gap-2">
+                                    <CalendarIcon className="h-4 w-4 text-primary dark:text-[#65cef5]" />
+                                    {format(new Date(field.value), "dd 'de' MMMM 'de' yyyy", { locale: es })}
+                                  </span>
                                 ) : (
-                                  <span className="text-muted-foreground">Selecciona una fecha</span>
+                                  <span className="text-muted-foreground flex items-center gap-2">
+                                    <CalendarIcon className="h-4 w-4" />
+                                    Elige la fecha de inicio
+                                  </span>
                                 )}
                               </Button>
                             </FormControl>
@@ -314,9 +319,9 @@ export default function CreateScheduleSection() {
                       </FormItem>
                     )}
                   />
-                  
+
                   {/* Campo additionalInstructions removido - ahora estará en la vista de detalle del cronograma */}
-                  
+
                   {/* La sección de selección de modelo de IA ha sido eliminada */}
 
                   <Button 
@@ -344,7 +349,7 @@ export default function CreateScheduleSection() {
                 <p className="text-muted-foreground leading-relaxed dark:text-slate-400">
                   Selecciona un proyecto y genera un calendario de publicaciones optimizado con nuestra tecnología de IA.
                 </p>
-                
+
                 <div className="rounded-lg bg-gray-50 p-4 border border-gray-100 shadow-sm dark:bg-[#2a3349] dark:border-[#3e4a6d]">
                   <h4 className="font-medium text-primary mb-2 dark:text-[#65cef5]">Tu calendario incluirá:</h4>
                   <ul className="space-y-2">
@@ -362,7 +367,7 @@ export default function CreateScheduleSection() {
                     ))}
                   </ul>
                 </div>
-                
+
                 <p className="italic text-muted-foreground text-xs border-l-2 border-primary/20 pl-3 dark:text-slate-400 dark:border-[#65cef5]/30">
                   La IA analizará los datos de tu proyecto para crear un calendario personalizado que se alinee perfectamente con tus objetivos de marketing.
                 </p>
@@ -371,13 +376,13 @@ export default function CreateScheduleSection() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* Tabla de cronograma generado */}
       {generatedSchedule && generatedSchedule.entries.length > 0 && (
         <Card className="shadow-lg overflow-hidden border-none relative light-gradient-bg dark:bg-gradient-to-br dark:from-[#1a1d2d] dark:to-[#141825] dark:border dark:border-[#2a3349]">
           <div className="absolute top-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full -ml-32 -mt-32 blur-3xl dark:bg-blue-500/5"></div>
           <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mb-32 blur-3xl dark:bg-[#65cef5]/5"></div>
-          
+
           <CardContent className="p-8 relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
               <div className="space-y-1">
@@ -391,7 +396,7 @@ export default function CreateScheduleSection() {
                   Calendario generado el {new Date().toLocaleDateString()}
                 </p>
               </div>
-              
+
               <div className="flex flex-wrap items-center gap-2">
                 <Button 
                   variant="default" 
@@ -436,7 +441,7 @@ export default function CreateScheduleSection() {
                 </Badge>
               </div>
             </div>
-            
+
             <ScrollArea className="h-[450px] rounded-xl border shadow-sm overflow-hidden dark:border-[#3e4a6d] dark:shadow-[0_0_15px_rgba(0,0,0,0.2)]">
               <Table>
                 <TableHeader className="bg-card shadow-sm dark:bg-[#1e293b] dark:shadow-[0_1px_2px_rgba(0,0,0,0.2)]">
@@ -521,7 +526,7 @@ export default function CreateScheduleSection() {
                 </TableBody>
               </Table>
             </ScrollArea>
-            
+
             {/* Sección de revisión y comentarios */}
             {isReviewMode && (
               <div className="mt-8 space-y-4">
@@ -537,7 +542,7 @@ export default function CreateScheduleSection() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
                     {/* Comentarios generales */}
                     <div>
@@ -553,14 +558,14 @@ export default function CreateScheduleSection() {
                         className="w-full resize-none border-amber-300 focus:border-amber-500 focus:ring-amber-500 dark:border-amber-800/50 dark:bg-[#1e293b] dark:text-white dark:focus:border-amber-600 dark:focus:ring-amber-600"
                       />
                     </div>
-                    
+
                     {/* Comentarios específicos para cada entrada */}
                     <div className="space-y-3">
                       <h4 className="text-sm font-medium text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
                         <Edit className="h-4 w-4" />
                         Comentarios Específicos por Publicación
                       </h4>
-                      
+
                       <Accordion type="single" collapsible className="w-full">
                         {generatedSchedule.entries.map((entry) => (
                           <AccordionItem 
@@ -603,7 +608,7 @@ export default function CreateScheduleSection() {
                       </Accordion>
                     </div>
                   </div>
-                  
+
                   {/* Botones de acción */}
                   <div className="mt-5 flex justify-end gap-3">
                     <Button 
