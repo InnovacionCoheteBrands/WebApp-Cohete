@@ -300,8 +300,8 @@ const TaskManager = () => {
   // Cambiar el estado de una tarea
   const handleStatusChange = (taskId: number, newStatus: string) => {
     updateTaskMutation.mutate({
-      id: taskId,
-      status: newStatus,
+      taskId: taskId,
+      updates: { status: newStatus },
     });
   };
 
@@ -588,7 +588,6 @@ const TaskManager = () => {
                     updates: { status: newStatus }
                   });
                 }}
-                groupBy={groupBy === 'assignee' ? 'assignee' : (groupBy === 'priority' ? 'priority' : 'status')}
               />
             </div>
           )}
@@ -940,7 +939,7 @@ const TaskManager = () => {
           </DialogHeader>
           
           <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit((data) => updateTaskMutation.mutate({ id: selectedTask.id, ...data }))} className="space-y-4">
+            <form onSubmit={editForm.handleSubmit((data) => updateTaskMutation.mutate({ taskId: selectedTask.id, updates: data }))} className="space-y-4">
               <FormField
                 control={editForm.control}
                 name="title"
