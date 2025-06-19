@@ -17,7 +17,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { CalendarIcon, Clock, Share2, Download, CheckCircle, Edit, AlertCircle, ThumbsUp, Sparkles } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Tipo para las entradas del horario
 type ScheduleEntry = {
@@ -261,21 +264,33 @@ export default function CreateScheduleSection() {
                     render={({ field }) => (
                       <FormItem className="space-y-2">
                         <FormLabel className="text-sm font-medium dark:text-slate-300">Fecha de Inicio</FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input 
-                              type="date" 
-                              className="h-11 pl-10 transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]" 
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  field.onChange(e.target.value);
-                                }
-                              }}
-                              value={field.value || ''}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                className="w-full h-11 pl-10 justify-start text-left font-normal transition-all duration-200 hover:border-primary dark:border-[#3e4a6d] dark:bg-[#1e293b] dark:text-white dark:hover:border-[#65cef5]"
+                              >
+                                <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
+                                {field.value ? (
+                                  format(new Date(field.value), "dd 'de' MMMM 'de' yyyy", { locale: es })
+                                ) : (
+                                  <span className="text-muted-foreground">Selecciona una fecha</span>
+                                )}
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0 dark:bg-[#1e293b] dark:border-[#3e4a6d]" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value ? new Date(field.value) : undefined}
+                              onSelect={(date) => field.onChange(date ? format(date, "yyyy-MM-dd") : "")}
+                              disabled={(date) => date < new Date("1900-01-01")}
+                              initialFocus
+                              locale={es}
                             />
-                          </FormControl>
-                          <CalendarIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground dark:text-slate-400" />
-                        </div>
+                          </PopoverContent>
+                        </Popover>
                         <FormMessage />
                       </FormItem>
                     )}
