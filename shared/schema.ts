@@ -34,27 +34,31 @@ export const sessions = pgTable(
 );
 
 // Users Table - Updated for OAuth support
-export const users = pgTable('users', {
-  id: varchar('id', { length: 255 }).primaryKey(),
-  fullName: varchar('full_name', { length: 255 }).notNull(),
-  username: varchar('username', { length: 255 }).unique().notNull(),
-  email: varchar('email', { length: 255 }).unique(),
-  password: varchar('password', { length: 255 }),
-  isPrimary: boolean('is_primary').default(false),
-  role: varchar('role', { length: 50 }).default('user'),
-  bio: text('bio'),
-  profileImage: text('profile_image'),
-  coverImage: text('cover_image'),
-  jobTitle: varchar('job_title', { length: 255 }),
-  department: varchar('department', { length: 255 }),
-  phoneNumber: varchar('phone_number', { length: 50 }),
-  customFields: jsonb('custom_fields').default([]),
-  lastLogin: timestamp('last_login'),
-  firstName: varchar('first_name', { length: 255 }),
-  lastName: varchar('last_name', { length: 255 }),
-  profileImageUrl: text('profile_image_url'),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(), // Changed to varchar for OAuth IDs
+  fullName: text("full_name").notNull(),
+  username: text("username").notNull().unique(),
+  email: text("email").unique(), // Added email field for OAuth
+  password: text("password"), // Made optional for OAuth users
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  role: userRoleEnum("role").default('content_creator'),
+  bio: text("bio"),
+  profileImage: text("profile_image"),
+  coverImage: text("cover_image"),
+  nickname: text("nickname"),
+  jobTitle: text("job_title"),
+  department: text("department"),
+  phoneNumber: text("phone_number"),
+  preferredLanguage: text("preferred_language").default("es"),
+  theme: text("theme").default("light"),
+  customFields: jsonb("custom_fields").default([]),
+  lastLogin: timestamp("last_login"),
+  // OAuth fields
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  profileImageUrl: text("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Projects Table
