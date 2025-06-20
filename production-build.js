@@ -17,18 +17,14 @@ async function productionBuild() {
       entryPoints: [join(__dirname, 'server/index.ts')],
       bundle: true,
       platform: 'node',
-      format: 'esm',
+      format: 'cjs',
       outfile: 'dist/index.js',
       external: [
         // Only externalize native binary modules that can't be bundled
         'pg-native',
         'bufferutil',
         'utf-8-validate',
-        'fsevents',
-        'lightningcss',
-        '@babel/preset-typescript',
-        'esbuild',
-        'vite'
+        'fsevents'
       ],
       target: 'node18',
       minify: false,
@@ -41,17 +37,6 @@ async function productionBuild() {
         '.ts': 'ts',
         '.js': 'js'
       },
-      banner: {
-        js: `
-import { createRequire } from 'module';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-const require = createRequire(import.meta.url);
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-        `.trim()
-      },
-
       logLevel: 'info'
     });
 
@@ -59,7 +44,6 @@ const __dirname = dirname(__filename);
     const prodPackageJson = {
       name: "rest-express-production",
       version: "1.0.0",
-      type: "module",
       scripts: {
         start: "NODE_ENV=production node index.js"
       },
