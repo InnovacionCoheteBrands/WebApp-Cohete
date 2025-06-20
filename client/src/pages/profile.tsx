@@ -315,7 +315,7 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <User className="h-12 w-12 text-muted-foreground" />
+                      <User className="h-16 w-16 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -325,7 +325,7 @@ export default function ProfilePage() {
                   <DialogTrigger asChild>
                     <Button
                       size="icon"
-                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg border-2 border-background"
                     >
                       <Camera className="h-4 w-4" />
                     </Button>
