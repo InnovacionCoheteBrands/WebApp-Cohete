@@ -13,7 +13,11 @@ export function useProfile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateProfile) => {
-      const res = await apiRequest("PATCH", "/api/user/profile", data);
+      const res = await apiRequest("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al actualizar el perfil");
@@ -40,7 +44,11 @@ export function useProfile() {
 
   const changePasswordMutation = useMutation({
     mutationFn: async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
-      const res = await apiRequest("POST", "/api/profile/change-password", { currentPassword, newPassword });
+      const res = await apiRequest("/api/profile/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al cambiar la contraseña");
