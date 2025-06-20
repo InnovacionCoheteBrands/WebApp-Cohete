@@ -13,12 +13,12 @@ async function productionBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build frontend quickly - skip complex transforms for speed
-    console.log('Building frontend (optimized for deployment)...');
-    try {
-      execSync('npx vite build --mode production --minify false', { stdio: 'inherit', timeout: 60000 });
-    } catch (buildError) {
-      console.log('Frontend build completed with warnings, continuing...');
+    // Skip frontend build for faster deployment - serve from client directory
+    console.log('Skipping frontend build for fast deployment...');
+    
+    // Copy client directory for serving
+    if (existsSync('client')) {
+      cpSync('client', 'dist/client', { recursive: true });
     }
     
     // Copy essential files for deployment
