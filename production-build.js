@@ -18,7 +18,7 @@ async function productionBuild() {
       bundle: true,
       platform: 'node',
       format: 'esm',
-      outfile: 'dist/server.js',
+      outfile: 'dist/index.js',
       external: [
         // Only externalize native binary modules that can't be bundled
         'pg-native',
@@ -61,7 +61,7 @@ const __dirname = dirname(__filename);
       version: "1.0.0",
       type: "module",
       scripts: {
-        start: "node server.js"
+        start: "NODE_ENV=production node index.js"
       },
       dependencies: {
         // Only include dependencies that can't be bundled
@@ -73,7 +73,7 @@ const __dirname = dirname(__filename);
     
     console.log('✅ Production build completed successfully!');
     console.log('📦 All dependencies (cors, express, drizzle-orm, etc.) are bundled');
-    console.log('🚀 Deploy with: cd dist && npm install && npm start');
+    console.log('🚀 Ready for deployment - will use npm start in production');
     
   } catch (error) {
     console.error('❌ Production build failed:', error.message);
