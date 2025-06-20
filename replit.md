@@ -107,9 +107,10 @@ Cohete Workflow is a comprehensive project management platform designed specific
 
 ### Replit Deployment
 - **Modules**: nodejs-20, web, postgresql-16
-- **Build Command**: `npm run build`
-- **Start Command**: `npm run dev`
+- **Build Command**: `node production-build.js`
+- **Start Command**: `npm start`
 - **Port Configuration**: 5000 (internal) → 80 (external)
+- **Production Bundle**: All dependencies bundled into single file
 
 ## Changelog
 - June 13, 2025. Initial setup
