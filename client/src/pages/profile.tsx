@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -5,10 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Camera, Upload, User, Save, Loader2 } from "lucide-react";
+import { Camera, Upload, User, Save, Loader2, Settings, Palette, Bell, Shield, Plus, X, Globe, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 // Import avatars from assets
 import astronaut1 from "@assets/Image_fx (81)_1750440002891.jpg";
@@ -27,6 +33,35 @@ const preloadedAvatars = [
   { id: 6, name: "Astronauta Rosa", src: astronaut6 },
 ];
 
+const languageOptions = [
+  { value: "es", label: "Español" },
+  { value: "en", label: "English" },
+  { value: "fr", label: "Français" },
+  { value: "de", label: "Deutsch" },
+  { value: "pt", label: "Português" },
+];
+
+const timezoneOptions = [
+  { value: "America/Mexico_City", label: "México Central" },
+  { value: "America/New_York", label: "Este (Nueva York)" },
+  { value: "America/Los_Angeles", label: "Pacífico (Los Ángeles)" },
+  { value: "Europe/Madrid", label: "Madrid" },
+  { value: "Europe/London", label: "Londres" },
+];
+
+const themeOptions = [
+  { value: "light", label: "Claro" },
+  { value: "dark", label: "Oscuro" },
+  { value: "system", label: "Sistema" },
+];
+
+interface CustomField {
+  id: string;
+  name: string;
+  value: string;
+  type: 'text' | 'email' | 'url' | 'tel';
+}
+
 interface UserProfile {
   id: string;
   fullName: string;
@@ -35,10 +70,25 @@ interface UserProfile {
   bio: string;
   profileImage: string;
   coverImage: string;
-  nickname: string;
   jobTitle: string;
   department: string;
   phoneNumber: string;
+  preferredLanguage: string;
+  timezone: string;
+  theme: string;
+  customFields: CustomField[];
+  notificationSettings: {
+    email: boolean;
+    push: boolean;
+    marketing: boolean;
+    projects: boolean;
+    tasks: boolean;
+  };
+  privacySettings: {
+    profileVisible: boolean;
+    showEmail: boolean;
+    showPhone: boolean;
+  };
 }
 
 export default function ProfilePage() {
@@ -48,6 +98,9 @@ export default function ProfilePage() {
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>("");
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState<'text' | 'email' | 'url' | 'tel'>('text');
 
   // Fetch user profile
   const { data: user, isLoading } = useQuery<UserProfile>({
@@ -89,7 +142,7 @@ export default function ProfilePage() {
         body: formData,
       });
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       setCoverImagePreview("");
       setCoverImageFile(null);
@@ -131,8 +184,38 @@ export default function ProfilePage() {
     }
   };
 
-  const handleFieldUpdate = (field: keyof UserProfile, value: string) => {
+  const handleFieldUpdate = (field: keyof UserProfile, value: any) => {
     updateProfileMutation.mutate({ [field]: value });
+  };
+
+  const addCustomField = () => {
+    if (newFieldName.trim()) {
+      const newField: CustomField = {
+        id: Date.now().toString(),
+        name: newFieldName,
+        value: "",
+        type: newFieldType,
+      };
+      const updatedFields = [...customFields, newField];
+      setCustomFields(updatedFields);
+      handleFieldUpdate('customFields', updatedFields);
+      setNewFieldName("");
+      setNewFieldType('text');
+    }
+  };
+
+  const removeCustomField = (fieldId: string) => {
+    const updatedFields = customFields.filter(field => field.id !== fieldId);
+    setCustomFields(updatedFields);
+    handleFieldUpdate('customFields', updatedFields);
+  };
+
+  const updateCustomField = (fieldId: string, value: string) => {
+    const updatedFields = customFields.map(field =>
+      field.id === fieldId ? { ...field, value } : field
+    );
+    setCustomFields(updatedFields);
+    handleFieldUpdate('customFields', updatedFields);
   };
 
   if (isLoading) {
@@ -144,14 +227,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <div className="container mx-auto p-6 max-w-6xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
           <User className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold">Mi Perfil</h1>
-            <p className="text-muted-foreground">Personaliza tu perfil y configuración</p>
+            <p className="text-muted-foreground">Personaliza tu perfil y configuración avanzada</p>
           </div>
         </div>
 
@@ -265,92 +348,392 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Profile Information */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Basic Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Información Básica</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Nombre Completo</Label>
-                <Input
-                  id="fullName"
-                  defaultValue={user?.fullName}
-                  onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
-                />
-              </div>
+        {/* Tabs Section */}
+        <Tabs defaultValue="basic" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="basic">Básico</TabsTrigger>
+            <TabsTrigger value="professional">Profesional</TabsTrigger>
+            <TabsTrigger value="preferences">Preferencias</TabsTrigger>
+            <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
+            <TabsTrigger value="privacy">Privacidad</TabsTrigger>
+          </TabsList>
 
-              
+          {/* Basic Information Tab */}
+          <TabsContent value="basic" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Información Básica
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Nombre Completo</Label>
+                  <Input
+                    id="fullName"
+                    defaultValue={user?.fullName}
+                    onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="username">Nombre de Usuario</Label>
-                <Input
-                  id="username"
-                  defaultValue={user?.username}
-                  onBlur={(e) => handleFieldUpdate('username', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="username">Nombre de Usuario</Label>
+                  <Input
+                    id="username"
+                    defaultValue={user?.username}
+                    onBlur={(e) => handleFieldUpdate('username', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  defaultValue={user?.email}
-                  onBlur={(e) => handleFieldUpdate('email', e.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Correo Electrónico</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    defaultValue={user?.email}
+                    onBlur={(e) => handleFieldUpdate('email', e.target.value)}
+                  />
+                </div>
 
-          {/* Professional Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Información Profesional</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="jobTitle">Cargo</Label>
-                <Input
-                  id="jobTitle"
-                  defaultValue={user?.jobTitle}
-                  onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phoneNumber">Teléfono</Label>
+                  <Input
+                    id="phoneNumber"
+                    defaultValue={user?.phoneNumber}
+                    onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">Departamento</Label>
-                <Input
-                  id="department"
-                  defaultValue={user?.department}
-                  onBlur={(e) => handleFieldUpdate('department', e.target.value)}
-                />
-              </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="bio">Biografía</Label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Cuéntanos sobre ti..."
+                    defaultValue={user?.bio}
+                    onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
+                    rows={4}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">Teléfono</Label>
-                <Input
-                  id="phoneNumber"
-                  defaultValue={user?.phoneNumber}
-                  onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
-                />
-              </div>
+          {/* Professional Information Tab */}
+          <TabsContent value="professional" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-5 w-5" />
+                  Información Profesional
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="jobTitle">Cargo</Label>
+                    <Input
+                      id="jobTitle"
+                      defaultValue={user?.jobTitle}
+                      onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="bio">Biografía</Label>
-                <Textarea
-                  id="bio"
-                  placeholder="Cuéntanos sobre ti..."
-                  defaultValue={user?.bio}
-                  onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
-                  rows={4}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="department">Departamento</Label>
+                    <Input
+                      id="department"
+                      defaultValue={user?.department}
+                      onBlur={(e) => handleFieldUpdate('department', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Custom Fields */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-medium">Campos Personalizados</h3>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Nombre del campo"
+                        value={newFieldName}
+                        onChange={(e) => setNewFieldName(e.target.value)}
+                        className="w-40"
+                      />
+                      <Select value={newFieldType} onValueChange={(value: any) => setNewFieldType(value)}>
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Texto</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="url">URL</SelectItem>
+                          <SelectItem value="tel">Teléfono</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={addCustomField} size="sm">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {customFields.map((field) => (
+                      <div key={field.id} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label>{field.name}</Label>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeCustomField(field.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Input
+                          type={field.type}
+                          defaultValue={field.value}
+                          onBlur={(e) => updateCustomField(field.id, e.target.value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Preferences Tab */}
+          <TabsContent value="preferences" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Preferencias Personales
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      Idioma Preferido
+                    </Label>
+                    <Select
+                      defaultValue={user?.preferredLanguage}
+                      onValueChange={(value) => handleFieldUpdate('preferredLanguage', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {languageOptions.map((lang) => (
+                          <SelectItem key={lang.value} value={lang.value}>
+                            {lang.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Zona Horaria
+                    </Label>
+                    <Select
+                      defaultValue={user?.timezone}
+                      onValueChange={(value) => handleFieldUpdate('timezone', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {timezoneOptions.map((tz) => (
+                          <SelectItem key={tz.value} value={tz.value}>
+                            {tz.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      Tema
+                    </Label>
+                    <Select
+                      defaultValue={user?.theme}
+                      onValueChange={(value) => handleFieldUpdate('theme', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {themeOptions.map((theme) => (
+                          <SelectItem key={theme.value} value={theme.value}>
+                            {theme.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Notifications Tab */}
+          <TabsContent value="notifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Configuración de Notificaciones
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Notificaciones por Email</h3>
+                      <p className="text-sm text-muted-foreground">Recibir actualizaciones por correo electrónico</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.notificationSettings?.email}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, email: checked})
+                      }
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Notificaciones Push</h3>
+                      <p className="text-sm text-muted-foreground">Notificaciones en el navegador</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.notificationSettings?.push}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, push: checked})
+                      }
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Actualizaciones de Proyectos</h3>
+                      <p className="text-sm text-muted-foreground">Cambios en tus proyectos asignados</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.notificationSettings?.projects}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, projects: checked})
+                      }
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Actualizaciones de Tareas</h3>
+                      <p className="text-sm text-muted-foreground">Cambios en tus tareas asignadas</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.notificationSettings?.tasks}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, tasks: checked})
+                      }
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Privacy Tab */}
+          <TabsContent value="privacy" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Configuración de Privacidad
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Perfil Visible</h3>
+                      <p className="text-sm text-muted-foreground">Permitir que otros usuarios vean tu perfil</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.privacySettings?.profileVisible}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('privacySettings', {...user?.privacySettings, profileVisible: checked})
+                      }
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Mostrar Email</h3>
+                      <p className="text-sm text-muted-foreground">Mostrar tu email en tu perfil público</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.privacySettings?.showEmail}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('privacySettings', {...user?.privacySettings, showEmail: checked})
+                      }
+                    />
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Mostrar Teléfono</h3>
+                      <p className="text-sm text-muted-foreground">Mostrar tu teléfono en tu perfil público</p>
+                    </div>
+                    <Switch
+                      defaultChecked={user?.privacySettings?.showPhone}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('privacySettings', {...user?.privacySettings, showPhone: checked})
+                      }
+                    />
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="p-4 bg-muted rounded-lg">
+                  <h3 className="font-medium mb-2">Control de Datos</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Gestiona tus datos personales y configuraciones de privacidad
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm">
+                      Exportar Datos
+                    </Button>
+                    <Button variant="outline" size="sm">
+                      Solicitar Eliminación
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
 
         {/* Save Status */}
         {updateProfileMutation.isPending && (

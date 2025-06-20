@@ -327,7 +327,6 @@ export const taskGroups = pgTable("task_groups", {
   settings: jsonb("settings").default({}), // Configuraciones adicionales
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Tabla para configuración de columnas de proyecto (Project Column Settings)
@@ -557,15 +556,36 @@ export const upsertUserSchema = z.object({
 
 // Schema para actualizar perfil (sin contraseña)
 export const updateProfileSchema = z.object({
-  fullName: z.string().min(1, "El nombre completo es obligatorio").optional(),
-  role: z.enum(['admin', 'manager', 'designer', 'content_creator', 'analyst']).optional(),
+  fullName: z.string().min(1, "El nombre completo es requerido").optional(),
+  username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres").optional(),
+  email: z.string().email("Email inválido").optional(),
   bio: z.string().optional(),
   profileImage: z.string().optional(),
+  coverImage: z.string().optional(),
   jobTitle: z.string().optional(),
   department: z.string().optional(),
   phoneNumber: z.string().optional(),
   preferredLanguage: z.string().optional(),
+  timezone: z.string().optional(),
   theme: z.string().optional(),
+  customFields: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    value: z.string(),
+    type: z.enum(['text', 'email', 'url', 'tel'])
+  })).optional(),
+  notificationSettings: z.object({
+    email: z.boolean(),
+    push: z.boolean(),
+    marketing: z.boolean(),
+    projects: z.boolean(),
+    tasks: z.boolean(),
+  }).optional(),
+  privacySettings: z.object({
+    profileVisible: z.boolean(),
+    showEmail: z.boolean(),
+    showPhone: z.boolean(),
+  }).optional(),
 });
 
 // Esquema para login que permite usar username o email
