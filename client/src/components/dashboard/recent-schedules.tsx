@@ -73,7 +73,7 @@ export default function RecentSchedules() {
       <div className="flex-1 overflow-hidden">
         <div className="grid gap-3 grid-cols-1 h-full">
           {schedules.slice(0, 2).map((schedule) => (
-            <Card key={schedule.id} className="shadow-sm h-fit">
+            <Card key={schedule.id} className="shadow-sm h-fit bg-card text-card-foreground border-border">
               <CardContent className="border-b p-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-sm truncate">{schedule.name}</h3>
