@@ -4337,6 +4337,111 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  // ============ ENDPOINTS PARA GESTIÓN DE EQUIPOS ============
+
+  // Obtener equipos del usuario
+  app.get('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      const userTeams = await db.select({
+        team: teams,
+        membership: teamMembers
+      })
+      .from(teamMembers)
+      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+      .where(eq(teamMembers.userId, req.user.id));
+
+      res.json(userTeams);
+    } catch (error) {
+      console.error('Error obteniendo equipos:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Obtener miembros de un equipo
+  app.get('/api/teams/:teamId/members', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const teamId = parseInt(req.params.teamId);
+      
+      if (!req.user) {
+        return res.status(401).json({ message: "Usuario no autenticado" });
+      }
+
+      // Verificar que el usuario pertenece al equipo
+      const [membership] = await db.select()
+        .from(teamMembers)
+        .where(and(
+          eq(teamMembers.teamId, teamId),
+          eq(teamMembers.userId, req.user.id)
+        ));
+
+      if (!membership) {
+        return res.status(403).json({ message: "No tienes acceso a este equipo" });
+      }
+
+      const members = await db.select({
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          email: users.email,
+          profileImage: users.profileImage,
+          role: users.role
+        },
+        membership: {
+          role: teamMembers.role,
+          joinedAt: teamMembers.joinedAt
+        }
+      })
+      .from(teamMembers)
+      .innerJoin(users, eq(teamMembers.userId, users.id))
+      .where(eq(teamMembers.teamId, teamId));
+
+      res.json(members);
+    } catch (error) {
+      console.error('Error obteniendo miembros del equipo:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
+  // Crear nuevo equipo (solo admins)
+  app.post('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      if (!req.user || req.user.role !== 'admin') {
+        return res.status(403).json({ message: "Solo los administradores pueden crear equipos" });
+      }
+
+      const { name, domain, description } = req.body;
+
+      const [newTeam] = await db.insert(teams)
+        .values({
+          name,
+          domain,
+          description,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning();
+
+      // Agregar al creador como owner del equipo
+      await db.insert(teamMembers)
+        .values({
+          teamId: newTeam.id,
+          userId: req.user.id,
+          role: 'owner',
+          joinedAt: new Date(),
+        });
+
+      res.status(201).json(newTeam);
+    } catch (error) {
+      console.error('Error creando equipo:', error);
+      res.status(500).json({ message: "Error interno del servidor" });
+    }
+  });
+
   // Update a specific task
   app.patch('/api/tasks/:taskId', isAuthenticated, async (req: Request, res: Response) => {
     try {

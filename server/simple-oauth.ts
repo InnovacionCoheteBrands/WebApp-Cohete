@@ -104,40 +104,44 @@ export async function setupSimpleGoogleAuth(app: Express) {
       const [existingUser] = await db.select().from(users).where(eq(users.id, profile.id));
 
       if (existingUser) {
-        // Update existing user
-        const [updatedUser] = await db
-          .update(users)
+        // Update existing user with latest profile data
+        const [updatedUser] = await db.update(users)
           .set({
             email: email,
             firstName: firstName,
             lastName: lastName,
+            fullName: fullName,
             profileImageUrl: profile.photos?.[0]?.value || '',
             updatedAt: new Date(),
           })
           .where(eq(users.id, profile.id))
           .returning();
+
+        // Verificar si el usuario ya está en el equipo de Cohete Brands
+        await ensureUserInTeam(updatedUser.id, email);
+
         return done(null, updatedUser);
       } else {
         // Create new user
-        const [newUser] = await db
-          .insert(users)
+        const [newUser] = await db.insert(users)
           .values({
             id: profile.id,
-            fullName: fullName,
-            username: username,
             email: email,
-            password: null,
-            isPrimary: false,
-            role: 'content_creator',
             firstName: firstName,
             lastName: lastName,
+            fullName: fullName,
+            username: username,
             profileImageUrl: profile.photos?.[0]?.value || '',
-            preferredLanguage: 'es',
-            theme: 'light',
+            isPrimary: false,
+            role: 'content_creator',
             createdAt: new Date(),
             updatedAt: new Date(),
           })
           .returning();
+
+        // Asignar automáticamente al equipo de Cohete Brands
+        await ensureUserInTeam(newUser.id, email);
+
         return done(null, newUser);
       }
     } catch (error) {
@@ -206,3 +210,16 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
   }
   res.status(401).json({ message: "Unauthorized" });
 };
+
+async function ensureUserInTeam(userId: string, email: string) {
+  if (email.endsWith('@cohetebrands.com')) {
+      // Implement team assignment logic here.  This is placeholder logic.
+      console.log(`Adding user ${userId} to Cohete Brands team.`);
+      // In a real implementation, you'd interact with your database
+      // or team management system to add the user to the appropriate team.
+      return Promise.resolve(); // Indicate success
+  } else {
+      console.log(`User ${userId} does not belong to Cohete Brands team.  Email: ${email}`);
+      return Promise.resolve();
+  }
+}
