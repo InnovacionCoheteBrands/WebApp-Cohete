@@ -22,19 +22,14 @@ async function productionBuild() {
       entryPoints: [join(__dirname, 'server/index.ts')],
       bundle: true,
       platform: 'node',
-      format: 'esm',
-      outfile: 'dist/index.js',
+      format: 'cjs',
+      outfile: 'dist/server.js',
       external: [
         // Only externalize native binary modules that can't be bundled
         'pg-native',
         'bufferutil',
         'utf-8-validate',
-        'fsevents',
-        'lightningcss',
-        '@babel/preset-typescript',
-        '@babel/preset-typescript/package.json',
-        'esbuild',
-        'vite'
+        'fsevents'
       ],
       target: 'node18',
       minify: false,
@@ -47,6 +42,7 @@ async function productionBuild() {
         '.ts': 'ts',
         '.js': 'js'
       },
+
       logLevel: 'info'
     });
 
@@ -54,9 +50,9 @@ async function productionBuild() {
     const prodPackageJson = {
       name: "rest-express-production",
       version: "1.0.0",
-      type: "module",
+      type: "commonjs",
       scripts: {
-        start: "NODE_ENV=production node index.js"
+        start: "NODE_ENV=production node server.js"
       },
       dependencies: {
         // Only include dependencies that can't be bundled
