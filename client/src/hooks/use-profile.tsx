@@ -19,7 +19,7 @@ export function useProfile() {
         body: JSON.stringify(data),
       });
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({ message: "Error de conexión" }));
         throw new Error(errorData.message || "Error al actualizar el perfil");
       }
       return res.json() as Promise<User>;

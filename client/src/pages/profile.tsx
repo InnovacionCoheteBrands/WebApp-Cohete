@@ -126,7 +126,7 @@ export default function ProfilePage() {
     setIsAvatarDialogOpen(false);
   };
 
-  const handleCustomImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleCustomImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       // Validar tipo de archivo
@@ -149,17 +149,26 @@ export default function ProfilePage() {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('profileImage', file);
+      try {
+        const formData = new FormData();
+        formData.append('profileImage', file);
 
-      // Usar fetch directamente para subir la imagen
-      fetch('/api/user/profile-image', {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => response.json())
-      .then(data => {
+        // Hacer la petición al endpoint con autenticación
+        const response = await fetch('/api/user/profile-image', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include', // Importante para incluir las cookies de sesión
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Error al subir la imagen');
+        }
+
+        const data = await response.json();
+        
         if (data.profileImage) {
+          // Actualizar el perfil con la nueva imagen
           updateProfileMutation.mutate({ profileImage: data.profileImage });
           setIsAvatarDialogOpen(false);
           toast({
@@ -167,15 +176,14 @@ export default function ProfilePage() {
             description: "Tu foto de perfil se ha actualizado correctamente",
           });
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Error uploading image:', error);
         toast({
           title: "Error",
-          description: "No se pudo subir la imagen",
+          description: error instanceof Error ? error.message : "No se pudo subir la imagen",
           variant: "destructive",
         });
-      });
+      }
     }
   };
 
