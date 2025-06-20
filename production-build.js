@@ -1,62 +1,67 @@
 #!/usr/bin/env node
 
-import { build } from 'esbuild';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-import { readFileSync, writeFileSync } from 'fs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { execSync } from 'child_process';
+import { writeFileSync, existsSync, mkdirSync, cpSync } from 'fs';
 
 async function productionBuild() {
   try {
     console.log('Creating production build...');
     
-    // First, build the frontend using Vite
-    console.log('Building frontend...');
-    const { execSync } = await import('child_process');
-    execSync('npx vite build', { stdio: 'inherit' });
+    // Ensure dist directory exists
+    if (!existsSync('dist')) {
+      mkdirSync('dist', { recursive: true });
+    }
     
-    // Build server with ALL dependencies bundled (including cors, express)
-    await build({
-      entryPoints: [join(__dirname, 'server/index.ts')],
-      bundle: true,
-      platform: 'node',
-      format: 'cjs',
-      outfile: 'dist/server.js',
-      external: [
-        // Only externalize native binary modules that can't be bundled
-        'pg-native',
-        'bufferutil',
-        'utf-8-validate',
-        'fsevents'
-      ],
-      target: 'node18',
-      minify: false,
-      sourcemap: false,
-      define: {
-        'process.env.NODE_ENV': '"production"'
-      },
-      resolveExtensions: ['.ts', '.js', '.json'],
-      loader: {
-        '.ts': 'ts',
-        '.js': 'js'
-      },
-
-      logLevel: 'info'
+    // Build frontend with optimized settings
+    console.log('Building frontend...');
+    execSync('npx vite build --mode production', { stdio: 'inherit' });
+    
+    // Copy server files to dist
+    console.log('Copying server files...');
+    if (existsSync('server')) {
+      cpSync('server', 'dist/server', { recursive: true });
+    }
+    if (existsSync('shared')) {
+      cpSync('shared', 'dist/shared', { recursive: true });
+    }
+    
+    // Copy other necessary files
+    const filesToCopy = ['drizzle.config.ts', 'package.json'];
+    filesToCopy.forEach(file => {
+      if (existsSync(file)) {
+        cpSync(file, `dist/${file}`);
+      }
     });
 
-    // Create a simple package.json for production
+    // Create production package.json with proper start command
     const prodPackageJson = {
-      name: "rest-express-production",
-      version: "1.0.0",
-      type: "commonjs",
+      name: "cohete-workflow-production",
+      version: "1.0.0", 
+      type: "module",
       scripts: {
-        start: "NODE_ENV=production node server.js"
+        start: "NODE_ENV=production tsx server/index.ts"
       },
       dependencies: {
-        // Only include dependencies that can't be bundled
-        "pg-native": "^3.1.0"
+        "@neondatabase/serverless": "^0.10.4",
+        "express": "^4.21.2",
+        "cors": "^2.8.5",
+        "drizzle-orm": "^0.39.1",
+        "pg": "^8.15.6",
+        "bcryptjs": "^3.0.2",
+        "express-session": "^1.18.1",
+        "connect-pg-simple": "^10.0.0",
+        "passport": "^0.7.0",
+        "passport-google-oauth20": "^2.0.0",
+        "passport-local": "^1.0.0",
+        "multer": "^1.4.5-lts.2",
+        "axios": "^1.8.4",
+        "ws": "^8.18.0",
+        "tsx": "^4.19.1",
+        "zod": "^3.23.8",
+        "drizzle-zod": "^0.7.0",
+        "node-fetch": "^3.3.2",
+        "memoizee": "^0.4.17",
+        "memorystore": "^1.6.7"
       }
     };
 
@@ -64,14 +69,11 @@ async function productionBuild() {
     
     console.log('✅ Production build completed successfully!');
     console.log('📦 Frontend built to dist/public');
-    console.log('📦 Server bundled with all dependencies (cors, express, drizzle-orm, etc.)');
-    console.log('🚀 Ready for deployment - use "npm start" to run in production');
+    console.log('📁 Server files copied to dist/');
+    console.log('🚀 Ready for deployment - uses "npm start" (production mode)');
     
   } catch (error) {
     console.error('❌ Production build failed:', error.message);
-    if (error.errors) {
-      error.errors.forEach(err => console.error('  -', err.text));
-    }
     process.exit(1);
   }
 }
