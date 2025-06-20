@@ -62,24 +62,35 @@ export function useProfile() {
     },
   });
 
-  // Esta función podría manejar la carga de imágenes de perfil si se necesita
+  // Esta función maneja la carga de imágenes de perfil
   const uploadProfileImage = async (file: File) => {
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append("profileImage", file);
 
-      // Simulamos un retraso para mostrar el estado de carga
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Enviar la imagen al endpoint
+      const response = await fetch('/api/user/profile-image', {
+        method: 'POST',
+        body: formData,
+      });
 
-      // En una implementación real, aquí enviaríamos la imagen a un endpoint
-      // y obtendríamos la URL de la imagen almacenada
-      const imageUrl = URL.createObjectURL(file);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al subir la imagen");
+      }
+
+      const data = await response.json();
       
       // Actualizamos el perfil con la nueva URL de imagen
-      await updateProfileMutation.mutateAsync({ profileImage: imageUrl });
+      await updateProfileMutation.mutateAsync({ profileImage: data.profileImage });
       
-      return imageUrl;
+      toast({
+        title: "Imagen actualizada",
+        description: "Tu foto de perfil se ha actualizado correctamente",
+      });
+      
+      return data.profileImage;
     } catch (error) {
       toast({
         title: "Error al subir imagen",

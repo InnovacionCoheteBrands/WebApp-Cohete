@@ -161,6 +161,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files for privacy policy
   app.use('/static', express.static(path.join(currentDirPath, 'public')));
   
+  // Serve uploaded files
+  app.use('/uploads', express.static(path.join(currentDirPath, '..', 'uploads')));
+  
   // Privacy policy route
   app.get('/privacy-policy', (req, res) => {
     res.sendFile(path.join(currentDirPath, 'public', 'privacy-policy.html'));
@@ -478,6 +481,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading cover image:", error);
       res.status(500).json({ message: "Error al subir la imagen de portada" });
+    }
+  });
+
+  // Endpoint para subir imagen de perfil
+  app.post("/api/user/profile-image", isAuthenticated, upload.single('profileImage'), async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const file = req.file;
+      
+      if (!file) {
+        return res.status(400).json({ message: "No se proporcionó ningún archivo" });
+      }
+      
+      // Validar que sea una imagen
+      if (!file.mimetype.startsWith('image/')) {
+        return res.status(400).json({ message: "Solo se permiten archivos de imagen" });
+      }
+      
+      // En un entorno real, aquí subirías el archivo a un servicio de almacenamiento
+      // Por ahora, guardaremos la ruta local del archivo
+      const imagePath = `/uploads/${file.filename}`;
+      
+      // Actualizar la imagen de perfil del usuario
+      const [updatedUser] = await db.update(schema.users)
+        .set({
+          profileImage: imagePath,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.users.id, userId))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      res.json({ profileImage: imagePath });
+    } catch (error) {
+      console.error("Error uploading profile image:", error);
+      res.status(500).json({ message: "Error al subir la imagen de perfil" });
     }
   });
   
