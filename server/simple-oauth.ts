@@ -4,8 +4,8 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { users, teams, teamMembers } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
@@ -214,46 +214,30 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
 async function ensureUserInTeam(userId: string, email: string) {
   if (email.endsWith('@cohetebrands.com')) {
     try {
-      // Buscar el equipo de Cohete Brands
-      const [coheteTeam] = await db.select()
-        .from(teams)
-        .where(eq(teams.domain, 'cohetebrands.com'))
+      // Verificar que el usuario existe en la base de datos
+      const [user] = await db.select()
+        .from(users)
+        .where(eq(users.id, userId))
         .limit(1);
 
-      if (!coheteTeam) {
-        console.error('Equipo de Cohete Brands no encontrado en la base de datos');
+      if (!user) {
+        console.error(`Usuario ${userId} no encontrado en la base de datos`);
         return;
       }
 
-      // Verificar si el usuario ya es miembro del equipo
-      const [existingMembership] = await db.select()
-        .from(teamMembers)
-        .where(
-          and(
-            eq(teamMembers.teamId, coheteTeam.id),
-            eq(teamMembers.userId, userId)
-          )
-        )
-        .limit(1);
+      // Actualizar el usuario para marcarlo como parte del equipo de Cohete Brands
+      await db.update(users)
+        .set({
+          department: 'Cohete Brands',
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, userId));
 
-      if (existingMembership) {
-        console.log(`Usuario ${userId} ya es miembro del equipo de Cohete Brands`);
-        return;
-      }
-
-      // Agregar usuario al equipo de Cohete Brands
-      await db.insert(teamMembers)
-        .values({
-          teamId: coheteTeam.id,
-          userId: userId,
-          role: 'member',
-          joinedAt: new Date(),
-        });
-
-      console.log(`✅ Usuario ${userId} (${email}) agregado exitosamente al equipo de Cohete Brands`);
+      console.log(`✅ Usuario ${userId} (${email}) marcado como miembro del equipo de Cohete Brands`);
+      console.log(`📊 Departamento actualizado a: Cohete Brands`);
       
     } catch (error) {
-      console.error('Error al agregar usuario al equipo de Cohete Brands:', error);
+      console.error('Error al procesar usuario de Cohete Brands:', error);
     }
   } else {
     console.log(`Usuario ${userId} (${email}) no pertenece al dominio de Cohete Brands`);
