@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -6,13 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Camera, Upload, User, Save, Loader2, Settings, Palette, Bell, Shield, Plus, X, Globe, Clock } from "lucide-react";
+import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 
@@ -33,28 +30,6 @@ const preloadedAvatars = [
   { id: 6, name: "Astronauta Rosa", src: astronaut6 },
 ];
 
-const languageOptions = [
-  { value: "es", label: "Español" },
-  { value: "en", label: "English" },
-  { value: "fr", label: "Français" },
-  { value: "de", label: "Deutsch" },
-  { value: "pt", label: "Português" },
-];
-
-const timezoneOptions = [
-  { value: "America/Mexico_City", label: "México Central" },
-  { value: "America/New_York", label: "Este (Nueva York)" },
-  { value: "America/Los_Angeles", label: "Pacífico (Los Ángeles)" },
-  { value: "Europe/Madrid", label: "Madrid" },
-  { value: "Europe/London", label: "Londres" },
-];
-
-const themeOptions = [
-  { value: "light", label: "Claro" },
-  { value: "dark", label: "Oscuro" },
-  { value: "system", label: "Sistema" },
-];
-
 interface CustomField {
   id: string;
   name: string;
@@ -73,22 +48,7 @@ interface UserProfile {
   jobTitle: string;
   department: string;
   phoneNumber: string;
-  preferredLanguage: string;
-  timezone: string;
-  theme: string;
   customFields: CustomField[];
-  notificationSettings: {
-    email: boolean;
-    push: boolean;
-    marketing: boolean;
-    projects: boolean;
-    tasks: boolean;
-  };
-  privacySettings: {
-    profileVisible: boolean;
-    showEmail: boolean;
-    showPhone: boolean;
-  };
 }
 
 export default function ProfilePage() {
@@ -234,7 +194,7 @@ export default function ProfilePage() {
           <User className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold">Mi Perfil</h1>
-            <p className="text-muted-foreground">Personaliza tu perfil y configuración avanzada</p>
+            <p className="text-muted-foreground">Personaliza tu información personal y presenta tu perfil profesional</p>
           </div>
         </div>
 
@@ -251,7 +211,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
               )}
-              
+
               {/* Cover Image Upload Button */}
               <div className="absolute top-4 right-4">
                 <input
@@ -306,7 +266,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-                
+
                 {/* Profile Picture Change Button */}
                 <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
                   <DialogTrigger asChild>
@@ -349,63 +309,63 @@ export default function ProfilePage() {
         </Card>
 
         {/* Tabs Section */}
-        <Tabs defaultValue="basic" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="basic">Básico</TabsTrigger>
-            <TabsTrigger value="professional">Profesional</TabsTrigger>
-            <TabsTrigger value="preferences">Preferencias</TabsTrigger>
-            <TabsTrigger value="notifications">Notificaciones</TabsTrigger>
-            <TabsTrigger value="privacy">Privacidad</TabsTrigger>
+        <Tabs defaultValue="personal" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="personal">Información Personal</TabsTrigger>
+            <TabsTrigger value="professional">Información Profesional</TabsTrigger>
+            <TabsTrigger value="custom">Campos Personalizados</TabsTrigger>
           </TabsList>
 
-          {/* Basic Information Tab */}
-          <TabsContent value="basic" className="space-y-6">
+          {/* Personal Information Tab */}
+          <TabsContent value="personal" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  Información Básica
+                  Información Personal
                 </CardTitle>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Nombre Completo</Label>
-                  <Input
-                    id="fullName"
-                    defaultValue={user?.fullName}
-                    onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
-                  />
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Nombre Completo</Label>
+                    <Input
+                      id="fullName"
+                      defaultValue={user?.fullName}
+                      onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Nombre de Usuario</Label>
+                    <Input
+                      id="username"
+                      defaultValue={user?.username}
+                      onBlur={(e) => handleFieldUpdate('username', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Correo Electrónico</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      defaultValue={user?.email}
+                      onBlur={(e) => handleFieldUpdate('email', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Teléfono</Label>
+                    <Input
+                      id="phoneNumber"
+                      defaultValue={user?.phoneNumber}
+                      onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="username">Nombre de Usuario</Label>
-                  <Input
-                    id="username"
-                    defaultValue={user?.username}
-                    onBlur={(e) => handleFieldUpdate('username', e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Correo Electrónico</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    defaultValue={user?.email}
-                    onBlur={(e) => handleFieldUpdate('email', e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phoneNumber">Teléfono</Label>
-                  <Input
-                    id="phoneNumber"
-                    defaultValue={user?.phoneNumber}
-                    onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="bio">Biografía</Label>
                   <Textarea
                     id="bio"
@@ -424,7 +384,7 @@ export default function ProfilePage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
+                  <Briefcase className="h-5 w-5" />
                   Información Profesional
                 </CardTitle>
               </CardHeader>
@@ -434,6 +394,7 @@ export default function ProfilePage() {
                     <Label htmlFor="jobTitle">Cargo</Label>
                     <Input
                       id="jobTitle"
+                      placeholder="Ej: Gerente de Marketing"
                       defaultValue={user?.jobTitle}
                       onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
                     />
@@ -443,292 +404,93 @@ export default function ProfilePage() {
                     <Label htmlFor="department">Departamento</Label>
                     <Input
                       id="department"
+                      placeholder="Ej: Marketing Digital"
                       defaultValue={user?.department}
                       onBlur={(e) => handleFieldUpdate('department', e.target.value)}
                     />
                   </div>
                 </div>
-
-                <Separator />
-
-                {/* Custom Fields */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Campos Personalizados</h3>
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="Nombre del campo"
-                        value={newFieldName}
-                        onChange={(e) => setNewFieldName(e.target.value)}
-                        className="w-40"
-                      />
-                      <Select value={newFieldType} onValueChange={(value: any) => setNewFieldType(value)}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="text">Texto</SelectItem>
-                          <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="url">URL</SelectItem>
-                          <SelectItem value="tel">Teléfono</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button onClick={addCustomField} size="sm">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {customFields.map((field) => (
-                      <div key={field.id} className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label>{field.name}</Label>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeCustomField(field.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <Input
-                          type={field.type}
-                          defaultValue={field.value}
-                          onBlur={(e) => updateCustomField(field.id, e.target.value)}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Preferences Tab */}
-          <TabsContent value="preferences" className="space-y-6">
+          {/* Custom Fields Tab */}
+          <TabsContent value="custom" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Preferencias Personales
+                  <Settings className="h-5 w-5" />
+                  Campos Personalizados
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Globe className="h-4 w-4" />
-                      Idioma Preferido
-                    </Label>
-                    <Select
-                      defaultValue={user?.preferredLanguage}
-                      onValueChange={(value) => handleFieldUpdate('preferredLanguage', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {languageOptions.map((lang) => (
-                          <SelectItem key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Zona Horaria
-                    </Label>
-                    <Select
-                      defaultValue={user?.timezone}
-                      onValueChange={(value) => handleFieldUpdate('timezone', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {timezoneOptions.map((tz) => (
-                          <SelectItem key={tz.value} value={tz.value}>
-                            {tz.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <Palette className="h-4 w-4" />
-                      Tema
-                    </Label>
-                    <Select
-                      defaultValue={user?.theme}
-                      onValueChange={(value) => handleFieldUpdate('theme', value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {themeOptions.map((theme) => (
-                          <SelectItem key={theme.value} value={theme.value}>
-                            {theme.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Notifications Tab */}
-          <TabsContent value="notifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Configuración de Notificaciones
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
+                {/* Add Custom Field */}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Notificaciones por Email</h3>
-                      <p className="text-sm text-muted-foreground">Recibir actualizaciones por correo electrónico</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.notificationSettings?.email}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, email: checked})
-                      }
-                    />
+                    <h3 className="text-lg font-medium">Agregar Campo Personalizado</h3>
                   </div>
 
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Notificaciones Push</h3>
-                      <p className="text-sm text-muted-foreground">Notificaciones en el navegador</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.notificationSettings?.push}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, push: checked})
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Actualizaciones de Proyectos</h3>
-                      <p className="text-sm text-muted-foreground">Cambios en tus proyectos asignados</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.notificationSettings?.projects}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, projects: checked})
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Actualizaciones de Tareas</h3>
-                      <p className="text-sm text-muted-foreground">Cambios en tus tareas asignadas</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.notificationSettings?.tasks}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('notificationSettings', {...user?.notificationSettings, tasks: checked})
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Privacy Tab */}
-          <TabsContent value="privacy" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Configuración de Privacidad
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Perfil Visible</h3>
-                      <p className="text-sm text-muted-foreground">Permitir que otros usuarios vean tu perfil</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.privacySettings?.profileVisible}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('privacySettings', {...user?.privacySettings, profileVisible: checked})
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Mostrar Email</h3>
-                      <p className="text-sm text-muted-foreground">Mostrar tu email en tu perfil público</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.privacySettings?.showEmail}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('privacySettings', {...user?.privacySettings, showEmail: checked})
-                      }
-                    />
-                  </div>
-
-                  <Separator />
-
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">Mostrar Teléfono</h3>
-                      <p className="text-sm text-muted-foreground">Mostrar tu teléfono en tu perfil público</p>
-                    </div>
-                    <Switch
-                      defaultChecked={user?.privacySettings?.showPhone}
-                      onCheckedChange={(checked) => 
-                        handleFieldUpdate('privacySettings', {...user?.privacySettings, showPhone: checked})
-                      }
-                    />
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="p-4 bg-muted rounded-lg">
-                  <h3 className="font-medium mb-2">Control de Datos</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Gestiona tus datos personales y configuraciones de privacidad
-                  </p>
                   <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      Exportar Datos
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Solicitar Eliminación
+                    <Input
+                      placeholder="Nombre del campo (ej: LinkedIn, GitHub)"
+                      value={newFieldName}
+                      onChange={(e) => setNewFieldName(e.target.value)}
+                      className="flex-1"
+                    />
+                    <Select value={newFieldType} onValueChange={(value: any) => setNewFieldType(value)}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">Texto</SelectItem>
+                        <SelectItem value="email">Email</SelectItem>
+                        <SelectItem value="url">URL</SelectItem>
+                        <SelectItem value="tel">Teléfono</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button onClick={addCustomField} size="sm">
+                      <Plus className="h-4 w-4" />
                     </Button>
                   </div>
+                </div>
+
+                <Separator />
+
+                {/* Custom Fields List */}
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Mis Campos Personalizados</h3>
+
+                  {customFields.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No has agregado campos personalizados aún</p>
+                      <p className="text-sm">Agrega información adicional como redes sociales, sitios web, etc.</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {customFields.map((field) => (
+                        <div key={field.id} className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Label className="font-medium">{field.name}</Label>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeCustomField(field.id)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <Input
+                            type={field.type}
+                            defaultValue={field.value}
+                            onBlur={(e) => updateCustomField(field.id, e.target.value)}
+                            placeholder={`Ingresa tu ${field.name.toLowerCase()}`}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

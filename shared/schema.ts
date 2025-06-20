@@ -34,30 +34,27 @@ export const sessions = pgTable(
 );
 
 // Users Table - Updated for OAuth support
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(), // Changed to varchar for OAuth IDs
-  fullName: text("full_name").notNull(),
-  username: text("username").notNull().unique(),
-  email: text("email").unique(), // Added email field for OAuth
-  password: text("password"), // Made optional for OAuth users
-  isPrimary: boolean("is_primary").default(false).notNull(),
-  role: userRoleEnum("role").default('content_creator'),
-  bio: text("bio"),
-  profileImage: text("profile_image"),
-  coverImage: text("cover_image"),
-  nickname: text("nickname"),
-  jobTitle: text("job_title"),
-  department: text("department"),
-  phoneNumber: text("phone_number"),
-  preferredLanguage: text("preferred_language").default("es"),
-  theme: text("theme").default("light"),
-  lastLogin: timestamp("last_login"),
-  // OAuth fields
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  profileImageUrl: text("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+export const users = pgTable('users', {
+  id: varchar('id', { length: 255 }).primaryKey(),
+  fullName: varchar('full_name', { length: 255 }).notNull(),
+  username: varchar('username', { length: 255 }).unique().notNull(),
+  email: varchar('email', { length: 255 }).unique(),
+  password: varchar('password', { length: 255 }),
+  isPrimary: boolean('is_primary').default(false),
+  role: varchar('role', { length: 50 }).default('user'),
+  bio: text('bio'),
+  profileImage: text('profile_image'),
+  coverImage: text('cover_image'),
+  jobTitle: varchar('job_title', { length: 255 }),
+  department: varchar('department', { length: 255 }),
+  phoneNumber: varchar('phone_number', { length: 50 }),
+  customFields: jsonb('custom_fields').default([]),
+  lastLogin: timestamp('last_login'),
+  firstName: varchar('first_name', { length: 255 }),
+  lastName: varchar('last_name', { length: 255 }),
+  profileImageUrl: text('profile_image_url'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Projects Table
@@ -366,6 +363,45 @@ export const taskAssignees = pgTable("task_assignees", {
   userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   assignedBy: integer("assigned_by").references(() => users.id, { onDelete: 'set null' }),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
+});
+
+export const scheduleEntryComments = pgTable('schedule_entry_comments', {
+  id: serial('id').primaryKey(),
+  entryId: integer('entry_id').references(() => scheduleEntries.id),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const userSettings = pgTable('user_settings', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 255 }).references(() => users.id).notNull().unique(),
+  // Configuraciones de usuario/preferencias
+  preferredLanguage: varchar('preferred_language', { length: 10 }).default('es'),
+  timezone: varchar('timezone', { length: 50 }).default('America/Mexico_City'),
+  theme: varchar('theme', { length: 20 }).default('system'),
+  // Configuraciones de notificaciones
+  notificationSettings: jsonb('notification_settings').default({
+    email: true,
+    push: true,
+    marketing: false,
+    projects: true,
+    tasks: true
+  }),
+  // Configuraciones de privacidad
+  privacySettings: jsonb('privacy_settings').default({
+    profileVisible: true,
+    showEmail: false,
+    showPhone: false
+  }),
+  // Configuraciones de apariencia (almacenadas por usuario)
+  colorScheme: varchar('color_scheme', { length: 20 }).default('blue'),
+  fontSize: varchar('font_size', { length: 20 }).default('medium'),
+  reducedAnimations: boolean('reduced_animations').default(false),
+  highContrastMode: boolean('high_contrast_mode').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Define table relations
