@@ -9,7 +9,7 @@ console.log("Connecting to database...");
 
 // Configure postgres client with better error handling for Replit
 const client = postgres(connectionString, {
-  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+  ssl: 'require', // Always require SSL for Neon database
   max: 1, // Limit connections for Replit
   idle_timeout: 20,
   connect_timeout: 10,
