@@ -383,13 +383,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para actualizar usuarios (solo para usuarios primarios)
   app.patch("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "ID de usuario inválido" });
+      if (!userId) {
+        return res.status(400).json({ message: "ID de usuario requerido" });
       }
       
-      // Verificar que el usuario existe
+      // Verificar que el usuario existe (ahora maneja tanto IDs numéricos como strings)
       const user = await global.storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "Usuario no encontrado" });
@@ -415,6 +415,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar usuario
       const updatedUser = await global.storage.updateUser(userId, updateData);
       
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Error al actualizar usuario" });
+      }
+      
       // Eliminar password del response
       const { password, ...userWithoutPassword } = updatedUser;
       
@@ -428,10 +432,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para eliminar usuarios (solo para usuarios primarios)
   app.delete("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "ID de usuario inválido" });
+      if (!userId) {
+        return res.status(400).json({ message: "ID de usuario requerido" });
       }
       
       // No permitir eliminar el propio usuario
