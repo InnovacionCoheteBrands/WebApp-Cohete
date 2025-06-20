@@ -1,15 +1,22 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "../shared/schema";
 
-neonConfig.webSocketConstructor = ws;
+// Use environment variable or default to local connection
+const connectionString = process.env.DATABASE_URL || "postgresql://user:password@localhost:5432/cohete_workflow";
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+console.log("Connecting to database...");
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// Configure postgres client with better error handling for Replit
+const client = postgres(connectionString, {
+  ssl: process.env.NODE_ENV === 'production' ? 'require' : false,
+  max: 1, // Limit connections for Replit
+  idle_timeout: 20,
+  connect_timeout: 10,
+  onnotice: () => {}, // Suppress notices
+  transform: {
+    undefined: null
+  }
+});
+
+export const db = drizzle(client, { schema });
