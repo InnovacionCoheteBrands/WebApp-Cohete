@@ -113,6 +113,7 @@ Cohete Workflow is a comprehensive project management platform designed specific
 - **Production Bundle**: All dependencies bundled into single file
 
 ## Changelog
+- June 20, 2025. Fixed deployment issue - Created production-ready package.json and build configuration to resolve 'dev' command blocking deployment
 - June 20, 2025. Fixed deployment configuration - Updated production-build.js to include frontend build process and ensure proper production deployment
 - June 20, 2025. Fixed deployment configuration - Updated production build to use proper commands instead of development mode
 - June 13, 2025. Initial setup
