@@ -12,6 +12,11 @@ async function productionBuild() {
   try {
     console.log('Creating production build...');
     
+    // First, build the frontend using Vite
+    console.log('Building frontend...');
+    const { execSync } = await import('child_process');
+    execSync('npx vite build', { stdio: 'inherit' });
+    
     // Build server with ALL dependencies bundled (including cors, express)
     await build({
       entryPoints: [join(__dirname, 'server/index.ts')],
@@ -62,8 +67,9 @@ async function productionBuild() {
     writeFileSync('dist/package.json', JSON.stringify(prodPackageJson, null, 2));
     
     console.log('✅ Production build completed successfully!');
-    console.log('📦 All dependencies (cors, express, drizzle-orm, etc.) are bundled');
-    console.log('🚀 Ready for deployment - will use npm start in production');
+    console.log('📦 Frontend built to dist/public');
+    console.log('📦 Server bundled with all dependencies (cors, express, drizzle-orm, etc.)');
+    console.log('🚀 Ready for deployment - use "npm start" to run in production');
     
   } catch (error) {
     console.error('❌ Production build failed:', error.message);
