@@ -130,6 +130,14 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
+
+                <Route path="/profile">
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <Profile />
+                    </MainLayout>
+                  </ProtectedRoute>
+                </Route>
                 
                 <Route path="/settings">
                   <ProtectedRoute>

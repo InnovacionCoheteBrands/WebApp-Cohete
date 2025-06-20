@@ -419,13 +419,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   
   // Endpoint para actualizar el perfil del usuario actual
-  app.patch("/api/profile", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/user/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const profileData = updateProfileSchema.parse(req.body);
       const userId = req.user.id;
+      const updateData = req.body;
       
-      // Actualizar el perfil del usuario
-      const updatedUser = await global.storage.updateUser(userId, profileData);
+      // Actualizar el perfil del usuario usando Drizzle
+      const [updatedUser] = await db.update(schema.users)
+        .set({
+          ...updateData,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.users.id, userId))
+        .returning();
       
       if (!updatedUser) {
         return res.status(404).json({ message: "Usuario no encontrado" });
@@ -436,11 +442,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(userWithoutPassword);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: fromZodError(error).message });
-      }
       console.error("Error updating profile:", error);
       res.status(500).json({ message: "Error al actualizar el perfil" });
+    }
+  });
+
+  // Endpoint para subir imagen de portada
+  app.post("/api/user/cover-image", isAuthenticated, upload.single('coverImage'), async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const file = req.file;
+      
+      if (!file) {
+        return res.status(400).json({ message: "No se proporcionó ningún archivo" });
+      }
+      
+      // En un entorno real, aquí subirías el archivo a un servicio de almacenamiento
+      // Por ahora, guardaremos la ruta local del archivo
+      const imagePath = `/uploads/${file.filename}`;
+      
+      // Actualizar la imagen de portada del usuario
+      const [updatedUser] = await db.update(schema.users)
+        .set({
+          coverImage: imagePath,
+          updatedAt: new Date()
+        })
+        .where(eq(schema.users.id, userId))
+        .returning();
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      res.json({ coverImage: imagePath });
+    } catch (error) {
+      console.error("Error uploading cover image:", error);
+      res.status(500).json({ message: "Error al subir la imagen de portada" });
     }
   });
   
