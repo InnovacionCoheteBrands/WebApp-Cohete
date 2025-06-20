@@ -66,7 +66,7 @@ export interface IStorage {
   listUsers(): Promise<User[]>;
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
-  
+
   // Password reset methods
   createPasswordResetToken(userId: number): Promise<PasswordResetToken>;
   getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined>;
@@ -80,25 +80,25 @@ export interface IStorage {
   deleteProject(id: number): Promise<boolean>;
   listProjects(): Promise<Project[]>;
   listProjectsByUser(userId: string, isPrimary: boolean): Promise<Project[]>;
-  
+
   // Project Analysis methods
   createAnalysisResult(analysis: InsertAnalysisResult): Promise<AnalysisResult>;
   getAnalysisResult(projectId: number): Promise<AnalysisResult | undefined>;
   updateAnalysisResult(projectId: number, analysisData: Partial<InsertAnalysisResult>): Promise<AnalysisResult | undefined>;
-  
+
   // Project Assignment methods
   assignUserToProject(projectId: number, userId: string): Promise<ProjectAssignment>;
   removeUserFromProject(projectId: number, userId: string): Promise<boolean>;
   getProjectAssignments(projectId: number): Promise<User[]>;
   checkUserProjectAccess(userId: string, projectId: number, isPrimary: boolean): Promise<boolean>;
-  
+
   // Document methods
   createDocument(document: InsertDocument): Promise<Document>;
   getDocument(id: number): Promise<Document | undefined>;
   updateDocument(id: number, documentData: Partial<Document>): Promise<Document | undefined>;
   deleteDocument(id: number): Promise<boolean>;
   listDocumentsByProject(projectId: number): Promise<Document[]>;
-  
+
   // Schedule methods
   createSchedule(schedule: InsertSchedule): Promise<Schedule>;
   getSchedule(id: number): Promise<Schedule | undefined>;
@@ -107,7 +107,7 @@ export interface IStorage {
   deleteSchedule(id: number): Promise<boolean>;
   listSchedulesByProject(projectId: number): Promise<(Schedule & { entries: ScheduleEntry[] })[]>;
   listRecentSchedules(limit?: number): Promise<(Schedule & { project: Project })[]>;
-  
+
   // Schedule Entry methods
   createScheduleEntry(entry: InsertScheduleEntry): Promise<ScheduleEntry>;
   getScheduleEntry(id: number): Promise<ScheduleEntry | undefined>;
@@ -115,16 +115,16 @@ export interface IStorage {
   deleteScheduleEntry(id: number): Promise<boolean>;
   deleteScheduleEntries(scheduleId: number): Promise<boolean>;
   listEntriesBySchedule(scheduleId: number): Promise<ScheduleEntry[]>;
-  
+
   // Chat methods
   createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
   listChatMessagesByProject(projectId: number): Promise<ChatMessage[]>;
-  
+
   // Content History methods
   createContentHistory(entry: InsertContentHistory): Promise<ContentHistory>;
   getContentHistoryByProjectAndContent(projectId: number, content: string): Promise<ContentHistory | undefined>;
   listContentHistoryByProject(projectId: number): Promise<ContentHistory[]>;
-  
+
   // Task methods
   createTask(task: InsertTask): Promise<Task>;
   getTask(id: number): Promise<Task | undefined>;
@@ -133,13 +133,13 @@ export interface IStorage {
   listTasksByProject(projectId: number): Promise<Task[]>;
   listTasksByAssignee(userId: number): Promise<Task[]>;
   listSubtasks(parentTaskId: number): Promise<Task[]>;
-  
+
   // Task Comments methods
   createTaskComment(comment: InsertTaskComment): Promise<TaskComment>;
   getTaskComment(id: number): Promise<TaskComment | undefined>;
   deleteTaskComment(id: number): Promise<boolean>;
   listTaskComments(taskId: number): Promise<TaskComment[]>;
-  
+
   // Product methods
   createProduct(product: InsertProduct): Promise<Product>;
   getProduct(id: number): Promise<Product | undefined>;
@@ -296,7 +296,7 @@ export class DatabaseStorage implements IStorage {
       startDate: project.startDate ? (typeof project.startDate === 'string' ? new Date(project.startDate) : project.startDate) : null,
       endDate: project.endDate ? (typeof project.endDate === 'string' ? new Date(project.endDate) : project.endDate) : null
     };
-    
+
     const [newProject] = await db.insert(projects).values(processedProject).returning();
     return newProject;
   }
@@ -344,9 +344,9 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(projectAssignments)
         .where(eq(projectAssignments.userId, userId));
-      
+
       const assignedProjectIds = assignments.map(a => a.projectId);
-      
+
       return await db
         .select()
         .from(projects)
@@ -412,9 +412,9 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(projectAssignments)
       .where(eq(projectAssignments.projectId, projectId));
-    
+
     if (assignments.length === 0) return [];
-    
+
     const userIds = assignments.map(a => a.userId);
     return await db
       .select()
@@ -424,7 +424,7 @@ export class DatabaseStorage implements IStorage {
 
   async checkUserProjectAccess(userId: number, projectId: number, isPrimary: boolean): Promise<boolean> {
     if (isPrimary) return true; // Primary users have access to all projects
-    
+
     // Check if user created the project
     const [project] = await db
       .select()
@@ -435,9 +435,9 @@ export class DatabaseStorage implements IStorage {
           eq(projects.createdBy, userId)
         )
       );
-    
+
     if (project) return true;
-    
+
     // Check if user is assigned to the project
     const [assignment] = await db
       .select()
@@ -448,7 +448,7 @@ export class DatabaseStorage implements IStorage {
           eq(projectAssignments.userId, userId)
         )
       );
-    
+
     return !!assignment;
   }
 
@@ -515,11 +515,11 @@ export class DatabaseStorage implements IStorage {
         .select()
         .from(schedules)
         .where(eq(schedules.id, id));
-      
+
       if (!schedule) {
         return undefined;
       }
-      
+
       // Obtener las entradas relacionadas y asegurarnos que existan
       console.log(`Buscando entradas para el cronograma ID ${id}`);
       const entriesList = await db
@@ -527,9 +527,9 @@ export class DatabaseStorage implements IStorage {
         .from(scheduleEntries)
         .where(eq(scheduleEntries.scheduleId, id))
         .orderBy(asc(scheduleEntries.postDate));
-      
+
       console.log(`Se encontraron ${entriesList.length} entradas para el cronograma ID ${id}`);
-      
+
       // Combinar los resultados
       return {
         ...schedule,
@@ -567,19 +567,19 @@ export class DatabaseStorage implements IStorage {
         .from(schedules)
         .where(eq(schedules.projectId, projectId))
         .orderBy(desc(schedules.createdAt));
-      
+
       if (!schedulesList || schedulesList.length === 0) {
         return [];
       }
-      
+
       // Para cada cronograma, obtener sus entradas
       const results: (Schedule & { entries: ScheduleEntry[] })[] = [];
-      
+
       for (const schedule of schedulesList) {
         try {
           // Obtener las entradas para este cronograma
           const entries = await this.listEntriesBySchedule(schedule.id);
-          
+
           // Combinar los resultados
           results.push({
             ...schedule,
@@ -594,7 +594,7 @@ export class DatabaseStorage implements IStorage {
           });
         }
       }
-      
+
       return results;
     } catch (error) {
       console.error("Error in listSchedulesByProject:", error);
@@ -614,24 +614,24 @@ export class DatabaseStorage implements IStorage {
         .innerJoin(projects, eq(schedules.projectId, projects.id))
         .orderBy(desc(schedules.createdAt))
         .limit(limit);
-      
+
       if (!schedulesResult || schedulesResult.length === 0) {
         return []; // No hay schedules para procesar
       }
-      
+
       // Para cada schedule, obtener sus entradas
       const results: (Schedule & { project: Project, entries: ScheduleEntry[] })[] = [];
-      
+
       for (const { schedule, project } of schedulesResult) {
         try {
           if (!schedule || !schedule.id) {
             console.warn("Schedule inválido encontrado");
             continue;
           }
-          
+
           // Obtener las entradas para este cronograma
           const entries = await this.listEntriesBySchedule(schedule.id);
-          
+
           results.push({
             ...schedule,
             project,
@@ -642,7 +642,7 @@ export class DatabaseStorage implements IStorage {
           // Si falla obtener el proyecto, saltamos este schedule
         }
       }
-      
+
       return results;
     } catch (error) {
       console.error("Error in listRecentSchedules:", error);
@@ -680,7 +680,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(scheduleEntries).where(eq(scheduleEntries.id, id));
     return true;
   }
-  
+
   async deleteScheduleEntries(scheduleId: number): Promise<boolean> {
     await db.delete(scheduleEntries).where(eq(scheduleEntries.scheduleId, scheduleId));
     return true;
@@ -710,7 +710,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(chatMessages.projectId, projectId))
       .orderBy(asc(chatMessages.createdAt));
   }
-  
+
   // Content History methods
   async createContentHistory(entry: InsertContentHistory): Promise<ContentHistory> {
     const [newEntry] = await db
@@ -719,7 +719,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newEntry;
   }
-  
+
   async getContentHistoryByProjectAndContent(projectId: number, content: string): Promise<ContentHistory | undefined> {
     const [entry] = await db
       .select()
@@ -732,7 +732,7 @@ export class DatabaseStorage implements IStorage {
       );
     return entry;
   }
-  
+
   async listContentHistoryByProject(projectId: number): Promise<ContentHistory[]> {
     return await db
       .select()
@@ -740,7 +740,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(contentHistory.projectId, projectId))
       .orderBy(desc(contentHistory.createdAt));
   }
-  
+
   // Task methods
   async createTask(task: InsertTask): Promise<Task> {
     const [newTask] = await db
@@ -749,7 +749,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newTask;
   }
-  
+
   async getTask(id: number): Promise<Task | undefined> {
     const [task] = await db
       .select()
@@ -757,7 +757,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(tasks.id, id));
     return task;
   }
-  
+
   async updateTask(id: number, taskData: Partial<Task>): Promise<Task | undefined> {
     const [updatedTask] = await db
       .update(tasks)
@@ -766,12 +766,12 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedTask;
   }
-  
+
   async deleteTask(id: number): Promise<boolean> {
     await db.delete(tasks).where(eq(tasks.id, id));
     return true;
   }
-  
+
   async listTasksByProject(projectId: number): Promise<Task[]> {
     // Usar una consulta SQL directa para evitar el error de la columna reminderDate
     // Seleccionamos solo las columnas que sabemos que existen en la tabla
@@ -794,7 +794,7 @@ export class DatabaseStorage implements IStorage {
                END
     `);
   }
-  
+
   async listTasksByAssignee(userId: number): Promise<Task[]> {
     // Usar una consulta SQL directa para evitar el error de la columna reminderDate
     return await db.execute(sql`
@@ -816,7 +816,7 @@ export class DatabaseStorage implements IStorage {
                END
     `);
   }
-  
+
   async listSubtasks(parentTaskId: number): Promise<Task[]> {
     // Usar una consulta SQL directa para evitar el error de la columna reminderDate
     return await db.execute(sql`
@@ -831,7 +831,7 @@ export class DatabaseStorage implements IStorage {
       ORDER BY position ASC
     `);
   }
-  
+
   // Task Comments methods
   async createTaskComment(comment: InsertTaskComment): Promise<TaskComment> {
     const [newComment] = await db
@@ -840,7 +840,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newComment;
   }
-  
+
   async getTaskComment(id: number): Promise<TaskComment | undefined> {
     const [comment] = await db
       .select()
@@ -848,12 +848,12 @@ export class DatabaseStorage implements IStorage {
       .where(eq(taskComments.id, id));
     return comment;
   }
-  
+
   async deleteTaskComment(id: number): Promise<boolean> {
     await db.delete(taskComments).where(eq(taskComments.id, id));
     return true;
   }
-  
+
   async listTaskComments(taskId: number): Promise<TaskComment[]> {
     return await db
       .select()
@@ -861,7 +861,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(taskComments.taskId, taskId))
       .orderBy(asc(taskComments.createdAt));
   }
-  
+
   // Product methods
   async createProduct(product: InsertProduct): Promise<Product> {
     const [newProduct] = await db
@@ -870,7 +870,7 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newProduct;
   }
-  
+
   async getProduct(id: number): Promise<Product | undefined> {
     const [product] = await db
       .select()
@@ -878,7 +878,7 @@ export class DatabaseStorage implements IStorage {
       .where(eq(products.id, id));
     return product;
   }
-  
+
   async updateProduct(id: number, productData: Partial<Product>): Promise<Product | undefined> {
     const [updatedProduct] = await db
       .update(products)
@@ -887,12 +887,12 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedProduct;
   }
-  
+
   async deleteProduct(id: number): Promise<boolean> {
     await db.delete(products).where(eq(products.id, id));
     return true;
   }
-  
+
   async listProductsByProject(projectId: number): Promise<Product[]> {
     return await db
       .select()
@@ -908,36 +908,36 @@ export class DatabaseStorage implements IStorage {
     // Generar un token único usando crypto
     const tokenStr = Math.random().toString(36).substring(2, 15) + 
                      Math.random().toString(36).substring(2, 15);
-    
+
     // Establecer expiración a 1 hora
     const expires = new Date();
     expires.setHours(expires.getHours() + 1);
-    
+
     const tokenData: PasswordResetToken = {
       userId,
       token: tokenStr,
       expires
     };
-    
+
     // Almacenar el token
     this.passwordResetTokens.set(tokenStr, tokenData);
-    
+
     return tokenData;
   }
 
   async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
     const tokenData = this.passwordResetTokens.get(token);
-    
+
     if (!tokenData) {
       return undefined;
     }
-    
+
     // Verificar si expiró
     if (new Date() > tokenData.expires) {
       this.passwordResetTokens.delete(token);
       return undefined;
     }
-    
+
     return tokenData;
   }
 
@@ -1073,13 +1073,13 @@ export class DatabaseStorage implements IStorage {
   async createTimeEntry(entry: InsertTimeEntry): Promise<TimeEntry> {
     // Si no se proporciona la duración pero sí el inicio y fin, calcularla
     let entryData = { ...entry };
-    
+
     if (!entryData.duration && entryData.startTime && entryData.endTime) {
       const startTime = new Date(entryData.startTime).getTime();
       const endTime = new Date(entryData.endTime).getTime();
       entryData.duration = Math.floor((endTime - startTime) / 1000); // duración en segundos
     }
-    
+
     const [newEntry] = await db
       .insert(timeEntries)
       .values(entryData)
@@ -1090,7 +1090,7 @@ export class DatabaseStorage implements IStorage {
   async updateTimeEntry(id: number, entryData: Partial<TimeEntry>): Promise<TimeEntry | undefined> {
     // Actualizar la duración si se modifican las fechas
     let dataToUpdate = { ...entryData };
-    
+
     if ((entryData.startTime || entryData.endTime) && !entryData.duration) {
       // Obtener la entrada actual para acceder a los valores no modificados
       const currentEntry = await this.getTimeEntry(id);
@@ -1098,19 +1098,19 @@ export class DatabaseStorage implements IStorage {
         const startTime = entryData.startTime 
           ? new Date(entryData.startTime).getTime() 
           : new Date(currentEntry.startTime).getTime();
-        
+
         const endTime = entryData.endTime 
           ? new Date(entryData.endTime).getTime() 
           : currentEntry.endTime 
             ? new Date(currentEntry.endTime).getTime() 
             : null;
-        
+
         if (endTime && startTime) {
           dataToUpdate.duration = Math.floor((endTime - startTime) / 1000);
         }
       }
     }
-    
+
     const [updatedEntry] = await db
       .update(timeEntries)
       .set(dataToUpdate)
@@ -1149,7 +1149,7 @@ export class DatabaseStorage implements IStorage {
         eq(notifications.relatedEntityType, 'task')
       ))
       .orderBy(notifications.createdAt);
-    
+
     return comments;
   }
 
@@ -1165,7 +1165,7 @@ export class DatabaseStorage implements IStorage {
         isRead: false
       })
       .returning();
-    
+
     return newComment;
   }
 
@@ -1174,7 +1174,7 @@ export class DatabaseStorage implements IStorage {
       .insert(notifications)
       .values(notification)
       .returning();
-    
+
     return newNotification;
   }
 
@@ -1184,7 +1184,7 @@ export class DatabaseStorage implements IStorage {
       .from(notifications)
       .where(eq(notifications.userId, userId))
       .orderBy(desc(notifications.createdAt));
-    
+
     return userNotifications;
   }
 
@@ -1193,7 +1193,7 @@ export class DatabaseStorage implements IStorage {
       .update(notifications)
       .set({ isRead: true })
       .where(eq(notifications.id, notificationId));
-    
+
     return !!result;
   }
 
@@ -1215,7 +1215,7 @@ export class DatabaseStorage implements IStorage {
       .from(projectMembers)
       .leftJoin(users, eq(projectMembers.userId, users.id))
       .where(eq(projectMembers.projectId, projectId));
-    
+
     return members as ProjectMember[];
   }
 
@@ -1224,7 +1224,7 @@ export class DatabaseStorage implements IStorage {
       .insert(projectMembers)
       .values(member)
       .returning();
-    
+
     return newMember;
   }
 
@@ -1233,7 +1233,7 @@ export class DatabaseStorage implements IStorage {
       .select()
       .from(taskDependencies)
       .where(eq(taskDependencies.taskId, taskId));
-    
+
     return dependencies;
   }
 
@@ -1242,7 +1242,7 @@ export class DatabaseStorage implements IStorage {
       .insert(taskDependencies)
       .values(dependency)
       .returning();
-    
+
     return newDependency;
   }
 
@@ -1330,6 +1330,29 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(collaborativeDocs)
       .where(eq(collaborativeDocs.id, id));
+    return !!result;
+  }
+
+  async updateUser(userId: string, updateData: Partial<User>): Promise<User | undefined> {
+    // Filtrar el campo email ya que no existe en la base de datos
+    const { email, ...filteredUserData } = updateData as any;
+
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...filteredUserData,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id));
     return !!result;
   }
 }

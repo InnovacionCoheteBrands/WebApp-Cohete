@@ -380,6 +380,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint para actualizar usuarios (solo para usuarios primarios)
+  app.patch("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
+    try {
+      const userId = parseInt(req.params.id);
+      
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
+      }
+      
+      // Verificar que el usuario existe
+      const user = await global.storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      const updateData = req.body;
+      
+      // No permitir modificar isPrimary del propio usuario
+      if (userId === req.user.id && updateData.hasOwnProperty('isPrimary')) {
+        return res.status(400).json({ message: "No puedes modificar tus propios permisos de administrador" });
+      }
+      
+      // Si se está removiendo permisos de administrador, verificar que no sea el último admin
+      if (updateData.isPrimary === false && user.isPrimary) {
+        const allUsers = await global.storage.listUsers();
+        const primaryUsers = allUsers.filter(u => u.isPrimary && u.id !== userId);
+        
+        if (primaryUsers.length === 0) {
+          return res.status(400).json({ message: "No se puede remover permisos al último usuario administrador" });
+        }
+      }
+      
+      // Actualizar usuario
+      const updatedUser = await global.storage.updateUser(userId, updateData);
+      
+      // Eliminar password del response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Error al actualizar usuario" });
+    }
+  });
+
   // Endpoint para eliminar usuarios (solo para usuarios primarios)
   app.delete("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
