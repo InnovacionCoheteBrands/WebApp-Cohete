@@ -282,15 +282,7 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="nickname">Apodo</Label>
-                <Input
-                  id="nickname"
-                  placeholder="Tu apodo preferido"
-                  defaultValue={user?.nickname}
-                  onBlur={(e) => handleFieldUpdate('nickname', e.target.value)}
-                />
-              </div>
+              
 
               <div className="space-y-2">
                 <Label htmlFor="username">Nombre de Usuario</Label>
