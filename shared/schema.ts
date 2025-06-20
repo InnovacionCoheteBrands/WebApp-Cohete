@@ -44,6 +44,8 @@ export const users = pgTable("users", {
   role: userRoleEnum("role").default('content_creator'),
   bio: text("bio"),
   profileImage: text("profile_image"),
+  coverImage: text("cover_image"),
+  nickname: text("nickname"),
   jobTitle: text("job_title"),
   department: text("department"),
   phoneNumber: text("phone_number"),

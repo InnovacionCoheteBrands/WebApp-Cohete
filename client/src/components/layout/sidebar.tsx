@@ -136,30 +136,38 @@ export function Sidebar({ open, onClose }: SidebarProps) {
 
           {/* User Profile */}
           <div className="border-t pt-3 mt-auto">
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/30 shadow-sm hover:shadow-md transition-all duration-200">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-sm">
-                <Users className="h-4 w-4" />
+            <Link href="/profile">
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/30 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-sm">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div className="flex flex-col flex-1 min-w-0">
+                  <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                    {user?.nickname || user?.fullName}
+                  </span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className={cn(
+                      "h-1.5 w-1.5 rounded-full", 
+                      user?.isPrimary ? "bg-green-500" : "bg-primary"
+                    )}></span>
+                    Mi Perfil
+                  </span>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="rounded-md p-1 hover:bg-accent interactive-element opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLogout();
+                  }}
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="h-3 w-3" />
+                </Button>
               </div>
-              <div className="flex flex-col flex-1 min-w-0">
-                <span className="text-sm font-medium truncate">{user?.fullName}</span>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <span className={cn(
-                    "h-1.5 w-1.5 rounded-full", 
-                    user?.isPrimary ? "bg-green-500" : "bg-primary"
-                  )}></span>
-                  {user?.isPrimary ? 'Principal' : 'Secundario'}
-                </span>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="rounded-md p-1 hover:bg-accent interactive-element"
-                onClick={handleLogout}
-                title="Cerrar sesión"
-              >
-                <LogOut className="h-3 w-3" />
-              </Button>
-            </div>
+            </Link>
           </div>
         </div>
       </div>
