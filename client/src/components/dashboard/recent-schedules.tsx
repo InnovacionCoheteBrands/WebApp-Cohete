@@ -77,7 +77,7 @@ export default function RecentSchedules() {
               <CardContent className="border-b p-3">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium text-sm truncate">{schedule.name}</h3>
-                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs">
+                  <Badge variant="secondary" className="text-xs">
                     New
                   </Badge>
                 </div>
