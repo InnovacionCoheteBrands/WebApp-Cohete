@@ -2,12 +2,11 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { grokService } from "./grok-integration";
-import cors from 'cors'; // Import the cors middleware
+import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
-import path from 'path';
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -164,12 +163,38 @@ app.use((req, res, next) => {
     // this serves both the API and the client.
     // It is the only port that is not firewalled.
 
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`serving on port ${port}`);
+    const serverInstance = server.listen(port, "0.0.0.0", () => {
+      log(`🚀 Server is running on http://0.0.0.0:${port}`);
+      log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+      log(`🔗 API endpoints available at /api/*`);
+    });
+
+    // Handle server errors
+    serverInstance.on('error', (error: any) => {
+      if (error.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${port} is already in use`);
+        process.exit(1);
+      } else {
+        console.error('❌ Server error:', error);
+        process.exit(1);
+      }
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('🔄 SIGTERM received, shutting down gracefully');
+      serverInstance.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+      });
+    });
+
+    process.on('SIGINT', () => {
+      console.log('🔄 SIGINT received, shutting down gracefully');
+      serverInstance.close(() => {
+        console.log('✅ Server closed');
+        process.exit(0);
+      });
     });
 
   } catch (error) {
