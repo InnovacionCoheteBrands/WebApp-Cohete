@@ -39,6 +39,8 @@ app.use(cors({
         origin.includes('.replit.dev') || 
         origin.includes('.replit.app') || 
         origin.includes('.kirk.replit.dev') ||
+        origin.includes('127.0.0.1:5000') ||
+        origin.includes('localhost:5000') ||
         allowedOrigins.some(allowed => allowed.includes('*') ? 
           origin.includes(allowed.replace('https://*.', '')) : 
           origin === allowed
