@@ -4,9 +4,11 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react({
-    jsxRuntime: 'classic',
-    jsxImportSource: undefined
+    jsxRuntime: 'automatic'
   })],
+  define: {
+    global: 'globalThis',
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -17,12 +19,12 @@ export default defineConfig({
   build: {
     outDir: "./dist",
     emptyOutDir: true,
+    minify: false,
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-tabs']
-        }
+        entryFileNames: 'main.js',
+        chunkFileNames: 'chunks/[name].js',
+        assetFileNames: 'assets/[name].[ext]'
       }
     }
   },
