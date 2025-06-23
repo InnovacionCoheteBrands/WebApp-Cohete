@@ -20,8 +20,8 @@ async function deploy() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with proper ESM format and import.meta handling
-    const buildCommand = `npx esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --define:process.env.NODE_ENV='"production"' --define:import.meta.url='"file://dist/index.js"' --packages=bundle`;
+    // Build with proper ESM format and import.meta polyfill
+    const buildCommand = `npx esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:lightningcss --external:@babel/preset-typescript --external:@babel/preset-typescript/package.json --external:esbuild --external:vite --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --define:process.env.NODE_ENV='"production"' --define:import.meta.url='"file:///home/runner/workspace/dist/index.js"' --packages=bundle`;
     
     console.log('Building server with ESM compatibility...');
     await execAsync(buildCommand);
