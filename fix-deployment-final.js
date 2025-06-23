@@ -27,21 +27,23 @@ async function fixDeploymentFinal() {
       entryPoints: ['server/index.ts'],
       bundle: true,
       platform: 'node',
-      format: 'esm',
+      format: 'cjs',
       outfile: 'dist/index.js',
       external: [
-        // Only externalize truly problematic native modules
+        // Externalize all problematic modules to prevent bundling conflicts
         'pg-native',
         'bufferutil', 
         'utf-8-validate',
         'fsevents',
         'lightningcss',
         'sharp',
+        'esbuild',
         'vite',
         '@vitejs/plugin-react',
         '@replit/vite-plugin-shadcn-theme-json',
         '@replit/vite-plugin-runtime-error-modal',
-        '@replit/vite-plugin-cartographer'
+        '@replit/vite-plugin-cartographer',
+        'rollup'
       ],
       target: 'node18',
       minify: false,
@@ -49,21 +51,8 @@ async function fixDeploymentFinal() {
       define: {
         'process.env.NODE_ENV': '"production"'
       },
-      banner: {
-        js: `
-// ESM compatibility shim - prevent duplicate imports
-if (typeof globalThis.__esm_shim_applied === 'undefined') {
-  const { createRequire } = await import('module');
-  const { fileURLToPath } = await import('url');
-  const { dirname } = await import('path');
-  
-  globalThis.__filename = fileURLToPath(import.meta.url);
-  globalThis.__dirname = dirname(globalThis.__filename);
-  globalThis.require = createRequire(import.meta.url);
-  globalThis.__esm_shim_applied = true;
-}
-        `.trim()
-      },
+      // Remove banner completely to prevent duplicate import errors
+      banner: undefined,
       resolveExtensions: ['.ts', '.js', '.json'],
       mainFields: ['module', 'main'],
       conditions: ['import', 'node', 'default'],
@@ -147,7 +136,6 @@ if (typeof globalThis.__esm_shim_applied === 'undefined') {
     const prodPackageJson = {
       name: "cohete-workflow-production",
       version: "1.0.0",
-      type: "module",
       main: "index.js",
       scripts: {
         start: "NODE_ENV=production node index.js",
