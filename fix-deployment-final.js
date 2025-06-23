@@ -41,8 +41,7 @@ async function fixDeploymentFinal() {
         '@vitejs/plugin-react',
         '@replit/vite-plugin-shadcn-theme-json',
         '@replit/vite-plugin-runtime-error-modal',
-        '@replit/vite-plugin-cartographer',
-        'pdf-parse'
+        '@replit/vite-plugin-cartographer'
       ],
       target: 'node18',
       minify: false,
@@ -133,7 +132,7 @@ if (typeof globalThis.__esm_shim_applied === 'undefined') {
 
     // Step 4: Copy essential assets
     console.log('📁 Copying essential files...');
-    const directoriesToCopy = ['uploads', 'migrations'];
+    const directoriesToCopy = ['uploads', 'migrations', 'test'];
     directoriesToCopy.forEach(dir => {
       if (existsSync(dir)) {
         cpSync(dir, `dist/${dir}`, { recursive: true });
