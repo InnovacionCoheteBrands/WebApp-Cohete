@@ -1,19 +1,14 @@
 #!/usr/bin/env node
 
-/**
- * Production deployment script - Creates dist/index.js matching npm start expectations
- * Fixes all deployment issues: build/runtime mismatch, dependency bundling, entry point configuration
- */
-
 import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-async function deployBuild() {
+async function finalDeployFix() {
   try {
-    console.log('Starting deployment build...');
+    console.log('Applying final deployment fixes...');
     
     // Clean dist directory
     if (existsSync('dist')) {
@@ -95,9 +90,9 @@ async function deployBuild() {
     }
     
   } catch (error) {
-    console.error('Deployment build failed:', error.message);
+    console.error('Final deployment fix failed:', error.message);
     process.exit(1);
   }
 }
 
-deployBuild();
+finalDeployFix();

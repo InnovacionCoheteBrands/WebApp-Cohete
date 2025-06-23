@@ -40,9 +40,7 @@ async function deployFixed() {
       },
       dependencies: {
         "pg": currentPackage.dependencies.pg,
-        "puppeteer": currentPackage.dependencies.puppeteer,
-        "express": currentPackage.dependencies.express,
-        "cors": currentPackage.dependencies.cors
+        "puppeteer": currentPackage.dependencies.puppeteer
       },
       optionalDependencies: {
         "bufferutil": "^4.0.8",
@@ -90,7 +88,7 @@ async function deployFixed() {
       // Quick test that the file can be required
       console.log('\nTesting build integrity...');
       try {
-        await execAsync('cd dist && timeout 3 node -e "console.log(\\'Build OK\\')" || echo "Build file created"');
+        await execAsync('cd dist && timeout 3 node -e "console.log(\'Build OK\')" || echo "Build file created"');
         console.log('Build integrity verified');
       } catch (error) {
         console.log('Build files created correctly');
