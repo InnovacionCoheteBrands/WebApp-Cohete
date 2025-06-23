@@ -1,13 +1,14 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
-run = "npm start"
+run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "npm install && node deploy-build.js]
-run = ["sh", "-c", "cd dist && npm install && npm start"]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
 
 [[ports]]
 localPort = 5000
@@ -37,5 +38,5 @@ task = "packager.installForAll"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "npm start"
+args = "npm run dev"
 waitForPort = 5000
