@@ -22,33 +22,13 @@ async function cleanDeploy() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with minimal externals and proper global handling
+    // Build with ESBuild banner to add polyfills directly during build
     console.log('📦 Building server bundle...');
-    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:pg-native --external:fsevents --external:lightningcss --external:bufferutil --external:utf-8-validate --packages=external --define:process.env.NODE_ENV='"production"' --define:global=globalThis`);
+    const banner = 'import{fileURLToPath}from"url";import{dirname}from"path";import{createRequire}from"module";const __filename=fileURLToPath(import.meta.url);const __dirname=dirname(__filename);const require=createRequire(import.meta.url);globalThis.global=globalThis;';
+    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:pg-native --external:fsevents --external:lightningcss --external:bufferutil --external:utf-8-validate --packages=external --define:process.env.NODE_ENV='"production"' --define:global=globalThis --banner:js='import{fileURLToPath}from"url";import{dirname}from"path";import{createRequire}from"module";const __filename=fileURLToPath(import.meta.url);const __dirname=dirname(__filename);const require=createRequire(import.meta.url);globalThis.global=globalThis;'`);
     
     if (result.stderr && result.stderr.includes('ERROR')) {
       throw new Error(`Build failed: ${result.stderr}`);
-    }
-    
-    // Read and fix the bundle content
-    let bundleContent = readFileSync('dist/index.js', 'utf-8');
-    
-    // Add minimal polyfills only if not already present
-    const needsPolyfills = !bundleContent.includes('const __dirname') || !bundleContent.includes('const require');
-    
-    if (needsPolyfills) {
-      const polyfills = `// ES Module polyfills
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-
-// Global polyfill
-if (typeof global === 'undefined') {
-  globalThis.global = globalThis;
-}
-
-`;
-      bundleContent = polyfills + bundleContent;
-      writeFileSync('dist/index.js', bundleContent);
     }
     
     console.log('✅ Build completed and polyfills applied');

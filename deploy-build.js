@@ -41,7 +41,7 @@ async function deployBuild() {
       '--define:process.env.NODE_ENV=\'"production"\'',
       '--keep-names',
       '--sourcemap=external',
-      '--banner:js="import { createRequire } from \'module\'; import { fileURLToPath } from \'url\'; import { dirname } from \'path\'; const require = createRequire(import.meta.url); const __filename = fileURLToPath(import.meta.url); const __dirname = dirname(__filename);"'
+      '--banner:js="import { createRequire } from \'module\'; import { fileURLToPath } from \'url\'; import { dirname } from \'path\'; const require = createRequire(import.meta.url); const __filenameBanner = fileURLToPath(import.meta.url); const __dirname = dirname(__filenameBanner); if (typeof __filename === \'undefined\') { var __filename = __filenameBanner; }"'
     ].join(' ');
     
     console.log('Building server with all fixes applied...');
