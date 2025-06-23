@@ -20,7 +20,7 @@ async function deployBuild() {
       entryPoints: ['server/index.ts'],
       bundle: true,
       platform: 'node',
-      format: 'cjs',
+      format: 'esm',
       outfile: 'dist/index.js',
       external: [
         // Native modules that can't be bundled
@@ -37,7 +37,24 @@ async function deployBuild() {
       define: {
         'process.env.NODE_ENV': '"production"'
       },
-      banner: undefined,
+      banner: {
+        js: `
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Only create require if it doesn't exist
+if (typeof globalThis.require === 'undefined') {
+  globalThis.require = createRequire(import.meta.url);
+}
+
+globalThis.__dirname = __dirname;
+globalThis.__filename = __filename;
+        `.trim()
+      },
       resolveExtensions: ['.ts', '.js', '.json'],
       mainFields: ['module', 'main'],
       conditions: ['import', 'node', 'default'],
@@ -90,6 +107,7 @@ async function deployBuild() {
     const prodPackageJson = {
       name: "cohete-workflow-production",
       version: "1.0.0",
+      type: "module",
       main: "index.js",
       scripts: {
         start: "NODE_ENV=production node index.js"

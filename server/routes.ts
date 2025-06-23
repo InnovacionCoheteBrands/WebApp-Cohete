@@ -4067,23 +4067,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
   // Enhanced Tasks endpoint with groups and assignees
   app.get("/api/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      // Get tasks from all projects with only existing columns
-      const tasks = await db.select({
-        id: schema.tasks.id,
-        projectId: schema.tasks.projectId,
-        title: schema.tasks.title,
-        description: schema.tasks.description,
-        status: schema.tasks.status,
-        priority: schema.tasks.priority,
-        progress: schema.tasks.progress,
-        dueDate: schema.tasks.dueDate,
-        tags: schema.tasks.tags,
-        groupId: schema.tasks.groupId,
-        createdById: schema.tasks.createdById,
-        assignedToId: schema.tasks.assignedToId,
-        createdAt: schema.tasks.createdAt,
-        updatedAt: schema.tasks.updatedAt,
-      }).from(schema.tasks).orderBy(asc(schema.tasks.id));
+      // Get tasks from all projects with safe column selection
+      const tasks = await db.select().from(schema.tasks).orderBy(asc(schema.tasks.id));
 
       // Get task groups separately
       const taskGroups = await db.select().from(schema.taskGroups);

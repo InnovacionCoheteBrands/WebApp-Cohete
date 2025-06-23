@@ -1,4 +1,4 @@
-import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products, projectViews, automationRules, timeEntries, tags, collaborativeDocs, notifications, taskDependencies, projectMembers } from "./schema";
+import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products, projectViews, automationRules, timeEntries, tags, collaborativeDocs, notifications, taskDependencies, projectMembers, taskGroups } from "./schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
 import type { Store } from "express-session";

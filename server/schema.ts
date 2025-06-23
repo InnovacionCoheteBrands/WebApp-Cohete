@@ -64,26 +64,28 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Tasks table
+// Tasks table - aligned with actual database structure
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  assignedToId: varchar("assigned_to_id").references(() => users.id, { onDelete: "set null" }),
-  createdById: varchar("created_by_id").references(() => users.id, { onDelete: "set null" }),
+  assignedToId: integer("assigned_to_id").references(() => users.id, { onDelete: "set null" }),
+  createdById: integer("created_by_id").references(() => users.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").default("pending").notNull(),
   priority: taskPriorityEnum("priority").default("medium").notNull(),
-  aiGenerated: boolean("ai_generated").default(false),
-  aiSuggestion: text("ai_suggestion"),
-  dueDate: timestamp("due_date"),
-  completedAt: timestamp("completed_at"),
-  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: "set null" }),
-  progress: integer("progress").default(0),
-  estimatedHours: integer("estimated_hours"),
-  actualHours: integer("actual_hours"),
   group: taskGroupEnum("group").default("todo"),
   position: integer("position").default(0),
+  aiGenerated: boolean("ai_generated").default(false),
+  aiSuggestion: text("ai_suggestion"),
+  tags: text("tags"),
+  dueDate: timestamp("due_date"),
+  completedAt: timestamp("completed_at"),
+  estimatedHours: integer("estimated_hours"),
+  dependencies: text("dependencies"),
+  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: "set null" }),
+  progress: integer("progress").default(0),
+  attachments: text("attachments"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
