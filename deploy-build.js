@@ -15,9 +15,9 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with complete bundling - no externals to avoid module conflicts
-    console.log('Building production server with all dependencies bundled...');
-    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --define:process.env.NODE_ENV='"production"' --minify`);
+    // Build with selective externals to avoid problematic dependencies
+    console.log('Building production server with CommonJS format and selective externals...');
+    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=external --external:@replit/* --external:@vitejs/* --external:vite --external:@babel/* --external:esbuild --external:typescript --external:drizzle-kit --external:tsx --external:@types/* --external:lightningcss --external:postcss --external:autoprefixer --external:tailwindcss --external:@tailwindcss/* --define:process.env.NODE_ENV='"production"'`);
     
     if (result.stderr && result.stderr.includes('ERROR')) {
       throw new Error(`ESBuild failed: ${result.stderr}`);
@@ -51,7 +51,8 @@ if (typeof __dirname === 'undefined') { global.__dirname = require('path').dirna
     
     writeFileSync('dist/index.js', content);
     
-    // Create production package.json with CommonJS configuration
+    // Create production package.json with CommonJS configuration and required dependencies
+    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
     const prodPackage = {
       name: "cohete-workflow-production",
       version: "1.0.0",
@@ -60,7 +61,32 @@ if (typeof __dirname === 'undefined') { global.__dirname = require('path').dirna
       scripts: {
         start: "NODE_ENV=production node index.js"
       },
-      dependencies: {}
+      dependencies: {
+        pg: pkg.dependencies.pg,
+        "@neondatabase/serverless": pkg.dependencies["@neondatabase/serverless"],
+        bcryptjs: pkg.dependencies.bcryptjs,
+        express: pkg.dependencies.express,
+        "express-session": pkg.dependencies["express-session"],
+        "connect-pg-simple": pkg.dependencies["connect-pg-simple"],
+        cors: pkg.dependencies.cors,
+        multer: pkg.dependencies.multer,
+        "drizzle-orm": pkg.dependencies["drizzle-orm"],
+        "drizzle-zod": pkg.dependencies["drizzle-zod"],
+        zod: pkg.dependencies.zod,
+        "zod-validation-error": pkg.dependencies["zod-validation-error"],
+        axios: pkg.dependencies.axios,
+        "node-fetch": pkg.dependencies["node-fetch"],
+        passport: pkg.dependencies.passport,
+        "passport-google-oauth20": pkg.dependencies["passport-google-oauth20"],
+        "passport-local": pkg.dependencies["passport-local"],
+        "openid-client": pkg.dependencies["openid-client"],
+        "pdf-parse": pkg.dependencies["pdf-parse"],
+        "html-pdf-node": pkg.dependencies["html-pdf-node"],
+        puppeteer: pkg.dependencies.puppeteer,
+        ws: pkg.dependencies.ws,
+        memoizee: pkg.dependencies.memoizee,
+        memorystore: pkg.dependencies.memorystore
+      }
     };
     
     writeFileSync('dist/package.json', JSON.stringify(prodPackage, null, 2));
