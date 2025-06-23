@@ -20,12 +20,9 @@ async function deployBuild() {
       entryPoints: ['server/index.ts'],
       bundle: true,
       platform: 'node',
-      format: 'esm',
+      format: 'cjs',
       outfile: 'dist/index.js',
       external: [
-        // Node.js built-ins
-        'fs', 'path', 'url', 'crypto', 'os', 'util', 'events', 'stream', 'buffer',
-        'querystring', 'http', 'https', 'net', 'tls', 'zlib', 'child_process',
         // Native modules that can't be bundled
         'pg-native',
         'bufferutil', 
@@ -40,13 +37,7 @@ async function deployBuild() {
       define: {
         'process.env.NODE_ENV': '"production"'
       },
-      banner: {
-        js: `
-// ESM compatibility shim
-const require = typeof globalThis.require !== 'undefined' ? globalThis.require : 
-  (await import('module')).createRequire(import.meta.url);
-        `.trim()
-      },
+      banner: undefined,
       resolveExtensions: ['.ts', '.js', '.json'],
       mainFields: ['module', 'main'],
       conditions: ['import', 'node', 'default'],
@@ -99,7 +90,6 @@ const require = typeof globalThis.require !== 'undefined' ? globalThis.require :
     const prodPackageJson = {
       name: "cohete-workflow-production",
       version: "1.0.0",
-      type: "module",
       main: "index.js",
       scripts: {
         start: "NODE_ENV=production node index.js"
