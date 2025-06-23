@@ -120,15 +120,33 @@ app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'production') {
       // Servir archivos estáticos del build de producción
       const staticPath = path.join(__dirname, '../client/dist');
-      app.use(express.static(staticPath));
+      console.log('Serving static files from:', staticPath);
       
-      // Catch-all handler para React routes en producción
-      app.get('*', (req, res, next) => {
-        if (req.path.startsWith('/api/')) {
-          return next(); // Dejar que las rutas API se manejen normalmente
-        }
-        res.sendFile(path.join(staticPath, 'index.html'));
-      });
+      // Verificar si el directorio existe
+      if (require('fs').existsSync(staticPath)) {
+        app.use(express.static(staticPath, {
+          maxAge: '1d',
+          etag: false
+        }));
+        
+        // Catch-all handler para React routes en producción
+        app.get('*', (req, res, next) => {
+          if (req.path.startsWith('/api/')) {
+            return next(); // Dejar que las rutas API se manejen normalmente
+          }
+          const indexPath = path.join(staticPath, 'index.html');
+          if (require('fs').existsSync(indexPath)) {
+            res.sendFile(indexPath);
+          } else {
+            res.status(404).send('Build files not found. Please run: cd client && npm run build');
+          }
+        });
+      } else {
+        console.error('Static files directory not found:', staticPath);
+        app.get('*', (req, res) => {
+          res.status(500).send('Build files not found. Please run: cd client && npm run build');
+        });
+      }
     } else {
       // Usar Vite solo en desarrollo
       await setupVite(app, server);
