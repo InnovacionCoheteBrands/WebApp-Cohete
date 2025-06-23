@@ -6,8 +6,8 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "node deploy-build.js"]
-run = ["sh", "-c", "npm start"]
+build = ["sh", "-c", "npm install && node deploy-build.js"]
+run = ["sh", "-c", "cd dist && npm install && npm start"]
 
 [[ports]]
 localPort = 5000
