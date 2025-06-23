@@ -44,7 +44,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // Permitir requests sin origin (como mobile apps, postman, etc.)
     if (!origin) return callback(null, true);
-    
+
     // Always allow in development or if origin matches allowed origins
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -129,14 +129,14 @@ app.use((req, res, next) => {
       // Servir archivos estáticos del build de producción
       const staticPath = path.join(__dirname, '../client/dist');
       console.log('Serving static files from:', staticPath);
-      
+
       // Verificar si el directorio existe
       if (require('fs').existsSync(staticPath)) {
         app.use(express.static(staticPath, {
           maxAge: '1d',
           etag: false
         }));
-        
+
         // Catch-all handler para React routes en producción
         app.get('*', (req, res, next) => {
           if (req.path.startsWith('/api/')) {
@@ -171,7 +171,7 @@ app.use((req, res, next) => {
     }, () => {
       log(`serving on port ${port}`);
     });
-    
+
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);
