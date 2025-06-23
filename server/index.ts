@@ -12,13 +12,18 @@ const port = parseInt(process.env.PORT || "5000");
 const allowedOrigins: string[] = [];
 
 if (process.env.NODE_ENV === 'production') {
-  // Configuración para Replit deployment
+  // Configuración para Replit deployment - incluir todos los posibles dominios
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     allowedOrigins.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
   }
-  // Agregar el dominio actual del deployment
-  allowedOrigins.push(`https://${process.env.REPL_SLUG || 'localhost'}.replit.dev`);
-  allowedOrigins.push(`https://${process.env.REPL_ID || 'localhost'}.replit.app`);
+  if (process.env.REPL_ID) {
+    allowedOrigins.push(`https://${process.env.REPL_ID}.replit.app`);
+    allowedOrigins.push(`https://${process.env.REPL_ID}-00-*.kirk.replit.dev`);
+  }
+  // Agregar patrones comunes de Replit
+  allowedOrigins.push('https://*.replit.dev');
+  allowedOrigins.push('https://*.replit.app');
+  allowedOrigins.push('https://*.kirk.replit.dev');
 } else {
   allowedOrigins.push('http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000');
 }
@@ -28,11 +33,26 @@ app.use(cors({
     // Permitir requests sin origin (como mobile apps, postman, etc.)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
-      callback(null, true);
+    // En producción, verificar patrones de dominio
+    if (process.env.NODE_ENV === 'production') {
+      const isAllowed = origin && (
+        origin.includes('.replit.dev') || 
+        origin.includes('.replit.app') || 
+        origin.includes('.kirk.replit.dev') ||
+        allowedOrigins.some(allowed => allowed.includes('*') ? 
+          origin.includes(allowed.replace('https://*.', '')) : 
+          origin === allowed
+        )
+      );
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
     } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      callback(null, true);
     }
   },
   credentials: true,
