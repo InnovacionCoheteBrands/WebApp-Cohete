@@ -40,7 +40,7 @@ function App() {
                 <Route path="/">
                   <ProtectedRoute>
                     <MainLayout>
-                      <Dashboard />
+                      <ProjectManager />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
