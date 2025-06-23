@@ -22,12 +22,16 @@ async function deployBuild() {
       format: 'esm',
       outfile: 'dist/index.js',
       external: [
-        // Only externalize truly problematic native modules
+        // Node.js built-ins
+        'fs', 'path', 'url', 'crypto', 'os', 'util', 'events', 'stream', 'buffer',
+        'querystring', 'http', 'https', 'net', 'tls', 'zlib', 'child_process',
+        // Native modules that can't be bundled
         'pg-native',
         'bufferutil', 
         'utf-8-validate',
         'fsevents',
-        'sharp'
+        'sharp',
+        'lightningcss'
       ],
       target: 'node18',
       minify: false,
@@ -51,20 +55,9 @@ global.__dirname = __dirname;
 global.__filename = __filename;
         `.trim()
       },
-      // Handle problematic requires
-      plugins: [{
-        name: 'node-globals',
-        setup(build) {
-          // Replace problematic dynamic requires
-          build.onResolve({ filter: /^node:/ }, args => {
-            return { path: args.path.replace(/^node:/, ''), external: false }
-          });
-        }
-      }],
       resolveExtensions: ['.ts', '.js', '.json'],
       mainFields: ['module', 'main'],
       conditions: ['import', 'node', 'default'],
-      // Ensure proper module resolution
       packages: 'bundle'
     });
 
