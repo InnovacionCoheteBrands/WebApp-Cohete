@@ -1,5 +1,6 @@
 import { writeFileSync, existsSync, mkdirSync, cpSync, readFileSync, rmSync } from 'fs';
 import { build } from 'esbuild';
+import { execSync } from 'child_process';
 
 async function deployBuild() {
   try {
@@ -40,42 +41,35 @@ async function deployBuild() {
         'process.env.NODE_ENV': '"production"'
       },
       banner: {
-  js: `
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Make Node.js globals available
-global.require = require;
-global.__dirname = __dirname;
-global.__filename = __filename;
+        js: `
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
         `.trim()
       },
       resolveExtensions: ['.ts', '.js', '.json'],
       mainFields: ['module', 'main'],
       conditions: ['import', 'node', 'default'],
-      packages: 'bundle'
+      packages: 'bundle',
+      loader: {
+        '.ts': 'ts',
+        '.js': 'js'
+      }
     });
 
     console.log('Server build completed, copying static files...');
 
-    // Build frontend if it exists
-    if (existsSync('client')) {
-      console.log('Building frontend...');
-      const { execSync } = await import('child_process');
-      try {
-        execSync('npm run build:client', { stdio: 'inherit', cwd: process.cwd() });
-
-        // Copy built frontend
-        if (existsSync('client/dist')) {
-          cpSync('client/dist', 'dist/public', { recursive: true });
-          console.log('Frontend copied to dist/public');
-        }
-      } catch (error) {
-        console.log('Frontend build not available, continuing with server only...');
+    // Build frontend with Vite
+    console.log('Building frontend with Vite...');
+    try {
+      execSync('npx vite build', { stdio: 'inherit', cwd: process.cwd() });
+      
+      // Copy built frontend
+      if (existsSync('dist/public')) {
+        console.log('Frontend built successfully');
       }
+    } catch (error) {
+      console.log('Frontend build failed, continuing with server only...');
+      console.error(error.message);
     }
 
     // Copy essential directories if they exist
