@@ -12,18 +12,13 @@ const port = parseInt(process.env.PORT || "5000");
 const allowedOrigins: string[] = [];
 
 if (process.env.NODE_ENV === 'production') {
-  // Configuración para Replit deployment - incluir todos los posibles dominios
+  // Configuración para Replit deployment
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
     allowedOrigins.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
   }
-  if (process.env.REPL_ID) {
-    allowedOrigins.push(`https://${process.env.REPL_ID}.replit.app`);
-    allowedOrigins.push(`https://${process.env.REPL_ID}-00-*.kirk.replit.dev`);
-  }
-  // Agregar patrones comunes de Replit
-  allowedOrigins.push('https://*.replit.dev');
-  allowedOrigins.push('https://*.replit.app');
-  allowedOrigins.push('https://*.kirk.replit.dev');
+  // Agregar el dominio actual del deployment
+  allowedOrigins.push(`https://${process.env.REPL_SLUG || 'localhost'}.replit.dev`);
+  allowedOrigins.push(`https://${process.env.REPL_ID || 'localhost'}.replit.app`);
 } else {
   allowedOrigins.push('http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000');
 }
@@ -33,28 +28,11 @@ app.use(cors({
     // Permitir requests sin origin (como mobile apps, postman, etc.)
     if (!origin) return callback(null, true);
     
-    // En producción, verificar patrones de dominio
-    if (process.env.NODE_ENV === 'production') {
-      const isAllowed = origin && (
-        origin.includes('.replit.dev') || 
-        origin.includes('.replit.app') || 
-        origin.includes('.kirk.replit.dev') ||
-        origin.includes('127.0.0.1:5000') ||
-        origin.includes('localhost:5000') ||
-        allowedOrigins.some(allowed => allowed.includes('*') ? 
-          origin.includes(allowed.replace('https://*.', '')) : 
-          origin === allowed
-        )
-      );
-      
-      if (isAllowed) {
-        callback(null, true);
-      } else {
-        console.log('CORS blocked origin:', origin);
-        callback(new Error('Not allowed by CORS'));
-      }
-    } else {
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
       callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true,
@@ -130,26 +108,16 @@ app.use((req, res, next) => {
 
     // Configuración específica para producción en Replit
     if (process.env.NODE_ENV === 'production') {
-      // Servir archivos estáticos desde dist/public
-      const publicPath = path.join(__dirname, 'public');
-      app.use(express.static(publicPath, {
-        setHeaders: (res, filePath) => {
-          if (filePath.endsWith('.js')) {
-            res.setHeader('Content-Type', 'application/javascript');
-          } else if (filePath.endsWith('.mjs')) {
-            res.setHeader('Content-Type', 'application/javascript');
-          } else if (filePath.endsWith('.css')) {
-            res.setHeader('Content-Type', 'text/css');
-          }
-        }
-      }));
+      // Servir archivos estáticos del build de producción
+      const staticPath = path.join(__dirname, '../client/dist');
+      app.use(express.static(staticPath));
       
       // Catch-all handler para React routes en producción
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api/')) {
           return next(); // Dejar que las rutas API se manejen normalmente
         }
-        res.sendFile(path.join(publicPath, 'index.html'));
+        res.sendFile(path.join(staticPath, 'index.html'));
       });
     } else {
       // Usar Vite solo en desarrollo
