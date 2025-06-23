@@ -21,8 +21,28 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build server first with CommonJS format to fix dynamic require errors
-    const buildCommand = `npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --external:pg-native --external:bufferutil --external:utf-8-validate --external:lightningcss --define:process.env.NODE_ENV='"production"' --keep-names`;
+    // Build server with ESM format but proper bundling to avoid dynamic require issues
+    const buildCommand = `npx esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --external:lightningcss --external:@babel/preset-typescript --external:esbuild --define:process.env.NODE_ENV='"production"' --keep-names --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"`;
+    
+    // Also create the production package.json with proper ESM configuration
+    const prodPackage = {
+      name: "cohete-workflow-production",
+      version: "1.0.0",
+      type: "module",
+      main: "index.js",
+      scripts: {
+        start: "NODE_ENV=production node index.js"
+      },
+      dependencies: {
+        "pg": "^8.15.6",
+        "puppeteer": "^24.6.0"
+      },
+      optionalDependencies: {
+        "bufferutil": "^4.0.8",
+        "utf-8-validate": "^6.0.3",
+        "fsevents": "^2.3.3"
+      }
+    };
     
     console.log('Building server bundle...');
     await execAsync(buildCommand);
@@ -36,27 +56,7 @@ async function deployBuild() {
       // Continue with server-only build
     }
     
-    // Read current package.json
-    const currentPackage = JSON.parse(readFileSync('package.json', 'utf-8'));
-    
-    // Create production package.json matching npm start expectations
-    const prodPackage = {
-      name: "cohete-workflow-production",
-      version: "1.0.0",
-      type: "commonjs",
-      main: "index.js",
-      scripts: {
-        start: "NODE_ENV=production node index.js"
-      },
-      dependencies: {
-        "pg": currentPackage.dependencies.pg,
-        "puppeteer": currentPackage.dependencies.puppeteer
-      },
-      optionalDependencies: {
-        "bufferutil": "^4.0.8",
-        "utf-8-validate": "^6.0.3"
-      }
-    };
+    // Package.json already defined above in build section
     
     writeFileSync('dist/package.json', JSON.stringify(prodPackage, null, 2));
     
