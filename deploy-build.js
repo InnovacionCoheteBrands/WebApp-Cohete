@@ -32,31 +32,31 @@ async function deployBuild() {
 </html>`;
     writeFileSync('dist/public/index.html', minimalHtml);
     
-    // Build backend with CommonJS and specific exclusions for problematic modules
-    console.log('Building backend with CommonJS format...');
-    await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=external --external:@replit/vite-plugin-shadcn-theme-json --external:@replit/vite-plugin-cartographer --external:@replit/vite-plugin-runtime-error-modal --define:process.env.NODE_ENV='"production"'`);
+    // Build backend with comprehensive externals to avoid bundle corruption
+    console.log('Building backend with extensive externals to prevent module conflicts...');
+    await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=external --external:@replit/* --external:@vitejs/* --external:vite --external:@babel/* --external:esbuild --external:typescript --external:drizzle-kit --external:tsx --external:@types/* --external:lightningcss --external:postcss --external:autoprefixer --external:tailwindcss --external:@tailwindcss/* --external:pg-native --external:fsevents --external:bufferutil --external:utf-8-validate --define:process.env.NODE_ENV='"production"'`);
     
-    // Read and fix the output to remove ES module conflicts
+    // Read and apply minimal safe fixes only 
     let content = readFileSync('dist/index.js', 'utf-8');
     
-    // Apply all suggested fixes for ES module conflicts with careful pattern matching
+    // Apply targeted fixes for the specific ES module patterns found
     content = content
-      // Fix malformed __toESM patterns - more specific replacement
-      .replace(/var\s+(\w+)\s*=\s*__toESM\([^)]*\);/g, 'var $1 = require;')
-      .replace(/const\s+(\w+)\s*=\s*__toESM\([^)]*\);/g, 'const $1 = require;')
-      .replace(/__toESM\([^)]*\)/g, 'require')
-      // Fix specific problematic require patterns
-      .replace(/var\s+(\w+)\s*=\s*require,\s*([0-9]+)\);/g, 'var $1 = require;')
-      .replace(/const\s+(\w+)\s*=\s*require,\s*([0-9]+)\);/g, 'const $1 = require;')
-      // Replace ES module imports with safe fallbacks
-      .replace(/require\(\s*["']@replit\/vite-plugin-shadcn-theme-json["']\s*\)/g, '(() => { return {}; })()')
-      .replace(/require\(\s*["']@replit\/vite-plugin-cartographer["']\s*\)/g, '(() => { return {}; })()')
-      .replace(/require\(\s*["']@replit\/vite-plugin-runtime-error-modal["']\s*\)/g, '(() => { return {}; })()')
-      .replace(/require\(\s*["']@replit\/[^"']*["']\s*\)/g, '(() => { return {}; })()')
-      // Fix fileURLToPath patterns
-      .replace(/var\s+(\w+)\s*=\s*\([0-9]+,\s*[^)]*\.fileURLToPath\)\([^)]*\);/g, 'var $1 = __filename;')
-      .replace(/const\s+(\w+)\s*=\s*\([0-9]+,\s*[^)]*\.fileURLToPath\)\([^)]*\);/g, 'const $1 = __filename;')
-      .replace(/import\.meta\.url/g, '"file://" + __filename');
+      // Fix the exact problematic patterns from the bundle
+      .replace(/\(0,\s*import_url\.fileURLToPath\)\(import_meta\.url\)/g, '__filename')
+      .replace(/\(0,\s*import_url2\.fileURLToPath\)\(import_meta2\.url\)/g, '__filename')  
+      .replace(/\(0,\s*import_url3\.fileURLToPath\)\(import_meta3\.url\)/g, '__filename')
+      .replace(/\(0,\s*[^.]*\.fileURLToPath\)\([^)]*\)/g, '__filename')
+      // Fix dirname patterns
+      .replace(/\(0,\s*import_path2\.dirname\)\(currentFilePath\)/g, '__dirname')
+      .replace(/\(0,\s*[^.]*\.dirname\)\(__filename\)/g, '__dirname')
+      // Fix any remaining import.meta references
+      .replace(/import_meta\.url/g, '"file://" + __filename')
+      .replace(/import_meta2\.url/g, '"file://" + __filename')
+      .replace(/import_meta3\.url/g, '"file://" + __filename')
+      // Fix specific problematic Replit plugin requires
+      .replace(/require\(\s*["']@replit\/vite-plugin-shadcn-theme-json["']\s*\)/g, '{}')
+      .replace(/require\(\s*["']@replit\/vite-plugin-cartographer["']\s*\)/g, '{}')
+      .replace(/require\(\s*["']@replit\/vite-plugin-runtime-error-modal["']\s*\)/g, '{}');
     
     // Add CommonJS compatibility header
     const commonjsHeader = `
