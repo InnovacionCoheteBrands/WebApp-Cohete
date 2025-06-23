@@ -1,6 +1,4 @@
 
-#!/usr/bin/env node
-
 import { writeFileSync, existsSync, mkdirSync, cpSync, readFileSync } from 'fs';
 import { build } from 'esbuild';
 
