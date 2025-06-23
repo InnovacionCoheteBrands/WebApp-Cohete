@@ -22,58 +22,34 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with no banner to avoid conflicts
+    // Build with CommonJS format to avoid ES module polyfill issues
     console.log('Building server bundle...');
-    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=esm --target=node20 --outfile=dist/index.js --external:pg-native --external:fsevents --external:lightningcss --external:bufferutil --external:utf-8-validate --packages=external --define:process.env.NODE_ENV='"production"' --define:global=globalThis`);
+    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --external:pg-native --external:fsevents --external:lightningcss --external:bufferutil --external:utf-8-validate --packages=external --define:process.env.NODE_ENV='"production"' --define:global=globalThis`);
     
     if (result.stderr && result.stderr.includes('ERROR')) {
       throw new Error(`Build failed: ${result.stderr}`);
     }
     
-    // Read and fix the bundle content - replace problematic variable declarations
-    let bundleContent = readFileSync('dist/index.js', 'utf-8');
-    
-    // Replace all __filename and __dirname variable declarations with unique names
-    bundleContent = bundleContent.replace(/var __filename = fileURLToPath[0-9]*\(import\.meta\.url\);/g, '/* replaced __filename declaration */');
-    bundleContent = bundleContent.replace(/var __dirname = dirname[0-9]*\(__filename\);/g, '/* replaced __dirname declaration */');
-    bundleContent = bundleContent.replace(/const __filename = fileURLToPath[0-9]*\(import\.meta\.url\);/g, '/* replaced __filename declaration */');
-    bundleContent = bundleContent.replace(/const __dirname = dirname[0-9]*\(__filename\);/g, '/* replaced __dirname declaration */');
-    
-    // Create polyfill block at the beginning
-    const polyfillBlock = `// ES Module Compatibility Layer
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { createRequire } from 'module';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const require = createRequire(import.meta.url);
-
-// Global polyfill
-if (typeof global === 'undefined') {
-  globalThis.global = globalThis;
-}
-
-`;
-    
-    // Prepend polyfills to cleaned bundle
-    bundleContent = polyfillBlock + bundleContent;
-    writeFileSync('dist/index.js', bundleContent);
-    console.log('Fixed ES module variable conflicts and applied polyfills');
+    console.log('Build completed successfully');
     
     // Create production package.json
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
     const prodPackage = {
       name: "cohete-workflow-production",
       version: "1.0.0",
-      type: "module",
       main: "index.js",
       scripts: {
         start: "NODE_ENV=production node index.js"
       },
       dependencies: {
         pg: pkg.dependencies.pg,
-        "@neondatabase/serverless": pkg.dependencies["@neondatabase/serverless"]
+        "@neondatabase/serverless": pkg.dependencies["@neondatabase/serverless"],
+        bcryptjs: pkg.dependencies.bcryptjs,
+        express: pkg.dependencies.express,
+        "express-session": pkg.dependencies["express-session"],
+        cors: pkg.dependencies.cors,
+        multer: pkg.dependencies.multer,
+        "drizzle-orm": pkg.dependencies["drizzle-orm"]
       }
     };
     
