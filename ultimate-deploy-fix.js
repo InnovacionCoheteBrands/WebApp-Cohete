@@ -17,7 +17,7 @@ async function ultimateDeployFix() {
     mkdirSync('dist', { recursive: true });
     
     // Build with maximum compatibility - using packages=bundle to include all deps
-    const buildCmd = `npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=bundle --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --define:process.env.NODE_ENV='"production"' --minify=false --sourcemap=false`;
+    const buildCmd = `npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=bundle --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --define:process.env.NODE_ENV='"production"' --minify=false`;
     
     console.log('Building server with maximum compatibility...');
     await execAsync(buildCmd);
