@@ -1153,7 +1153,7 @@ export class DatabaseStorage implements IStorage {
     return comments;
   }
 
-  async createTaskNotification(comment: any): Promise<any> {
+  async createTaskComment(comment: any): Promise<any> {
     const [newComment] = await db
       .insert(notifications)
       .values({
@@ -1333,7 +1333,28 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
+  async updateUser(userId: string, updateData: Partial<User>): Promise<User | undefined> {
+    // Filtrar el campo email ya que no existe en la base de datos
+    const { email, ...filteredUserData } = updateData as any;
 
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...filteredUserData,
+        updatedAt: new Date()
+      })
+      .where(eq(users.id, userId))
+      .returning();
+
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    const result = await db
+      .delete(users)
+      .where(eq(users.id, id));
+    return !!result;
+  }
 }
 
 // Create a mock session store for the storage instance
