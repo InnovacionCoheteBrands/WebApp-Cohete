@@ -21,7 +21,7 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Create optimized build command with all externals to avoid bundling issues
+    // Create optimized build command with ESM polyfills and all externals
     const buildCmd = [
       'npx esbuild server/index.ts',
       '--bundle',
@@ -40,7 +40,8 @@ async function deployBuild() {
       '--external:typescript',
       '--define:process.env.NODE_ENV=\'"production"\'',
       '--keep-names',
-      '--sourcemap=external'
+      '--sourcemap=external',
+      '--banner:js="import { createRequire } from \'module\'; import { fileURLToPath } from \'url\'; import { dirname } from \'path\'; const require = createRequire(import.meta.url); const __filename = fileURLToPath(import.meta.url); const __dirname = dirname(__filename);"'
     ].join(' ');
     
     console.log('Building server with all fixes applied...');
