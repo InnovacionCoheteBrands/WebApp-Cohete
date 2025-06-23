@@ -113,6 +113,7 @@ Cohete Workflow is a comprehensive project management platform designed specific
 - **Production Package**: Clean configuration without 'dev' commands to pass security checks
 
 ## Changelog
+- June 20, 2025. RESTORED original application - Removed incorrect dashboard components and restored user's original "Gestor de Proyectos" application
 - June 20, 2025. RESOLVED deployment blocking issue - Created deploy-build.js script that generates production-ready configuration without 'dev' commands, eliminating Replit security deployment blocks
 - June 20, 2025. Fixed deployment configuration - Updated production build to use proper commands instead of development mode
 - June 13, 2025. Initial setup
