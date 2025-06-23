@@ -42,8 +42,9 @@ async function deployBuild() {
       },
       banner: {
         js: `
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
+// ESM compatibility shim
+const require = typeof globalThis.require !== 'undefined' ? globalThis.require : 
+  (await import('module')).createRequire(import.meta.url);
         `.trim()
       },
       resolveExtensions: ['.ts', '.js', '.json'],

@@ -301,6 +301,63 @@ export const projectAssignments = pgTable("project_assignments", {
   assignedAt: timestamp("assigned_at").defaultNow().notNull()
 });
 
+// Task Groups table
+export const taskGroups = pgTable("task_groups", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  color: text("color").default("#3498db"),
+  position: integer("position").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Project Column Settings table
+export const projectColumnSettings = pgTable("project_column_settings", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  columnName: text("column_name").notNull(),
+  columnType: columnTypeEnum("column_type").notNull(),
+  isVisible: boolean("is_visible").default(true),
+  position: integer("position").default(0),
+  config: jsonb("config").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Task Column Values table
+export const taskColumnValues = pgTable("task_column_values", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  columnId: integer("column_id").references(() => projectColumnSettings.id, { onDelete: "cascade" }).notNull(),
+  valueText: text("value_text"),
+  valueNumber: numeric("value_number", { precision: 10, scale: 2 }),
+  valueDate: timestamp("value_date"),
+  valueBool: boolean("value_bool"),
+  valueJson: jsonb("value_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Task Assignees table
+export const taskAssignees = pgTable("task_assignees", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  assignedBy: varchar("assigned_by").references(() => users.id, { onDelete: "set null" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull()
+});
+
+// Task Attachments table
+export const taskAttachments = pgTable("task_attachments", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // Activity Log table
 export const activityLog = pgTable("activity_log", {
   id: serial("id").primaryKey(),
@@ -389,6 +446,9 @@ export const insertCollaborativeDocSchema = createInsertSchema(collaborativeDocs
 export const insertNotificationSchema = createInsertSchema(notifications);
 export const insertTaskDependencySchema = createInsertSchema(taskDependencies);
 export const insertProjectMemberSchema = createInsertSchema(projectMembers);
+export const insertTaskGroupSchema = createInsertSchema(taskGroups);
+export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings);
+export const insertTaskColumnValueSchema = createInsertSchema(taskColumnValues);
 
 // Export enum types
 export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "grok-beta"]);
