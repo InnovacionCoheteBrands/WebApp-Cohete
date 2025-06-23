@@ -15,19 +15,20 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with complete external list to exclude ALL development dependencies
-    console.log('Building production server with complete development dependency exclusion...');
-    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=external --external:@replit/vite-plugin-shadcn-theme-json --external:@replit/vite-plugin-cartographer --external:@replit/vite-plugin-runtime-error-modal --external:@replit/* --external:@vitejs/* --external:vite --external:@babel/* --external:esbuild --external:typescript --external:drizzle-kit --external:tsx --external:@types/* --external:lightningcss --external:postcss --external:autoprefixer --external:tailwindcss --external:@tailwindcss/* --external:pg-native --external:fsevents --external:bufferutil --external:utf-8-validate --define:process.env.NODE_ENV='"production"'`);
+    // Build with complete bundling - no externals to avoid module conflicts
+    console.log('Building production server with all dependencies bundled...');
+    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --define:process.env.NODE_ENV='"production"' --minify`);
     
     if (result.stderr && result.stderr.includes('ERROR')) {
       throw new Error(`ESBuild failed: ${result.stderr}`);
     }
     
-    // Read and completely fix the bundled output
+    // Read and fix CommonJS compatibility issues
     let content = readFileSync('dist/index.js', 'utf-8');
     
-    // Replace all fileURLToPath patterns with safe alternatives
+    // Remove all ES module syntax and __toESM calls that cause conflicts
     content = content
+      .replace(/__toESM\([^)]*\)/g, 'require')
       .replace(/var\s+(\w+)\s*=\s*\([0-9]+,\s*[^)]*\.fileURLToPath\)\([^)]*\);/g, 'var $1 = __filename;')
       .replace(/var\s+(\w+)\s*=\s*\([0-9]+,\s*[^)]*\.dirname\)\([^)]*\);/g, 'var $1 = __dirname;')
       .replace(/const\s+(\w+)\s*=\s*\([0-9]+,\s*[^)]*\.fileURLToPath\)\([^)]*\);/g, 'const $1 = __filename;')
@@ -36,35 +37,30 @@ async function deployBuild() {
       .replace(/\([0-9]+,\s*[^)]*\.dirname\)\([^)]*\)/g, '__dirname')
       .replace(/fileURLToPath[0-9]*\([^)]*\)/g, '__filename')
       .replace(/dirname[0-9]*\([^)]*\)/g, '__dirname')
-      .replace(/import\.meta\.url/g, '"file://" + __filename');
+      .replace(/import\.meta\.url/g, '"file://" + __filename')
+      .replace(/require\(\s*["']@replit\/vite-plugin-shadcn-theme-json["']\s*\)/g, '{}')
+      .replace(/require\(\s*["']@replit\/[^"']*["']\s*\)/g, '{}');
     
-    // Add global compatibility at the top
-    const globals = `if (typeof global === 'undefined') { globalThis.global = globalThis; }\n`;
+    // Add CommonJS compatibility globals at the top
+    const globals = `
+if (typeof global === 'undefined') { globalThis.global = globalThis; }
+if (typeof __filename === 'undefined') { global.__filename = require('path').resolve(__filename || 'index.js'); }
+if (typeof __dirname === 'undefined') { global.__dirname = require('path').dirname(__filename || __dirname); }
+`;
     content = globals + content;
     
     writeFileSync('dist/index.js', content);
     
-    // Create production package.json with all required dependencies
-    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
+    // Create production package.json with CommonJS configuration
     const prodPackage = {
       name: "cohete-workflow-production",
       version: "1.0.0",
+      type: "commonjs",
       main: "index.js",
       scripts: {
         start: "NODE_ENV=production node index.js"
       },
-      dependencies: {
-        pg: pkg.dependencies.pg,
-        "@neondatabase/serverless": pkg.dependencies["@neondatabase/serverless"],
-        bcryptjs: pkg.dependencies.bcryptjs,
-        express: pkg.dependencies.express,
-        "express-session": pkg.dependencies["express-session"],
-        cors: pkg.dependencies.cors,
-        multer: pkg.dependencies.multer,
-        "drizzle-orm": pkg.dependencies["drizzle-orm"],
-        zod: pkg.dependencies.zod,
-        axios: pkg.dependencies.axios
-      }
+      dependencies: {}
     };
     
     writeFileSync('dist/package.json', JSON.stringify(prodPackage, null, 2));

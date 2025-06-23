@@ -130,16 +130,26 @@ app.use((req, res, next) => {
 
     // Configuración específica para producción en Replit
     if (process.env.NODE_ENV === 'production') {
-      // Servir archivos estáticos del build de producción
-      const staticPath = path.join(__dirname, '../client/dist');
-      app.use(express.static(staticPath));
+      // Servir archivos estáticos desde dist/public
+      const publicPath = path.join(__dirname, 'public');
+      app.use(express.static(publicPath, {
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('.js')) {
+            res.setHeader('Content-Type', 'application/javascript');
+          } else if (filePath.endsWith('.mjs')) {
+            res.setHeader('Content-Type', 'application/javascript');
+          } else if (filePath.endsWith('.css')) {
+            res.setHeader('Content-Type', 'text/css');
+          }
+        }
+      }));
       
       // Catch-all handler para React routes en producción
       app.get('*', (req, res, next) => {
         if (req.path.startsWith('/api/')) {
           return next(); // Dejar que las rutas API se manejen normalmente
         }
-        res.sendFile(path.join(staticPath, 'index.html'));
+        res.sendFile(path.join(publicPath, 'index.html'));
       });
     } else {
       // Usar Vite solo en desarrollo
