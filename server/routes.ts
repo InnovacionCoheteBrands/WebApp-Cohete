@@ -4070,8 +4070,13 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       // Get tasks from all projects with safe column selection
       const tasks = await db.select().from(schema.tasks).orderBy(asc(schema.tasks.id));
 
-      // Get task groups separately
-      const taskGroups = await db.select().from(schema.taskGroups);
+      // Get task groups separately - handle missing table gracefully
+      let taskGroups = [];
+      try {
+        taskGroups = await db.select().from(schema.taskGroups);
+      } catch (error) {
+        console.warn('Task groups table not found, continuing without groups');
+      }
 
       // Get projects separately
       const projects = await db.select().from(schema.projects);
@@ -4081,35 +4086,40 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
       // Combine data in JavaScript to avoid SQL type conflicts
       const tasksWithDetails = tasks.map(task => {
-        const group = taskGroups.find(g => g.id === task.groupId);
+        // Crear grupos por defecto basados en el enum task.group
+        const defaultGroups = {
+          'todo': { id: 'todo', name: 'Por hacer', color: '#6b7280', position: 0 },
+          'in_progress': { id: 'in_progress', name: 'En progreso', color: '#3b82f6', position: 1 },
+          'completed': { id: 'completed', name: 'Completadas', color: '#10b981', position: 2 }
+        };
+        
+        const group = taskGroups.find(g => g.id === task.groupId) || 
+                     defaultGroups[task.group] || 
+                     defaultGroups['todo'];
+                     
         const project = projects.find(p => p.id === task.projectId);
-        const assignee = users.find(u => u.id === task.assignedToId || u.id === task.createdById);
+        const assignee = users.find(u => u.id === task.assignedToId) || 
+                        users.find(u => u.id === task.createdById);
 
         return {
           task: {
             id: task.id,
             projectId: task.projectId,
-            title: task.title,
-            description: task.description,
-            status: task.status,
-            priority: task.priority,
-            progress: task.progress,
+            title: task.title || 'Sin título',
+            description: task.description || '',
+            status: task.status || 'pending',
+            priority: task.priority || 'medium',
+            progress: task.progress || 0,
             dueDate: task.dueDate,
-            tags: task.tags,
-            groupId: task.groupId,
+            tags: task.tags || [],
+            group: task.group,
+            groupId: task.groupId || task.group,
             createdById: task.createdById,
             assignedToId: task.assignedToId,
             createdAt: task.createdAt,
             updatedAt: task.updatedAt,
           },
-          group: group ? {
-            id: group.id,
-            projectId: group.projectId,
-            name: group.name,
-            description: group.description,
-            color: group.color,
-            position: group.position,
-          } : null,
+          group: group,
           project: project ? {
             id: project.id,
             name: project.name,

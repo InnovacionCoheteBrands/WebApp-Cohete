@@ -34,7 +34,15 @@ async function fixDeploymentFinal() {
         'pg-native',
         'bufferutil', 
         'utf-8-validate',
-        'fsevents'
+        'fsevents',
+        'lightningcss',
+        'sharp',
+        'vite',
+        '@vitejs/plugin-react',
+        '@replit/vite-plugin-shadcn-theme-json',
+        '@replit/vite-plugin-runtime-error-modal',
+        '@replit/vite-plugin-cartographer',
+        'pdf-parse'
       ],
       target: 'node18',
       minify: false,
@@ -148,7 +156,8 @@ if (typeof globalThis.__esm_shim_applied === 'undefined') {
       },
       dependencies: {
         // Essential runtime dependencies only
-        "pg": currentPackage.dependencies?.pg || "^8.15.6"
+        "pg": currentPackage.dependencies?.pg || "^8.15.6",
+        "pdf-parse": currentPackage.dependencies?.["pdf-parse"] || "^1.1.1"
       },
       optionalDependencies: {
         "bufferutil": "^4.0.8",

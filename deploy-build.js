@@ -138,6 +138,7 @@ globalThis.__filename = __filename;
     console.log('  Format: ESM');
     console.log('  Dependencies: Bundled');
     console.log('  Size optimization: Applied');
+    console.log('  Use: node fix-deployment-final.js for comprehensive deployment');
     console.log('');
 
   } catch (error) {

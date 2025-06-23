@@ -64,12 +64,12 @@ export const projects = pgTable("projects", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Tasks table - aligned with actual database structure
+// Tasks table - aligned with actual database structure based on SQL query results
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  assignedToId: integer("assigned_to_id").references(() => users.id, { onDelete: "set null" }),
-  createdById: integer("created_by_id").references(() => users.id, { onDelete: "set null" }),
+  assignedToId: varchar("assigned_to_id").references(() => users.id, { onDelete: "set null" }),
+  createdById: varchar("created_by_id").references(() => users.id, { onDelete: "set null" }),
   title: text("title").notNull(),
   description: text("description"),
   status: taskStatusEnum("status").default("pending").notNull(),
@@ -78,14 +78,15 @@ export const tasks = pgTable("tasks", {
   position: integer("position").default(0),
   aiGenerated: boolean("ai_generated").default(false),
   aiSuggestion: text("ai_suggestion"),
-  tags: text("tags"),
+  tags: text("tags").array(),
   dueDate: timestamp("due_date"),
   completedAt: timestamp("completed_at"),
   estimatedHours: integer("estimated_hours"),
-  dependencies: text("dependencies"),
+  dependencies: text("dependencies").array(),
   parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: "set null" }),
   progress: integer("progress").default(0),
-  attachments: text("attachments"),
+  attachments: jsonb("attachments"),
+  groupId: integer("group_id"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
