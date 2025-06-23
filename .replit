@@ -6,8 +6,8 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "cd client && npm install && npm run build"]
-run = ["sh", "-c", "npm start"]
+build = ["node", "deploy-build.js"]
+run = ["npm", "start"]
 publicDir = "client/dist"
 
 [[deployment.rewrites]]

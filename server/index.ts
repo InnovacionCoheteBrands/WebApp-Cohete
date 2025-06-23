@@ -6,10 +6,18 @@ import cors from 'cors'; // Import the cors middleware
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import fs from 'fs';
+import path from 'path';
 
 // Fix __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Ensure fs and path are available globally for compatibility
+if (typeof global !== 'undefined') {
+  global.fs = fs;
+  global.path = path;
+}
 
 const app = express();
 const port = parseInt(process.env.PORT || "5000");
