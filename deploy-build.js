@@ -15,9 +15,9 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with maximum externals to avoid all development dependency conflicts
-    console.log('Building production bundle...');
-    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=bundle --external:@replit/* --external:@vitejs/* --external:vite --external:@babel/* --external:esbuild --external:typescript --external:drizzle-kit --external:tsx --external:@types/* --external:lightningcss --external:postcss --external:autoprefixer --external:tailwindcss --external:pg-native --external:fsevents --external:bufferutil --external:utf-8-validate --define:process.env.NODE_ENV='"production"'`);
+    // Build with complete external list to exclude ALL development dependencies
+    console.log('Building production server with complete development dependency exclusion...');
+    const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --packages=external --external:@replit/vite-plugin-shadcn-theme-json --external:@replit/vite-plugin-cartographer --external:@replit/vite-plugin-runtime-error-modal --external:@replit/* --external:@vitejs/* --external:vite --external:@babel/* --external:esbuild --external:typescript --external:drizzle-kit --external:tsx --external:@types/* --external:lightningcss --external:postcss --external:autoprefixer --external:tailwindcss --external:@tailwindcss/* --external:pg-native --external:fsevents --external:bufferutil --external:utf-8-validate --define:process.env.NODE_ENV='"production"'`);
     
     if (result.stderr && result.stderr.includes('ERROR')) {
       throw new Error(`ESBuild failed: ${result.stderr}`);
