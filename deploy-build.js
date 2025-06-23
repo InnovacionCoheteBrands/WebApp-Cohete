@@ -22,7 +22,7 @@ async function deployBuild() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with CommonJS format to avoid ES module polyfill issues
+    // Build with CommonJS format
     console.log('Building server bundle...');
     const result = await execAsync(`npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.js --external:pg-native --external:fsevents --external:lightningcss --external:bufferutil --external:utf-8-validate --packages=external --define:process.env.NODE_ENV='"production"' --define:global=globalThis`);
     
@@ -30,7 +30,14 @@ async function deployBuild() {
       throw new Error(`Build failed: ${result.stderr}`);
     }
     
-    console.log('Build completed successfully');
+    // Read and fix import.meta.url issues in CommonJS bundle
+    let bundleContent = readFileSync('dist/index.js', 'utf-8');
+    
+    // Replace import.meta.url with a proper CommonJS equivalent
+    bundleContent = bundleContent.replace(/import\.meta\.url/g, '("file://" + __filename)');
+    
+    writeFileSync('dist/index.js', bundleContent);
+    console.log('Fixed import.meta.url references for CommonJS compatibility');
     
     // Create production package.json
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
