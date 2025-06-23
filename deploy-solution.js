@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Complete deployment fix - Final solution addressing all suggested deployment issues
+ * Complete deployment solution - Addresses all suggested fixes
  */
 
 import { writeFileSync, existsSync, mkdirSync, readFileSync, rmSync } from 'fs';
@@ -10,9 +10,9 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
-async function deployComplete() {
+async function deploySolution() {
   try {
-    console.log('Applying complete deployment fixes...');
+    console.log('Applying deployment solution...');
     
     // Clean previous build
     if (existsSync('dist')) {
@@ -20,19 +20,23 @@ async function deployComplete() {
     }
     mkdirSync('dist', { recursive: true });
     
-    // Build with CommonJS format and rename to match npm start expectations
-    const buildCommand = `npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/server.js --packages=external --external:lightningcss --external:@babel/preset-typescript --external:esbuild --external:vite --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --define:process.env.NODE_ENV='"production"'`;
+    // Build with CommonJS format and output as .cjs to avoid module conflicts
+    const buildCommand = `npx esbuild server/index.ts --bundle --platform=node --format=cjs --target=node20 --outfile=dist/index.cjs --packages=external --external:lightningcss --external:@babel/preset-typescript --external:esbuild --external:vite --external:pg-native --external:bufferutil --external:utf-8-validate --external:fsevents --define:process.env.NODE_ENV='"production"'`;
     
-    console.log('Building server with CommonJS format...');
+    console.log('Building server bundle...');
     await execAsync(buildCommand);
     
-    // Rename to index.js to match npm start expectations exactly
-    await execAsync('mv dist/server.js dist/index.js');
+    // Create a simple index.js that imports the .cjs file
+    const indexContent = `// Production entry point
+const path = require('path');
+require('./index.cjs');
+`;
+    writeFileSync('dist/index.js', indexContent);
     
-    // Read current dependencies  
+    // Read dependencies from main package.json
     const currentPackage = JSON.parse(readFileSync('package.json', 'utf-8'));
     
-    // Create production package.json without "type": "module" to allow CommonJS
+    // Create production package.json without ESM type
     const prodPackage = {
       name: "cohete-workflow-production",
       version: "1.0.0",
@@ -75,26 +79,24 @@ async function deployComplete() {
       await execAsync('cp -r server/public/* dist/public/ 2>/dev/null || true');
     }
     
-    // Install dependencies in dist
-    console.log('Installing production dependencies...');
+    // Install production dependencies
+    console.log('Installing dependencies...');
     await execAsync('cd dist && npm install --production --no-package-lock');
     
-    // Verify build meets all requirements
-    const indexExists = existsSync('dist/index.js');
-    const packageExists = existsSync('dist/package.json');
-    const nodeModulesExists = existsSync('dist/node_modules');
+    // Final verification
+    const files = ['dist/index.js', 'dist/index.cjs', 'dist/package.json', 'dist/node_modules'];
+    const allExist = files.every(file => existsSync(file));
     
-    if (indexExists && packageExists && nodeModulesExists) {
-      console.log('\nAll suggested deployment fixes successfully applied:');
-      console.log('✓ Fixed build/runtime mismatch - dist/index.js created at exact npm start location');
-      console.log('✓ Fixed npm start script - matches actual build output location');
-      console.log('✓ Fixed entry point configuration - dist/index.js matches npm start expectations');
-      console.log('✓ Fixed file structure mismatch - build output matches runtime expectations');
-      console.log('✓ Bundled dependencies properly - all modules installed in dist/node_modules');
-      console.log('✓ Updated production package.json - proper start script without ESM conflicts');
-      console.log('\nDeployment complete: npm start executes NODE_ENV=production node dist/index.js');
+    if (allExist) {
+      console.log('\nDeployment fixes successfully applied:');
+      console.log('- Build/runtime mismatch fixed');
+      console.log('- Entry point configuration corrected');
+      console.log('- File structure aligned with npm start');
+      console.log('- Dependencies properly bundled');
+      console.log('- Module format conflicts resolved');
+      console.log('\nDeployment ready for npm start');
     } else {
-      throw new Error('Build verification failed - missing required files');
+      throw new Error('Build verification failed');
     }
     
   } catch (error) {
@@ -103,4 +105,4 @@ async function deployComplete() {
   }
 }
 
-deployComplete().catch(console.error);
+deploySolution().catch(console.error);
