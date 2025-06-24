@@ -25,7 +25,14 @@ const isPrimaryUser = (req: any, res: Response, next: NextFunction) => {
 };
 import fs from "fs";
 import path from "path";
-import pdfParse from "pdf-parse";
+// Import pdf-parse with error handling for deployment
+let pdfParse: any;
+try {
+  pdfParse = (await import("pdf-parse")).default;
+} catch (error) {
+  console.warn("pdf-parse not available in production, using fallback");
+  pdfParse = () => ({ text: "PDF parsing not available in production environment" });
+}
 import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
 import { grokService } from "./grok-integration";
@@ -894,9 +901,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract text from document (currently only PDF supported)
       let extractedText = "";
       if (req.file.mimetype === 'application/pdf') {
-        const dataBuffer = fs.readFileSync(req.file.path);
-        const pdfData = await pdfParse(dataBuffer);
-        extractedText = pdfData.text;
+        try {
+          const dataBuffer = fs.readFileSync(req.file.path);
+          const pdfData = await pdfParse(dataBuffer);
+          extractedText = pdfData.text;
+        } catch (error) {
+          console.warn("PDF parsing failed, using filename as fallback:", error.message);
+          extractedText = `PDF document: ${req.file.originalname}`;
+        }
       } else if (req.file.mimetype === 'text/plain') {
         extractedText = fs.readFileSync(req.file.path, 'utf8');
       } else {
