@@ -6,9 +6,9 @@
  * Incluye manejo de pdf-parse, CommonJS, y todas las dependencias
  */
 
-const { build } = require('esbuild');
-const { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync } = require('fs');
-const { execSync } = require('child_process');
+import { build } from 'esbuild';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, cpSync, rmSync, statSync } from 'fs';
+import { execSync } from 'child_process';
 
 async function deploymentFinal() {
   try {
@@ -32,13 +32,16 @@ async function deploymentFinal() {
       entryPoints: ['server/index.ts'],
       bundle: true,
       platform: 'node',
-      format: 'cjs',
+      format: 'esm',
       outfile: 'dist/index.js',
       external: [
         'pg-native',
         'bufferutil', 
         'utf-8-validate',
-        'fsevents'
+        'fsevents',
+        'lightningcss',
+        'esbuild',
+        'vite'
       ],
       target: 'node18',
       minify: false,
@@ -111,6 +114,7 @@ async function deploymentFinal() {
     const prodPackageJson = {
       name: "cohete-workflow-production",
       version: "1.0.0",
+      type: "module",
       main: "index.js",
       scripts: {
         start: "NODE_ENV=production node index.js",
@@ -145,7 +149,7 @@ exec node index.js
     // Step 8: Deployment verification
     console.log('🔍 Running deployment verification...');
     
-    const bundleSize = (require('fs').statSync('dist/index.js').size / (1024 * 1024)).toFixed(2);
+    const bundleSize = (statSync('dist/index.js').size / (1024 * 1024)).toFixed(2);
     
     console.log('');
     console.log('✅ DEPLOYMENT COMPLETED SUCCESSFULLY!');

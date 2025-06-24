@@ -25,13 +25,20 @@ const isPrimaryUser = (req: any, res: Response, next: NextFunction) => {
 };
 import fs from "fs";
 import path from "path";
-// Import pdf-parse with error handling for deployment
-let pdfParse: any;
-try {
-  pdfParse = (await import("pdf-parse")).default;
-} catch (error) {
-  console.warn("pdf-parse not available in production, using fallback");
-  pdfParse = () => ({ text: "PDF parsing not available in production environment" });
+// Dynamic import for pdf-parse to handle deployment issues
+let pdfParse: any = null;
+
+async function initializePdfParse() {
+  if (!pdfParse) {
+    try {
+      const module = await import("pdf-parse");
+      pdfParse = module.default;
+    } catch (error) {
+      console.warn("pdf-parse not available, using fallback");
+      pdfParse = () => ({ text: "PDF parsing not available in this environment" });
+    }
+  }
+  return pdfParse;
 }
 import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
@@ -902,8 +909,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let extractedText = "";
       if (req.file.mimetype === 'application/pdf') {
         try {
+          const parser = await initializePdfParse();
           const dataBuffer = fs.readFileSync(req.file.path);
-          const pdfData = await pdfParse(dataBuffer);
+          const pdfData = await parser(dataBuffer);
           extractedText = pdfData.text;
         } catch (error) {
           console.warn("PDF parsing failed, using filename as fallback:", error.message);
