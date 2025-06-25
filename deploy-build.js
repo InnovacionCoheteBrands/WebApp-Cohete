@@ -39,7 +39,8 @@ async function debugDeployBuild() {
       sourcemap: true, // Con sourcemap para debug
       define: {
         'process.env.NODE_ENV': '"production"',
-        'import.meta.url': '"file:///production/index.js"'
+        'import.meta.url': '"file://dist/index.js"',
+        '__dirname': '"/home/runner/workspace/dist"'
       },
       banner: {
         js: `
