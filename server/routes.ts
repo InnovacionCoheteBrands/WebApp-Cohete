@@ -80,14 +80,26 @@ declare global {
 // Initialize global storage
 global.storage = storage;
 
-// Obtener directorio actual compatible con ESM
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+// Definir ruta base para uploads con compatibilidad ESM/CommonJS
+let baseUploadDir = path.join(process.cwd(), 'uploads'); // Default fallback
 
-// Definir ruta base para uploads
-const currentFilePath = fileURLToPath(import.meta.url);
-const currentDirPath = dirname(currentFilePath);
-const baseUploadDir = path.join(currentDirPath, '..', 'uploads');
+// Initialize with proper path resolution
+async function initializeUploadDir() {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta.url) {
+      const urlModule = await import('url');
+      const pathModule = await import('path');
+      const currentFilePath = urlModule.fileURLToPath(import.meta.url);
+      const currentDirPath = pathModule.dirname(currentFilePath);
+      baseUploadDir = path.join(currentDirPath, '..', 'uploads');
+    }
+  } catch (error) {
+    // Keep default fallback
+  }
+}
+
+// Call initialization immediately
+initializeUploadDir();
 
 // Set up storage for file uploads
 const multerStorage = multer.diskStorage({

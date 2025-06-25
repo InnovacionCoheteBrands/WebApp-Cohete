@@ -37,8 +37,20 @@ async function deployBuild() {
       define: {
         'process.env.NODE_ENV': '"production"'
       },
-      // Remove banner to prevent duplicate import conflicts
-      banner: undefined,
+      banner: {
+        js: `
+// Production runtime compatibility shim
+if (typeof globalThis.process === 'undefined') {
+  globalThis.process = { cwd: () => '/', argv: ['node', 'index.js'], env: {} };
+}
+if (typeof globalThis.__dirname === 'undefined') {
+  globalThis.__dirname = process.cwd();
+}
+if (typeof globalThis.__filename === 'undefined') {
+  globalThis.__filename = 'index.js';
+}
+        `.trim()
+      },
       resolveExtensions: ['.ts', '.js', '.json'],
       mainFields: ['module', 'main'],
       conditions: ['import', 'node', 'default'],
