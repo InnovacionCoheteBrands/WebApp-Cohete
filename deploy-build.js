@@ -3,21 +3,22 @@ import { writeFileSync, existsSync, mkdirSync, cpSync, readFileSync, rmSync } fr
 import { build } from 'esbuild';
 import { execSync } from 'child_process';
 
-async function deployBuild() {
+async function debugDeployBuild() {
   try {
-    console.log('🚀 Starting comprehensive deployment build...');
+    console.log('🔍 DEBUG DEPLOY - COHETE WORKFLOW');
+    console.log('=================================');
 
-    // Clean previous build completely
+    // Limpiar build anterior completamente
     if (existsSync('dist')) {
-      console.log('🧹 Cleaning previous build...');
+      console.log('🧹 Limpiando build anterior...');
       rmSync('dist', { recursive: true, force: true });
     }
     mkdirSync('dist', { recursive: true });
     mkdirSync('dist/public', { recursive: true });
 
-    console.log('📦 Building server with esbuild...');
+    console.log('📦 Construyendo servidor sin dependencias problemáticas...');
 
-    // Build the server with comprehensive configuration
+    // Build del servidor con configuración ultra-estable
     await build({
       entryPoints: ['server/index.ts'],
       bundle: true,
@@ -30,107 +31,146 @@ async function deployBuild() {
         'utf-8-validate',
         'fsevents',
         'sharp',
-        'lightningcss'
+        'lightningcss',
+        'esbuild'
       ],
       target: 'node18',
-      minify: true,
-      sourcemap: false,
+      minify: false, // Sin minificar para debug
+      sourcemap: true, // Con sourcemap para debug
       define: {
         'process.env.NODE_ENV': '"production"',
         '__dirname': 'process.cwd()',
-        '__filename': '"index.js"',
-        'import.meta.url': '"file://index.js"'
+        '__filename': '"index.js"'
       },
       banner: {
         js: `
-// Production bundle - Node.js compatibility layer
+// DEBUG PRODUCTION BUNDLE
+const path = require('path');
+const url = require('url');
 process.env.NODE_ENV = 'production';
-globalThis.__dirname = process.cwd();
-globalThis.__filename = 'index.js';
-globalThis.require = require;
+global.__dirname = process.cwd();
+global.__filename = 'index.js';
+
+// Mock import.meta for compatibility
+if (typeof globalThis.importMeta === 'undefined') {
+  globalThis.importMeta = {
+    url: 'file://' + path.join(process.cwd(), 'index.js')
+  };
+}
         `.trim()
       },
       resolveExtensions: ['.ts', '.js', '.json'],
-      mainFields: ['module', 'main'],
-      conditions: ['import', 'node', 'default'],
+      mainFields: ['main', 'module'],
+      conditions: ['node', 'default'],
       packages: 'bundle',
       loader: {
         '.ts': 'ts',
         '.js': 'js'
       },
-      treeShaking: true,
-      keepNames: true
+      keepNames: true,
+      logLevel: 'info'
     });
 
-    console.log('✅ Server build completed successfully');
+    console.log('✅ Servidor construido exitosamente');
 
-    // Create comprehensive static files
-    console.log('📁 Creating static files...');
-    
+    // Crear HTML de producción simple pero funcional
     const productionHTML = `<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cohete Workflow - Production</title>
+    <title>🚀 Cohete Workflow - Producción</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            margin: 0; padding: 2rem; background: #f8fafc; color: #334155;
+            margin: 0; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; min-height: 100vh; display: flex; align-items: center; justify-content: center;
         }
-        .container { max-width: 600px; margin: 0 auto; text-align: center; }
-        .status { background: #10b981; color: white; padding: 1rem; border-radius: 8px; margin: 1rem 0; }
-        .api-info { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .endpoints { text-align: left; margin: 1rem 0; }
-        .endpoint { padding: 0.5rem; background: #f1f5f9; margin: 0.25rem 0; border-radius: 4px; font-family: monospace; }
+        .container { 
+            max-width: 800px; text-align: center; background: rgba(255,255,255,0.1);
+            padding: 3rem; border-radius: 20px; backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+        .status { 
+            background: linear-gradient(45deg, #4CAF50, #45a049); color: white; 
+            padding: 1.5rem; border-radius: 12px; margin: 2rem 0; font-size: 1.2em;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        .api-info { 
+            background: rgba(255,255,255,0.15); padding: 2rem; border-radius: 15px; 
+            margin: 2rem 0; backdrop-filter: blur(5px);
+        }
+        .endpoints { text-align: left; margin: 1.5rem 0; }
+        .endpoint { 
+            padding: 1rem; background: rgba(255,255,255,0.1); margin: 0.5rem 0; 
+            border-radius: 8px; font-family: 'Courier New', monospace; font-size: 0.9em;
+            border-left: 4px solid #4CAF50;
+        }
+        .logo { font-size: 4rem; margin-bottom: 1rem; }
+        .version { opacity: 0.7; font-size: 0.9em; margin-top: 1rem; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚀 Cohete Workflow</h1>
+        <div class="logo">🚀</div>
+        <h1>Cohete Workflow</h1>
         <div class="status">
-            ✅ Servidor en producción funcionando correctamente
+            ✅ Sistema desplegado y funcionando correctamente
         </div>
         <div class="api-info">
-            <h2>API Endpoints Disponibles</h2>
+            <h2>🔗 Endpoints API Disponibles</h2>
             <div class="endpoints">
-                <div class="endpoint">GET /api/health - Health check</div>
-                <div class="endpoint">GET /api/user - User information</div>
-                <div class="endpoint">GET /api/projects - Projects list</div>
-                <div class="endpoint">GET /api/tasks - Tasks management</div>
+                <div class="endpoint">GET /api/health - Verificación de estado</div>
+                <div class="endpoint">GET /api/user - Información de usuario</div>
+                <div class="endpoint">GET /api/projects - Lista de proyectos</div>
+                <div class="endpoint">GET /api/tasks - Gestión de tareas</div>
+                <div class="endpoint">POST /api/auth/login - Autenticación</div>
             </div>
-            <p>Para acceder a la aplicación completa, contacte al administrador.</p>
+        </div>
+        <div class="version">
+            Versión: 1.0.0 | Build: ${new Date().toISOString()}
         </div>
     </div>
     <script>
-        // Check API health
+        // Verificar estado del API
         fetch('/api/health')
             .then(r => r.json())
-            .then(data => console.log('API Health:', data))
-            .catch(e => console.error('API Error:', e));
+            .then(data => {
+                console.log('✅ API Status:', data);
+                if (data.status === 'OK') {
+                    document.querySelector('.status').innerHTML = '✅ API funcionando correctamente - ' + data.timestamp;
+                }
+            })
+            .catch(e => {
+                console.error('❌ API Error:', e);
+                document.querySelector('.status').innerHTML = '⚠️ API no disponible temporalmente';
+                document.querySelector('.status').style.background = 'linear-gradient(45deg, #ff9800, #f57c00)';
+            });
     </script>
 </body>
 </html>`;
     
     writeFileSync('dist/public/index.html', productionHTML);
 
-    // Copy essential directories
+    // Copiar directorios esenciales
     const directoriesToCopy = ['uploads', 'migrations', 'shared'];
     directoriesToCopy.forEach(dir => {
       if (existsSync(dir)) {
         cpSync(dir, `dist/${dir}`, { recursive: true });
-        console.log(`📂 Copied ${dir} to dist/`);
+        console.log(`📂 Copiado ${dir}/ a dist/`);
       }
     });
 
-    // Create production package.json
+    // Crear package.json optimizado para producción
     const prodPackageJson = {
       name: "cohete-workflow-production",
       version: "1.0.0",
+      description: "Sistema de gestión de proyectos y marketing con IA",
       type: "commonjs",
       main: "index.js",
       scripts: {
-        start: "NODE_ENV=production node index.js"
+        start: "NODE_ENV=production node index.js",
+        debug: "NODE_ENV=production node --inspect index.js"
       },
       dependencies: {
         "pg": "^8.15.6"
@@ -146,29 +186,50 @@ globalThis.require = require;
 
     writeFileSync('dist/package.json', JSON.stringify(prodPackageJson, null, 2));
 
+    // Crear archivo de configuración de entorno
+    const envConfig = `# Cohete Workflow - Production Environment
+NODE_ENV=production
+PORT=5000
+# Add your environment variables here
+`;
+    writeFileSync('dist/.env.production', envConfig);
+
     console.log('');
-    console.log('🎉 DEPLOYMENT BUILD COMPLETED SUCCESSFULLY!');
-    console.log('======================================');
-    console.log('✅ Server bundled with all dependencies');
-    console.log('✅ Production HTML created');
-    console.log('✅ All modules resolved');
-    console.log('✅ CommonJS format for compatibility');
-    console.log('✅ Ready for Replit deployment');
+    console.log('🎉 DEBUG DEPLOY COMPLETADO EXITOSAMENTE!');
+    console.log('=========================================');
+    console.log('✅ Servidor bundleado sin dependencias problemáticas');
+    console.log('✅ HTML de producción creado');
+    console.log('✅ Configuración estable sin import.meta');
+    console.log('✅ Sourcemaps habilitados para debug');
+    console.log('✅ Formato CommonJS para máxima compatibilidad');
     console.log('');
-    console.log('📁 Build output:');
-    console.log('   ├── dist/index.js (production server)');
-    console.log('   ├── dist/package.json (minimal dependencies)');
-    console.log('   ├── dist/public/index.html (static frontend)');
-    console.log('   └── dist/uploads/ & dist/migrations/');
+    console.log('📊 Archivos creados:');
+    console.log('   ├── dist/index.js (servidor de producción)');
+    console.log('   ├── dist/index.js.map (sourcemap para debug)');
+    console.log('   ├── dist/package.json (dependencias mínimas)');
+    console.log('   ├── dist/public/index.html (interfaz web)');
+    console.log('   └── dist/.env.production (configuración)');
     console.log('');
-    console.log('🚀 Next step: Deploy using Replit Deployments');
+    console.log('🚀 LISTO PARA DESPLIEGUE EN REPLIT');
+    console.log('');
+    console.log('📋 Próximos pasos:');
+    console.log('   1. Usar configuración de deployment actualizada');
+    console.log('   2. Build: node deploy-build.js');
+    console.log('   3. Run: cd dist && npm install && npm start');
     console.log('');
 
   } catch (error) {
-    console.error('❌ DEPLOYMENT BUILD FAILED:', error.message);
-    console.error('Error details:', error);
+    console.error('❌ DEBUG DEPLOY FALLÓ:', error.message);
+    console.error('');
+    console.error('🔍 Detalles del error:');
+    console.error(error);
+    console.error('');
+    console.error('📋 Información de debug:');
+    console.error('- Node Version:', process.version);
+    console.error('- Working Directory:', process.cwd());
+    console.error('- Available Files:', existsSync('server/index.ts') ? '✅ server/index.ts exists' : '❌ server/index.ts missing');
     process.exit(1);
   }
 }
 
-deployBuild();
+debugDeployBuild();
