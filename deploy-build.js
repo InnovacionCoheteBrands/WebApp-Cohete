@@ -39,16 +39,8 @@ async function deployBuild() {
       },
       banner: {
         js: `
-// Production runtime compatibility shim
-if (typeof globalThis.process === 'undefined') {
-  globalThis.process = { cwd: () => '/', argv: ['node', 'index.js'], env: {} };
-}
-if (typeof globalThis.__dirname === 'undefined') {
-  globalThis.__dirname = process.cwd();
-}
-if (typeof globalThis.__filename === 'undefined') {
-  globalThis.__filename = 'index.js';
-}
+// Production compatibility banner
+process.env.NODE_ENV = process.env.NODE_ENV || 'production';
         `.trim()
       },
       resolveExtensions: ['.ts', '.js', '.json'],
