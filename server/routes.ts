@@ -80,19 +80,8 @@ declare global {
 // Initialize global storage
 global.storage = storage;
 
-// Production-safe upload directory resolution
-let baseUploadDir: string;
-
-if (process.env.NODE_ENV === 'production') {
-  baseUploadDir = path.join(process.cwd(), 'uploads');
-} else {
-  // Development mode with proper ES module handling
-  const { fileURLToPath } = await import('url');
-  const { dirname } = await import('path');
-  const currentFilePath = fileURLToPath(import.meta.url);
-  const currentDirPath = dirname(currentFilePath);
-  baseUploadDir = path.join(currentDirPath, '..', 'uploads');
-}
+// Upload directory resolution
+const baseUploadDir = path.join(process.cwd(), 'uploads');
 
 // Set up storage for file uploads
 const multerStorage = multer.diskStorage({

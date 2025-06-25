@@ -17,19 +17,21 @@ async function deployBuild() {
 
     // Build the server with esbuild
     await build({
-      entryPoints: ['server/index.ts'],
+      entryPoints: ['server/production.ts'],
       bundle: true,
       platform: 'node',
       format: 'cjs',
       outfile: 'dist/index.js',
       external: [
-        // Native modules that can't be bundled
         'pg-native',
         'bufferutil', 
         'utf-8-validate',
         'fsevents',
         'sharp',
-        'lightningcss'
+        'lightningcss',
+        'vite',
+        'esbuild',
+        '@vitejs/plugin-react'
       ],
       target: 'node18',
       minify: false,
@@ -39,8 +41,8 @@ async function deployBuild() {
       },
       banner: {
         js: `
-// Production compatibility banner
-process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+// Production bundle - exclude development dependencies
+process.env.NODE_ENV = 'production';
         `.trim()
       },
       resolveExtensions: ['.ts', '.js', '.json'],
