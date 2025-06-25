@@ -8,9 +8,8 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import fs from 'fs';
 
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Production-safe directory resolution
+const __dirname = process.env.NODE_ENV === 'production' ? '/home/runner/workspace/dist' : dirname(fileURLToPath(import.meta.url));
 
 // Ensure fs and path are available globally for compatibility
 if (typeof global !== 'undefined') {
