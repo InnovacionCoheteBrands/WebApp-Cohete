@@ -80,8 +80,14 @@ declare global {
 // Initialize global storage
 global.storage = storage;
 
-// Upload directory resolution
-const baseUploadDir = path.join(process.cwd(), 'uploads');
+// Obtener directorio actual compatible con ESM
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+// Definir ruta base para uploads
+const currentFilePath = fileURLToPath(import.meta.url);
+const currentDirPath = dirname(currentFilePath);
+const baseUploadDir = path.join(currentDirPath, '..', 'uploads');
 
 // Set up storage for file uploads
 const multerStorage = multer.diskStorage({
