@@ -7,7 +7,7 @@ channel = "stable-24_05"
 
 [deployment]
 build = ["sh", "-c", "node production-deploy.cjs"]
-run = ["sh", "-c", "cd dist && npm install && npm start"]
+run = ["sh", "-c", "cd dist && node index.js"]
 publicDir = "client/dist"
 
 [[deployment.rewrites]]
