@@ -1,4 +1,3 @@
-
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
@@ -99,7 +98,12 @@ app.get('*', (req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ message: 'API endpoint no encontrado' });
   }
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+  } else {
+      res.status(404).send('index.html not found');
+  }
 });
 
 // Error handler
@@ -293,7 +297,7 @@ process.on('SIGINT', () => {
 
         // Verificar API al cargar
         checkAPIHealth();
-        
+
         // Verificar cada 30 segundos
         setInterval(checkAPIHealth, 30000);
 
@@ -322,7 +326,7 @@ process.on('SIGINT', () => {
       "version": "1.0.0",
       "description": "Cohete Workflow - Sistema de gestión de proyectos",
       "main": "index.js",
-      "type": "commonjs",
+      "type": "module",
       "scripts": {
         "start": "node index.js"
       },
