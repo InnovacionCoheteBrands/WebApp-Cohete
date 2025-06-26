@@ -42,9 +42,19 @@ if (typeof window !== 'undefined') {
   });
 }
 
+// Debug: verificar que el script se está ejecutando
+console.log("WebSocket de Vite corregido para entorno Replit");
+
 // Renderizar la aplicación normalmente
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+const rootElement = document.getElementById("root");
+if (rootElement) {
+  console.log("Root element found, rendering React app...");
+  createRoot(rootElement).render(
+    <StrictMode>
+      <App />
+    </StrictMode>
+  );
+  console.log("React app rendered successfully");
+} else {
+  console.error("Root element not found!");
+}

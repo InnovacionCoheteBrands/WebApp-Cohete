@@ -29,12 +29,14 @@ import CopilotButton from "@/components/copilot/copilot-button";
 import { AppTourProvider } from "./hooks/use-app-tour";
 
 function App() {
+  console.log("App component rendering...");
+  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system">
         <AuthProvider>
           <AppTourProvider>
-            <>
+            <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)' }}>
               <Switch>
                 {/* Protected routes */}
                 <Route path="/">
