@@ -150,6 +150,135 @@ process.on('SIGINT', () => {
 
     fs.writeFileSync('dist/index.js', serverCode);
 
+    // Crear un archivo de configuración para módulos ES
+    const indexMjs = `import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+const express = require('express');
+const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const port = parseInt(process.env.PORT || "5000");
+
+// Configuración CORS para Replit
+const allowedOrigins = [
+  'https://' + (process.env.REPL_SLUG || 'localhost') + '.' + (process.env.REPL_OWNER || 'user') + '.repl.co',
+  'https://' + (process.env.REPL_SLUG || 'localhost') + '.replit.dev',
+  'https://' + (process.env.REPL_ID || 'localhost') + '.replit.app'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.some(allowed => origin.includes(allowed.split('.')[0]))) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permitir todos en producción
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With']
+}));
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+
+// Servir archivos estáticos desde el directorio actual
+app.use(express.static(path.resolve('./public')));
+
+// API endpoints básicos
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: 'production',
+    version: '1.0.0'
+  });
+});
+
+app.get('/api/user', (req, res) => {
+  res.json({
+    message: 'API funcionando correctamente',
+    authenticated: false,
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/projects', (req, res) => {
+  res.json({
+    projects: [],
+    message: 'Sistema de proyectos activo',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/tasks', (req, res) => {
+  res.json({
+    tasks: [],
+    message: 'Sistema de tareas activo',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Catch-all para React routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ message: 'API endpoint no encontrado' });
+  }
+  const indexPath = path.resolve('./public/index.html');
+  if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+  } else {
+      res.status(404).send('index.html not found');
+  }
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ 
+    message: 'Error interno del servidor',
+    timestamp: new Date().toISOString()
+  });
+});
+
+const server = app.listen(port, "0.0.0.0", () => {
+  console.log(\`🚀 Cohete Workflow funcionando en http://0.0.0.0:\${port}\`);
+  console.log(\`📱 Entorno: producción\`);
+  console.log(\`🔗 API disponible en /api/*\`);
+});
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.error(\`❌ Puerto \${port} en uso\`);
+    process.exit(1);
+  } else {
+    console.error('❌ Error del servidor:', error);
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', () => {
+  console.log('🔄 Apagando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 Apagando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado');
+    process.exit(0);
+  });
+});
+`;
+
+    fs.writeFileSync('dist/index.mjs', indexMjs);
+
     // HTML de producción con aplicación funcional
     const productionHTML = `<!DOCTYPE html>
 <html lang="es">
@@ -320,15 +449,16 @@ process.on('SIGINT', () => {
 
     fs.writeFileSync('dist/public/index.html', productionHTML);
 
-    // Package.json ultra-simple
+    // Package.json con soporte para módulos ES
     const packageJson = {
       "name": "cohete-workflow-production",
       "version": "1.0.0",
       "description": "Cohete Workflow - Sistema de gestión de proyectos",
-      "main": "index.js",
+      "main": "index.mjs",
       "type": "module",
       "scripts": {
-        "start": "node index.js"
+        "start": "node index.mjs",
+        "start:cjs": "node index.js"
       },
       "dependencies": {
         "express": "^4.21.2",
