@@ -4,12 +4,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import { grokService } from "./grok-integration";
 import cors from 'cors'; // Import the cors middleware
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-// Fix __dirname for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const app = express();
 const port = parseInt(process.env.PORT || "5000");
@@ -29,16 +23,12 @@ if (process.env.NODE_ENV === 'production') {
   allowedOrigins.push('http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000');
 }
 
-// Add localhost variants for development
-allowedOrigins.push('http://127.0.0.1:5000', 'http://localhost:5000', 'http://0.0.0.0:5000');
-
 app.use(cors({
   origin: function (origin, callback) {
     // Permitir requests sin origin (como mobile apps, postman, etc.)
     if (!origin) return callback(null, true);
     
-    // Always allow in development or if origin matches allowed origins
-    if (process.env.NODE_ENV !== 'production' || allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
