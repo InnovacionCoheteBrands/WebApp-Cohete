@@ -13,9 +13,13 @@ export function useProfile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateProfile) => {
-      const res = await apiRequest("PATCH", "/api/user/profile", data);
+      const res = await apiRequest("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({ message: "Error de conexión" }));
         throw new Error(errorData.message || "Error al actualizar el perfil");
       }
       return res.json() as Promise<User>;
@@ -40,7 +44,11 @@ export function useProfile() {
 
   const changePasswordMutation = useMutation({
     mutationFn: async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
-      const res = await apiRequest("POST", "/api/profile/change-password", { currentPassword, newPassword });
+      const res = await apiRequest("/api/profile/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al cambiar la contraseña");
@@ -62,24 +70,35 @@ export function useProfile() {
     },
   });
 
-  // Esta función podría manejar la carga de imágenes de perfil si se necesita
+  // Esta función maneja la carga de imágenes de perfil
   const uploadProfileImage = async (file: File) => {
     setIsUploading(true);
     try {
       const formData = new FormData();
       formData.append("profileImage", file);
 
-      // Simulamos un retraso para mostrar el estado de carga
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Enviar la imagen al endpoint
+      const response = await fetch('/api/user/profile-image', {
+        method: 'POST',
+        body: formData,
+      });
 
-      // En una implementación real, aquí enviaríamos la imagen a un endpoint
-      // y obtendríamos la URL de la imagen almacenada
-      const imageUrl = URL.createObjectURL(file);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al subir la imagen");
+      }
+
+      const data = await response.json();
       
       // Actualizamos el perfil con la nueva URL de imagen
-      await updateProfileMutation.mutateAsync({ profileImage: imageUrl });
+      await updateProfileMutation.mutateAsync({ profileImage: data.profileImage });
       
-      return imageUrl;
+      toast({
+        title: "Imagen actualizada",
+        description: "Tu foto de perfil se ha actualizado correctamente",
+      });
+      
+      return data.profileImage;
     } catch (error) {
       toast({
         title: "Error al subir imagen",

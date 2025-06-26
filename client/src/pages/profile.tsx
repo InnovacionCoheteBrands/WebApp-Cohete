@@ -126,6 +126,67 @@ export default function ProfilePage() {
     setIsAvatarDialogOpen(false);
   };
 
+  const handleCustomImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona un archivo de imagen válido",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validar tamaño (5MB máximo)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "La imagen debe ser menor a 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      try {
+        const formData = new FormData();
+        formData.append('profileImage', file);
+
+        // Hacer la petición al endpoint con autenticación
+        const response = await fetch('/api/user/profile-image', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include', // Importante para incluir las cookies de sesión
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'Error al subir la imagen');
+        }
+
+        const data = await response.json();
+        
+        if (data.profileImage) {
+          // Actualizar el perfil con la nueva imagen
+          updateProfileMutation.mutate({ profileImage: data.profileImage });
+          setIsAvatarDialogOpen(false);
+          toast({
+            title: "Imagen actualizada",
+            description: "Tu foto de perfil se ha actualizado correctamente",
+          });
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        toast({
+          title: "Error",
+          description: error instanceof Error ? error.message : "No se pudo subir la imagen",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const handleCoverImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -262,7 +323,7 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <User className="h-12 w-12 text-muted-foreground" />
+                      <User className="h-16 w-16 text-muted-foreground" />
                     </div>
                   )}
                 </div>
@@ -272,7 +333,7 @@ export default function ProfilePage() {
                   <DialogTrigger asChild>
                     <Button
                       size="icon"
-                      className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
+                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg border-2 border-background"
                     >
                       <Camera className="h-4 w-4" />
                     </Button>
@@ -281,25 +342,64 @@ export default function ProfilePage() {
                     <DialogHeader>
                       <DialogTitle>Seleccionar Avatar</DialogTitle>
                     </DialogHeader>
-                    <div className="grid grid-cols-3 gap-4 p-4">
-                      {preloadedAvatars.map((avatar) => (
-                        <div
-                          key={avatar.id}
-                          className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
-                          onClick={() => handleAvatarSelect(avatar.src)}
-                        >
-                          <img
-                            src={avatar.src}
-                            alt={avatar.name}
-                            className="w-full h-32 object-cover"
+                    <div className="p-4 space-y-6">
+                      {/* Opción para subir imagen personalizada */}
+                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                        <div className="text-center">
+                          <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                          <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
+                          </p>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleCustomImageUpload}
+                            className="hidden"
+                            id="custom-avatar-upload"
                           />
-                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="text-white text-sm font-medium text-center px-2">
-                              {avatar.name}
-                            </span>
-                          </div>
+                          <Button asChild>
+                            <label htmlFor="custom-avatar-upload" className="cursor-pointer">
+                              <Upload className="h-4 w-4 mr-2" />
+                              Seleccionar archivo
+                            </label>
+                          </Button>
                         </div>
-                      ))}
+                      </div>
+
+                      {/* Separador */}
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-background px-2 text-muted-foreground">
+                            O elige un avatar predefinido
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Avatares predefinidos */}
+                      <div className="grid grid-cols-3 gap-4">
+                        {preloadedAvatars.map((avatar) => (
+                          <div
+                            key={avatar.id}
+                            className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
+                            onClick={() => handleAvatarSelect(avatar.src)}
+                          >
+                            <img
+                              src={avatar.src}
+                              alt={avatar.name}
+                              className="w-full h-32 object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-sm font-medium text-center px-2">
+                                {avatar.name}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </DialogContent>
                 </Dialog>
