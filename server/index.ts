@@ -117,8 +117,8 @@ app.use((req, res, next) => {
     // Configurar trust proxy para Replit
     app.set('trust proxy', 1);
 
-    // Health check endpoints
-    app.get('/', (req, res) => { 
+    // Health check endpoint (moved to /api/health)
+    app.get('/api/health', (req, res) => {
       res.status(200).json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
@@ -127,7 +127,7 @@ app.use((req, res, next) => {
       }); 
     });
 
-    app.get('/health', (req, res) => {
+    app.get('/api/status', (req, res) => {
       res.status(200).json({ 
         status: 'OK', 
         timestamp: new Date().toISOString(),
@@ -169,7 +169,7 @@ app.use((req, res, next) => {
         });
       }
     } else {
-      // Usar Vite solo en desarrollo
+      // Configuración para desarrollo con Vite
       await setupVite(app, server);
     }
 
