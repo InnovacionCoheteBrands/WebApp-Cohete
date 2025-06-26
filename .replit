@@ -7,7 +7,7 @@ channel = "stable-24_05"
 
 [deployment]
 build = ["sh", "-c", "node production-deploy.js"]
-run = ["sh", "-c", "cd dist && npm install --production && npm start"]
+run = ["sh", "-c", "cd dist && npm install && npm start"]
 publicDir = "client/dist"
 
 [[deployment.rewrites]]
@@ -52,4 +52,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node deploy-build.js"
+args = "node production-deploy.cjs"
