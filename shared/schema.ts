@@ -51,7 +51,6 @@ export const users = pgTable("users", {
   phoneNumber: text("phone_number"),
   preferredLanguage: text("preferred_language").default("es"),
   theme: text("theme").default("light"),
-  customFields: jsonb("custom_fields").default([]),
   lastLogin: timestamp("last_login"),
   // OAuth fields
   firstName: text("first_name"),
@@ -328,6 +327,7 @@ export const taskGroups = pgTable("task_groups", {
   settings: jsonb("settings").default({}), // Configuraciones adicionales
   createdBy: integer("created_by").references(() => users.id, { onDelete: 'set null' }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Tabla para configuración de columnas de proyecto (Project Column Settings)
@@ -367,45 +367,6 @@ export const taskAssignees = pgTable("task_assignees", {
   userId: integer("user_id").references(() => users.id, { onDelete: 'cascade' }).notNull(),
   assignedBy: integer("assigned_by").references(() => users.id, { onDelete: 'set null' }),
   assignedAt: timestamp("assigned_at").defaultNow().notNull(),
-});
-
-export const scheduleEntryComments = pgTable('schedule_entry_comments', {
-  id: serial('id').primaryKey(),
-  entryId: integer('entry_id').references(() => scheduleEntries.id),
-  userId: varchar('user_id', { length: 255 }).references(() => users.id),
-  content: text('content').notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-export const userSettings = pgTable('user_settings', {
-  id: serial('id').primaryKey(),
-  userId: varchar('user_id', { length: 255 }).references(() => users.id).notNull().unique(),
-  // Configuraciones de usuario/preferencias
-  preferredLanguage: varchar('preferred_language', { length: 10 }).default('es'),
-  timezone: varchar('timezone', { length: 50 }).default('America/Mexico_City'),
-  theme: varchar('theme', { length: 20 }).default('system'),
-  // Configuraciones de notificaciones
-  notificationSettings: jsonb('notification_settings').default({
-    email: true,
-    push: true,
-    marketing: false,
-    projects: true,
-    tasks: true
-  }),
-  // Configuraciones de privacidad
-  privacySettings: jsonb('privacy_settings').default({
-    profileVisible: true,
-    showEmail: false,
-    showPhone: false
-  }),
-  // Configuraciones de apariencia (almacenadas por usuario)
-  colorScheme: varchar('color_scheme', { length: 20 }).default('blue'),
-  fontSize: varchar('font_size', { length: 20 }).default('medium'),
-  reducedAnimations: boolean('reduced_animations').default(false),
-  highContrastMode: boolean('high_contrast_mode').default(false),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Define table relations
@@ -596,36 +557,15 @@ export const upsertUserSchema = z.object({
 
 // Schema para actualizar perfil (sin contraseña)
 export const updateProfileSchema = z.object({
-  fullName: z.string().min(1, "El nombre completo es requerido").optional(),
-  username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres").optional(),
-  email: z.string().email("Email inválido").optional(),
+  fullName: z.string().min(1, "El nombre completo es obligatorio").optional(),
+  role: z.enum(['admin', 'manager', 'designer', 'content_creator', 'analyst']).optional(),
   bio: z.string().optional(),
   profileImage: z.string().optional(),
-  coverImage: z.string().optional(),
   jobTitle: z.string().optional(),
   department: z.string().optional(),
   phoneNumber: z.string().optional(),
   preferredLanguage: z.string().optional(),
-  timezone: z.string().optional(),
   theme: z.string().optional(),
-  customFields: z.array(z.object({
-    id: z.string(),
-    name: z.string(),
-    value: z.string(),
-    type: z.enum(['text', 'email', 'url', 'tel'])
-  })).optional(),
-  notificationSettings: z.object({
-    email: z.boolean(),
-    push: z.boolean(),
-    marketing: z.boolean(),
-    projects: z.boolean(),
-    tasks: z.boolean(),
-  }).optional(),
-  privacySettings: z.object({
-    profileVisible: z.boolean(),
-    showEmail: z.boolean(),
-    showPhone: z.boolean(),
-  }).optional(),
 });
 
 // Esquema para login que permite usar username o email

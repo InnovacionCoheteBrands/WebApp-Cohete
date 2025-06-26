@@ -143,7 +143,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
                   <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                    {user?.fullName}
+                    {user?.nickname || user?.fullName}
                   </span>
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <span className={cn(

@@ -5,13 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award } from "lucide-react";
+import { Camera, Upload, User, Save, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 
 // Import avatars from assets
 import astronaut1 from "@assets/Image_fx (81)_1750440002891.jpg";
@@ -30,13 +27,6 @@ const preloadedAvatars = [
   { id: 6, name: "Astronauta Rosa", src: astronaut6 },
 ];
 
-interface CustomField {
-  id: string;
-  name: string;
-  value: string;
-  type: 'text' | 'email' | 'url' | 'tel';
-}
-
 interface UserProfile {
   id: string;
   fullName: string;
@@ -45,10 +35,10 @@ interface UserProfile {
   bio: string;
   profileImage: string;
   coverImage: string;
+  nickname: string;
   jobTitle: string;
   department: string;
   phoneNumber: string;
-  customFields: CustomField[];
 }
 
 export default function ProfilePage() {
@@ -58,9 +48,6 @@ export default function ProfilePage() {
   const [selectedAvatar, setSelectedAvatar] = useState<string>("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImagePreview, setCoverImagePreview] = useState<string>("");
-  const [customFields, setCustomFields] = useState<CustomField[]>([]);
-  const [newFieldName, setNewFieldName] = useState("");
-  const [newFieldType, setNewFieldType] = useState<'text' | 'email' | 'url' | 'tel'>('text');
 
   // Fetch user profile
   const { data: user, isLoading } = useQuery<UserProfile>({
@@ -102,7 +89,7 @@ export default function ProfilePage() {
         body: formData,
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       setCoverImagePreview("");
       setCoverImageFile(null);
@@ -144,38 +131,8 @@ export default function ProfilePage() {
     }
   };
 
-  const handleFieldUpdate = (field: keyof UserProfile, value: any) => {
+  const handleFieldUpdate = (field: keyof UserProfile, value: string) => {
     updateProfileMutation.mutate({ [field]: value });
-  };
-
-  const addCustomField = () => {
-    if (newFieldName.trim()) {
-      const newField: CustomField = {
-        id: Date.now().toString(),
-        name: newFieldName,
-        value: "",
-        type: newFieldType,
-      };
-      const updatedFields = [...customFields, newField];
-      setCustomFields(updatedFields);
-      handleFieldUpdate('customFields', updatedFields);
-      setNewFieldName("");
-      setNewFieldType('text');
-    }
-  };
-
-  const removeCustomField = (fieldId: string) => {
-    const updatedFields = customFields.filter(field => field.id !== fieldId);
-    setCustomFields(updatedFields);
-    handleFieldUpdate('customFields', updatedFields);
-  };
-
-  const updateCustomField = (fieldId: string, value: string) => {
-    const updatedFields = customFields.map(field =>
-      field.id === fieldId ? { ...field, value } : field
-    );
-    setCustomFields(updatedFields);
-    handleFieldUpdate('customFields', updatedFields);
   };
 
   if (isLoading) {
@@ -187,14 +144,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className="container mx-auto p-6 max-w-4xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
           <User className="h-8 w-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold">Mi Perfil</h1>
-            <p className="text-muted-foreground">Personaliza tu información personal y presenta tu perfil profesional</p>
+            <p className="text-muted-foreground">Personaliza tu perfil y configuración</p>
           </div>
         </div>
 
@@ -211,7 +168,7 @@ export default function ProfilePage() {
               ) : (
                 <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
               )}
-
+              
               {/* Cover Image Upload Button */}
               <div className="absolute top-4 right-4">
                 <input
@@ -266,7 +223,7 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </div>
-
+                
                 {/* Profile Picture Change Button */}
                 <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
                   <DialogTrigger asChild>
@@ -308,194 +265,100 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        {/* Tabs Section */}
-        <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="personal">Información Personal</TabsTrigger>
-            <TabsTrigger value="professional">Información Profesional</TabsTrigger>
-            <TabsTrigger value="custom">Campos Personalizados</TabsTrigger>
-          </TabsList>
+        {/* Profile Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Basic Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Básica</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Nombre Completo</Label>
+                <Input
+                  id="fullName"
+                  defaultValue={user?.fullName}
+                  onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
+                />
+              </div>
 
-          {/* Personal Information Tab */}
-          <TabsContent value="personal" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Información Personal
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nombre Completo</Label>
-                    <Input
-                      id="fullName"
-                      defaultValue={user?.fullName}
-                      onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="nickname">Apodo</Label>
+                <Input
+                  id="nickname"
+                  placeholder="Tu apodo preferido"
+                  defaultValue={user?.nickname}
+                  onBlur={(e) => handleFieldUpdate('nickname', e.target.value)}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Nombre de Usuario</Label>
-                    <Input
-                      id="username"
-                      defaultValue={user?.username}
-                      onBlur={(e) => handleFieldUpdate('username', e.target.value)}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="username">Nombre de Usuario</Label>
+                <Input
+                  id="username"
+                  defaultValue={user?.username}
+                  onBlur={(e) => handleFieldUpdate('username', e.target.value)}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Correo Electrónico</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      defaultValue={user?.email}
-                      onBlur={(e) => handleFieldUpdate('email', e.target.value)}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Correo Electrónico</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue={user?.email}
+                  onBlur={(e) => handleFieldUpdate('email', e.target.value)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">Teléfono</Label>
-                    <Input
-                      id="phoneNumber"
-                      defaultValue={user?.phoneNumber}
-                      onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
-                    />
-                  </div>
-                </div>
+          {/* Professional Information */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Información Profesional</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">Cargo</Label>
+                <Input
+                  id="jobTitle"
+                  defaultValue={user?.jobTitle}
+                  onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="bio">Biografía</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Cuéntanos sobre ti..."
-                    defaultValue={user?.bio}
-                    onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
-                    rows={4}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <div className="space-y-2">
+                <Label htmlFor="department">Departamento</Label>
+                <Input
+                  id="department"
+                  defaultValue={user?.department}
+                  onBlur={(e) => handleFieldUpdate('department', e.target.value)}
+                />
+              </div>
 
-          {/* Professional Information Tab */}
-          <TabsContent value="professional" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5" />
-                  Información Profesional
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="jobTitle">Cargo</Label>
-                    <Input
-                      id="jobTitle"
-                      placeholder="Ej: Gerente de Marketing"
-                      defaultValue={user?.jobTitle}
-                      onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="phoneNumber">Teléfono</Label>
+                <Input
+                  id="phoneNumber"
+                  defaultValue={user?.phoneNumber}
+                  onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                />
+              </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Departamento</Label>
-                    <Input
-                      id="department"
-                      placeholder="Ej: Marketing Digital"
-                      defaultValue={user?.department}
-                      onBlur={(e) => handleFieldUpdate('department', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Custom Fields Tab */}
-          <TabsContent value="custom" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Settings className="h-5 w-5" />
-                  Campos Personalizados
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Add Custom Field */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-medium">Agregar Campo Personalizado</h3>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Nombre del campo (ej: LinkedIn, GitHub)"
-                      value={newFieldName}
-                      onChange={(e) => setNewFieldName(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Select value={newFieldType} onValueChange={(value: any) => setNewFieldType(value)}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="text">Texto</SelectItem>
-                        <SelectItem value="email">Email</SelectItem>
-                        <SelectItem value="url">URL</SelectItem>
-                        <SelectItem value="tel">Teléfono</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button onClick={addCustomField} size="sm">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-
-                <Separator />
-
-                {/* Custom Fields List */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Mis Campos Personalizados</h3>
-
-                  {customFields.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>No has agregado campos personalizados aún</p>
-                      <p className="text-sm">Agrega información adicional como redes sociales, sitios web, etc.</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {customFields.map((field) => (
-                        <div key={field.id} className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Label className="font-medium">{field.name}</Label>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeCustomField(field.id)}
-                              className="h-6 w-6 p-0"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <Input
-                            type={field.type}
-                            defaultValue={field.value}
-                            onBlur={(e) => updateCustomField(field.id, e.target.value)}
-                            placeholder={`Ingresa tu ${field.name.toLowerCase()}`}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              <div className="space-y-2">
+                <Label htmlFor="bio">Biografía</Label>
+                <Textarea
+                  id="bio"
+                  placeholder="Cuéntanos sobre ti..."
+                  defaultValue={user?.bio}
+                  onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Save Status */}
         {updateProfileMutation.isPending && (

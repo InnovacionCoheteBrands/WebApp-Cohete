@@ -13,7 +13,7 @@ export function useProfile() {
 
   const updateProfileMutation = useMutation({
     mutationFn: async (data: UpdateProfile) => {
-      const res = await apiRequest("PATCH", "/api/user/profile", data);
+      const res = await apiRequest("PATCH", "/api/profile", data);
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Error al actualizar el perfil");

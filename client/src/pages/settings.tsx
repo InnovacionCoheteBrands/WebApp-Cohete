@@ -3,7 +3,7 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Check, Save, RefreshCw, Sliders, Shield, Eye, AlertCircle, BellRing, Clock, LifeBuoy, PlayCircle, Globe, User, Palette } from "lucide-react";
+import { Check, Save, RefreshCw, Sliders, Shield, Eye, AlertCircle, BellRing, Clock, LifeBuoy, PlayCircle } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -282,12 +282,8 @@ export default function SettingsPage() {
             General
           </TabsTrigger>
           <TabsTrigger value="appearance" className="data-[state=active]:bg-background dark:data-[state=active]:bg-gray-800">
-            <Palette className="h-4 w-4 mr-2" />
+            <Eye className="h-4 w-4 mr-2" />
             Apariencia
-          </TabsTrigger>
-          <TabsTrigger value="user-preferences" className="data-[state=active]:bg-background dark:data-[state=active]:bg-gray-800">
-            <User className="h-4 w-4 mr-2" />
-            Preferencias
           </TabsTrigger>
           <TabsTrigger value="notifications" className="data-[state=active]:bg-background dark:data-[state=active]:bg-gray-800">
             <BellRing className="h-4 w-4 mr-2" />
@@ -625,130 +621,6 @@ export default function SettingsPage() {
                   </div>
                 </form>
               </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Preferencias de Usuario */}
-        <TabsContent value="user-preferences">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="h-5 w-5" />
-                Preferencias de Usuario
-              </CardTitle>
-              <CardDescription>
-                Configura tus preferencias personales de idioma, zona horaria y otras opciones.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Globe className="h-4 w-4" />
-                    Idioma Preferido
-                  </Label>
-                  <Select defaultValue="es">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="es">Español</SelectItem>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="fr">Français</SelectItem>
-                      <SelectItem value="de">Deutsch</SelectItem>
-                      <SelectItem value="pt">Português</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Idioma principal para la interfaz de usuario.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Zona Horaria
-                  </Label>
-                  <Select defaultValue="America/Mexico_City">
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/Mexico_City">México Central</SelectItem>
-                      <SelectItem value="America/New_York">Este (Nueva York)</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacífico (Los Ángeles)</SelectItem>
-                      <SelectItem value="Europe/Madrid">Madrid</SelectItem>
-                      <SelectItem value="Europe/London">Londres</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-sm text-muted-foreground">
-                    Zona horaria para fechas y horarios en la aplicación.
-                  </p>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium">Configuraciones de Privacidad</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Perfil Visible</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Permitir que otros usuarios vean tu perfil
-                      </p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Mostrar Email</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Mostrar tu email en tu perfil público
-                      </p>
-                    </div>
-                    <Switch />
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div className="space-y-0.5">
-                      <Label className="text-base">Mostrar Teléfono</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Mostrar tu teléfono en tu perfil público
-                      </p>
-                    </div>
-                    <Switch />
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="p-4 bg-muted rounded-lg">
-                <h3 className="font-medium mb-2">Control de Datos</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Gestiona tus datos personales y configuraciones de privacidad
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm">
-                    Exportar Datos
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Solicitar Eliminación
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button>
-                  <Save className="mr-2 h-4 w-4" />
-                  Guardar Preferencias
-                </Button>
-              </div>
             </CardContent>
           </Card>
         </TabsContent>
