@@ -29,7 +29,6 @@ import CopilotButton from "@/components/copilot/copilot-button";
 import { AppTourProvider } from "./hooks/use-app-tour";
 
 function App() {
-  console.log("App component rendering...");
   
   return (
     <QueryClientProvider client={queryClient}>
@@ -49,7 +48,7 @@ function App() {
                 <Route path="/">
                   <ProtectedRoute>
                     <MainLayout>
-                      <ProjectManager />
+                      <Dashboard />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
