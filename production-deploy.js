@@ -59,15 +59,14 @@ app.use(express.urlencoded({ extended: false }));
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Health check endpoints
+// Root endpoint - serve the main HTML application
 app.get('/', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    environment: 'production',
-    version: '1.0.0',
-    service: 'Cohete Workflow'
-  });
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('Application not found');
+  }
 });
 
 app.get('/health', (req, res) => {
@@ -115,16 +114,19 @@ app.get('/api/tasks', (req, res) => {
   });
 });
 
-// Catch-all para React routes
+// Catch-all para React routes (debe ir al final)
 app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ message: 'API endpoint no encontrado' });
+  // Solo manejar rutas que no sean API
+  if (req.path.startsWith('/api/') || req.path.startsWith('/health')) {
+    return res.status(404).json({ message: 'Endpoint no encontrado' });
   }
+  
+  // Servir la aplicación principal
   const indexPath = path.join(__dirname, 'public', 'index.html');
   if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
+    res.sendFile(indexPath);
   } else {
-      res.status(404).send('index.html not found');
+    res.status(404).send('Aplicación no encontrada');
   }
 });
 
