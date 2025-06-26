@@ -57,12 +57,23 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // Servir archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    } else if (path.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css');
+    } else if (path.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript');
+    }
+  }
+}));
 
 // Root endpoint - serve the main HTML application
 app.get('/', (req, res) => {
   const indexPath = path.join(__dirname, 'public', 'index.html');
   if (fs.existsSync(indexPath)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(indexPath);
   } else {
     res.status(404).send('Application not found');
@@ -70,6 +81,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -82,6 +94,7 @@ app.get('/health', (req, res) => {
 
 // API endpoints básicos
 app.get('/api/health', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.json({
     status: 'OK',
     timestamp: new Date().toISOString(),
@@ -91,6 +104,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/api/user', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.json({
     message: 'API funcionando correctamente',
     authenticated: false,
@@ -99,6 +113,7 @@ app.get('/api/user', (req, res) => {
 });
 
 app.get('/api/projects', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.json({
     projects: [],
     message: 'Sistema de proyectos activo',
@@ -107,6 +122,7 @@ app.get('/api/projects', (req, res) => {
 });
 
 app.get('/api/tasks', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
   res.json({
     tasks: [],
     message: 'Sistema de tareas activo',
