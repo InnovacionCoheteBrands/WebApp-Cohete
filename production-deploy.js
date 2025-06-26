@@ -59,6 +59,28 @@ app.use(express.urlencoded({ extended: false }));
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Health check endpoints
+app.get('/', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: 'production',
+    version: '1.0.0',
+    service: 'Cohete Workflow'
+  });
+});
+
+app.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: 'production',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    memory: process.memoryUsage()
+  });
+});
+
 // API endpoints básicos
 app.get('/api/health', (req, res) => {
   res.json({

@@ -117,9 +117,24 @@ app.use((req, res, next) => {
     // Configurar trust proxy para Replit
     app.set('trust proxy', 1);
 
-    // Health check endpoint
+    // Health check endpoints
+    app.get('/', (req, res) => { 
+      res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        service: 'Cohete Workflow API',
+        version: '1.0.0'
+      }); 
+    });
+
     app.get('/health', (req, res) => {
-      res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+      res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        environment: process.env.NODE_ENV || 'development'
+      });
     });
 
     // Configuración específica para producción en Replit
