@@ -1,3 +1,4 @@
+
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
@@ -16,15 +17,7 @@ async function createProductionBuild() {
 
     console.log('📦 Construyendo aplicación para producción...');
 
-    // Instalar esbuild si no existe
-    try {
-      execSync('npm list esbuild', { stdio: 'ignore' });
-    } catch {
-      console.log('📥 Instalando esbuild...');
-      execSync('npm install esbuild --save-dev', { stdio: 'inherit' });
-    }
-
-    // Script de servidor sin problemas de import.meta - VINCULADO A 0.0.0.0
+    // Script de servidor completo y estable
     const serverCode = `const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -34,19 +27,9 @@ const app = express();
 const port = parseInt(process.env.PORT || "5000");
 
 // Configuración CORS para Replit
-const allowedOrigins = [
-  'https://' + (process.env.REPL_SLUG || 'localhost') + '.' + (process.env.REPL_OWNER || 'user') + '.repl.co',
-  'https://' + (process.env.REPL_SLUG || 'localhost') + '.replit.dev',
-  'https://' + (process.env.REPL_ID || 'localhost') + '.replit.app'
-];
-
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.some(allowed => origin.includes(allowed.split('.')[0]))) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Permitir todos en producción
-    }
+    callback(null, true); // Permitir todos los orígenes en producción
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -58,12 +41,12 @@ app.use(express.urlencoded({ extended: false }));
 
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public'), {
-  setHeaders: (res, path) => {
-    if (path.endsWith('.html')) {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    } else if (path.endsWith('.css')) {
+    } else if (filePath.endsWith('.css')) {
       res.setHeader('Content-Type', 'text/css');
-    } else if (path.endsWith('.js')) {
+    } else if (filePath.endsWith('.js')) {
       res.setHeader('Content-Type', 'application/javascript');
     }
   }
@@ -80,6 +63,7 @@ app.get('/', (req, res) => {
   }
 });
 
+// Health check endpoint
 app.get('/health', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.json({
@@ -140,6 +124,7 @@ app.get('*', (req, res) => {
   // Servir la aplicación principal
   const indexPath = path.join(__dirname, 'public', 'index.html');
   if (fs.existsSync(indexPath)) {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.sendFile(indexPath);
   } else {
     res.status(404).send('Aplicación no encontrada');
@@ -192,7 +177,7 @@ process.on('SIGINT', () => {
 
     fs.writeFileSync('dist/index.js', serverCode);
 
-    // HTML de producción con aplicación funcional
+    // HTML de producción completo y funcional
     const productionHTML = `<!DOCTYPE html>
 <html lang="es">
 <head>
