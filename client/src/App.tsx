@@ -178,7 +178,11 @@ function App() {
                   return <CopilotButton />;
                 }}
               </Route>
-            </>
+              </Switch>
+              
+              <CopilotButton />
+              <Toaster />
+            </div>
           </AppTourProvider>
         </AuthProvider>
       </ThemeProvider>

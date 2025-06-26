@@ -4,7 +4,13 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { InsertUser, LoginData, User } from "@shared/schema";
+import { InsertUser, User } from "@shared/schema";
+
+// Define LoginData locally since it's not exported from schema
+type LoginData = {
+  username: string;
+  password: string;
+};
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
