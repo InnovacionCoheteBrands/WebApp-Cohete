@@ -345,10 +345,18 @@ process.on('SIGINT', () => {
         if (!fs.existsSync(targetDir)) {
           fs.mkdirSync(targetDir, { recursive: true });
         }
-        execSync(`cp -r ${dir}/* dist/${dir}/`, { stdio: 'ignore' });
-        console.log(`📂 Copiado ${dir}/ a producción`);
+        try {
+          execSync(`cp -r ${dir}/* dist/${dir}/`, { stdio: 'ignore' });
+          console.log(`📂 Copiado ${dir}/ a producción`);
+        } catch (error) {
+          console.log(`⚠️ ${dir}/ vacío o no accesible`);
+        }
       }
     });
+
+    // Calcular tamaño del bundle
+    const stats = fs.statSync('dist/index.js');
+    const bundleSize = (stats.size / 1024 / 1024).toFixed(2);
 
     console.log('');
     console.log('🎉 DESPLIEGUE COMPLETADO EXITOSAMENTE');
@@ -363,11 +371,12 @@ process.on('SIGINT', () => {
     console.log('   ├── dist/package.json (dependencias mínimas)');
     console.log('   └── dist/public/index.html (aplicación web)');
     console.log('');
+    console.log(`📊 Bundle size: ${bundleSize} MB`);
     console.log('🚀 LISTO PARA DESPLEGAR EN REPLIT');
 
   } catch (error) {
     console.error('❌ Error en construcción:', error.message);
-    console.error(error.stack);
+    console.error('Stack completo:', error.stack);
     process.exit(1);
   }
 }
