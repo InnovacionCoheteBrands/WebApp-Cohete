@@ -85,8 +85,6 @@ const UserManagementPage = () => {
   const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   
   // Check if user is primary, redirect if not
   if (!user) {
@@ -113,17 +111,6 @@ const UserManagementPage = () => {
       fullName: "",
       username: "",
       password: "",
-      isPrimary: false,
-      role: "content_creator",
-    },
-  });
-
-  // Form for editing users
-  const editForm = useForm<Partial<CreateUserFormValues>>({
-    resolver: zodResolver(createUserSchema.partial()),
-    defaultValues: {
-      fullName: "",
-      username: "",
       isPrimary: false,
       role: "content_creator",
     },
@@ -157,35 +144,6 @@ const UserManagementPage = () => {
     },
   });
   
-  // Mutation for updating users
-  const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, data }: { userId: number, data: Partial<CreateUserFormValues> }) => {
-      const res = await apiRequest("PATCH", `/api/admin/users/${userId}`, data);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Error al actualizar usuario");
-      }
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
-      toast({
-        title: "Usuario actualizado",
-        description: "Los permisos del usuario han sido actualizados exitosamente",
-      });
-      setIsEditDialogOpen(false);
-      setEditingUser(null);
-      editForm.reset();
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error al actualizar usuario",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
   // Mutation for deleting users
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: number) => {
@@ -220,31 +178,6 @@ const UserManagementPage = () => {
     createUserMutation.mutate(data);
   };
   
-  // Handle edit user
-  const handleEditUser = (user: User) => {
-    setEditingUser(user);
-    editForm.reset({
-      fullName: user.fullName,
-      username: user.username,
-      isPrimary: user.isPrimary,
-      role: user.role || "content_creator",
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  // Handle edit form submission
-  const onEditSubmit = (data: Partial<CreateUserFormValues>) => {
-    if (editingUser) {
-      updateUserMutation.mutate({ 
-        userId: editingUser.id, 
-        data: {
-          ...data,
-          password: undefined // No enviar password al actualizar
-        }
-      });
-    }
-  };
-
   // Handle delete confirmation
   const confirmDelete = () => {
     if (deleteUserId) {
@@ -339,34 +272,20 @@ const UserManagementPage = () => {
                       <CardDescription>@{user.username}</CardDescription>
                     </div>
                     
-                    <div className="flex gap-1">
-                      {/* Botón de editar permisos */}
+                    {/* No mostrar botón de eliminar para el usuario actual */}
+                    {user.id !== currentUserId && (
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="h-8 w-8 text-blue-600" 
-                        onClick={() => handleEditUser(user)}
-                        title="Editar permisos"
+                        className="h-8 w-8 text-destructive" 
+                        onClick={() => {
+                          setDeleteUserId(user.id);
+                          setIsDeleteDialogOpen(true);
+                        }}
                       >
-                        <UserCog className="h-4 w-4" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
-                      
-                      {/* No mostrar botón de eliminar para el usuario actual */}
-                      {user.id !== currentUserId && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive" 
-                          onClick={() => {
-                            setDeleteUserId(user.id);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          title="Eliminar usuario"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -526,135 +445,6 @@ const UserManagementPage = () => {
                       Creando...
                     </>
                   ) : "Crear usuario"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog para editar permisos de usuario */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Editar permisos de usuario</DialogTitle>
-            <DialogDescription>
-              Modifica los permisos y rol de {editingUser?.fullName}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Form {...editForm}>
-            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4 py-4">
-              <FormField
-                control={editForm.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre completo</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nombre completo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={editForm.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nombre de usuario</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nombre de usuario" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Solo letras, números y guiones bajos.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={editForm.control}
-                name="isPrimary"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                        disabled={editingUser?.id === currentUserId}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Usuario Administrador</FormLabel>
-                      <FormDescription>
-                        {editingUser?.id === currentUserId 
-                          ? "No puedes modificar tus propios permisos de administrador."
-                          : "Acceso a todas las funciones del sistema, incluida la gestión de usuarios."
-                        }
-                      </FormDescription>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={editForm.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rol del Usuario</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar rol" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="admin">Administrador</SelectItem>
-                        <SelectItem value="manager">Gerente</SelectItem>
-                        <SelectItem value="designer">Diseñador</SelectItem>
-                        <SelectItem value="content_creator">Creador de Contenido</SelectItem>
-                        <SelectItem value="analyst">Analista</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormDescription>
-                      El rol define los permisos y el acceso a las funciones del sistema.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <DialogFooter className="pt-4">
-                <Button 
-                  variant="outline" 
-                  type="button" 
-                  onClick={() => {
-                    setIsEditDialogOpen(false);
-                    setEditingUser(null);
-                    editForm.reset();
-                  }} 
-                  disabled={updateUserMutation.isPending}
-                >
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={updateUserMutation.isPending}
-                >
-                  {updateUserMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Actualizando...
-                    </>
-                  ) : "Actualizar permisos"}
                 </Button>
               </DialogFooter>
             </form>

@@ -104,44 +104,40 @@ export async function setupSimpleGoogleAuth(app: Express) {
       const [existingUser] = await db.select().from(users).where(eq(users.id, profile.id));
 
       if (existingUser) {
-        // Update existing user with latest profile data
-        const [updatedUser] = await db.update(users)
+        // Update existing user
+        const [updatedUser] = await db
+          .update(users)
           .set({
             email: email,
             firstName: firstName,
             lastName: lastName,
-            fullName: fullName,
             profileImageUrl: profile.photos?.[0]?.value || '',
             updatedAt: new Date(),
           })
           .where(eq(users.id, profile.id))
           .returning();
-
-        // Verificar si el usuario ya está en el equipo de Cohete Brands
-        await ensureUserInTeam(updatedUser.id, email);
-
         return done(null, updatedUser);
       } else {
         // Create new user
-        const [newUser] = await db.insert(users)
+        const [newUser] = await db
+          .insert(users)
           .values({
             id: profile.id,
-            email: email,
-            firstName: firstName,
-            lastName: lastName,
             fullName: fullName,
             username: username,
-            profileImageUrl: profile.photos?.[0]?.value || '',
+            email: email,
+            password: null,
             isPrimary: false,
             role: 'content_creator',
+            firstName: firstName,
+            lastName: lastName,
+            profileImageUrl: profile.photos?.[0]?.value || '',
+            preferredLanguage: 'es',
+            theme: 'light',
             createdAt: new Date(),
             updatedAt: new Date(),
           })
           .returning();
-
-        // Asignar automáticamente al equipo de Cohete Brands
-        await ensureUserInTeam(newUser.id, email);
-
         return done(null, newUser);
       }
     } catch (error) {
@@ -210,36 +206,3 @@ export const isAuthenticated: RequestHandler = (req, res, next) => {
   }
   res.status(401).json({ message: "Unauthorized" });
 };
-
-async function ensureUserInTeam(userId: string, email: string) {
-  if (email.endsWith('@cohetebrands.com')) {
-    try {
-      // Verificar que el usuario existe en la base de datos
-      const [user] = await db.select()
-        .from(users)
-        .where(eq(users.id, userId))
-        .limit(1);
-
-      if (!user) {
-        console.error(`Usuario ${userId} no encontrado en la base de datos`);
-        return;
-      }
-
-      // Actualizar el usuario para marcarlo como parte del equipo de Cohete Brands
-      await db.update(users)
-        .set({
-          department: 'Cohete Brands',
-          updatedAt: new Date(),
-        })
-        .where(eq(users.id, userId));
-
-      console.log(`✅ Usuario ${userId} (${email}) marcado como miembro del equipo de Cohete Brands`);
-      console.log(`📊 Departamento actualizado a: Cohete Brands`);
-      
-    } catch (error) {
-      console.error('Error al procesar usuario de Cohete Brands:', error);
-    }
-  } else {
-    console.log(`Usuario ${userId} (${email}) no pertenece al dominio de Cohete Brands`);
-  }
-}

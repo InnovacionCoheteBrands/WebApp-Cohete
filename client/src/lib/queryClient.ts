@@ -147,26 +147,10 @@ export const queryClient = new QueryClient({
         }
       },
       retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors except 408, 429
-        if (error?.status >= 400 && error?.status < 500 && ![408, 429].includes(error.status)) {
-          return false;
-        }
-        // Retry on database connection issues
-        if (error?.message?.includes('Control plane request failed') ||
-            error?.message?.includes('Too many database connection attempts') ||
-            error?.status === 500) {
-          return failureCount < 5;
-        }
+        console.log(`Query failed (attempt ${failureCount}):`, error?.message || error);
         return failureCount < 3;
       },
-      retryDelay: (attemptIndex) => {
-        // Exponential backoff with jitter for database errors
-        const baseDelay = Math.min(1000 * 2 ** attemptIndex, 30000);
-        const jitter = Math.random() * 1000;
-        return baseDelay + jitter;
-      },
-      staleTime: 30000, // Consider data fresh for 30 seconds
-      gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutes
     },
   },
 });

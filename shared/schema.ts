@@ -860,29 +860,6 @@ export type InsertTaskColumnValue = z.infer<typeof insertTaskColumnValueSchema>;
 export type TaskAssignee = typeof taskAssignees.$inferSelect;
 export type InsertTaskAssignee = z.infer<typeof insertTaskAssigneeSchema>;
 
-// ============ NUEVAS TABLAS PARA SISTEMA DE EQUIPOS ============
-
-// Teams Table - Equipos organizacionales
-export const teams = pgTable("teams", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  domain: text("domain").notNull().unique(), // Dominio de correo (ej: cohetebrands.com)
-  description: text("description"),
-  isDefault: boolean("is_default").default(false),
-  settings: jsonb("settings").default({}), // Configuraciones del equipo
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Team Members Table - Miembros de equipos
-export const teamMembers = pgTable("team_members", {
-  id: serial("id").primaryKey(),
-  teamId: integer("team_id").notNull().references(() => teams.id, { onDelete: 'cascade' }),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
-  role: text("role").default("member"), // owner, admin, member, viewer
-  joinedAt: timestamp("joined_at").defaultNow().notNull(),
-});
-
 // ============ NUEVAS TABLAS PARA SISTEMA DE COLABORACIÓN ============
 
 // Actualizar tabla de comentarios existente para el sistema de colaboración
@@ -918,23 +895,6 @@ export const projectMembers = pgTable("project_members", {
   role: text("role").default("member"), // owner, admin, member, viewer
   joinedAt: timestamp("joined_at").defaultNow().notNull(),
 });
-
-// ============ RELACIONES PARA EQUIPOS ============
-
-export const teamsRelations = relations(teams, ({ many }) => ({
-  members: many(teamMembers),
-}));
-
-export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
-  team: one(teams, {
-    fields: [teamMembers.teamId],
-    references: [teams.id],
-  }),
-  user: one(users, {
-    fields: [teamMembers.userId],
-    references: [users.id],
-  }),
-}));
 
 // ============ RELACIONES PARA NUEVAS TABLAS ============
 
@@ -975,19 +935,6 @@ export const projectMembersRelations = relations(projectMembers, ({ one }) => ({
   }),
 }));
 
-// ============ ESQUEMAS ZOD PARA EQUIPOS ============
-
-export const insertTeamSchema = createInsertSchema(teams).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertTeamMemberSchema = createInsertSchema(teamMembers).omit({
-  id: true,
-  joinedAt: true,
-});
-
 // ============ ESQUEMAS ZOD PARA NUEVAS TABLAS ============
 
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
@@ -1004,14 +951,6 @@ export const insertProjectMemberSchema = createInsertSchema(projectMembers).omit
   id: true,
   joinedAt: true,
 });
-
-// ============ TIPOS PARA EQUIPOS ============
-
-export type Team = typeof teams.$inferSelect;
-export type InsertTeam = z.infer<typeof insertTeamSchema>;
-
-export type TeamMember = typeof teamMembers.$inferSelect;
-export type InsertTeamMember = z.infer<typeof insertTeamMemberSchema>;
 
 // ============ TIPOS PARA NUEVAS TABLAS ============
 

@@ -161,9 +161,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve static files for privacy policy
   app.use('/static', express.static(path.join(currentDirPath, 'public')));
   
-  // Serve uploaded files
-  app.use('/uploads', express.static(path.join(currentDirPath, '..', 'uploads')));
-  
   // Privacy policy route
   app.get('/privacy-policy', (req, res) => {
     res.sendFile(path.join(currentDirPath, 'public', 'privacy-policy.html'));
@@ -380,62 +377,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint para actualizar usuarios (solo para usuarios primarios)
-  app.patch("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
-    try {
-      const userId = req.params.id;
-      
-      if (!userId) {
-        return res.status(400).json({ message: "ID de usuario requerido" });
-      }
-      
-      // Verificar que el usuario existe (ahora maneja tanto IDs numéricos como strings)
-      const user = await global.storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-      
-      const updateData = req.body;
-      
-      // No permitir modificar isPrimary del propio usuario
-      if (userId === req.user.id && updateData.hasOwnProperty('isPrimary')) {
-        return res.status(400).json({ message: "No puedes modificar tus propios permisos de administrador" });
-      }
-      
-      // Si se está removiendo permisos de administrador, verificar que no sea el último admin
-      if (updateData.isPrimary === false && user.isPrimary) {
-        const allUsers = await global.storage.listUsers();
-        const primaryUsers = allUsers.filter(u => u.isPrimary && u.id !== userId);
-        
-        if (primaryUsers.length === 0) {
-          return res.status(400).json({ message: "No se puede remover permisos al último usuario administrador" });
-        }
-      }
-      
-      // Actualizar usuario
-      const updatedUser = await global.storage.updateUser(userId, updateData);
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "Error al actualizar usuario" });
-      }
-      
-      // Eliminar password del response
-      const { password, ...userWithoutPassword } = updatedUser;
-      
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error updating user:", error);
-      res.status(500).json({ message: "Error al actualizar usuario" });
-    }
-  });
-
   // Endpoint para eliminar usuarios (solo para usuarios primarios)
   app.delete("/api/admin/users/:id", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
-      const userId = req.params.id;
+      const userId = parseInt(req.params.id);
       
-      if (!userId) {
-        return res.status(400).json({ message: "ID de usuario requerido" });
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "ID de usuario inválido" });
       }
       
       // No permitir eliminar el propio usuario
@@ -530,45 +478,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading cover image:", error);
       res.status(500).json({ message: "Error al subir la imagen de portada" });
-    }
-  });
-
-  // Endpoint para subir imagen de perfil
-  app.post("/api/user/profile-image", isAuthenticated, upload.single('profileImage'), async (req: Request, res: Response) => {
-    try {
-      const userId = req.user.id;
-      const file = req.file;
-      
-      if (!file) {
-        return res.status(400).json({ message: "No se proporcionó ningún archivo" });
-      }
-      
-      // Validar que sea una imagen
-      if (!file.mimetype.startsWith('image/')) {
-        return res.status(400).json({ message: "Solo se permiten archivos de imagen" });
-      }
-      
-      // En un entorno real, aquí subirías el archivo a un servicio de almacenamiento
-      // Por ahora, guardaremos la ruta local del archivo
-      const imagePath = `/uploads/${file.filename}`;
-      
-      // Actualizar la imagen de perfil del usuario
-      const [updatedUser] = await db.update(schema.users)
-        .set({
-          profileImage: imagePath,
-          updatedAt: new Date()
-        })
-        .where(eq(schema.users.id, userId))
-        .returning();
-      
-      if (!updatedUser) {
-        return res.status(404).json({ message: "Usuario no encontrado" });
-      }
-      
-      res.json({ profileImage: imagePath });
-    } catch (error) {
-      console.error("Error uploading profile image:", error);
-      res.status(500).json({ message: "Error al subir la imagen de perfil" });
     }
   });
   
@@ -4333,111 +4242,6 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       res.status(201).json(dependency);
     } catch (error) {
       console.error('Error creando dependencia:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // ============ ENDPOINTS PARA GESTIÓN DE EQUIPOS ============
-
-  // Obtener equipos del usuario
-  app.get('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const userTeams = await db.select({
-        team: teams,
-        membership: teamMembers
-      })
-      .from(teamMembers)
-      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(eq(teamMembers.userId, req.user.id));
-
-      res.json(userTeams);
-    } catch (error) {
-      console.error('Error obteniendo equipos:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Obtener miembros de un equipo
-  app.get('/api/teams/:teamId/members', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const teamId = parseInt(req.params.teamId);
-      
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      // Verificar que el usuario pertenece al equipo
-      const [membership] = await db.select()
-        .from(teamMembers)
-        .where(and(
-          eq(teamMembers.teamId, teamId),
-          eq(teamMembers.userId, req.user.id)
-        ));
-
-      if (!membership) {
-        return res.status(403).json({ message: "No tienes acceso a este equipo" });
-      }
-
-      const members = await db.select({
-        user: {
-          id: users.id,
-          fullName: users.fullName,
-          username: users.username,
-          email: users.email,
-          profileImage: users.profileImage,
-          role: users.role
-        },
-        membership: {
-          role: teamMembers.role,
-          joinedAt: teamMembers.joinedAt
-        }
-      })
-      .from(teamMembers)
-      .innerJoin(users, eq(teamMembers.userId, users.id))
-      .where(eq(teamMembers.teamId, teamId));
-
-      res.json(members);
-    } catch (error) {
-      console.error('Error obteniendo miembros del equipo:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Crear nuevo equipo (solo admins)
-  app.post('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Solo los administradores pueden crear equipos" });
-      }
-
-      const { name, domain, description } = req.body;
-
-      const [newTeam] = await db.insert(teams)
-        .values({
-          name,
-          domain,
-          description,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
-
-      // Agregar al creador como owner del equipo
-      await db.insert(teamMembers)
-        .values({
-          teamId: newTeam.id,
-          userId: req.user.id,
-          role: 'owner',
-          joinedAt: new Date(),
-        });
-
-      res.status(201).json(newTeam);
-    } catch (error) {
-      console.error('Error creando equipo:', error);
       res.status(500).json({ message: "Error interno del servidor" });
     }
   });
