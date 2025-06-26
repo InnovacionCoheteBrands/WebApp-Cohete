@@ -29,31 +29,21 @@ import CopilotButton from "@/components/copilot/copilot-button";
 import { AppTourProvider } from "./hooks/use-app-tour";
 
 function App() {
-  console.log("App component rendering...");
-  
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="system">
         <AuthProvider>
           <AppTourProvider>
-            <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)' }}>
+            <>
               <Switch>
-                {/* Auth routes - no protection needed */}
-                <Route path="/auth" component={AuthPage} />
-                <Route path="/create-account" component={CreateAccount} />
-                <Route path="/forgot-password" component={ForgotPassword} />
-                <Route path="/reset-password" component={ResetPassword} />
-                <Route path="/create-primary-user" component={CreatePrimaryUser} />
-
                 {/* Protected routes */}
                 <Route path="/">
                   <ProtectedRoute>
                     <MainLayout>
-                      <Dashboard />
+                      <ProjectManager />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
                 <Route path="/projects">
                   <ProtectedRoute>
                     <MainLayout>
@@ -61,7 +51,6 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
                 <Route path="/projects/:id">
                   {(params) => (
                     <ProtectedRoute>
@@ -71,30 +60,27 @@ function App() {
                     </ProtectedRoute>
                   )}
                 </Route>
-                
-                <Route path="/projects/:id/schedule/:scheduleId">
+
+                <Route path="/schedules/:id">
                   {(params) => (
                     <ProtectedRoute>
                       <MainLayout>
-                        <ScheduleDetail 
-                          projectId={parseInt(params.id)}
-                          scheduleId={parseInt(params.scheduleId)}
-                        />
+                        <ScheduleDetail id={parseInt(params.id)} />
                       </MainLayout>
                     </ProtectedRoute>
                   )}
                 </Route>
                 
-                <Route path="/projects/:id/image-analysis">
+                <Route path="/projects/:projectId/image-analysis">
                   {(params) => (
                     <ProtectedRoute>
                       <MainLayout>
-                        <ProjectImageAnalysisPage projectId={parseInt(params.id)} />
+                        <ProjectImageAnalysisPage />
                       </MainLayout>
                     </ProtectedRoute>
                   )}
                 </Route>
-                
+
                 <Route path="/calendar-creator">
                   <ProtectedRoute>
                     <MainLayout>
@@ -102,23 +88,7 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
-                <Route path="/task-manager">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <TaskManager />
-                    </MainLayout>
-                  </ProtectedRoute>
-                </Route>
-                
-                <Route path="/task-manager-page">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <TaskManagerPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                </Route>
-                
+
                 <Route path="/project-manager">
                   <ProtectedRoute>
                     <MainLayout>
@@ -127,7 +97,17 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
-                <Route path="/user-management">
+                <Route path="/projects/:projectId/tasks">
+                  {(params) => (
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <TaskManagerPage />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  )}
+                </Route>
+
+                <Route path="/users">
                   <ProtectedRoute>
                     <MainLayout>
                       <UserManagement />
@@ -151,6 +131,14 @@ function App() {
                   </ProtectedRoute>
                 </Route>
 
+                <Route path="/profile">
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <Profile />
+                    </MainLayout>
+                  </ProtectedRoute>
+                </Route>
+                
                 <Route path="/settings">
                   <ProtectedRoute>
                     <MainLayout>
@@ -158,14 +146,37 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-
-                {/* 404 Not Found */}
+                
+                <Route path="/schedules/:id">
+                  {(params) => (
+                    <ProtectedRoute>
+                      <MainLayout>
+                        <ScheduleDetail id={parseInt(params.id)} />
+                      </MainLayout>
+                    </ProtectedRoute>
+                  )}
+                </Route>
+                
+                {/* Public routes */}
+                <Route path="/auth" component={AuthPage} />
+                <Route path="/cohete_account" component={CreateAccount} />
+                <Route path="/forgot-password" component={ForgotPassword} />
+                <Route path="/reset-password" component={ResetPassword} />
+                <Route path="/create-user" component={CreatePrimaryUser} />
+                
+                {/* Fallback to 404 */}
                 <Route component={NotFound} />
               </Switch>
-              
-              <CopilotButton />
               <Toaster />
-            </div>
+              {/* Copilot Button (visible on all protected routes) */}
+              <Route path="*">
+                {(params) => {
+                  // Don't show on auth page or not found
+                  if (params["*"] === "auth") return null;
+                  return <CopilotButton />;
+                }}
+              </Route>
+            </>
           </AppTourProvider>
         </AuthProvider>
       </ThemeProvider>

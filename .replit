@@ -6,13 +6,9 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "node production-deploy.js"]
-run = ["sh", "-c", "cd dist && node index.js"]
-publicDir = "client/dist"
-
-[[deployment.rewrites]]
-from = "/*"
-to = "/index.html"
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
+run = ["npm", "run", "start"]
 
 [[ports]]
 localPort = 5000
@@ -44,12 +40,3 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Build for Deployment"
-author = 40701455
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node production-deploy.cjs"

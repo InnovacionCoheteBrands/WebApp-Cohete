@@ -2,20 +2,14 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { grokService } from "./grok-integration";
-import cors from 'cors';
+import cors from 'cors'; // Import the cors middleware
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import fs from 'fs';
 
-// Production-safe directory resolution
-const __dirname = process.env.NODE_ENV === 'production' ? '/home/runner/workspace/dist' : dirname(fileURLToPath(import.meta.url));
-
-// Ensure fs and path are available globally for compatibility
-if (typeof global !== 'undefined') {
-  global.fs = fs;
-  global.path = path;
-}
+// Fix __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const port = parseInt(process.env.PORT || "5000");
@@ -42,7 +36,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // Permitir requests sin origin (como mobile apps, postman, etc.)
     if (!origin) return callback(null, true);
-
+    
     // Always allow in development or if origin matches allowed origins
     if (process.env.NODE_ENV !== 'production' || allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
@@ -117,59 +111,26 @@ app.use((req, res, next) => {
     // Configurar trust proxy para Replit
     app.set('trust proxy', 1);
 
-    // Health check endpoint (moved to /api/health)
-    app.get('/api/health', (req, res) => {
-      res.status(200).json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        service: 'Cohete Workflow API',
-        version: '1.0.0'
-      }); 
-    });
-
-    app.get('/api/status', (req, res) => {
-      res.status(200).json({ 
-        status: 'OK', 
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime(),
-        memory: process.memoryUsage(),
-        environment: process.env.NODE_ENV || 'development'
-      });
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
     });
 
     // Configuración específica para producción en Replit
     if (process.env.NODE_ENV === 'production') {
       // Servir archivos estáticos del build de producción
       const staticPath = path.join(__dirname, '../client/dist');
-      console.log('Serving static files from:', staticPath);
-
-      // Verificar si el directorio existe
-      if (require('fs').existsSync(staticPath)) {
-        app.use(express.static(staticPath, {
-          maxAge: '1d',
-          etag: false
-        }));
-
-        // Catch-all handler para React routes en producción
-        app.get('*', (req, res, next) => {
-          if (req.path.startsWith('/api/')) {
-            return next(); // Dejar que las rutas API se manejen normalmente
-          }
-          const indexPath = path.join(staticPath, 'index.html');
-          if (require('fs').existsSync(indexPath)) {
-            res.sendFile(indexPath);
-          } else {
-            res.status(404).send('Build files not found. Please run: cd client && npm run build');
-          }
-        });
-      } else {
-        console.error('Static files directory not found:', staticPath);
-        app.get('*', (req, res) => {
-          res.status(500).send('Build files not found. Please run: cd client && npm run build');
-        });
-      }
+      app.use(express.static(staticPath));
+      
+      // Catch-all handler para React routes en producción
+      app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api/')) {
+          return next(); // Dejar que las rutas API se manejen normalmente
+        }
+        res.sendFile(path.join(staticPath, 'index.html'));
+      });
     } else {
-      // Configuración para desarrollo con Vite
+      // Usar Vite solo en desarrollo
       await setupVite(app, server);
     }
 
@@ -177,40 +138,14 @@ app.use((req, res, next) => {
     // this serves both the API and the client.
     // It is the only port that is not firewalled.
 
-    const serverInstance = server.listen(port, "0.0.0.0", () => {
-      log(`🚀 Server is running on http://0.0.0.0:${port}`);
-      log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
-      log(`🔗 API endpoints available at /api/*`);
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`serving on port ${port}`);
     });
-
-    // Handle server errors
-    serverInstance.on('error', (error: any) => {
-      if (error.code === 'EADDRINUSE') {
-        console.error(`❌ Port ${port} is already in use`);
-        process.exit(1);
-      } else {
-        console.error('❌ Server error:', error);
-        process.exit(1);
-      }
-    });
-
-    // Graceful shutdown
-    process.on('SIGTERM', () => {
-      console.log('🔄 SIGTERM received, shutting down gracefully');
-      serverInstance.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-      });
-    });
-
-    process.on('SIGINT', () => {
-      console.log('🔄 SIGINT received, shutting down gracefully');
-      serverInstance.close(() => {
-        console.log('✅ Server closed');
-        process.exit(0);
-      });
-    });
-
+    
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

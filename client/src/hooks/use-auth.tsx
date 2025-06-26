@@ -4,13 +4,7 @@ import {
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
-import { InsertUser, User } from "@shared/schema";
-
-// Define LoginData locally since it's not exported from schema
-type LoginData = {
-  username: string;
-  password: string;
-};
+import { InsertUser, LoginData, User } from "@shared/schema";
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
@@ -35,9 +29,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
   });
-
-  // Debug auth state
-  console.log("Auth state:", { user: user?.username, isLoading, error });
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
