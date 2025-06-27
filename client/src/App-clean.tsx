@@ -49,7 +49,7 @@ function App() {
                 <Route path="/">
                   <ProtectedRoute>
                     <MainLayout>
-                      <Dashboard />
+                      <ProjectManager />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
@@ -115,14 +115,6 @@ function App() {
                   <ProtectedRoute>
                     <MainLayout>
                       <TaskManagerPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                </Route>
-                
-                <Route path="/project-manager">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <ProjectManager />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>

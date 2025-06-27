@@ -1,4 +1,4 @@
-import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products, projectViews, automationRules, timeEntries, tags, collaborativeDocs, notifications, taskDependencies, projectMembers } from "@shared/schema";
+import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products, projectViews, automationRules, timeEntries, tags, collaborativeDocs, notifications, taskDependencies, projectMembers, taskGroups } from "./schema";
 import { db } from "./db";
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
 import type { Store } from "express-session";
@@ -43,7 +43,7 @@ import {
   InsertTaskDependency,
   ProjectMember,
   InsertProjectMember
-} from "@shared/schema";
+} from "./schema";
 
 // Interfaz para los tokens de recuperación
 export interface PasswordResetToken {
@@ -1153,21 +1153,7 @@ export class DatabaseStorage implements IStorage {
     return comments;
   }
 
-  async createTaskComment(comment: any): Promise<any> {
-    const [newComment] = await db
-      .insert(notifications)
-      .values({
-        type: 'comment',
-        message: comment.content,
-        userId: comment.userId,
-        relatedEntityType: 'task',
-        relatedEntityId: comment.taskId,
-        isRead: false
-      })
-      .returning();
 
-    return newComment;
-  }
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const [newNotification] = await db
@@ -1333,28 +1319,7 @@ export class DatabaseStorage implements IStorage {
     return !!result;
   }
 
-  async updateUser(userId: string, updateData: Partial<User>): Promise<User | undefined> {
-    // Filtrar el campo email ya que no existe en la base de datos
-    const { email, ...filteredUserData } = updateData as any;
 
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        ...filteredUserData,
-        updatedAt: new Date()
-      })
-      .where(eq(users.id, userId))
-      .returning();
-
-    return updatedUser;
-  }
-
-  async deleteUser(id: string): Promise<boolean> {
-    const result = await db
-      .delete(users)
-      .where(eq(users.id, id));
-    return !!result;
-  }
 }
 
 // Create a mock session store for the storage instance
