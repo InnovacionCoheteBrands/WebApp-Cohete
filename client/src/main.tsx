@@ -3,6 +3,7 @@ import { StrictMode } from "react";
 import App from "./App";
 import "./index.css";
 import { fixViteWebsocketInReplit } from "./lib/vite-websocket-fix";
+import { AppTourProvider } from "./hooks/use-app-tour";
 
 // Arreglar el problema de WebSocket en Replit
 // Esta implementación ya corrige los problemas básicos sin desactivar funcionalidad
@@ -51,7 +52,9 @@ if (rootElement) {
   console.log("Root element found, rendering React app...");
   createRoot(rootElement).render(
     <StrictMode>
-      <App />
+      <AppTourProvider>
+        <App />
+      </AppTourProvider>
     </StrictMode>
   );
   console.log("React app rendered successfully");
