@@ -178,11 +178,17 @@ export default function QuickCalendar() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {projects?.map((project: any) => (
-                              <SelectItem key={project.id} value={project.id.toString()}>
-                                {project.name}
+                            {projects && projects.length > 0 ? (
+                              projects.map((project: any) => (
+                                <SelectItem key={project.id} value={project.id.toString()}>
+                                  {project.name}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <SelectItem value="" disabled>
+                                No hay proyectos disponibles
                               </SelectItem>
-                            ))}
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
