@@ -409,11 +409,79 @@ export default function ProfilePage() {
         </Card>
 
         {/* Tabs Section */}
-        <Tabs defaultValue="professional" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="profile">Perfil</TabsTrigger>
             <TabsTrigger value="professional">Información Profesional</TabsTrigger>
             <TabsTrigger value="custom">Campos Personalizados</TabsTrigger>
           </TabsList>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Información Personal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Nombre completo</Label>
+                    <Input
+                      id="fullName"
+                      placeholder="Tu nombre completo"
+                      defaultValue={user?.fullName}
+                      onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Usuario</Label>
+                    <Input
+                      id="username"
+                      placeholder="Nombre de usuario"
+                      defaultValue={user?.username}
+                      disabled
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      defaultValue={user?.email}
+                      onBlur={(e) => handleFieldUpdate('email', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Teléfono</Label>
+                    <Input
+                      id="phoneNumber"
+                      placeholder="+1 234 567 8900"
+                      defaultValue={user?.phoneNumber}
+                      onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Biografía</Label>
+                  <Textarea
+                    id="bio"
+                    placeholder="Cuéntanos sobre ti..."
+                    rows={3}
+                    defaultValue={user?.bio}
+                    onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Professional Information Tab */}
           <TabsContent value="professional" className="space-y-6">
