@@ -83,20 +83,21 @@ main.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
 
-/* Eliminar scrollbars de todos los elementos contenedores */
-.flex.h-screen,
-.flex.h-screen > *,
-.flex.flex-col.h-full,
-.flex.flex-col.h-full > * {
+/* Eliminar scrollbars solo donde sea necesario */
+.hide-scrollbar,
+.hide-scrollbar > * {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-.flex.h-screen::-webkit-scrollbar,
-.flex.h-screen > *::-webkit-scrollbar,
-.flex.flex-col.h-full::-webkit-scrollbar,
-.flex.flex-col.h-full > *::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar,
+.hide-scrollbar > *::-webkit-scrollbar {
   display: none;
+}
+
+/* Permitir scroll normal en contenido principal */
+main:not(.hide-scrollbar) {
+  overflow-y: auto;
 }
 
 @layer utilities {

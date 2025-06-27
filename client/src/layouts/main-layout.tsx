@@ -34,40 +34,31 @@ export default function MainLayout({ children }: MainLayoutProps) {
   }, []);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      {/* Sidebar mejorado - hidden on mobile unless toggled */}
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+    <div className="flex h-screen bg-background">
+        <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
-        {/* Main content con mejoras visuales */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-background/50 transition-all duration-300 min-h-0 subtle-pattern hide-scrollbar">
-          {/* Menu toggle para móvil con animaciones mejoradas */}
-          <div className="md:hidden flex items-center mb-6">
-            <Button 
-              variant="ghost" 
-              onClick={toggleSidebar}
-              className="flex items-center gap-3 rounded-md p-2 hover:bg-accent interactive-element"
-            >
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary shadow-md dark:dark-glow">
-                <Menu className="h-5 w-5 text-primary-foreground" />
+        <div className="flex flex-col flex-1 min-w-0">
+          <header className="flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              <div className="hidden md:flex items-center gap-2">
+                <Rocket className="h-6 w-6 text-primary" />
+                <span className="font-semibold text-lg">Cohete Workflow</span>
               </div>
-              <div className="flex items-center gap-2">
-                <Rocket className="h-5 w-5 text-primary" />
-                <span className="text-lg font-semibold tracking-tight">Cohete Workflow</span>
-              </div>
-            </Button>
-          </div>
+            </div>
+          </header>
 
-          {/* Contenedor principal con transiciones y elevación */}
-          <div 
-            className={`w-full max-w-7xl mx-auto transition-all duration-300 fade-in-effect ${
-              scrolled ? 'pt-2' : 'pt-3'
-            }`}
-          >
+          <main className="flex-1 overflow-y-auto bg-muted/20" style={{ scrollBehavior: 'smooth' }}>
             {children}
-          </div>
-        </main>
+          </main>
+        </div>
       </div>
-    </div>
   );
 }
