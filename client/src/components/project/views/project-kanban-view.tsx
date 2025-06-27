@@ -802,6 +802,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 id="new-status"
                 defaultValue={newTaskStatus || "pending"}
                 className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                onChange={() => {}} // Added to prevent React warning
               >
                 <option value="pending">Pendiente</option>
                 <option value="in_progress">En progreso</option>
@@ -820,6 +821,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 id="new-dueDate"
                 type="date"
                 className="col-span-3"
+                onChange={() => {}} // Added to prevent React warning
               />
             </div>
             
@@ -833,6 +835,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 min="0"
                 placeholder="0"
                 className="col-span-3"
+                onChange={() => {}} // Added to prevent React warning
               />
             </div>
             
@@ -843,6 +846,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
               <select
                 id="new-assignee"
                 className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                onChange={() => {}} // Added to prevent React warning
               >
                 <option value="">Sin asignar</option>
                 {users.map((user: any) => (
