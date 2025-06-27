@@ -37,7 +37,7 @@ export default function QuickActions() {
                   </p>
                 </div>
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-[#65cef5] dark:text-[#65cef5] dark:shadow-[0_0_10px_rgba(101,206,245,0.15)] dark:border dark:border-[#3e4a6d] group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
-                  <span className="font-semibold text-xl">{activeProjectsCount}</span>
+                  <span className="font-semibold text-xl text-[#ffffff]">{activeProjectsCount}</span>
                 </div>
               </div>
               <div className="mt-4 space-y-2.5">
@@ -148,7 +148,6 @@ export default function QuickActions() {
           </CardContent>
         </Card>
       </div>
-
       {/* Segunda fila: Creación de Calendarios */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Calendario Rápido */}
