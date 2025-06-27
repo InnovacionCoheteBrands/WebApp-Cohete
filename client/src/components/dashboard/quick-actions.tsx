@@ -189,7 +189,7 @@ export default function QuickActions() {
               </div>
             </div>
             <div className="mt-2 px-5 pb-5">
-              <Link href="#crear-calendario-rapido" className="block w-full">
+              <Link href="/quick-calendar" className="block w-full">
                 <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white shadow-sm dark:bg-blue-600 dark:hover:bg-blue-700 dark:shadow-[0_2px_10px_rgba(0,0,0,0.2)] h-11 font-medium relative overflow-hidden group">
                   <span className="relative z-10 flex items-center">
                     Crear Calendario Rápido

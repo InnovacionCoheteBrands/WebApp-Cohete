@@ -9,6 +9,7 @@ import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
 import ScheduleDetail from "@/pages/schedule-detail";
 import CalendarCreator from "@/pages/calendar-creator";
+import QuickCalendar from "@/pages/quick-calendar";
 import TaskManager from "@/pages/task-manager";
 import TaskManagerPage from "@/pages/task-manager-page";
 import ProjectManager from "@/pages/project-manager";
@@ -99,6 +100,14 @@ function App() {
                   <ProtectedRoute>
                     <MainLayout>
                       <CalendarCreator />
+                    </MainLayout>
+                  </ProtectedRoute>
+                </Route>
+                
+                <Route path="/quick-calendar">
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <QuickCalendar />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
