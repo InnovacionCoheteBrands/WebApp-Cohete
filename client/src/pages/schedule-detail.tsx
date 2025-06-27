@@ -181,24 +181,29 @@ export default function ScheduleDetail({ id }: { id: number }) {
   };
 
   // Descargar la imagen
-  const downloadImage = (url: string, title: string) => {
-    fetch(url)
-      .then(response => response.blob())
-      .then(blob => {
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      })
-      .catch(err => {
-        toast({
-          title: "Error al descargar",
-          description: "No se pudo descargar la imagen",
-          variant: "destructive"
-        });
+  const downloadImage = async (url: string, title: string) => {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `${title.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      toast({
+        title: "Error al descargar",
+        description: "No se pudo descargar la imagen",
+        variant: "destructive"
       });
+    }
   };
   
   // Manejar la generación o visualización de la imagen
