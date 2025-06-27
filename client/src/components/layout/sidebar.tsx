@@ -22,11 +22,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-  const { user, logoutMutation } = useAuth();
+  const { user, logout } = useAuth();
   const [location] = useLocation();
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logout();
   };
 
   const isPrimary = user?.isPrimary;
@@ -49,7 +49,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
         )}
         data-tour="main-navigation"
       >
-        <div className="flex flex-col p-4 h-full overflow-y-auto hide-scrollbar"></div>
+        <div className="flex flex-col p-4 h-full overflow-y-auto hide-scrollbar">
           {/* Logo */}
           <div className="flex items-center gap-2 px-2 py-2 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm transition-all duration-200 hover:shadow-md">
@@ -71,7 +71,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <div className="space-y-1 flex-1 min-h-0 overflow-y-auto"></div>
+          <div className="space-y-1 flex-1 min-h-0 overflow-y-auto">
             <NavItem 
               href="/" 
               icon={<LayoutDashboard className="mr-2 h-5 w-5" />} 
@@ -199,7 +199,7 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
           if (onClick) onClick();
           window.location.href = href;
         }}
-      ></button>
+      >
         {isActive && (
           <div className="absolute left-0 top-1 bottom-1 w-1 bg-primary" />
         )}
