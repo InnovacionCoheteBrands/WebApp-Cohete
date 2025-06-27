@@ -22,11 +22,11 @@ interface SidebarProps {
 }
 
 export function Sidebar({ open, onClose }: SidebarProps) {
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [location] = useLocation();
 
   const handleLogout = () => {
-    logout();
+    logoutMutation.mutate();
   };
 
   const isPrimary = user?.isPrimary;
@@ -36,7 +36,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Mobile overlay */}
       {open && (
         <div 
-          className="fixed inset-0 z-[9998] bg-background/80 backdrop-blur-sm md:hidden"
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
@@ -44,12 +44,12 @@ export function Sidebar({ open, onClose }: SidebarProps) {
       {/* Sidebar */}
       <div 
         className={cn(
-          "fixed inset-y-0 left-0 z-[9999] w-64 border-r bg-card/95 backdrop-blur-sm shadow-lg md:static md:z-auto transform transition-all duration-300 ease-in-out overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card/95 backdrop-blur-sm shadow-lg md:static md:z-0 transform transition-all duration-300 ease-in-out overflow-hidden",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
         data-tour="main-navigation"
       >
-        <div className="flex flex-col p-4 h-full overflow-y-auto hide-scrollbar">
+        <div className="flex flex-col p-4 h-full overflow-hidden hide-scrollbar">
           {/* Logo */}
           <div className="flex items-center gap-2 px-2 py-2 mb-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm transition-all duration-200 hover:shadow-md">
@@ -71,7 +71,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <div className="space-y-1 flex-1 min-h-0 overflow-y-auto">
+          <div className="space-y-1 flex-1 min-h-0">
             <NavItem 
               href="/" 
               icon={<LayoutDashboard className="mr-2 h-5 w-5" />} 
@@ -186,19 +186,14 @@ interface NavItemProps {
 function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
   return (
     <Link href={href}>
-      <button
-        type="button"
+      <div
         className={cn(
-          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative overflow-hidden group cursor-pointer",
+          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative overflow-hidden group",
           isActive
             ? "bg-accent text-accent-foreground shadow-sm"
             : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground interactive-element"
         )}
-        onClick={(e) => {
-          e.preventDefault();
-          if (onClick) onClick();
-          window.location.href = href;
-        }}
+        onClick={onClick}
       >
         {isActive && (
           <div className="absolute left-0 top-1 bottom-1 w-1 bg-primary" />
@@ -221,7 +216,7 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
             </div>
           )}
         </div>
-      </button>
+      </div>
     </Link>
   );
 }

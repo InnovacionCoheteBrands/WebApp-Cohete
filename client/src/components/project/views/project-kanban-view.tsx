@@ -699,11 +699,10 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                     className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
                     defaultValue={taskToEdit?.dependencies?.map(String) || []}
                     onChange={(e) => {
-                      const selectedValues = Array.from(e.target.selectedOptions).map(option => option.value);
-                      const selectedNumbers = selectedValues.map(val => parseInt(val)).filter(num => !isNaN(num));
+                      const selectedOptions = Array.from(e.target.selectedOptions).map(option => parseInt(option.value));
                       setTaskToEdit({
                         ...taskToEdit!,
-                        dependencies: selectedNumbers
+                        dependencies: selectedOptions
                       });
                     }}
                   >
@@ -803,7 +802,6 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 id="new-status"
                 defaultValue={newTaskStatus || "pending"}
                 className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                onChange={() => {}} // Added to prevent React warning
               >
                 <option value="pending">Pendiente</option>
                 <option value="in_progress">En progreso</option>
@@ -822,7 +820,6 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 id="new-dueDate"
                 type="date"
                 className="col-span-3"
-                onChange={() => {}} // Added to prevent React warning
               />
             </div>
             
@@ -836,7 +833,6 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 min="0"
                 placeholder="0"
                 className="col-span-3"
-                onChange={() => {}} // Added to prevent React warning
               />
             </div>
             
@@ -847,7 +843,6 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
               <select
                 id="new-assignee"
                 className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
-                onChange={() => {}} // Added to prevent React warning
               >
                 <option value="">Sin asignar</option>
                 {users.map((user: any) => (
@@ -888,7 +883,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 status: statusInput.value as any,
                 dueDate: dueDateInput.value ? new Date(dueDateInput.value) : null,
                 estimatedHours: estimatedHoursInput.value ? parseInt(estimatedHoursInput.value) : null,
-                assignedToId: assigneeInput.value || null,
+                assignedToId: assigneeInput.value ? parseInt(assigneeInput.value) : null,
                 projectId: projectId
               });
               
