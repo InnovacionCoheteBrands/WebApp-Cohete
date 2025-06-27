@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { FolderOpen, ArrowRight, Calendar } from "lucide-react";
 
 interface Project {
@@ -12,11 +13,11 @@ interface Project {
   createdAt: string;
 }
 
-interface RecentProjectsProps {
-  projects?: Project[];
-}
-
-export default function RecentProjects({ projects = [] }: RecentProjectsProps) {
+export default function RecentProjects() {
+  const { data: projects = [] } = useQuery<any[]>({
+    queryKey: ["/api/projects"],
+    staleTime: 30000,
+  });
   const [, setLocation] = useLocation();
 
   const getStatusColor = (status: string) => {

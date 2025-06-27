@@ -607,7 +607,17 @@ export class DatabaseStorage implements IStorage {
       // Obtener schedules recientes con join a projects para asegurar que el proyecto existe
       const schedulesResult = await db
         .select({
-          schedule: schedules,
+          schedule: {
+            id: schedules.id,
+            projectId: schedules.projectId,
+            name: schedules.name,
+            startDate: schedules.startDate,
+            endDate: schedules.endDate,
+            specifications: schedules.specifications,
+            additionalInstructions: schedules.additionalInstructions,
+            createdBy: schedules.createdBy,
+            createdAt: schedules.createdAt
+          },
           project: projects
         })
         .from(schedules)

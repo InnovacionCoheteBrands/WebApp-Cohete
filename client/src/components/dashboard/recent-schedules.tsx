@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { Calendar, ArrowRight, Clock, FileText } from "lucide-react";
 
 interface Schedule {
@@ -12,11 +13,11 @@ interface Schedule {
   entriesCount?: number;
 }
 
-interface RecentSchedulesProps {
-  schedules?: Schedule[];
-}
-
-export default function RecentSchedules({ schedules = [] }: RecentSchedulesProps) {
+export default function RecentSchedules() {
+  const { data: schedules = [] } = useQuery<any[]>({
+    queryKey: ["/api/schedules/recent"],
+    staleTime: 30000,
+  });
   const [, setLocation] = useLocation();
 
   const formatDate = (dateString: string) => {
