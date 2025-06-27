@@ -5,7 +5,6 @@ import type { Store } from "express-session";
 import {
   User,
   InsertUser,
-  UpsertUser,
   Project,
   InsertProject,
   AnalysisResult,
@@ -62,7 +61,7 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByIdentifier(identifier: string): Promise<User | undefined>; // Busca por username o email
   createUser(user: InsertUser): Promise<User>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  upsertUser(user: InsertUser): Promise<User>;
   listUsers(): Promise<User[]>;
   updateUser(id: string, userData: Partial<User>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
@@ -242,13 +241,13 @@ export class DatabaseStorage implements IStorage {
     return newUser;
   }
 
-  async upsertUser(user: UpsertUser): Promise<User> {
+  async upsertUser(user: InsertUser): Promise<User> {
     const [newUser] = await db
       .insert(users)
       .values({
         ...user,
-        fullName: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.email || 'Usuario OAuth',
-        username: user.email || user.id,
+        fullName: user.fullName || 'Usuario OAuth',
+        username: user.username,
         isPrimary: false,
         role: 'content_creator',
         createdAt: new Date(),
@@ -607,17 +606,7 @@ export class DatabaseStorage implements IStorage {
       // Obtener schedules recientes con join a projects para asegurar que el proyecto existe
       const schedulesResult = await db
         .select({
-          schedule: {
-            id: schedules.id,
-            projectId: schedules.projectId,
-            name: schedules.name,
-            startDate: schedules.startDate,
-            endDate: schedules.endDate,
-            specifications: schedules.specifications,
-            additionalInstructions: schedules.additionalInstructions,
-            createdBy: schedules.createdBy,
-            createdAt: schedules.createdAt
-          },
+          schedule: schedules,
           project: projects
         })
         .from(schedules)
