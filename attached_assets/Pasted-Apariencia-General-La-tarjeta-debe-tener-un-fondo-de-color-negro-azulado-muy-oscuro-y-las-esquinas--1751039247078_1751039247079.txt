@@ -1,0 +1,20 @@
+Apariencia General:
+La tarjeta debe tener un fondo de color negro-azulado muy oscuro y las esquinas redondeadas. El elemento más importante es un borde que debe lucir como un resplandor de neón. Este resplandor debe ser un gradiente de colores que transicione suavemente de magenta a morado, luego a azul y finalmente a cian. El resplandor debe ser difuminado y debe volverse un poco más intenso cuando el usuario pase el cursor sobre la tarjeta.
+
+Estructura y Contenido:
+La tarjeta debe tener tres secciones:
+
+Encabezado: A la izquierda, debe tener un ícono de 'cuadrícula de aplicaciones' (app-grid). Al lado, el texto del título "CUSTOM CARD". A la derecha del todo, debe haber un control en forma de flecha hacia arriba que funcionará como un botón para expandir y contraer la tarjeta.
+
+Cuerpo: Esta sección contendrá un párrafo de texto de relleno (Lorem Ipsum).
+
+Pie de página: Debe contener dos botones alineados a la derecha.
+
+Funcionalidad:
+Por defecto, la tarjeta debe aparecer contraída, mostrando únicamente el encabezado. Al hacer clic en la flecha del encabezado, el cuerpo del texto y el pie de página deben aparecer con una animación suave de despliegue. La flecha del encabezado debe girar 180 grados para apuntar hacia abajo cuando la tarjeta esté expandida. Al volver a hacer clic, la tarjeta debe contraerse de nuevo.
+
+Estilo de los Botones:
+En el pie de página, el botón principal estará a la derecha, con el texto "OK" y un fondo de color azul brillante. El botón secundario, a su izquierda, dirá "Cancel" y tendrá un fondo gris oscuro. Ambos botones deben tener esquinas redondeadas y cambiar de color a un tono magenta o cian brillante del gradiente cuando se pasa el cursor sobre ellos.
+
+Efectos Adicionales:
+Cuando la tarjeta esté expandida, quiero que aparezcan dos pequeñas orbes de luz difuminada para decorar: una de color cian en la esquina superior izquierda y otra de color magenta en la esquina inferior derecha. Estas orbes deben desaparecer cuando la tarjeta se contraiga
