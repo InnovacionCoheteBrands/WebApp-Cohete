@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Calendar, Star, Rocket, TrendingUp, Users, Clock } from "lucide-react";
+import { memo, useMemo } from "react";
 
 interface User {
   id: string;
@@ -15,26 +16,28 @@ interface WelcomeSectionProps {
   user?: User;
 }
 
-export default function WelcomeSection({ user }: WelcomeSectionProps) {
-  const getGreeting = () => {
+const WelcomeSection = memo(function WelcomeSection({ user }: WelcomeSectionProps) {
+  const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return "Buenos días";
     if (hour < 18) return "Buenas tardes";
     return "Buenas noches";
-  };
+  }, []);
 
-  const currentDate = new Date().toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  const currentDate = useMemo(() => {
+    return new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }, []);
 
-  const stats = [
+  const stats = useMemo(() => [
     { label: "Proyectos", value: "12", icon: <TrendingUp className="h-4 w-4" />, color: "text-blue-500" },
     { label: "Equipos", value: "3", icon: <Users className="h-4 w-4" />, color: "text-green-500" },
     { label: "Pendientes", value: "8", icon: <Clock className="h-4 w-4" />, color: "text-orange-500" }
-  ];
+  ], []);
 
   return (
     <Card className="overflow-hidden bg-gradient-to-br from-primary/5 via-primary/3 to-background border-0 shadow-lg relative">
@@ -51,7 +54,7 @@ export default function WelcomeSection({ user }: WelcomeSectionProps) {
               </div>
               <div>
                 <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-                  {getGreeting()}, {user?.fullName || user?.username || 'Usuario'}!
+                  {greeting}, {user?.fullName || user?.username || 'Usuario'}!
                 </h1>
                 <div className="flex items-center gap-2">
                   {user?.isPrimary && (
@@ -99,4 +102,6 @@ export default function WelcomeSection({ user }: WelcomeSectionProps) {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default WelcomeSection;

@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { Plus, Calendar, BarChart3, Users, Settings, Zap, ArrowRight } from "lucide-react";
+import React from "react";
 
-export default function QuickActions() {
+const QuickActions = React.memo(function QuickActions() {
   const actions = [
     {
       title: "Nuevo Proyecto",
@@ -77,4 +78,6 @@ export default function QuickActions() {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default QuickActions;

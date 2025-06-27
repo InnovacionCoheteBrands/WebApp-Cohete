@@ -100,17 +100,17 @@ main.hide-scrollbar::-webkit-scrollbar {
 }
 
 @layer utilities {
-  /* Transiciones y efectos base */
+  /* Transiciones y efectos base - optimizados */
   .transition-standard {
-    @apply transition-all duration-300 ease-out;
+    @apply transition-all duration-200 ease-out;
   }
   
   .transition-fast {
-    @apply transition-all duration-150 ease-out;
+    @apply transition-all duration-100 ease-out;
   }
 
   .transition-slow {
-    @apply transition-all duration-500 ease-in-out;
+    @apply transition-all duration-300 ease-in-out;
   }
   
   /* Elementos interactivos */
@@ -201,9 +201,9 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
 
   .shimmer {
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     background-size: 200% 100%;
-    animation: shimmer 2s infinite;
+    animation: shimmer 3s infinite;
   }
 
   @keyframes shimmer {
@@ -212,12 +212,12 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
 
   .floating {
-    animation: floating 3s ease-in-out infinite;
+    animation: floating 4s ease-in-out infinite;
   }
 
   @keyframes floating {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-5px); }
   }
 
   .pulse-soft {
