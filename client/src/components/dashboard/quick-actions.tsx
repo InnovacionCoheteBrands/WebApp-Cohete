@@ -36,7 +36,7 @@ export default function QuickActions() {
                     Campañas de marketing actualmente activas
                   </p>
                 </div>
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-primary dark:bg-[#65cef5] dark:text-[#65cef5] dark:shadow-[0_0_10px_rgba(101,206,245,0.15)] dark:border dark:border-[#3e4a6d] group-hover:scale-110 group-hover:rotate-3 transition-all duration-300">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full text-primary dark:bg-[#65cef5] dark:text-[#65cef5] dark:shadow-[0_0_10px_rgba(101,206,245,0.15)] dark:border dark:border-[#3e4a6d] group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 bg-[#4698b8]">
                   <span className="font-semibold text-xl text-[#ffffff]">{activeProjectsCount}</span>
                 </div>
               </div>
