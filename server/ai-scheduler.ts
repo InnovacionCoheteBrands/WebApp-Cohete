@@ -37,13 +37,13 @@ export async function generateSchedule(
 ): Promise<ContentSchedule> {
   console.log(`[CALENDAR] !! Iniciando generación de calendario para proyecto "${projectName}"`);
   console.log(`[CALENDAR] Parámetros: startDate=${startDate}, durationDays=${durationDays}, prevContent.length=${previousContent.length}`);
-  
+
   try {
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
     console.log(`[CALENDAR] Periodo del calendario: ${formattedDate} hasta ${endDate}`);
-    
+
     // Extract social networks with monthly post frequency data
     let socialNetworksSection = "";
     try {
@@ -54,7 +54,7 @@ export async function generateSchedule(
         .map((network: any) => {
           // Calculate posts per period based on monthly frequency
           const postsPerPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
-          
+
           return {
             name: network.name,
             postsPerMonth: network.postsPerMonth,
@@ -62,14 +62,14 @@ export async function generateSchedule(
             contentTypes: network.contentTypes || []
           };
         });
-      
+
       console.log(`[CALENDAR] Redes sociales seleccionadas: ${selectedNetworks.length}`);
       if (selectedNetworks.length > 0) {
         console.log(`[CALENDAR] Redes: ${selectedNetworks.map((n: any) => n.name).join(', ')}`);
         socialNetworksSection = `
         DISTRIBUCIÓN DE PUBLICACIONES:
         ${JSON.stringify(selectedNetworks, null, 2)}
-        
+
         IMPORTANTE: Respeta la cantidad de publicaciones por red social indicada en "postsForPeriod".
         `;
       } else {
@@ -79,36 +79,36 @@ export async function generateSchedule(
       console.error("[CALENDAR] Error procesando datos de redes sociales:", error);
       socialNetworksSection = "No hay información específica sobre la frecuencia de publicaciones.";
     }
-    
+
     // Prepare previous content section
     const previousContentSection = previousContent.length > 0
       ? `Previously used content (AVOID REPEATING THESE TOPICS AND IDEAS):
         ${previousContent.join('\n')}`
       : "No previous content history available.";
-    
+
     console.log(`[CALENDAR] Historial de contenido: ${previousContent.length} elementos`);
     if (previousContent.length > 0) {
       console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
     }
-    
+
     const prompt = `
       Crea un cronograma avanzado de contenido para redes sociales para el proyecto "${projectName}". Actúa como un experto profesional en marketing digital con especialización en contenidos de alto impacto, branding y narrativa de marca. Tu objetivo es crear contenido estratégico, persuasivo y memorable que genere engagement.
 
       **PROYECTO:**
       Nombre: ${projectName}
-      
+
       **DETALLES DEL PROYECTO:**
       ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
 
       **PERIODO DE PLANIFICACIÓN:** 
       De ${formattedDate} a ${endDate} (${durationDays} días)
-      
+
       **ESPECIFICACIONES DEL CLIENTE:** 
       ${specifications || "Ninguna especificación adicional proporcionada."}
-      
+
       **ESTRATEGIA DE REDES SOCIALES:**
       ${socialNetworksSection || "Sugiere 2-3 redes sociales estratégicamente seleccionadas para el público objetivo de este proyecto."}
-      
+
       **HISTORIAL DE CONTENIDO (EVITAR DUPLICACIÓN):**
       ${previousContentSection || "Sin historial de contenido previo disponible."}
 
@@ -137,7 +137,7 @@ export async function generateSchedule(
       RESPONDE ÚNICAMENTE CON JSON VÁLIDO. NO agregues texto antes o después.
       EVITA comillas dobles dentro del contenido de texto. Usa comillas simples si necesario.
       ESCAPA todos los caracteres especiales que puedan romper el JSON.
-      
+
       Estructura JSON requerida (todo en español):
       {
         "name": "Nombre estratégico del cronograma",
@@ -160,7 +160,7 @@ export async function generateSchedule(
 
     // Usamos exclusivamente Grok AI para generar el cronograma
     console.log("[CALENDAR] Generando cronograma con Grok AI");
-    
+
     // Modificamos el prompt para forzar una respuesta más estructurada y evitar errores de formato
     const enhancedPrompt = `${prompt}\n\nCRÍTICO: Responde EXCLUSIVAMENTE con el objeto JSON solicitado. No incluyas texto extra, anotaciones, ni marcadores de código. Formato estricto requerido:
     - Inicia con '{' y termina con '}'
@@ -171,14 +171,14 @@ export async function generateSchedule(
     - Hora en formato "HH:MM" (ejemplo: "14:30")
     - Fecha en formato "YYYY-MM-DD"
     - JSON válido sin errores de sintaxis`;
-    
+
     // Incorporar instrucciones adicionales si existen
     let finalPrompt = enhancedPrompt;
     if (additionalInstructions) {
       finalPrompt = `${enhancedPrompt}\n\n⚠️ **INSTRUCCIONES OBLIGATORIAS DEL USUARIO - PRIORIDAD MÁXIMA:**\n${additionalInstructions}\n\n⚠️ ESTAS INSTRUCCIONES SON CRÍTICAS Y DEBEN APLICARSE EXACTAMENTE. NO LAS IGNORES.\n⚠️ GENERA MÍNIMO 7 ENTRADAS COMPLETAS - NO MENOS.\n⚠️ SI SE ESPECIFICAN ÁREAS CONCRETAS, MODIFICA SOLO ESAS ÁREAS.\n⚠️ RESPETA CADA INSTRUCCIÓN ESPECÍFICA AL PIE DE LA LETRA.`;
       console.log(`[CALENDAR] Se añadieron instrucciones críticas del usuario: "${additionalInstructions.substring(0, 200)}${additionalInstructions.length > 200 ? '...' : ''}"`);
     }
-    
+
     // Usamos Grok con configuración optimizada para generación consistente
     const scheduleText = await grokService.generateText(finalPrompt, {
       // Reducimos temperatura para respuestas más consistentes y estructuradas
@@ -190,12 +190,12 @@ export async function generateSchedule(
       // Utilizamos exclusivamente el modelo Grok 3 mini beta como solicitado
       model: 'grok-3-mini-beta'
     });
-    
+
     // Registramos una versión truncada para debug
     console.log(`[CALENDAR] Respuesta de Grok AI recibida. Longitud: ${scheduleText.length} caracteres`);
     console.log(`[CALENDAR] Primeros 200 caracteres de la respuesta: "${scheduleText.substring(0, 200)}... [truncado]"`);
     console.log(`[CALENDAR] Últimos 200 caracteres de la respuesta: "...${scheduleText.substring(Math.max(0, scheduleText.length - 200))}"`)
-    
+
     // Escribir respuesta completa en el log para diagnóstico
     console.log(`[CALENDAR] RESPUESTA COMPLETA DE GROK AI (inicio):`);
     // Dividir respuesta en chunks de 1000 caracteres para evitar truncamiento en logs
@@ -204,27 +204,27 @@ export async function generateSchedule(
         console.log(scheduleText.substring(i, i + chunkSize));
     }
     console.log(`[CALENDAR] RESPUESTA COMPLETA DE GROK AI (fin)`);
-    
+
     try {
       console.log(`[CALENDAR] Iniciando procesamiento de la respuesta (Estrategia 1: JSON directo)`);
       // Registro posiciones
       const jsonStart = scheduleText.indexOf('{');
       const jsonEnd = scheduleText.lastIndexOf('}') + 1;
       console.log(`[CALENDAR] Posiciones JSON detectadas: inicio=${jsonStart}, fin=${jsonEnd}`);
-      
+
       if (jsonStart < 0) {
         console.error(`[CALENDAR] ERROR: No se encontró carácter de inicio JSON '{' en la respuesta`);
       }
       if (jsonEnd <= jsonStart) {
         console.error(`[CALENDAR] ERROR: Posición de fin inválida o no se encontró carácter de cierre JSON '}'`);
       }
-      
+
       // Estrategia 1: Extraer y parsear directamente
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         try {
           console.log(`[CALENDAR] Ejecutando estrategia 1: Extracción directa de JSON`);
           let jsonContent = scheduleText.substring(jsonStart, jsonEnd);
-          
+
           // Pre-procesamiento para corregir errores comunes de formato
           console.log(`[CALENDAR] Aplicando correcciones de formato antes del parsing`);
           jsonContent = jsonContent.replace(/"(\d{2})":\s*(\d{2})"/g, '"$1:$2"');
@@ -233,29 +233,29 @@ export async function generateSchedule(
           jsonContent = jsonContent.replace(/"time":\s*"([^"]+)"/g, '"postTime": "$1"');
           jsonContent = jsonContent.replace(/,\s*}/g, '}');
           jsonContent = jsonContent.replace(/,\s*]/g, ']');
-          
+
           // Corregir problema específico con campo "Objetivo" mal formateado
           jsonContent = jsonContent.replace(/"Objetivo":\s*"([^"]+)"/g, '"objective": "$1"');
           jsonContent = jsonContent.replace(/""Objetivo""/g, '"objective"');
-          
+
           // Limpiar comillas dobles consecutivas
           jsonContent = jsonContent.replace(/""+/g, '"');
-          
+
           // Arreglar separadores malformados
           jsonContent = jsonContent.replace(/"\s*:\s*"/g, '": "');
           jsonContent = jsonContent.replace(/"\s*,\s*"/g, '", "');
-          
+
           // Registrar longitud para depuración
           console.log(`[CALENDAR] Longitud del contenido JSON procesado: ${jsonContent.length} caracteres`);
           console.log(`[CALENDAR] Primeros 100 caracteres del JSON procesado: ${jsonContent.substring(0, 100)}...`);
-          
+
           console.log(`[CALENDAR] Intentando parsear JSON con JSON.parse()`);
           const parsedContent = JSON.parse(jsonContent);
           console.log(`[CALENDAR] JSON parseado exitosamente, verificando estructura`);
-          
+
           if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries)) {
             console.log(`[CALENDAR] Estructura básica correcta. Entradas encontradas: ${parsedContent.entries.length}`);
-            
+
             if (parsedContent.entries.length === 0) {
               console.error(`[CALENDAR] ERROR: Array de entradas vacío en el JSON`);
               console.log(`[CALENDAR] Detalles del objeto parseado:`, JSON.stringify(parsedContent, null, 2).substring(0, 500) + "...");
@@ -268,9 +268,9 @@ export async function generateSchedule(
                 typeof entry.platform === 'string' &&
                 typeof entry.postDate === 'string'
               );
-              
+
               console.log(`[CALENDAR] Entradas con todos los campos requeridos: ${validEntries.length}/${parsedContent.entries.length}`);
-              
+
               if (validEntries.length === parsedContent.entries.length) {
                 // Todas las entradas son válidas
                 console.log(`[CALENDAR] ÉXITO: Estrategia 1 exitosa. Devolviendo cronograma con ${validEntries.length} entradas`);
@@ -289,7 +289,7 @@ export async function generateSchedule(
                     );
                     console.log(`[CALENDAR] Ejemplo de entrada inválida:`, JSON.stringify(invalidEntry));
                   }
-                  
+
                   console.log(`[CALENDAR] ÉXITO PARCIAL: Estrategia 1 parcialmente exitosa. Devolviendo cronograma con ${validEntries.length} entradas válidas`);
                   return {
                     name: parsedContent.name || `Cronograma para ${projectName}`,
@@ -322,26 +322,26 @@ export async function generateSchedule(
       } else {
         console.error(`[CALENDAR] ERROR: No se puede ejecutar Estrategia 1, posiciones JSON inválidas`);
       }
-      
+
       // Estrategia 2: Normalizar y limpiar el JSON antes de parsearlo
       if (jsonStart >= 0 && jsonEnd > jsonStart) {
         try {
           let jsonContent = scheduleText.substring(jsonStart, jsonEnd);
           console.log("Aplicando limpieza al JSON...");
-          
+
           // Normalizar saltos de línea y espacios
           jsonContent = jsonContent.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
-          
+
           // Arreglar problemas con caracteres de truncamiento
           jsonContent = jsonContent.replace(/Lujo$/g, 'Lujo"');
           jsonContent = jsonContent.replace(/Lujo\s*}\s*,/g, 'Lujo"},');
-          
+
           // Arreglar específicamente problemas con comillas en el título
           jsonContent = jsonContent.replace(/"name"\s*:\s*"([^"]*)"/g, (match, p1) => {
             // Escapar comillas internas en el nombre
             return `"name":"${p1.replace(/"/g, '\\"')}"`;
           });
-          
+
           // Arreglar problemas con entradas que no cierran correctamente
           jsonContent = jsonContent.replace(/}(\s*)\n?$/g, '}]}');
           if (!jsonContent.endsWith(']}')) {
@@ -356,7 +356,7 @@ export async function generateSchedule(
               jsonContent = jsonContent + '}';
             }
           }
-          
+
           // Arreglar problemas comunes en JSON como separaciones, comillas, etc.
           jsonContent = jsonContent.replace(/}\s*{/g, '},{');
           jsonContent = jsonContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
@@ -366,43 +366,43 @@ export async function generateSchedule(
           jsonContent = jsonContent.replace(/«/g, '"').replace(/»/g, '"');
           // Asegurar comillas alrededor de strings en español con acentos y ñ
           jsonContent = jsonContent.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
-          
+
           // Limpiar casos de comas incorrectas o faltantes
           jsonContent = jsonContent.replace(/",\s*"/g, '","');
           jsonContent = jsonContent.replace(/",\s*}/g, '"}');
           jsonContent = jsonContent.replace(/"\s*}/g, '"}');
           jsonContent = jsonContent.replace(/"\s*]/g, '"]');
-          
+
           // Arreglar caracteres de escape
           jsonContent = jsonContent.replace(/\\"/g, '"').replace(/\\'/g, "'");
           jsonContent = jsonContent.replace(/(?<!\\)\\(?!["\\\/bfnrtu])/g, "\\\\");
-          
+
           // Corregir problemas de anidamiento
           jsonContent = jsonContent.replace(/\}\s*"/g, '},"');
           jsonContent = jsonContent.replace(/\}\s*\{/g, '},{');
-          
+
           // Eliminar caracteres Unicode que puedan interferir
           jsonContent = jsonContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
-          
+
           // Reemplazar cualquier coma final antes de cerrar arrays o objetos
           jsonContent = jsonContent.replace(/,(\s*[\]}])/g, '$1');
-          
+
           // Asegurar que todas las propiedades tengan comillas dobles
           jsonContent = jsonContent.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
-          
+
           console.log("JSON limpiado (primeros 100 caracteres):", 
             jsonContent.substring(0, 100) + "... [truncado]");
-          
+
           try {
             const parsedContent = JSON.parse(jsonContent);
-            
+
             if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
               console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
               // Verificar entradas válidas
               const validEntries = parsedContent.entries.filter((entry: any) => 
                 entry.title && entry.platform && entry.postDate
               );
-              
+
               if (validEntries.length > 0) {
                 return {
                   name: parsedContent.name || `Cronograma para ${projectName}`,
@@ -412,14 +412,14 @@ export async function generateSchedule(
             }
           } catch (parseError) {
             console.error("Error al parsear JSON limpiado:", parseError);
-            
+
             // Último intento: corregir errores comunes de JSON
             try {
               console.log("Intentando reparación profunda del JSON...");
               // Usar RegEx para extraer manualmente la estructura básica
               const nameMatch = jsonContent.match(/"name"\s*:\s*"([^"]+)"/);
               const name = nameMatch ? nameMatch[1] : `Cronograma para ${projectName}`;
-              
+
               // Intentar extraer las entradas como un array
               let entriesMatch = jsonContent.match(/"entries"\s*:\s*\[([\s\S]+?)\](?=\s*\})/);
               if (entriesMatch && entriesMatch[1]) {
@@ -427,23 +427,23 @@ export async function generateSchedule(
                 const entriesStr = entriesMatch[1].trim();
                 // Dividir por cierre y apertura de objetos para obtener entradas individuales
                 const rawEntries = entriesStr.split(/}\s*,\s*{/);
-                
+
                 const validEntries: ContentScheduleEntry[] = [];
-                
+
                 for (let i = 0; i < rawEntries.length; i++) {
                   try {
                     // Reconstruir el objeto con llaves de apertura/cierre
                     let entryStr = rawEntries[i];
                     if (!entryStr.startsWith('{')) entryStr = '{' + entryStr;
                     if (!entryStr.endsWith('}')) entryStr = entryStr + '}';
-                    
+
                     // Limpiar la cadena de entrada - mejora intensiva
                     // 1. Asegurarse que los nombres de propiedades tengan comillas dobles
                     entryStr = entryStr.replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":');
-                    
+
                     // 2. Convertir comillas simples a dobles para valores
                     entryStr = entryStr.replace(/:\s*'([^']*)'/g, ':"$1"');
-                    
+
                     // 3. Asegurarse que los valores tengan el formato correcto
                     // No sobreescribir valores ya con formato correcto
                     entryStr = entryStr.replace(/"([^"]+)":\s*([^",\{\}\[\]]+)([,\}])/g, (match, p1, p2, p3) => {
@@ -454,16 +454,16 @@ export async function generateSchedule(
                         return `"${p1}": "${p2.trim()}"${p3}`;
                       }
                     });
-                    
+
                     // 4. Corregir errores comunes de formato
                     entryStr = entryStr.replace(/,\s*}/g, '}'); // Eliminar coma final antes de cierre
                     entryStr = entryStr.replace(/}\s*{/g, '},{'); // Asegurar separación correcta entre objetos
                     entryStr = entryStr.replace(/}\s*"/g, '},"'); // Corregir transición entre objeto y propiedad
                     entryStr = entryStr.replace(/"\s*{/g, '":{'); // Corregir transición entre propiedad y objeto
-                    
+
                     // 5. Corregir comillas dobles duplicadas
                     entryStr = entryStr.replace(/""+/g, '"');
-                    
+
                     // Intentar parsear como JSON con verificación adicional
                     let entry;
                     try {
@@ -473,7 +473,7 @@ export async function generateSchedule(
                       const errorMsg = parseError.message || '';
                       const positionMatch = errorMsg.match(/position\s+(\d+)/i);
                       let errorPosition = -1;
-                      
+
                       if (positionMatch && positionMatch[1]) {
                         errorPosition = parseInt(positionMatch[1]);
                         // Intentar reparar en la posición específica del error
@@ -483,7 +483,7 @@ export async function generateSchedule(
                           const end = Math.min(entryStr.length, errorPosition + 10);
                           const context = entryStr.substring(start, end);
                           console.log(`Contexto de error JSON en pos ${errorPosition}: "${context}"`);
-                          
+
                           // Intentar reparar basado en patrones específicos
                           if (errorMsg.includes("Expected ',' or '}'")) {
                             // Reparar problema específico con campos mal formateados
@@ -492,12 +492,12 @@ export async function generateSchedule(
                             entryStr = entryStr.replace(/"ime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
                             entryStr = entryStr.replace(/"time":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
                             entryStr = entryStr.replace(/"postTime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
-                            
+
                             // Corregir campo "Objetivo" problemático
                             entryStr = entryStr.replace(/""Objetivo""\s*:\s*"([^"]+)"/g, '"objective": "$1"');
                             entryStr = entryStr.replace(/"Objetivo"\s*:\s*"([^"]+)"/g, '"objective": "$1"');
                             entryStr = entryStr.replace(/""Objetivo""/g, '"objective"');
-                            
+
                             // Limpiar comillas dobles consecutivas
                             entryStr = entryStr.replace(/""+/g, '"');
                             // Intentar arreglar insertando la coma o llave faltante
@@ -531,7 +531,7 @@ export async function generateSchedule(
                         throw parseError;
                       }
                     }
-                    
+
                     if (entry.title && entry.platform && entry.postDate) {
                       const completeEntry: ContentScheduleEntry = {
                         title: entry.title,
@@ -551,7 +551,7 @@ export async function generateSchedule(
                     console.warn(`Error procesando entrada ${i}:`, innerError);
                   }
                 }
-                
+
                 if (validEntries.length > 0) {
                   console.log(`Recuperadas ${validEntries.length} entradas mediante reparación profunda`);
                   return {
@@ -568,7 +568,7 @@ export async function generateSchedule(
           console.error("Error al limpiar y procesar JSON:", error);
         }
       }
-      
+
       // Estrategia 3: Buscar y extraer entradas individuales con regex más flexible
       try {
         console.log("Aplicando extracción por expresiones regulares...");
@@ -576,25 +576,25 @@ export async function generateSchedule(
         const entriesRegex = /{(?:[^{}]|"[^"]*")*?"title"(?:[^{}]|"[^"]*")*?"platform"(?:[^{}]|"[^"]*")*?"postDate"(?:[^{}]|"[^"]*")*?}/g;
         const validEntries: ContentScheduleEntry[] = [];
         let match;
-        
+
         // Primero intentamos una reparación general del texto completo
         try {
           console.log("Aplicando reparación general del JSON antes de procesamiento por piezas");
           const repairedFullText = repairMalformedJson(scheduleText);
           const jsonStart = repairedFullText.indexOf('{');
           const jsonEnd = repairedFullText.lastIndexOf('}') + 1;
-          
+
           if (jsonStart >= 0 && jsonEnd > jsonStart) {
             try {
               const jsonContent = repairedFullText.substring(jsonStart, jsonEnd);
               const parsedContent = JSON.parse(jsonContent);
-              
+
               if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
                 console.log(`JSON reparado correctamente con ${parsedContent.entries.length} entradas`);
                 const validEntries = parsedContent.entries.filter((entry: any) => 
                   entry.title && entry.platform && entry.postDate
                 );
-                
+
                 if (validEntries.length > 0) {
                   return {
                     name: parsedContent.name || `Cronograma para ${projectName}`,
@@ -609,13 +609,13 @@ export async function generateSchedule(
         } catch (repairError) {
           console.warn("Error en reparación general:", repairError);
         }
-        
-        // Si la reparación general falló, continuamos con la extracción pieza por pieza
+
+        // Si la reparación general falló, continuamos con la extracción pieza porpieza
         while ((match = entriesRegex.exec(scheduleText)) !== null) {
           try {
             let entryText = match[0];
             console.log("Encontrada posible entrada:", entryText.substring(0, 50) + "... [truncado]");
-            
+
             // Normalizar
             entryText = entryText.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ');
             // Limpiar campos con técnicas básicas
@@ -623,7 +623,7 @@ export async function generateSchedule(
             entryText = entryText.replace(/:(\s*)'([^']*)'/g, ':$1"$2"');
             entryText = entryText.replace(/«/g, '"').replace(/»/g, '"');
             entryText = entryText.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
-            
+
             try {
               // Intentar parsear directamente
               const entry = JSON.parse(entryText);
@@ -650,7 +650,7 @@ export async function generateSchedule(
               try {
                 const repairedEntryText = repairMalformedJson(entryText);
                 const entry = JSON.parse(repairedEntryText);
-                
+
                 if (entry.title && entry.platform && entry.postDate) {
                   // Procesar entrada reparada
                   const completeEntry: ContentScheduleEntry = {
@@ -676,14 +676,14 @@ export async function generateSchedule(
             console.warn("Error procesando entrada individual:", e);
           }
         }
-        
+
         if (validEntries.length > 0) {
           console.log(`Recuperadas ${validEntries.length} entradas de forma individual mediante regex`);
-          
+
           // Extraer nombre si es posible
           const nameMatch = scheduleText.match(/"name"\s*:\s*"([^"]+)"/);
           const name = nameMatch ? nameMatch[1] : `Cronograma para ${projectName}`;
-          
+
           return {
             name: name,
             entries: validEntries
@@ -692,42 +692,42 @@ export async function generateSchedule(
       } catch (error) {
         console.error("Error al extraer entradas individuales:", error);
       }
-      
+
       // Estrategia 4: Intento de análisis inteligente línea por línea para extraer contenido
       console.log("Intentando extracción línea por línea para buscar publicaciones...");
-      
+
       try {
         // Dividir el texto en líneas y buscar patrones que parezcan entradas
         const lines = scheduleText.split('\n');
         const entries: ContentScheduleEntry[] = [];
-        
+
         // Variables para rastrear una entrada en construcción
         let currentEntry: Partial<ContentScheduleEntry> | null = null;
         let potentialPlatforms = ['Instagram', 'Facebook', 'Twitter', 'LinkedIn', 'TikTok', 'YouTube', 'Pinterest', 'WhatsApp'];
-        
+
         // Patrones de fecha (formato YYYY-MM-DD)
         const datePattern = /\d{4}-\d{2}-\d{2}/;
         // Patrón de tiempo (formato HH:MM o H:MM)
         const timePattern = /\b([01]?[0-9]|2[0-3]):([0-5][0-9])\b/;
-        
+
         // Iterar por cada línea
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i].trim();
-          
+
           // Ignorar líneas vacías
           if (!line) continue;
-          
+
           // Buscar plataformas
           const platformFound = potentialPlatforms.find(platform => 
             line.includes(platform) || 
             line.toLowerCase().includes(platform.toLowerCase())
           );
-          
+
           // Buscar fechas
           const dateMatch = line.match(datePattern);
           // Buscar tiempos
           const timeMatch = line.match(timePattern);
-          
+
           // Si encontramos una plataforma o fecha, podría ser el inicio de una nueva entrada
           if (platformFound || dateMatch) {
             // Si ya teníamos una entrada en construcción con datos suficientes, guardémosla
@@ -746,20 +746,20 @@ export async function generateSchedule(
                 hashtags: currentEntry.hashtags || ""
               });
             }
-            
+
             // Iniciar una nueva entrada
             currentEntry = {};
-            
+
             // Asignar plataforma si la encontramos
             if (platformFound) {
               currentEntry.platform = platformFound;
             }
-            
+
             // Asignar fecha si la encontramos
             if (dateMatch) {
               currentEntry.postDate = dateMatch[0];
             }
-            
+
             // Intenta extraer un título de esta línea o la siguiente
             if (line.length > 5 && !line.startsWith('{') && !line.startsWith('"')) {
               // Usar esta línea como título si parece un título (no demasiado largo)
@@ -772,14 +772,14 @@ export async function generateSchedule(
               }
             }
           }
-          
+
           // Si ya tenemos una entrada en construcción, seguir agregando datos
           if (currentEntry) {
             // Buscar tiempo si no lo tenemos
             if (!currentEntry.postTime && timeMatch) {
               currentEntry.postTime = timeMatch[0];
             }
-            
+
             // Intenta identificar contenido según palabras clave
             if (line.toLowerCase().includes("descripción") || line.toLowerCase().includes("description")) {
               currentEntry.description = extractContentAfterLabel(line);
@@ -794,27 +794,27 @@ export async function generateSchedule(
             } else if (line.toLowerCase().includes("hashtag")) {
               currentEntry.hashtags = extractContentAfterLabel(line);
             }
-            
+
             // Si no tenemos título y esta línea parece un buen candidato, úsala
             if (!currentEntry.title && line.length > 5 && line.length < 100 && 
                 !line.includes(':') && !line.includes('{') && !line.includes('}')) {
               currentEntry.title = line;
             }
-            
+
             // Si no hemos encontrado fecha, intenta buscarla
             if (!currentEntry.postDate && dateMatch) {
               currentEntry.postDate = dateMatch[0];
             }
           }
         }
-        
+
         // Agregar la última entrada si existe
         if (currentEntry && currentEntry.title && currentEntry.platform) {
           // Si no tenemos fecha, usa la fecha inicial
           if (!currentEntry.postDate) {
             currentEntry.postDate = formattedDate;
           }
-          
+
           entries.push({
             title: currentEntry.title,
             description: currentEntry.description || "",
@@ -828,7 +828,7 @@ export async function generateSchedule(
             hashtags: currentEntry.hashtags || ""
           });
         }
-        
+
         if (entries.length > 0) {
           console.log(`Extraídas ${entries.length} entradas mediante análisis línea por línea`);
           return {
@@ -836,11 +836,11 @@ export async function generateSchedule(
             entries: entries
           };
         }
-        
+
       } catch (error) {
         console.error("Error en la extracción línea por línea:", error);
       }
-      
+
       // Fallback final cuando ninguna estrategia funcionó
       console.log("Usando cronograma fallback básico (último recurso)");
       return {
@@ -884,11 +884,11 @@ export async function generateSchedule(
   } catch (error: any) {
     // Registrar mensaje detallado del error
     console.error("[CALENDAR] Error crítico en generateSchedule:", error);
-    
+
     // Verificar si el error ya tiene un tipo definido
     let errorType = error.errorType || "UNKNOWN";
     let errorMessage = "";
-    
+
     // Loggeamos información detallada del error
     console.log("[CALENDAR ERROR] Detalles completos:", { 
       message: error.message, 
@@ -896,7 +896,7 @@ export async function generateSchedule(
       stack: error.stack,
       originalError: error
     });
-    
+
     if (error.message && typeof error.message === 'string') {
       if (errorType === "NETWORK" || error.message.includes("connect")) {
         errorType = "NETWORK";
@@ -920,7 +920,7 @@ export async function generateSchedule(
     } else {
       errorMessage = "Error desconocido sin mensaje";
     }
-    
+
     // Lanzar error tipificado para mejor manejo en las rutas
     const enhancedError = new Error(`${errorType}: ${errorMessage}`);
     (enhancedError as any).errorType = errorType;
@@ -940,7 +940,7 @@ function extractContentAfterLabel(line: string): string {
   if (colonIndex > 0 && colonIndex < line.length - 1) {
     return line.substring(colonIndex + 1).trim();
   }
-  
+
   // Si no hay ":", intentar con otros separadores comunes
   const separators = ['-', '–', '—', '>', '=', '|', '•'];
   for (const sep of separators) {
@@ -949,14 +949,14 @@ function extractContentAfterLabel(line: string): string {
       return line.substring(sepIndex + 1).trim();
     }
   }
-  
+
   // Si no hay separadores conocidos, intentar separar por la primera palabra si hay al menos 2 palabras
   const words = line.trim().split(/\s+/);
   if (words.length >= 2) {
     // Devolver todo menos la primera palabra
     return words.slice(1).join(' ').trim();
   }
-  
+
   // Si no podemos extraer, devolver la línea completa
   return line.trim();
 }
@@ -967,29 +967,29 @@ function extractContentAfterLabel(line: string): string {
  */
 function repairMalformedJson(jsonString: string): string {
   let result = jsonString;
-  
+
   // 1. Corregir comillas mal cerradas
   result = result.replace(/([a-zA-Z0-9_]+)(?=:)/g, '"$1"'); // Asegurar comillas en claves
-  
+
   // 2. Corregir problemas comunes de escape
   result = result.replace(/(?<!\\)\\(?!["\\\/bfnrtu])/g, "\\\\"); // Escape de backslash
-  
+
   // 3. Reemplazar comillas simples con comillas dobles
   const singleQuoteRegex = /'([^']*?)'/g;
   result = result.replace(singleQuoteRegex, '"$1"');
-  
+
   // 4. Arreglar propiedades en español con acentos
   const spanishWordRegex = /:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g;
   result = result.replace(spanishWordRegex, ':"$2"$3');
-  
+
   // 5. Eliminar comas extra antes de cerrar objetos o arrays
   result = result.replace(/,(\s*[\]}])/g, '$1');
-  
+
   // 6. Asegurar que las llaves y corchetes estén correctamente balanceados
   const countOccurrences = (str: string, char: string): number => {
     return (str.match(new RegExp(`\\${char}`, 'g')) || []).length;
   };
-  
+
   const openBraces = countOccurrences(result, '{');
   const closeBraces = countOccurrences(result, '}');
   if (openBraces > closeBraces) {
@@ -997,7 +997,7 @@ function repairMalformedJson(jsonString: string): string {
   } else if (closeBraces > openBraces) {
     result = '{'.repeat(closeBraces - openBraces) + result;
   }
-  
+
   const openBrackets = countOccurrences(result, '[');
   const closeBrackets = countOccurrences(result, ']');
   if (openBrackets > closeBrackets) {
@@ -1005,20 +1005,20 @@ function repairMalformedJson(jsonString: string): string {
   } else if (closeBrackets > openBrackets) {
     result = '['.repeat(closeBrackets - openBrackets) + result;
   }
-  
+
   // 7. Corregir valores con espacios que deberían tener comillas
   result = result.replace(/:\s*([^"{}\[\],\d][^,}\]]*[^"{}\[\],\d])\s*([,}\]])/g, ':"$1"$2');
-  
+
   // 8. Quitar espacios entre comillas y dos puntos
   result = result.replace(/"\s+:/g, '":');
-  
+
   // 9. Asegurar que no haya comas extras al final de objetos o arrays
   result = result.replace(/,(\s*})/g, '$1');
   result = result.replace(/,(\s*\])/g, '$1');
-  
+
   // 10. Arreglar valores booleanos y numéricos
   result = result.replace(/"(true|false)"(?=[\s,}\]])/g, '$1');
   result = result.replace(/"(\d+)"(?=[\s,}\]])/g, '$1');
-  
+
   return result;
 }

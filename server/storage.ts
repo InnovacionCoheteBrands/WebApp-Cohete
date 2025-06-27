@@ -360,12 +360,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Project Analysis methods
-  async createAnalysisResult(analysis: InsertAnalysisResult): Promise<AnalysisResult> {
-    const [newAnalysis] = await db
-      .insert(analysisResults)
-      .values(analysis)
-      .returning();
-    return newAnalysis;
+  async createAnalysisResult(analysisData: any) {
+    try {
+      // Asegurar que todos los campos opcionales se incluyan
+      const cleanedData = {
+        projectId: analysisData.projectId,
+        mission: analysisData.mission || null,
+        vision: analysisData.vision || null,
+        coreValues: analysisData.coreValues || null,
+        communicationObjectives: analysisData.communicationObjectives || null,
+        buyerPersona: analysisData.buyerPersona || null,
+        archetypes: analysisData.archetypes || null,
+        socialNetworks: analysisData.socialNetworks || null,
+        marketingStrategies: analysisData.marketingStrategies || null,
+        brandCommunicationStyle: analysisData.brandCommunicationStyle || null,
+        responsePolicyPositive: analysisData.responsePolicyPositive || null,
+        responsePolicyNegative: analysisData.responsePolicyNegative || null,
+        // Campos legacy para compatibilidad
+        objectives: analysisData.objectives || null,
+        targetAudience: analysisData.targetAudience || null,
+        brandTone: analysisData.brandTone || null,
+        keywords: analysisData.keywords || null,
+        contentThemes: analysisData.contentThemes || null,
+        competitorAnalysis: analysisData.competitorAnalysis || null
+      };
+
+      const [newAnalysis] = await db
+        .insert(analysisResults)
+        .values(cleanedData)
+        .returning();
+      return newAnalysis;
+    } catch (error) {
+      console.error("Error creating analysis result:", error);
+      throw error;
+    }
   }
 
   async getAnalysisResult(projectId: number): Promise<AnalysisResult | undefined> {
@@ -376,13 +404,41 @@ export class DatabaseStorage implements IStorage {
     return analysis;
   }
 
-  async updateAnalysisResult(projectId: number, analysisData: Partial<InsertAnalysisResult>): Promise<AnalysisResult | undefined> {
-    const [updatedAnalysis] = await db
-      .update(analysisResults)
-      .set({ ...analysisData, updatedAt: new Date() })
-      .where(eq(analysisResults.projectId, projectId))
-      .returning();
-    return updatedAnalysis;
+  async updateAnalysisResult(projectId: number, analysisData: any) {
+    try {
+      // Asegurar que todos los campos opcionales se incluyan en la actualización
+      const cleanedData = {
+        mission: analysisData.mission || null,
+        vision: analysisData.vision || null,
+        coreValues: analysisData.coreValues || null,
+        communicationObjectives: analysisData.communicationObjectives || null,
+        buyerPersona: analysisData.buyerPersona || null,
+        archetypes: analysisData.archetypes || null,
+        socialNetworks: analysisData.socialNetworks || null,
+        marketingStrategies: analysisData.marketingStrategies || null,
+        brandCommunicationStyle: analysisData.brandCommunicationStyle || null,
+        responsePolicyPositive: analysisData.responsePolicyPositive || null,
+        responsePolicyNegative: analysisData.responsePolicyNegative || null,
+        // Campos legacy para compatibilidad
+        objectives: analysisData.objectives || null,
+        targetAudience: analysisData.targetAudience || null,
+        brandTone: analysisData.brandTone || null,
+        keywords: analysisData.keywords || null,
+        contentThemes: analysisData.contentThemes || null,
+        competitorAnalysis: analysisData.competitorAnalysis || null,
+        updatedAt: new Date()
+      };
+
+      const [updatedAnalysis] = await db
+        .update(analysisResults)
+        .set(cleanedData)
+        .where(eq(analysisResults.projectId, projectId))
+        .returning();
+      return updatedAnalysis;
+    } catch (error) {
+      console.error("Error updating analysis result:", error);
+      throw error;
+    }
   }
 
   // Project Assignment methods
