@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Calendar, Star, Rocket } from "lucide-react";
+import { Crown, Calendar, Star, Rocket, Info } from "lucide-react";
 
 interface User {
   id: string;
@@ -16,65 +17,36 @@ interface WelcomeSectionProps {
 }
 
 export default function WelcomeSection({ user }: WelcomeSectionProps) {
-  const greeting = (() => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Buenos días";
-    if (hour < 18) return "Buenas tardes";
-    return "Buenas noches";
-  })();
-
-  const currentDate = new Date().toLocaleDateString('es-ES', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 rounded-lg bg-primary text-primary-foreground">
-                <Rocket className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-1">
-                  {greeting}, {user?.fullName || user?.username || 'Usuario'}!
-                </h1>
-                <div className="flex items-center gap-2">
-                  {user?.isPrimary && (
-                    <Badge variant="default">
-                      <Crown className="h-3 w-3 mr-1" />
-                      Administrador
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
+    <Card className="bg-gradient-to-r from-slate-800 to-slate-900 border-slate-700 text-white">
+      <CardContent className="p-8">
+        <div className="mb-6">
+          <Badge variant="secondary" className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-200">
+            PANEL DE CONTROL
+          </Badge>
 
-            <div className="flex flex-col gap-2 text-muted-foreground">
-              <p className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                {currentDate}
-              </p>
-              {user?.jobTitle && (
-                <p className="text-sm">
-                  {user.jobTitle} {user.department && `• ${user.department}`}
-                </p>
-              )}
-            </div>
-          </div>
+          <h1 className="text-4xl font-bold mb-4">
+            ¡Hola, {user?.fullName?.split(' ')[0] || user?.username || 'Adrian'}!
+          </h1>
 
-          <div className="lg:text-right">
-            <div className="flex items-center gap-1 text-primary mb-2 lg:justify-end">
-              <Star className="h-5 w-5 fill-current" />
-              <span className="text-lg font-bold">Cohete Workflow</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Sistema de gestión de proyectos
-            </p>
+          <p className="text-slate-300 text-lg mb-6 max-w-2xl">
+            Crea, gestiona y organiza tus proyectos de marketing con flujos de trabajo potenciados por IA y programación de contenido.
+          </p>
+
+          <div className="flex gap-4">
+            <Button 
+              variant="outline" 
+              className="bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200"
+            >
+              <Info className="mr-2 h-4 w-4" />
+              Recorrido Guiado
+            </Button>
+
+            <Button 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              Crear Proyecto
+            </Button>
           </div>
         </div>
       </CardContent>
