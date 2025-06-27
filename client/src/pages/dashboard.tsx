@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import WelcomeSection from "@/components/dashboard/welcome-section";
 import QuickActions from "@/components/dashboard/quick-actions";
-import CreateScheduleSection from "@/components/dashboard/create-schedule-section";
 import RecentProjects from "@/components/dashboard/recent-projects";
 import RecentSchedules from "@/components/dashboard/recent-schedules";
 
@@ -43,7 +42,6 @@ export default function Dashboard() {
     <div className="space-y-6 hide-scrollbar">
       <WelcomeSection user={user} />
       <QuickActions />
-      <CreateScheduleSection />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentProjects />
         <RecentSchedules />

@@ -37,7 +37,7 @@ export default function WelcomeSection({ user }: WelcomeSectionProps) {
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button
-            className="rounded-md px-5 py-2.5 text-sm font-medium text-primary shadow-sm hover:bg-white/90 transition-all duration-200 active:scale-95 dark:bg-[#65cef5] dark:text-[#1a1d2d] dark:hover:bg-[#5bb7dd] dark:shadow-[0_0_10px_rgba(101,206,245,0.2)] flex items-center gap-1.5 bg-[#4698b8]"
+            className="rounded-md px-5 py-2.5 text-sm font-medium shadow-sm hover:bg-white/90 transition-all duration-200 active:scale-95 dark:bg-[#65cef5] dark:text-[#1a1d2d] dark:hover:bg-[#5bb7dd] dark:shadow-[0_0_10px_rgba(101,206,245,0.2)] flex items-center gap-1.5 bg-[#4698b8] text-[#ffffff]"
             onClick={() => startTour('dashboard')}
           >
             <PlayCircle className="h-4 w-4" />
