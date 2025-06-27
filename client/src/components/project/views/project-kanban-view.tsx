@@ -699,10 +699,11 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                     className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
                     defaultValue={taskToEdit?.dependencies?.map(String) || []}
                     onChange={(e) => {
-                      const selectedOptions = Array.from(e.target.selectedOptions).map(option => parseInt(option.value));
+                      const selectedValues = Array.from(e.target.selectedOptions).map(option => option.value);
+                      const selectedNumbers = selectedValues.map(val => parseInt(val)).filter(num => !isNaN(num));
                       setTaskToEdit({
                         ...taskToEdit!,
-                        dependencies: selectedOptions
+                        dependencies: selectedNumbers
                       });
                     }}
                   >
@@ -887,7 +888,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 status: statusInput.value as any,
                 dueDate: dueDateInput.value ? new Date(dueDateInput.value) : null,
                 estimatedHours: estimatedHoursInput.value ? parseInt(estimatedHoursInput.value) : null,
-                assignedToId: assigneeInput.value ? parseInt(assigneeInput.value) : null,
+                assignedToId: assigneeInput.value || null,
                 projectId: projectId
               });
               

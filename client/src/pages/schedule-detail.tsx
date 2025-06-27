@@ -154,7 +154,7 @@ export default function ScheduleDetail({ id }: { id: number }) {
   };
 
   // Copiar texto al portapapeles
-  const copyToClipboard = (text: string | null, description: string) => {
+  const copyToClipboard = async (text: string | null, description: string) => {
     if (!text) {
       toast({
         title: "Error al copiar",
@@ -163,11 +163,21 @@ export default function ScheduleDetail({ id }: { id: number }) {
       });
       return;
     }
-    navigator.clipboard.writeText(text);
-    toast({
-      title: "Texto copiado",
-      description: `${description} copiado al portapapeles`,
-    });
+    
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Texto copiado",
+        description: `${description} copiado al portapapeles`,
+      });
+    } catch (error) {
+      console.error('Error copying to clipboard:', error);
+      toast({
+        title: "Error al copiar",
+        description: "No se pudo copiar al portapapeles",
+        variant: "destructive"
+      });
+    }
   };
 
   // Descargar la imagen
