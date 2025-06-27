@@ -16,7 +16,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { CalendarIcon, Clock, ArrowLeft, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,7 +23,6 @@ import { cn } from "@/lib/utils";
 const quickCalendarSchema = z.object({
   projectId: z.string().min(1, "Selecciona un proyecto"),
   duration: z.string().min(1, "Selecciona una duración"),
-  platforms: z.array(z.string()).min(1, "Selecciona al menos una plataforma"),
   startDate: z.date({
     required_error: "Selecciona una fecha de inicio",
   }),
@@ -33,13 +31,7 @@ const quickCalendarSchema = z.object({
 
 type QuickCalendarFormData = z.infer<typeof quickCalendarSchema>;
 
-const platformOptions = [
-  { id: "instagram", name: "Instagram", color: "bg-pink-500" },
-  { id: "facebook", name: "Facebook", color: "bg-blue-600" },
-  { id: "twitter", name: "Twitter/X", color: "bg-black" },
-  { id: "linkedin", name: "LinkedIn", color: "bg-blue-700" },
-  { id: "tiktok", name: "TikTok", color: "bg-black" },
-];
+
 
 const durationOptions = [
   { value: "7", label: "1 semana (7 días)" },
@@ -56,7 +48,6 @@ export default function QuickCalendar() {
   const form = useForm<QuickCalendarFormData>({
     resolver: zodResolver(quickCalendarSchema),
     defaultValues: {
-      platforms: [],
       duration: "14",
       startDate: new Date(),
       specifications: "",
@@ -83,10 +74,10 @@ export default function QuickCalendar() {
         projectName: selectedProject.name,
         projectDetails: selectedProject.description || `Proyecto ${selectedProject.name}`,
         startDate: format(data.startDate, "yyyy-MM-dd"),
-        specifications: data.specifications || `Cronograma rápido para las plataformas: ${data.platforms.join(", ")}`,
+        specifications: data.specifications || `Cronograma rápido y simple`,
         durationDays: parseInt(data.duration),
         projectId: parseInt(data.projectId),
-        additionalInstructions: `Este es un calendario RÁPIDO y simple. Genera exactamente ${Math.ceil(parseInt(data.duration) / 2)} publicaciones distribuidas uniformemente. Plataformas: ${data.platforms.join(", ")}. Mantén el contenido directo y efectivo.`,
+        additionalInstructions: `Este es un calendario RÁPIDO y simple. Genera exactamente ${Math.ceil(parseInt(data.duration) / 2)} publicaciones distribuidas uniformemente. Mantén el contenido directo y efectivo.`,
       };
 
       const response = await fetch("/api/schedules/generate", {
@@ -263,53 +254,7 @@ export default function QuickCalendar() {
                     )}
                   />
 
-                  {/* Plataformas */}
-                  <FormField
-                    control={form.control}
-                    name="platforms"
-                    render={() => (
-                      <FormItem>
-                        <FormLabel>Plataformas</FormLabel>
-                        <div className="grid grid-cols-2 gap-3">
-                          {platformOptions.map((platform) => (
-                            <FormField
-                              key={platform.id}
-                              control={form.control}
-                              name="platforms"
-                              render={({ field }) => {
-                                return (
-                                  <FormItem
-                                    key={platform.id}
-                                    className="flex flex-row items-start space-x-3 space-y-0"
-                                  >
-                                    <FormControl>
-                                      <Checkbox
-                                        checked={field.value?.includes(platform.id)}
-                                        onCheckedChange={(checked) => {
-                                          return checked
-                                            ? field.onChange([...field.value, platform.id])
-                                            : field.onChange(
-                                                field.value?.filter(
-                                                  (value) => value !== platform.id
-                                                )
-                                              );
-                                        }}
-                                      />
-                                    </FormControl>
-                                    <FormLabel className="flex items-center gap-2">
-                                      <div className={cn("w-3 h-3 rounded-full", platform.color)} />
-                                      {platform.name}
-                                    </FormLabel>
-                                  </FormItem>
-                                );
-                              }}
-                            />
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  
 
                   {/* Especificaciones adicionales */}
                   <FormField
