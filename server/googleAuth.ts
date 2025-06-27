@@ -57,9 +57,13 @@ export async function setupGoogleAuth(app: Express) {
       const user = await storage.upsertUser({
         id: profile.id,
         email: email,
+        fullName: fullName,
+        username: username,
         firstName: firstName,
         lastName: lastName,
-        profileImageUrl: profile.photos?.[0]?.value || ''
+        profileImageUrl: profile.photos?.[0]?.value || '',
+        isPrimary: false,
+        role: 'content_creator'
       });
       
       return done(null, user);
