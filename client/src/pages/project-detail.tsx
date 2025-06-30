@@ -139,9 +139,12 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     isLoading, 
     error 
   } = useQuery<ProjectWithAnalysis>({
-    queryKey: [`/api/projects/${id}`]
+    queryKey: [`/api/projects/${id}`],
+    retry: 3,
+    retryDelay: 1000,
   });
 
+  // Handle loading state
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -150,17 +153,20 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     );
   }
 
+  // Handle error state
   if (error) {
     console.error("Detailed project loading error:", error);
-    toast({
-      title: "Error al cargar el proyecto",
-      description: (error as Error).message,
-      variant: "destructive",
-    });
-    navigate("/projects");
-    return null;
+    return (
+      <div className="p-4 border rounded-md bg-red-50 text-red-700 my-4">
+        <p>Error loading project: {(error as Error).message}</p>
+        <Button variant="link" onClick={() => navigate("/projects")}>
+          Return to Projects
+        </Button>
+      </div>
+    );
   }
 
+  // Handle no project found
   if (!project) {
     return (
       <div className="p-4 border rounded-md bg-amber-50 text-amber-700 my-4">
@@ -172,12 +178,16 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     );
   }
 
-  // Asegurarse de que project no sea indefinido y tenga las propiedades necesarias
-  const projectData = project || {
-    name: 'Cargando...',
-    client: '',
-    description: '',
-    analysis: null
+  // Asegurarse de que project tenga las propiedades necesarias
+  const projectData = {
+    id: project.id,
+    name: project.name || 'Proyecto sin nombre',
+    client: project.client || 'Cliente no definido',
+    description: project.description || '',
+    startDate: project.startDate,
+    endDate: project.endDate,
+    status: project.status || 'planning',
+    analysis: project.analysis || null
   };
 
   console.log('Project render data:', projectData);

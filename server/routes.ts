@@ -736,16 +736,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Proyecto no encontrado" });
       }
       
-      // Verificar si el proyecto tiene todas las propiedades necesarias
-      if (!project.name || !project.client) {
-        console.error("Project data is incomplete:", project);
-        return res.status(500).json({ message: "Datos del proyecto incompletos" });
-      }
+      // Ensure project has required fields with defaults
+      const safeProject = {
+        id: project.id,
+        name: project.name || 'Proyecto sin nombre',
+        client: project.client || 'Cliente no definido',
+        description: project.description || '',
+        startDate: project.startDate,
+        endDate: project.endDate,
+        status: project.status || 'planning',
+        createdBy: project.createdBy,
+        createdAt: project.createdAt,
+        updatedAt: project.updatedAt,
+        analysis: project.analysis
+      };
       
-      res.json(project);
+      res.json(safeProject);
     } catch (error) {
       console.error("Error detallado al obtener proyecto:", error);
-      res.status(500).json({ message: "Error al cargar el proyecto" });
+      res.status(500).json({ 
+        message: "Error al cargar el proyecto",
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
   });
 
