@@ -80,7 +80,10 @@ function App() {
                 {/* Página especial para crear el primer usuario administrador */}
                 <Route path="/create-primary-user" component={CreatePrimaryUser} />
 
-                {/* Protected routes */}
+                {/* ===== RUTAS PROTEGIDAS ===== */}
+                {/* Todas estas rutas requieren autenticación válida */}
+                
+                {/* Ruta raíz: Dashboard principal de la aplicación */}
                 <Route path="/">
                   <ProtectedRoute>
                     <MainLayout>
@@ -89,6 +92,7 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Página de listado de todos los proyectos */}
                 <Route path="/projects">
                   <ProtectedRoute>
                     <MainLayout>
@@ -97,6 +101,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Página de detalle específico de un proyecto */}
+                {/* Recibe el ID del proyecto como parámetro de URL */}
                 <Route path="/projects/:id">
                   {(params) => (
                     <ProtectedRoute>
@@ -107,6 +113,8 @@ function App() {
                   )}
                 </Route>
                 
+                {/* Página de detalle de un cronograma específico dentro de un proyecto */}
+                {/* Recibe tanto el ID del proyecto como el ID del cronograma */}
                 <Route path="/projects/:id/schedule/:scheduleId">
                   {(params) => (
                     <ProtectedRoute>
@@ -120,6 +128,8 @@ function App() {
                   )}
                 </Route>
                 
+                {/* Página de análisis de imágenes para un proyecto específico */}
+                {/* Permite analizar imágenes de marketing usando IA */}
                 <Route path="/projects/:id/image-analysis">
                   {(params) => (
                     <ProtectedRoute>
@@ -130,6 +140,8 @@ function App() {
                   )}
                 </Route>
                 
+                {/* Página del creador de calendarios de contenido */}
+                {/* Herramienta principal para generar cronogramas con IA */}
                 <Route path="/calendar-creator">
                   <ProtectedRoute>
                     <MainLayout>
@@ -138,6 +150,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Página de calendario rápido */}
+                {/* Version simplificada del creador de calendarios */}
                 <Route path="/quick-calendar">
                   <ProtectedRoute>
                     <MainLayout>
@@ -146,6 +160,7 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Gestión de tareas - versión principal */}
                 <Route path="/task-manager">
                   <ProtectedRoute>
                     <MainLayout>
@@ -154,6 +169,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Gestión de tareas - página alternativa */}
+                {/* Implementación diferente del gestor de tareas */}
                 <Route path="/task-manager-page">
                   <ProtectedRoute>
                     <MainLayout>
@@ -162,6 +179,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Gestión de proyectos - vista de administración */}
+                {/* Herramientas avanzadas para gestionar proyectos */}
                 <Route path="/project-manager">
                   <ProtectedRoute>
                     <MainLayout>
@@ -170,6 +189,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
                 
+                {/* Gestión de usuarios del sistema */}
+                {/* Solo accesible para usuarios administradores */}
                 <Route path="/user-management">
                   <ProtectedRoute>
                     <MainLayout>
@@ -178,6 +199,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
 
+                {/* Página de análisis y métricas */}
+                {/* Dashboard con estadísticas de proyectos y rendimiento */}
                 <Route path="/analytics">
                   <ProtectedRoute>
                     <MainLayout>
@@ -186,6 +209,8 @@ function App() {
                   </ProtectedRoute>
                 </Route>
 
+                {/* Página de perfil de usuario */}
+                {/* Configuración personal del usuario */}
                 <Route path="/profile">
                   <ProtectedRoute>
                     <MainLayout>
@@ -194,6 +219,7 @@ function App() {
                   </ProtectedRoute>
                 </Route>
 
+                {/* Página de configuración general del sistema */}
                 <Route path="/settings">
                   <ProtectedRoute>
                     <MainLayout>
@@ -202,11 +228,15 @@ function App() {
                   </ProtectedRoute>
                 </Route>
 
-                {/* 404 Not Found */}
+                {/* ===== RUTA POR DEFECTO ===== */}
+                {/* Página 404 - Se muestra cuando ninguna ruta coincide */}
                 <Route component={NotFound} />
               </Switch>
               
+              {/* ===== COMPONENTES GLOBALES ===== */}
+              {/* Botón del asistente AI - Disponible en todas las páginas */}
               <CopilotButton />
+              {/* Sistema de notificaciones toast - Muestra mensajes flotantes */}
               <Toaster />
             </div>
           </AppTourProvider>
@@ -216,4 +246,5 @@ function App() {
   );
 }
 
+// Exportación por defecto del componente principal
 export default App;

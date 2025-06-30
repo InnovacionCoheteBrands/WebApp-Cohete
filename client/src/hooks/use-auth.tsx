@@ -1,28 +1,39 @@
+// ===== IMPORTACIONES PARA SISTEMA DE AUTENTICACIÓN =====
+// React Context: Para compartir estado de autenticación en toda la app
 import { createContext, ReactNode, useContext } from "react";
+// TanStack Query: Para manejo de estados de servidor (carga, mutaciones, cache)
 import {
   useQuery,
   useMutation,
   UseMutationResult,
 } from "@tanstack/react-query";
+// Tipos del esquema compartido
 import { InsertUser, User } from "@shared/schema";
 
-// Define LoginData locally since it's not exported from schema
+// ===== TIPOS LOCALES =====
+// Datos requeridos para el login
 type LoginData = {
-  username: string;
-  password: string;
+  username: string; // Nombre de usuario
+  password: string; // Contraseña
 };
+
+// Utilidades para realizar peticiones HTTP
 import { getQueryFn, apiRequest, queryClient } from "../lib/queryClient";
+// Hook para mostrar notificaciones
 import { useToast } from "@/hooks/use-toast";
 
+// ===== DEFINICIÓN DEL CONTEXTO DE AUTENTICACIÓN =====
+// Tipo que define toda la información y funciones disponibles en el contexto
 type AuthContextType = {
-  user: Omit<User, 'password'> | null;
-  isLoading: boolean;
-  error: Error | null;
-  loginMutation: UseMutationResult<Omit<User, 'password'>, Error, LoginData>;
-  logoutMutation: UseMutationResult<void, Error, void>;
-  registerMutation: UseMutationResult<Omit<User, 'password'>, Error, InsertUser>;
+  user: Omit<User, 'password'> | null; // Información del usuario (sin contraseña)
+  isLoading: boolean; // Estado de carga
+  error: Error | null; // Error de autenticación si existe
+  loginMutation: UseMutationResult<Omit<User, 'password'>, Error, LoginData>; // Mutación para login
+  logoutMutation: UseMutationResult<void, Error, void>; // Mutación para logout
+  registerMutation: UseMutationResult<Omit<User, 'password'>, Error, InsertUser>; // Mutación para registro
 };
 
+// Crear contexto de React para compartir estado de autenticación
 export const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -1,94 +1,127 @@
+// ===== IMPORTACIONES DE DRIZZLE ORM =====
+// Drizzle ORM: Sistema de ORM tipo-seguro para PostgreSQL
 import { pgTable, text, serial, integer, boolean, varchar, timestamp, pgEnum, jsonb, numeric } from "drizzle-orm/pg-core";
+// Zod: Librería de validación de esquemas
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+// Relaciones entre tablas
 import { relations } from "drizzle-orm";
 
-// Define enums
+// ===== DEFINICIÓN DE ENUMS =====
+// Los enums definen valores permitidos para ciertos campos de la base de datos
+
+// Roles de usuario en el sistema de gestión de proyectos
 export const userRoleEnum = pgEnum("user_role", ["admin", "project_manager", "content_creator", "designer", "developer", "stakeholder"]);
+
+// Estados posibles de un proyecto
 export const projectStatusEnum = pgEnum("project_status", ["active", "planning", "completed", "on_hold"]);
+
+// Estados de las tareas individuales
 export const taskStatusEnum = pgEnum("task_status", ["pending", "in_progress", "completed", "cancelled", "blocked", "deferred"]);
+
+// Niveles de prioridad para las tareas
 export const taskPriorityEnum = pgEnum("task_priority", ["low", "medium", "high", "urgent", "critical"]);
+
+// Grupos de organización para tareas (tipo Kanban)
 export const taskGroupEnum = pgEnum("task_group", ["todo", "in_progress", "completed", "blocked", "upcoming"]);
+
+// Tipos de notificaciones del sistema
 export const notificationTypeEnum = pgEnum("notification_type", ["info", "warning", "error", "success", "comment", "mention", "assignment"]);
+
+// Tipos de vista para mostrar proyectos/tareas
 export const viewTypeEnum = pgEnum("view_type", ["list", "kanban", "calendar", "gantt", "table"]);
+
+// Tipos de columna para campos dinámicos
 export const columnTypeEnum = pgEnum("column_type", ["text", "number", "date", "status", "priority", "people", "checkbox", "dropdown"]);
+
+// Triggers para reglas de automatización
 export const automationTriggerEnum = pgEnum("automation_trigger", ["status_change", "assignment", "due_date", "creation", "completion"]);
+
+// Acciones para reglas de automatización
 export const automationActionEnum = pgEnum("automation_action", ["notify", "assign", "move", "update_status", "create_task"]);
+
+// Modelos de IA soportados por el sistema
 export const aiModelEnum = pgEnum("ai_model", ["gpt-4", "gpt-3.5-turbo", "grok-beta"]);
 
-// Sessions table for authentication
+// ===== DEFINICIÓN DE TABLAS =====
+
+// ===== TABLA DE SESIONES =====
+// Almacena las sesiones de usuarios autenticados (para express-session)
 export const sessions = pgTable("sessions", {
-  sid: varchar("sid").primaryKey(),
-  sess: jsonb("sess").notNull(),
-  expire: timestamp("expire").notNull()
+  sid: varchar("sid").primaryKey(), // ID único de la sesión
+  sess: jsonb("sess").notNull(), // Datos de la sesión en formato JSON
+  expire: timestamp("expire").notNull() // Fecha de expiración de la sesión
 });
 
-// Users table
+// ===== TABLA DE USUARIOS =====
+// Información completa de los usuarios del sistema
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().notNull(),
-  fullName: text("full_name").notNull(),
-  username: text("username").notNull().unique(),
-  email: text("email").unique(),
-  password: text("password"),
-  isPrimary: boolean("is_primary").default(false).notNull(),
-  role: userRoleEnum("role").default("content_creator"),
-  bio: text("bio"),
-  profileImage: text("profile_image"),
-  coverImage: text("cover_image"),
-  nickname: text("nickname"),
-  jobTitle: text("job_title"),
-  department: text("department"),
-  phoneNumber: text("phone_number"),
-  preferredLanguage: text("preferred_language").default("es"),
-  theme: text("theme").default("light"),
-  customFields: jsonb("custom_fields").default([]),
-  lastLogin: timestamp("last_login"),
-  firstName: text("first_name"),
-  lastName: text("last_name"),
-  profileImageUrl: text("profile_image_url"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
+  id: varchar("id").primaryKey().notNull(), // ID único (compatible con OAuth)
+  fullName: text("full_name").notNull(), // Nombre completo del usuario
+  username: text("username").notNull().unique(), // Nombre de usuario único
+  email: text("email").unique(), // Email del usuario (único)
+  password: text("password"), // Contraseña encriptada (opcional para OAuth)
+  isPrimary: boolean("is_primary").default(false).notNull(), // Usuario administrador principal
+  role: userRoleEnum("role").default("content_creator"), // Rol del usuario en el sistema
+  bio: text("bio"), // Biografía del usuario
+  profileImage: text("profile_image"), // URL de la imagen de perfil
+  coverImage: text("cover_image"), // URL de la imagen de portada
+  nickname: text("nickname"), // Apodo o nombre corto
+  jobTitle: text("job_title"), // Título del trabajo
+  department: text("department"), // Departamento al que pertenece
+  phoneNumber: text("phone_number"), // Número de teléfono
+  preferredLanguage: text("preferred_language").default("es"), // Idioma preferido
+  theme: text("theme").default("light"), // Tema visual (claro/oscuro)
+  customFields: jsonb("custom_fields").default([]), // Campos personalizados
+  lastLogin: timestamp("last_login"), // Último inicio de sesión
+  firstName: text("first_name"), // Nombre
+  lastName: text("last_name"), // Apellido  
+  profileImageUrl: text("profile_image_url"), // URL alternativa de imagen de perfil
+  createdAt: timestamp("created_at").defaultNow().notNull(), // Fecha de creación
+  updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
 });
 
-// Projects table
+// ===== TABLA DE PROYECTOS =====
+// Almacena información de proyectos de marketing y sus configuraciones
 export const projects = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  client: text("client").notNull(),
-  description: text("description"),
-  startDate: timestamp("start_date"),
-  endDate: timestamp("end_date"),
-  status: projectStatusEnum("status").default("active"),
-  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
+  id: serial("id").primaryKey(), // ID único autoincremental
+  name: text("name").notNull(), // Nombre del proyecto
+  client: text("client").notNull(), // Nombre del cliente
+  description: text("description"), // Descripción del proyecto
+  startDate: timestamp("start_date"), // Fecha de inicio
+  endDate: timestamp("end_date"), // Fecha de finalización
+  status: projectStatusEnum("status").default("active"), // Estado actual del proyecto
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }), // Usuario que creó el proyecto
+  createdAt: timestamp("created_at").defaultNow().notNull(), // Fecha de creación
+  updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
 });
 
-// Tasks table - aligned with actual database structure based on SQL query results
+// ===== TABLA DE TAREAS =====
+// Sistema de gestión de tareas con funcionalidades tipo Monday.com
 export const tasks = pgTable("tasks", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  assignedToId: varchar("assigned_to_id").references(() => users.id, { onDelete: "set null" }),
-  createdById: varchar("created_by_id").references(() => users.id, { onDelete: "set null" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  status: taskStatusEnum("status").default("pending").notNull(),
-  priority: taskPriorityEnum("priority").default("medium").notNull(),
-  group: taskGroupEnum("group").default("todo"),
-  position: integer("position").default(0),
-  aiGenerated: boolean("ai_generated").default(false),
-  aiSuggestion: text("ai_suggestion"),
-  tags: text("tags").array(),
-  dueDate: timestamp("due_date"),
-  completedAt: timestamp("completed_at"),
-  estimatedHours: integer("estimated_hours"),
-  dependencies: text("dependencies").array(),
-  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: "set null" }),
-  progress: integer("progress").default(0),
-  attachments: jsonb("attachments"),
-  groupId: integer("group_id"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
+  id: serial("id").primaryKey(), // ID único autoincremental
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(), // Proyecto al que pertenece la tarea
+  assignedToId: varchar("assigned_to_id").references(() => users.id, { onDelete: "set null" }), // Usuario asignado a la tarea
+  createdById: varchar("created_by_id").references(() => users.id, { onDelete: "set null" }), // Usuario que creó la tarea
+  title: text("title").notNull(), // Título de la tarea
+  description: text("description"), // Descripción detallada
+  status: taskStatusEnum("status").default("pending").notNull(), // Estado actual de la tarea
+  priority: taskPriorityEnum("priority").default("medium").notNull(), // Prioridad de la tarea
+  group: taskGroupEnum("group").default("todo"), // Grupo de organización (para vistas Kanban)
+  position: integer("position").default(0), // Posición para ordenamiento manual
+  aiGenerated: boolean("ai_generated").default(false), // Indica si fue generada por IA
+  aiSuggestion: text("ai_suggestion"), // Sugerencia de IA para la tarea
+  tags: text("tags").array(), // Etiquetas para categorización
+  dueDate: timestamp("due_date"), // Fecha límite
+  completedAt: timestamp("completed_at"), // Fecha de finalización
+  estimatedHours: integer("estimated_hours"), // Horas estimadas para completar
+  dependencies: text("dependencies").array(), // IDs de tareas de las que depende
+  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: "set null" }), // Tarea padre (para subtareas)
+  progress: integer("progress").default(0), // Porcentaje de progreso (0-100)
+  attachments: jsonb("attachments"), // Archivos adjuntos en formato JSON
+  groupId: integer("group_id"), // ID del grupo para organización adicional
+  createdAt: timestamp("created_at").defaultNow().notNull(), // Fecha de creación
+  updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
 });
 
 // Analysis Results table
