@@ -1,54 +1,67 @@
+// ===== IMPORTACIONES DEL ESQUEMA DE BASE DE DATOS =====
+// Importar todas las tablas definidas en el esquema
 import { users, projects, analysisResults, projectAssignments, documents, schedules, scheduleEntries, chatMessages, contentHistory, tasks, taskComments, products, projectViews, automationRules, timeEntries, tags, collaborativeDocs, notifications, taskDependencies, projectMembers, taskGroups } from "./schema";
+
+// ===== IMPORTACIONES DE BASE DE DATOS =====
+// Cliente de base de datos configurado
 import { db } from "./db";
+// Operadores de consulta de Drizzle ORM
 import { eq, and, inArray, desc, asc, or, sql, isNull } from "drizzle-orm";
+
+// ===== IMPORTACIONES DE EXPRESS =====
+// Tipo para store de sesiones de Express
 import type { Store } from "express-session";
+
+// ===== IMPORTACIONES DE TIPOS DEL ESQUEMA =====
+// Tipos para usuarios y operaciones de inserción
 import {
-  User,
-  InsertUser,
-  Project,
-  InsertProject,
-  AnalysisResult,
-  InsertAnalysisResult,
-  Document,
-  InsertDocument,
-  Schedule,
-  InsertSchedule,
-  ScheduleEntry,
-  InsertScheduleEntry,
-  ChatMessage,
-  InsertChatMessage,
-  ProjectAssignment,
-  ContentHistory,
-  InsertContentHistory,
-  Task,
-  InsertTask,
-  TaskComment,
-  InsertTaskComment,
-  Product,
-  InsertProduct,
-  ProjectView,
-  InsertProjectView,
-  AutomationRule,
-  InsertAutomationRule,
-  TimeEntry,
-  InsertTimeEntry,
-  Tag,
-  InsertTag,
-  CollaborativeDoc,
-  InsertCollaborativeDoc,
-  Notification,
-  InsertNotification,
-  TaskDependency,
-  InsertTaskDependency,
-  ProjectMember,
-  InsertProjectMember
+  User, // Tipo completo del usuario
+  InsertUser, // Tipo para crear nuevos usuarios
+  Project, // Tipo completo del proyecto
+  InsertProject, // Tipo para crear nuevos proyectos
+  AnalysisResult, // Resultados de análisis de IA
+  InsertAnalysisResult, // Tipo para crear análisis
+  Document, // Documentos del proyecto
+  InsertDocument, // Tipo para subir documentos
+  Schedule, // Cronogramas de contenido
+  InsertSchedule, // Tipo para crear cronogramas
+  ScheduleEntry, // Entradas individuales del cronograma
+  InsertScheduleEntry, // Tipo para crear entradas
+  ChatMessage, // Mensajes del chat de IA
+  InsertChatMessage, // Tipo para enviar mensajes
+  ProjectAssignment, // Asignaciones de proyecto
+  ContentHistory, // Historial de contenido
+  InsertContentHistory, // Tipo para historial
+  Task, // Tareas del proyecto
+  InsertTask, // Tipo para crear tareas
+  TaskComment, // Comentarios de tareas
+  InsertTaskComment, // Tipo para comentarios
+  Product, // Productos del catálogo
+  InsertProduct, // Tipo para crear productos
+  ProjectView, // Vistas de proyecto (kanban, gantt, etc.)
+  InsertProjectView, // Tipo para crear vistas
+  AutomationRule, // Reglas de automatización
+  InsertAutomationRule, // Tipo para crear reglas
+  TimeEntry, // Entradas de tiempo de trabajo
+  InsertTimeEntry, // Tipo para registrar tiempo
+  Tag, // Etiquetas para organización
+  InsertTag, // Tipo para crear etiquetas
+  CollaborativeDoc, // Documentos colaborativos
+  InsertCollaborativeDoc, // Tipo para documentos colaborativos
+  Notification, // Notificaciones del sistema
+  InsertNotification, // Tipo para crear notificaciones
+  TaskDependency, // Dependencias entre tareas
+  InsertTaskDependency, // Tipo para crear dependencias
+  ProjectMember, // Miembros del proyecto
+  InsertProjectMember // Tipo para agregar miembros
 } from "./schema";
 
-// Interfaz para los tokens de recuperación
+// ===== INTERFACES ESPECÍFICAS =====
+// Interfaz para tokens de recuperación de contraseña
 export interface PasswordResetToken {
-  userId: string;
-  token: string;
-  expires: Date;
+  userId: string; // ID del usuario que solicita el reset
+  token: string; // Token único para verificar la solicitud
+  expires: Date; // Fecha de expiración del token
 }
 
 export interface IStorage {

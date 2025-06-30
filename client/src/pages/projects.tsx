@@ -1,7 +1,15 @@
+// ===== IMPORTACIONES PARA PÁGINA DE PROYECTOS =====
+// React hooks para manejo de estado
 import { useState } from "react";
+// TanStack Query para manejo de datos del servidor
 import { useQuery, QueryClient } from "@tanstack/react-query";
+// Hook de autenticación
 import { useAuth } from "@/hooks/use-auth";
+// Router para navegación
 import { Link } from "wouter";
+
+// ===== COMPONENTES DE TABLA =====
+// Componentes para mostrar datos en tabla responsive
 import { 
   Table, 
   TableBody, 
@@ -10,7 +18,9 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+
+// ===== COMPONENTES DE UI =====
+import { Button } from "@/components/ui/button"; // Botones interactivos
 import { 
   Pagination, 
   PaginationContent, 
@@ -18,13 +28,16 @@ import {
   PaginationLink, 
   PaginationNext, 
   PaginationPrevious 
-} from "@/components/ui/pagination";
-import { Badge } from "@/components/ui/badge";
-import { Eye, Pencil, Plus } from "lucide-react";
-import NewProjectModal from "@/components/projects/new-project-modal";
-import { formatRelative } from "date-fns";
+} from "@/components/ui/pagination"; // Sistema de paginación
+import { Badge } from "@/components/ui/badge"; // Badges para estados
 
-// Project status badges
+// ===== ICONOS Y COMPONENTES ESPECÍFICOS =====
+import { Eye, Pencil, Plus } from "lucide-react"; // Iconos de acciones
+import NewProjectModal from "@/components/projects/new-project-modal"; // Modal para crear proyecto
+import { formatRelative } from "date-fns"; // Formateo de fechas
+
+// ===== COMPONENTE DE BADGE DE ESTADO =====
+// Componente que muestra el estado del proyecto con colores específicos
 const StatusBadge = ({ status }: { status: string }) => {
   const getStatusProps = () => {
     switch (status) {

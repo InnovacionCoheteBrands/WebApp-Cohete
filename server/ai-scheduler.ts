@@ -1,30 +1,52 @@
+// ===== IMPORTACIONES PARA PROGRAMACIÓN DE CONTENIDO =====
+// date-fns: Librería para manejo y formateo de fechas
 import { format, parseISO, addDays } from "date-fns";
+// Servicio de integración con Grok AI
 import { grokService } from "./grok-integration";
 
+// ===== CONFIGURACIÓN DE IA =====
 // Integración exclusiva con Grok para todas las funcionalidades de IA
 
+// ===== INTERFACES PARA CRONOGRAMA DE CONTENIDO =====
+/**
+ * Entrada individual de contenido en el cronograma
+ * Representa una publicación específica con todos sus elementos
+ */
 export interface ContentScheduleEntry {
-  title: string;
-  description: string;
-  content: string;
-  copyIn: string;      // Texto integrado dentro del diseño
-  copyOut: string;     // Texto para la descripción del post
-  designInstructions: string; // Indicaciones para el departamento de diseño
-  platform: string;
-  postDate: string; // ISO string format
-  postTime: string; // HH:MM format
-  hashtags: string;
-}
-
-export interface ContentSchedule {
-  name: string;
-  entries: ContentScheduleEntry[];
-  additionalInstructions?: string;
+  title: string; // Título de la publicación
+  description: string; // Descripción detallada del contenido
+  content: string; // Contenido principal de la publicación
+  copyIn: string; // Texto integrado dentro del diseño gráfico
+  copyOut: string; // Texto para la descripción/caption del post
+  designInstructions: string; // Instrucciones específicas para el departamento de diseño
+  platform: string; // Plataforma de redes sociales (Instagram, Facebook, etc.)
+  postDate: string; // Fecha de publicación en formato ISO
+  postTime: string; // Hora de publicación en formato HH:MM
+  hashtags: string; // Hashtags relevantes para la publicación
 }
 
 /**
+ * Estructura completa del cronograma de contenido
+ * Contiene todas las entradas y configuraciones del cronograma
+ */
+export interface ContentSchedule {
+  name: string; // Nombre del cronograma
+  entries: ContentScheduleEntry[]; // Array de todas las publicaciones programadas
+  additionalInstructions?: string; // Instrucciones adicionales o especiales
+}
+
+/**
+ * ===== FUNCIÓN PRINCIPAL DE GENERACIÓN DE CRONOGRAMA =====
  * Genera un cronograma de contenido para redes sociales usando exclusivamente Grok AI
  * Tiene en cuenta la frecuencia mensual de publicaciones definida para cada red social
+ * @param projectName - Nombre del proyecto
+ * @param projectDetails - Detalles y análisis del proyecto
+ * @param startDate - Fecha de inicio del cronograma
+ * @param specifications - Especificaciones adicionales
+ * @param durationDays - Duración en días (por defecto 15 días)
+ * @param previousContent - Contenido previo para evitar repetición
+ * @param additionalInstructions - Instrucciones adicionales
+ * @returns Promise con el cronograma completo generado
  */
 export async function generateSchedule(
   projectName: string,

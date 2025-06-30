@@ -1,37 +1,48 @@
+// ===== IMPORTACIONES PRINCIPALES =====
+// React hooks para estado y efectos
 import { useState, useEffect } from "react";
+// Zod para validación de esquemas
 import { z } from "zod";
+// React Hook Form para manejo de formularios
 import { useForm } from "react-hook-form";
+// Resolver de Zod para React Hook Form
 import { zodResolver } from "@hookform/resolvers/zod";
+// TanStack Query para manejo de datos del servidor
 import { useQuery, useMutation } from "@tanstack/react-query";
+// Hook para notificaciones toast
 import { useToast } from "@/hooks/use-toast";
+// Utilidades para peticiones API y cliente de query
 import { apiRequest, queryClient } from "@/lib/queryClient";
+// Hook para navegación
 import { useLocation } from "wouter";
+// Componente personalizado para entrada de fechas
 import { DateInput } from "@/components/ui/date-input";
 
-
+// ===== IMPORTACIONES DE ICONOS =====
+// Iconos de Lucide React para la interfaz
 import { 
-  AlertCircle, 
-  ArrowDown,
-  ArrowRight, 
-  ArrowUp,
-  BarChart,
-  Calendar as CalendarIcon2,
-  CalendarIcon, 
-  Check,
-  Clock, 
-  Download,
-  HelpCircle,
-  Info, 
-  Moon,
-  MoreHorizontal,
-  Plus, 
-  Save,
-  Settings2,
-  Sparkles,
-  Sun,
-  Sunset,
-  Trash, 
-  X
+  AlertCircle, // Icono de alerta
+  ArrowDown, // Flecha hacia abajo
+  ArrowRight, // Flecha hacia la derecha
+  ArrowUp, // Flecha hacia arriba
+  BarChart, // Icono de gráfico de barras
+  Calendar as CalendarIcon2, // Icono de calendario (alias)
+  CalendarIcon, // Icono de calendario
+  Check, // Icono de check/confirmación
+  Clock, // Icono de reloj
+  Download, // Icono de descarga
+  HelpCircle, // Icono de ayuda
+  Info, // Icono de información
+  Moon, // Icono de luna (modo oscuro)
+  MoreHorizontal, // Icono de más opciones
+  Plus, // Icono de suma/agregar
+  Save, // Icono de guardar
+  Settings2, // Icono de configuración
+  Sparkles, // Icono de chispas (IA)
+  Sun, // Icono de sol (modo claro)
+  Sunset, // Icono de atardecer
+  Trash, // Icono de basura/eliminar
+  X // Icono de cerrar
 } from "lucide-react";
 
 // UI Components
