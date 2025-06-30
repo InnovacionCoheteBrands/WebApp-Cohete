@@ -58,19 +58,19 @@ export function ThemeProvider({
   const [theme, setThemeState] = useState<Theme>(
     () => (localStorage.getItem(`${storageKey}-theme`) as Theme) || defaultTheme
   );
-  
+
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(
     () => (localStorage.getItem(`${storageKey}-colorScheme`) as ColorScheme) || "blue"
   );
-  
+
   const [fontSize, setFontSizeState] = useState<FontSize>(
     () => (localStorage.getItem(`${storageKey}-fontSize`) as FontSize) || "medium"
   );
-  
+
   const [reducedAnimations, setReducedAnimationsState] = useState<boolean>(
     () => localStorage.getItem(`${storageKey}-reducedAnimations`) === "true"
   );
-  
+
   const [highContrastMode, setHighContrastModeState] = useState<boolean>(
     () => localStorage.getItem(`${storageKey}-highContrastMode`) === "true"
   );
@@ -78,41 +78,41 @@ export function ThemeProvider({
   // Aplicar tema claro/oscuro
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     root.classList.remove("light", "dark");
-    
+
     if (theme === "system") {
       const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
         .matches
         ? "dark"
         : "light";
-      
+
       root.classList.add(systemTheme);
-      
+
       // Añadir listener para cambios en preferencia del sistema
       const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
       const handleChange = (e: MediaQueryListEvent) => {
         root.classList.remove("light", "dark");
         root.classList.add(e.matches ? "dark" : "light");
       };
-      
+
       mediaQuery.addEventListener("change", handleChange);
       return () => mediaQuery.removeEventListener("change", handleChange);
     }
-    
+
     root.classList.add(theme);
   }, [theme]);
 
   // Aplicar esquema de color
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     // Eliminar clases de esquemas de color anteriores
     root.classList.remove("color-amber", "color-blue", "color-green", "color-purple", "color-red");
-    
+
     // Aplicar el nuevo esquema de color
     root.classList.add(`color-${colorScheme}`);
-    
+
     // Actualizar variables CSS para el esquema de color
     if (colorScheme === "amber") {
       document.documentElement.style.setProperty('--primary', '45 93% 47%');
@@ -130,13 +130,13 @@ export function ThemeProvider({
   // Aplicar tamaño de fuente
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     // Eliminar clases de tamaño de fuente anteriores
     root.classList.remove("text-small", "text-medium", "text-large");
-    
+
     // Aplicar el nuevo tamaño de fuente
     root.classList.add(`text-${fontSize}`);
-    
+
     // Establecer la propiedad CSS directamente para el tamaño de fuente base
     if (fontSize === "small") {
       document.documentElement.style.fontSize = "14px";
@@ -150,7 +150,7 @@ export function ThemeProvider({
   // Aplicar modo de animaciones reducidas
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     if (reducedAnimations) {
       root.classList.add("reduced-animations");
     } else {
@@ -161,7 +161,7 @@ export function ThemeProvider({
   // Aplicar modo de alto contraste
   useEffect(() => {
     const root = window.document.documentElement;
-    
+
     if (highContrastMode) {
       root.classList.add("high-contrast");
     } else {
@@ -174,27 +174,27 @@ export function ThemeProvider({
     localStorage.setItem(`${storageKey}-theme`, newTheme);
     setThemeState(newTheme);
   };
-  
+
   const setColorScheme = (newColorScheme: ColorScheme) => {
     localStorage.setItem(`${storageKey}-colorScheme`, newColorScheme);
     setColorSchemeState(newColorScheme);
   };
-  
+
   const setFontSize = (newFontSize: FontSize) => {
     localStorage.setItem(`${storageKey}-fontSize`, newFontSize);
     setFontSizeState(newFontSize);
   };
-  
+
   const setReducedAnimations = (newReducedAnimations: boolean) => {
     localStorage.setItem(`${storageKey}-reducedAnimations`, String(newReducedAnimations));
     setReducedAnimationsState(newReducedAnimations);
   };
-  
+
   const setHighContrastMode = (newHighContrastMode: boolean) => {
     localStorage.setItem(`${storageKey}-highContrastMode`, String(newHighContrastMode));
     setHighContrastModeState(newHighContrastMode);
   };
-  
+
   // Método para actualizar múltiples opciones de una vez
   const updateAllThemeOptions = (options: Partial<ThemeOptions>) => {
     if (options.theme) setTheme(options.theme);
@@ -227,9 +227,9 @@ export function ThemeProvider({
 
 export const useTheme = () => {
   const context = useContext(ThemeContext);
-  
+
   if (context === undefined)
     throw new Error("useTheme debe usarse dentro de un ThemeProvider");
-  
+
   return context;
 };

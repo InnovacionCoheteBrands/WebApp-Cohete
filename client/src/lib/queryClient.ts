@@ -122,9 +122,30 @@ export const getQueryFn: <T>(options: {
     }
   };
 
+// ===== IMPORTACIONES =====
+// React Query: Librería para gestión de estado del servidor y cache
+import { QueryClient } from "@tanstack/react-query";
+
+// ===== INTERFACES =====
+// Interfaz para errores de la API
+interface ApiError {
+  message: string;
+  status?: number;
+}
+
+// ===== CONFIGURACIÓN DEL CLIENTE DE CONSULTAS =====
+// Crear una nueva instancia de QueryClient con configuraciones optimizadas
 export const queryClient = new QueryClient({
   defaultOptions: {
+    // ===== CONFIGURACIÓN DE CONSULTAS (QUERIES) =====
     queries: {
+      // Tiempo que los datos se consideran "frescos" antes de refetch automático
+      staleTime: 1000 * 60 * 5, // 5 minutos
+      // Tiempo que los datos permanecen en cache después de no ser utilizados
+      gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
+
+      // ===== LÓGICA DE REINTENTOS =====
+      // Configuración inteligente de reintentos basada en códigos de estado HTTP
       queryFn: async ({ queryKey, signal }) => {
         const url = queryKey[0] as string;
         console.log(`Fetching: ${url}`);
@@ -159,6 +180,9 @@ export const queryClient = new QueryClient({
         }
         return failureCount < 3;
       },
+
+      // ===== RETRASO EXPONENCIAL ENTRE REINTENTOS =====
+      // Implementa backoff exponencial: 1s, 2s, 4s, 8s... hasta máximo 30s
       retryDelay: (attemptIndex) => {
         // Exponential backoff with jitter for database errors
         const baseDelay = Math.min(1000 * 2 ** attemptIndex, 30000);
@@ -166,7 +190,12 @@ export const queryClient = new QueryClient({
         return baseDelay + jitter;
       },
       staleTime: 30000, // Consider data fresh for 30 seconds
-      gcTime: 5 * 60 * 1000, // Keep cache for 5 minutes
+    },
+
+    // ===== CONFIGURACIÓN DE MUTACIONES =====
+    mutations: {
+      // No reintentar mutaciones automáticamente para evitar duplicados
+      retry: false,
     },
   },
 });
