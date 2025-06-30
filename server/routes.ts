@@ -1,9 +1,23 @@
+// ===== IMPORTACIONES DE EXPRESS Y TIPOS =====
+// Tipos de Express para tipado TypeScript
 import type { Express, Request, Response, NextFunction } from "express";
+// Servidor HTTP de Node.js
 import { createServer, type Server } from "http";
+
+// ===== IMPORTACIONES DE AUTENTICACIÓN =====
+// Sistema de autenticación con Google OAuth
 import { setupSimpleGoogleAuth, isAuthenticated } from "./simple-oauth";
+
+// ===== IMPORTACIONES DE BASE DE DATOS =====
+// Capa de abstracción para almacenamiento de datos
 import { storage } from "./storage";
+
+// ===== IMPORTACIONES DE LIBRERÍAS =====
+// Express framework
 import express from "express";
+// Librería para hash de contraseñas
 import bcrypt from "bcryptjs";
+// Middleware para manejo de archivos subidos
 import multer from "multer";
 
 // Helper function for password hashing

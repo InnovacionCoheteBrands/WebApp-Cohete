@@ -1,9 +1,26 @@
+// ===== IMPORTACIONES DE ROUTING =====
+// Wouter: Librería de routing ligera para React
 import { Switch, Route } from "wouter";
+
+// ===== IMPORTACIONES DE GESTIÓN DE ESTADO =====
+// React Query: Para manejo de estado del servidor y cache
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+
+// ===== IMPORTACIONES DE COMPONENTES UI =====
+// Toaster: Para mostrar notificaciones/mensajes
 import { Toaster } from "@/components/ui/toaster";
+
+// ===== IMPORTACIONES DE PÁGINAS =====
+// Página 404 cuando no se encuentra la ruta
 import NotFound from "@/pages/not-found";
+// Páginas de autenticación
 import AuthPage from "@/pages/auth-page";
+import CreateAccount from "@/pages/create-account";
+import ForgotPassword from "@/pages/forgot-password";
+import ResetPassword from "@/pages/reset-password";
+import CreatePrimaryUser from "@/pages/create-primary-user";
+// Páginas principales de la aplicación
 import Dashboard from "@/pages/dashboard";
 import Projects from "@/pages/projects";
 import ProjectDetail from "@/pages/project-detail";
@@ -15,35 +32,52 @@ import TaskManagerPage from "@/pages/task-manager-page";
 import ProjectManager from "@/pages/project-manager";
 import UserManagement from "@/pages/user-management";
 import Analytics from "@/pages/analytics";
-import CreateAccount from "@/pages/create-account";
-import ForgotPassword from "@/pages/forgot-password";
-import ResetPassword from "@/pages/reset-password";
-import CreatePrimaryUser from "@/pages/create-primary-user";
 import Profile from "@/pages/profile";
 import SettingsPage from "@/pages/settings";
 import ProjectImageAnalysisPage from "@/pages/project-image-analysis";
+
+// ===== IMPORTACIONES DE COMPONENTES Y PROVIDERS =====
+// Componente para proteger rutas que requieren autenticación
 import { ProtectedRoute } from "./lib/protected-route";
+// Layout principal de la aplicación
 import MainLayout from "./layouts/main-layout";
+// Providers para contextos globales
 import { AuthProvider } from "./hooks/use-auth";
 import { ThemeProvider } from "./hooks/use-theme";
-import CopilotButton from "@/components/copilot/copilot-button";
 import { AppTourProvider } from "./hooks/use-app-tour";
+// Botón del asistente AI
+import CopilotButton from "@/components/copilot/copilot-button";
 
+// ===== COMPONENTE PRINCIPAL DE LA APLICACIÓN =====
 function App() {
   console.log("App component rendering...");
   
   return (
+    // ===== PROVIDERS ANIDADOS =====
+    // QueryClientProvider: Proporciona el cliente de React Query a toda la app
     <QueryClientProvider client={queryClient}>
+      {/* ThemeProvider: Maneja el sistema de temas (claro/oscuro/sistema) */}
       <ThemeProvider defaultTheme="system">
+        {/* AuthProvider: Maneja el estado de autenticación del usuario */}
         <AuthProvider>
+          {/* AppTourProvider: Maneja los tours guiados de la aplicación */}
           <AppTourProvider>
+            {/* Container principal con altura mínima y color de fondo dinámico */}
             <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)' }}>
+              {/* ===== SISTEMA DE ROUTING ===== */}
+              {/* Switch: Renderiza solo la primera ruta que coincida */}
               <Switch>
-                {/* Auth routes - no protection needed */}
+                {/* ===== RUTAS DE AUTENTICACIÓN ===== */}
+                {/* Estas rutas no requieren autenticación previa */}
+                {/* Página principal de login/autenticación */}
                 <Route path="/auth" component={AuthPage} />
+                {/* Página para crear nueva cuenta de usuario */}
                 <Route path="/create-account" component={CreateAccount} />
+                {/* Página para solicitar recuperación de contraseña */}
                 <Route path="/forgot-password" component={ForgotPassword} />
+                {/* Página para restablecer contraseña con token */}
                 <Route path="/reset-password" component={ResetPassword} />
+                {/* Página especial para crear el primer usuario administrador */}
                 <Route path="/create-primary-user" component={CreatePrimaryUser} />
 
                 {/* Protected routes */}
