@@ -77,7 +77,7 @@ export default function QuickCalendar() {
         specifications: data.specifications || `Cronograma rápido y simple`,
         durationDays: parseInt(data.duration),
         projectId: parseInt(data.projectId),
-        additionalInstructions: `Este es un calendario RÁPIDO y simple. Genera exactamente ${Math.ceil(parseInt(data.duration) / 2)} publicaciones distribuidas uniformemente. Mantén el contenido directo y efectivo.`,
+        additionalInstructions: `Este es un calendario RÁPIDO y simple. IMPORTANTE: NO uses cantidad fija de publicaciones. Debes ADAPTARTE completamente a las especificaciones del proyecto y sus redes sociales configuradas. Si el proyecto define frecuencias mensuales (ej: 20 publicaciones/mes), calcula proporcionalmente para el período de ${data.duration} días. Mantén el contenido directo y efectivo pero respeta siempre las características específicas de cada proyecto.`,
       };
 
       const response = await fetch("/api/schedules/generate", {

@@ -63,17 +63,39 @@ export async function generateSchedule(
           };
         });
 
+      // Calcular total de publicaciones basado en las especificaciones del proyecto
+      const totalPostsFromNetworks = selectedNetworks.reduce((sum: number, network: any) => sum + network.postsForPeriod, 0);
+      
       console.log(`[CALENDAR] Redes sociales seleccionadas: ${selectedNetworks.length}`);
+      console.log(`[CALENDAR] Total de publicaciones calculadas: ${totalPostsFromNetworks}`);
+      
       if (selectedNetworks.length > 0) {
         console.log(`[CALENDAR] Redes: ${selectedNetworks.map((n: any) => n.name).join(', ')}`);
         socialNetworksSection = `
-        DISTRIBUCIÓN DE PUBLICACIONES:
+        DISTRIBUCIÓN DE PUBLICACIONES ADAPTATIVA:
         ${JSON.stringify(selectedNetworks, null, 2)}
 
-        IMPORTANTE: Respeta la cantidad de publicaciones por red social indicada en "postsForPeriod".
+        TOTAL DE PUBLICACIONES A GENERAR: ${totalPostsFromNetworks}
+        
+        INSTRUCCIONES CRÍTICAS:
+        - Genera EXACTAMENTE ${totalPostsFromNetworks} publicaciones (no más, no menos)
+        - Respeta la distribución por red social según "postsForPeriod"
+        - Esta cantidad se calculó proporcionalmente basándose en las frecuencias mensuales definidas para cada red social del proyecto
+        - NO ignores esta distribución específica del proyecto
         `;
       } else {
         console.warn(`[CALENDAR] ¡Advertencia! No se encontraron redes sociales seleccionadas en el proyecto`);
+        // Calcular cantidad mínima basada en el período cuando no hay redes configuradas
+        const minimumPosts = Math.max(3, Math.ceil(durationDays / 5)); // Al menos 3 posts, o 1 cada 5 días
+        console.log(`[CALENDAR] Usando cantidad mínima calculada: ${minimumPosts} publicaciones`);
+        
+        socialNetworksSection = `
+        SIN REDES SOCIALES ESPECÍFICAS CONFIGURADAS:
+        - Genera ${minimumPosts} publicaciones para el período de ${durationDays} días
+        - Utiliza redes sociales genéricas apropiadas para el tipo de proyecto
+        - Distribución sugerida: Instagram, Facebook, LinkedIn (según el contexto del proyecto)
+        - Esta cantidad se calculó como mínimo viable: 1 publicación cada 5 días aproximadamente
+        `;
       }
     } catch (error) {
       console.error("[CALENDAR] Error procesando datos de redes sociales:", error);
@@ -128,10 +150,14 @@ export async function generateSchedule(
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
       - HASHTAGS: Mezcla hashtags populares y específicos del nicho (entre 3-7 por publicación).
 
-      **REQUISITOS CRÍTICOS DE CANTIDAD:**
-      - Genera EXACTAMENTE ${durationDays / 2} publicaciones (aproximadamente 7-8 entradas para el periodo)
-      - Distribuye las publicaciones uniformemente a lo largo del periodo
-      - NO generes menos de 6 entradas bajo ninguna circunstancia
+      **REQUISITOS CRÍTICOS DE CANTIDAD ADAPTATIVA:**
+      - NO uses cantidades fijas de publicaciones
+      - SIEMPRE analiza las especificaciones del proyecto y sus redes sociales configuradas
+      - Si el proyecto define frecuencias mensuales (ej: 20 publicaciones/mes), calcula proporcionalmente para ${durationDays} días
+      - Formula: (publicaciones_mensuales × ${durationDays}) ÷ 30 días
+      - Si no hay especificaciones claras, genera al menos ${Math.max(3, Math.ceil(durationDays / 5))} publicaciones mínimo
+      - Distribuye las publicaciones uniformemente según las especificaciones de cada red social
+      - Respeta SIEMPRE las características y frecuencias definidas para cada proyecto
 
       **FORMATO DE RESPUESTA CRÍTICO:**
       RESPONDE ÚNICAMENTE CON JSON VÁLIDO. NO agregues texto antes o después.
