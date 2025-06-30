@@ -1,42 +1,53 @@
+// ===== IMPORTACIONES PARA INTEGRACIÓN GROK =====
+// Axios: Cliente HTTP para peticiones a la API de Grok
 import axios from 'axios';
+// Server HTTP y WebSocket para streaming en tiempo real
 import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 
+// ===== INTERFACES PARA STREAMING =====
 /**
- * Interfaces para streaming de respuestas
+ * Callbacks para manejar respuestas de streaming de IA
+ * Permite recibir chunks de respuesta en tiempo real
  */
 interface StreamCallbacks {
-  onMessage: (chunk: string) => void;
-  onComplete: (fullResponse: string) => void;
-  onError: (error: Error) => void;
+  onMessage: (chunk: string) => void; // Callback cuando llega un chunk de texto
+  onComplete: (fullResponse: string) => void; // Callback cuando termina la respuesta
+  onError: (error: Error) => void; // Callback cuando ocurre un error
 }
 
+/**
+ * Estructura de respuesta del streaming de Grok AI
+ * Basada en el formato estándar de OpenAI que también usa Grok
+ */
 interface StreamResponse {
-  id: string;
-  object: string;
-  created: number;
-  model: string;
+  id: string; // ID único de la respuesta
+  object: string; // Tipo de objeto (chat.completion.chunk)
+  created: number; // Timestamp de creación
+  model: string; // Modelo utilizado
   choices: {
     delta: {
-      content?: string;
-      role?: string;
+      content?: string; // Contenido del chunk actual
+      role?: string; // Rol del mensaje (assistant, user, etc.)
     };
-    index: number;
-    finish_reason: string | null;
+    index: number; // Índice de la opción
+    finish_reason: string | null; // Razón de finalización si aplica
   }[];
 }
 
 /**
- * Clase para la integración con la API de Grok
+ * ===== CLASE PRINCIPAL PARA INTEGRACIÓN CON GROK AI =====
  * Implementación principal para todas las funcionalidades de IA en la aplicación
+ * Maneja comunicación con API de Grok, streaming, y funciones avanzadas de IA
  */
 export class GrokService {
-  private apiKey: string;
-  private baseURL = 'https://api.x.ai/v1';
-  private wss: WebSocketServer | null = null;
+  private apiKey: string; // Clave API de acceso a Grok
+  private baseURL = 'https://api.x.ai/v1'; // URL base de la API de X.AI (Grok)
+  private wss: WebSocketServer | null = null; // Servidor WebSocket para streaming
 
+  // ===== CONSTRUCTOR =====
   constructor(apiKey: string) {
-    // Utilizamos la nueva clave API XAI_API_KEY en lugar de GROK_API_KEY si está disponible
+    // Priorizar la nueva clave XAI_API_KEY sobre la antigua GROK_API_KEY
     this.apiKey = process.env.XAI_API_KEY || apiKey;
   }
   

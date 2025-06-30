@@ -1,56 +1,74 @@
+// ===== IMPORTACIONES PARA CLIENTE DE REACT QUERY =====
+// TanStack Query: Sistema de gestión de estado del servidor
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// ===== FUNCIÓN PARA MANEJAR ERRORES HTTP =====
+// Función utilitaria que convierte respuestas HTTP no exitosas en errores de JavaScript
 async function throwIfResNotOk(res: Response) {
+  // Solo procesar si la respuesta indica error
   if (!res.ok) {
     try {
       // Clonar la respuesta para poder leerla múltiples veces si es necesario
       const resClone = res.clone();
+      // Obtener el tipo de contenido para determinar cómo procesar la respuesta
       const contentType = res.headers.get('content-type');
 
+      // Si la respuesta es JSON, extraer mensaje de error estructurado
       if (contentType && contentType.includes('application/json')) {
         try {
           const errorData = await res.json();
+          // Si hay un mensaje específico, usarlo
           if (errorData.message) {
             throw new Error(`${res.status}: ${errorData.message}`);
           }
         } catch {
-          // Si falla el JSON, usar el clon para obtener texto
+          // Si falla el parsing de JSON, usar el clon para obtener texto plano
           const text = await resClone.text();
           throw new Error(`${res.status}: ${text || res.statusText}`);
         }
       } else {
+        // Para respuestas no-JSON, obtener texto directamente
         const text = await res.text();
         throw new Error(`${res.status}: ${text || res.statusText}`);
       }
     } catch (error) {
+      // Re-lanzar el error si ya es una instancia de Error
       if (error instanceof Error) {
         throw error;
       }
+      // Crear error genérico si no se pudo procesar
       throw new Error(`${res.status}: ${res.statusText}`);
     }
   }
 }
 
+// ===== FUNCIÓN PARA REALIZAR PETICIONES API =====
+// Función utilitaria centralizada para todas las peticiones HTTP del cliente
 export async function apiRequest(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH',
-  url: string,
-  data?: any
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', // Métodos HTTP soportados
+  url: string, // URL del endpoint
+  data?: any // Datos a enviar (opcional)
 ): Promise<Response> {
+  // Configuración base para la petición fetch
   const config: RequestInit = {
-    method,
+    method, // Método HTTP
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json', // Siempre enviamos JSON
     },
-    credentials: 'include',
+    credentials: 'include', // Incluir cookies de sesión para autenticación
   };
 
+  // Solo agregar body para métodos que no sean GET
   if (data && method !== 'GET') {
-    config.body = JSON.stringify(data);
+    config.body = JSON.stringify(data); // Convertir datos a JSON
   }
 
+  // Log para debugging de peticiones
   console.log(`Requesting URL:`, url);
+  // Realizar la petición HTTP
   const response = await fetch(url, config);
 
+  // Validar que la respuesta sea exitosa
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);

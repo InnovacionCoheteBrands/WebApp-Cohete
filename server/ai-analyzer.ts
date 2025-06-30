@@ -1,32 +1,44 @@
+// ===== IMPORTACIONES PARA ANÁLISIS CON IA =====
+// Servicio de integración con Grok AI
 import { grokService } from "./grok-integration";
+// Módulos de Node.js para manejo de archivos
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
+// ===== CONFIGURACIÓN DE IA =====
 // Usamos exclusivamente los modelos de Grok para todas las funcionalidades de IA
 
+// ===== INTERFACE PARA RESULTADOS DE ANÁLISIS =====
+/**
+ * Estructura que define los resultados del análisis de documentos de marketing
+ * Contiene todos los elementos clave extraídos por la IA
+ */
 export interface DocumentAnalysisResult {
-  mission?: string;
-  vision?: string;
-  objectives?: string;
-  targetAudience?: string;
-  brandTone?: string;
-  keywords?: string;
-  coreValues?: string;
-  contentThemes?: {
-    theme: string;
-    keywords: string[];
+  mission?: string; // Misión de la empresa/marca
+  vision?: string; // Visión de la empresa/marca
+  objectives?: string; // Objetivos de marketing específicos
+  targetAudience?: string; // Descripción de la audiencia objetivo
+  brandTone?: string; // Tono y voz de la marca
+  keywords?: string; // Palabras clave importantes
+  coreValues?: string; // Valores fundamentales de la marca
+  contentThemes?: { // Temas de contenido identificados
+    theme: string; // Nombre del tema
+    keywords: string[]; // Palabras clave asociadas al tema
   }[];
-  competitorAnalysis?: {
-    name: string;
-    strengths: string;
-    weaknesses: string;
-    contentStrategy: string;
+  competitorAnalysis?: { // Análisis de competencia si se encuentra
+    name: string; // Nombre del competidor
+    strengths: string; // Fortalezas identificadas
+    weaknesses: string; // Debilidades encontradas
+    contentStrategy: string; // Estrategia de contenido del competidor
   }[];
-  summary: string;
+  summary: string; // Resumen general del análisis
 }
 
 /**
- * Analyzes a document using Grok to extract marketing insights
+ * ===== FUNCIÓN PRINCIPAL DE ANÁLISIS DE DOCUMENTOS =====
+ * Analiza un documento utilizando Grok AI para extraer insights de marketing
+ * @param documentText - Texto del documento a analizar
+ * @returns Promise con los resultados del análisis estructurado
  */
 export async function analyzeDocument(documentText: string): Promise<DocumentAnalysisResult> {
   try {
