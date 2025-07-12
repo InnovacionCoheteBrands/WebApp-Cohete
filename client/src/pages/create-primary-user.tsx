@@ -53,18 +53,37 @@ export default function CreatePrimaryUser() {
         // Resetear el formulario
         form.reset();
       } else {
-        const errorData = await response.json();
+        // Intentar obtener el mensaje de error del servidor
+        let errorMessage = "No se pudo crear el usuario primario";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          // Si no se puede parsear el JSON, usar el status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        
+        console.error("Server error:", response.status, errorMessage);
         toast({
           title: "Error al crear usuario",
-          description: errorData.message || "No se pudo crear el usuario primario",
+          description: errorMessage,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error("Error creating primary user:", error);
+      
+      // Determinar el tipo de error más específico
+      let errorMessage = "Error de conexión desconocido";
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        errorMessage = "No se pudo conectar con el servidor. Verifica que el servidor esté ejecutándose.";
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Error de conexión",
-        description: "No se pudo conectar con el servidor. Verifica tu conexión a internet.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

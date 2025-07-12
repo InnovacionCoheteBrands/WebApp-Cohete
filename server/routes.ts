@@ -316,21 +316,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/create-primary-account", async (req: Request, res: Response) => {
     try {
+      console.log("Creating primary account request:", { 
+        body: { ...req.body, password: '[REDACTED]', secretKey: '[REDACTED]' } 
+      });
+      
       const { fullName, username, password, secretKey } = req.body;
       
       // Validar datos
       if (!fullName || !username || !password || !secretKey) {
+        console.log("Missing required fields");
         return res.status(400).json({ message: "Todos los campos son requeridos" });
       }
       
       // Verificar clave secreta
       if (secretKey !== PRIMARY_ACCOUNT_SECRET) {
+        console.log("Incorrect secret key");
         return res.status(403).json({ message: "Clave secreta incorrecta" });
       }
       
       // Verificar si el usuario ya existe
       const existingUser = await global.storage.getUserByUsername(username);
       if (existingUser) {
+        console.log("User already exists:", username);
         return res.status(400).json({ message: "El nombre de usuario ya existe" });
       }
       
@@ -345,6 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preferredLanguage: 'es',
         theme: 'light'
       });
+      
+      console.log("Primary user created successfully:", newUser.username);
       
       // Eliminar password del response
       const { password: _, ...userWithoutPassword } = newUser;

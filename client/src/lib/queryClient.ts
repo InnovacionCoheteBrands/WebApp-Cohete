@@ -45,36 +45,39 @@ async function throwIfResNotOk(res: Response) {
 // ===== FUNCIÓN PARA REALIZAR PETICIONES API =====
 // Función utilitaria centralizada para todas las peticiones HTTP del cliente
 export async function apiRequest(
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH', // Métodos HTTP soportados
-  url: string, // URL del endpoint
-  data?: any // Datos a enviar (opcional)
+  method: "GET" | "POST" | "PATCH" | "DELETE",
+  url: string,
+  data?: any
 ): Promise<Response> {
-  // Configuración base para la petición fetch
+  console.log(`Requesting URL: ${url}`);
+
   const config: RequestInit = {
-    method, // Método HTTP
+    method,
     headers: {
-      'Content-Type': 'application/json', // Siempre enviamos JSON
+      "Content-Type": "application/json",
     },
-    credentials: 'include', // Incluir cookies de sesión para autenticación
+    credentials: "include",
   };
 
-  // Solo agregar body para métodos que no sean GET
-  if (data && method !== 'GET') {
-    config.body = JSON.stringify(data); // Convertir datos a JSON
+  if (data) {
+    config.body = JSON.stringify(data);
   }
 
-  // Log para debugging de peticiones
-  console.log(`Requesting URL:`, url);
-  // Realizar la petición HTTP
-  const response = await fetch(url, config);
+  try {
+    const response = await fetch(url, config);
 
-  // Validar que la respuesta sea exitosa
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+    console.log(`Response status: ${response.status} for ${url}`);
+
+    if (!response.ok && response.status === 401) {
+      // Redirect to login on 401
+      window.location.href = "/auth";
+    }
+
+    return response;
+  } catch (error) {
+    console.error(`Network error for ${url}:`, error);
+    throw error;
   }
-
-  return response;
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
