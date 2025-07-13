@@ -194,7 +194,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(user: InsertUser): Promise<User> {
-    const result = await db.insert(schema.users).values(user).returning();
+    // Ensure ID is generated if not provided
+    const userData = {
+      ...user,
+      id: user.id || crypto.randomUUID(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+    const result = await db.insert(schema.users).values(userData).returning();
     return result[0];
   }
 

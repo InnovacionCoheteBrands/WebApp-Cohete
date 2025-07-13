@@ -350,7 +350,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPrimary: true,
         role: 'admin',
         preferredLanguage: 'es',
-        theme: 'light'
+        theme: 'light',
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
       
       console.log("Primary user created successfully:", newUser.username);
