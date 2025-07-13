@@ -1,6 +1,10 @@
 // Export all schema types for shared use between client and server
 export * from '../server/schema';
 
+// Import necessary Drizzle functions
+import { pgTable, serial, integer, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { projects, users } from '../server/schema';
+
 export const contentHistory = pgTable("content_history", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").notNull().references(() => projects.id, { onDelete: "cascade" }),
