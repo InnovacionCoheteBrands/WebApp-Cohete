@@ -158,6 +158,12 @@ export interface IStorage {
   createTaskComment(comment: InsertTaskComment): Promise<TaskComment>;
   updateTaskComment(id: number, updates: Partial<InsertTaskComment>): Promise<TaskComment | null>;
   deleteTaskComment(id: number): Promise<void>;
+
+  // Password reset
+  getUserByIdentifier(identifier: string): Promise<User | null>;
+  createPasswordResetToken(userId: number | string): Promise<{ token: string; expiresAt: Date }>;
+  getPasswordResetToken(token: string): Promise<{ userId: number; expiresAt: Date } | null>;
+  deletePasswordResetToken(token: string): Promise<void>;
 }
 
 // Database storage implementation
@@ -193,6 +199,76 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // ============ FUNCIONES AUXILIARES ============
+
+  async getUserByIdentifier(identifier: string): Promise<User | null> {
+    try {
+      // Primero buscar por username
+      const userByUsername = await this.getUserByUsername(identifier);
+      if (userByUsername) {
+        return userByUsername;
+      }
+
+      // Si no se encuentra por username, buscar por email (si incluye @)
+      if (identifier.includes('@')) {
+        return await this.getUserByEmail(identifier);
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error getting user by identifier:", error);
+      throw error;
+    }
+  }
+
+  async createPasswordResetToken(userId: number | string): Promise<{ token: string; expiresAt: Date }> {
+    try {
+      // Generar token aleatorio
+      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
+
+      // Guardar en la base de datos
+      await db.insert(schema.passwordResetTokens).values({
+        userId: typeof userId === 'string' ? parseInt(userId) : userId,
+        token,
+        expiresAt,
+        createdAt: new Date()
+      });
+
+      return { token, expiresAt };
+    } catch (error) {
+      console.error("Error creating password reset token:", error);
+      throw error;
+    }
+  }
+
+  async getPasswordResetToken(token: string): Promise<{ userId: number; expiresAt: Date } | null> {
+    try {
+      const [tokenData] = await db.select()
+        .from(schema.passwordResetTokens)
+        .where(and(
+          eq(schema.passwordResetTokens.token, token),
+          gt(schema.passwordResetTokens.expiresAt, new Date())
+        ))
+        .limit(1);
+
+      return tokenData || null;
+    } catch (error) {
+      console.error("Error getting password reset token:", error);
+      throw error;
+    }
+  }
+
+  async deletePasswordResetToken(token: string): Promise<void> {
+    try {
+      await db.delete(schema.passwordResetTokens)
+        .where(eq(schema.passwordResetTokens.token, token));
+    } catch (error) {
+      console.error("Error deleting password reset token:", error);
+      throw error;
+    }
+  }
+
   async createUser(user: InsertUser): Promise<User> {
     // Ensure ID is generated if not provided
     const userData = {
@@ -222,7 +298,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Try to find existing user
       const existingUser = await this.getUser(user.id!);
-      
+
       if (existingUser) {
         // Update existing user
         const updated = await this.updateUser(user.id!, user);
@@ -316,7 +392,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const project = await this.getProject(projectId);
       if (!project) return false;
-      
+
       // For now, allow access if user exists and project exists
       // Can be extended to check team membership or permissions
       const user = await this.getUser(userId);
@@ -778,8 +854,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTags(projectId: number): Promise<Tag[]> {
     try {
-      return await db.select().from(schema.tags)
-        .where(eq(schema.tags.projectId, projectId))
+      return await db.select().from(schema.tags)        .where(eq(schema.tags.projectId, projectId))
         .orderBy(asc(schema.tags.name));
     } catch (error) {
       console.error('Error getting tags:', error);
