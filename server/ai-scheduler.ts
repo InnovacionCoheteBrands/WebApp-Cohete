@@ -150,14 +150,99 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
     }
 
+    // Extraer campos específicos del proyecto
+    const projectData = typeof projectDetails === 'object' ? projectDetails : {};
+    
+    // Preparar secciones detalladas del proyecto
+    const communicationObjectivesSection = projectData.communicationObjectives 
+      ? `**OBJETIVOS DE COMUNICACIÓN:**
+      ${projectData.communicationObjectives}
+      
+      APLICACIÓN: Todo el contenido debe alinearse con estos objetivos específicos.`
+      : "";
+    
+    const buyerPersonaSection = projectData.buyerPersona 
+      ? `**BUYER PERSONA:**
+      ${projectData.buyerPersona}
+      
+      APLICACIÓN: Adapta el tono, contenido y mensajes para resonar con este perfil específico.`
+      : "";
+    
+    const archetypesSection = projectData.archetypes && projectData.archetypes.length > 0
+      ? `**ARQUETIPOS DE MARCA:**
+      ${projectData.archetypes.map((arch: any) => `
+      - ${arch.name || "Sin nombre"}: ${arch.profile || "Sin perfil"}
+      `).join('\n')}
+      
+      APLICACIÓN: Utiliza estos arquetipos para dar personalidad y consistencia a la comunicación.`
+      : "";
+    
+    const marketingStrategiesSection = projectData.marketingStrategies
+      ? `**ESTRATEGIAS DE MARKETING:**
+      ${projectData.marketingStrategies}
+      
+      APLICACIÓN: Cada publicación debe reforzar al menos una de estas estrategias.`
+      : "";
+    
+    const brandCommunicationStyleSection = projectData.brandCommunicationStyle
+      ? `**ESTILO DE COMUNICACIÓN DE MARCA:**
+      ${projectData.brandCommunicationStyle}
+      
+      APLICACIÓN: Mantén este estilo consistentemente en todas las publicaciones.`
+      : "";
+    
+    const missionVisionValuesSection = (projectData.mission || projectData.vision || projectData.coreValues)
+      ? `**MISIÓN, VISIÓN Y VALORES (MVV):**
+      ${projectData.mission ? `Misión: ${projectData.mission}` : ""}
+      ${projectData.vision ? `Visión: ${projectData.vision}` : ""}
+      ${projectData.coreValues ? `Valores Centrales: ${projectData.coreValues}` : ""}
+      
+      APLICACIÓN: Asegura que el contenido refleje y promueva estos elementos fundamentales.`
+      : "";
+    
+    const responsePoliciesSection = (projectData.responsePolicyPositive || projectData.responsePolicyNegative)
+      ? `**POLÍTICAS DE RESPUESTA:**
+      ${projectData.responsePolicyPositive ? `Respuesta Positiva: ${projectData.responsePolicyPositive}` : ""}
+      ${projectData.responsePolicyNegative ? `Respuesta Negativa: ${projectData.responsePolicyNegative}` : ""}
+      
+      APLICACIÓN: Considera estas políticas al crear contenido que pueda generar interacciones.`
+      : "";
+    
+    const initialProductsSection = projectData.initialProducts && projectData.initialProducts.length > 0
+      ? `**PRODUCTOS/SERVICIOS PRINCIPALES:**
+      ${projectData.initialProducts.map((product: any) => `
+      - ${product.name || "Sin nombre"}: ${product.description || "Sin descripción"}
+      `).join('\n')}
+      
+      APLICACIÓN: Crea contenido que destaque estos productos/servicios de manera estratégica.`
+      : "";
+
     const prompt = `
       Crea un cronograma avanzado de contenido para redes sociales para el proyecto "${projectName}". Actúa como un experto profesional en marketing digital con especialización en contenidos de alto impacto, branding y narrativa de marca. Tu objetivo es crear contenido estratégico, persuasivo y memorable que genere engagement.
 
       **PROYECTO:**
       Nombre: ${projectName}
+      Cliente: ${projectData.client || "No especificado"}
+      Descripción: ${projectData.description || "No especificada"}
+      Fecha de inicio: ${projectData.startDate || formattedDate}
+      Fecha de fin: ${projectData.endDate || endDate}
+      Estado: ${projectData.status || "En planificación"}
 
-      **DETALLES DEL PROYECTO:**
-      ${typeof projectDetails === 'string' ? projectDetails : JSON.stringify(projectDetails, null, 2)}
+      ${communicationObjectivesSection}
+      
+      ${buyerPersonaSection}
+      
+      ${archetypesSection}
+      
+      ${marketingStrategiesSection}
+      
+      ${brandCommunicationStyleSection}
+      
+      ${missionVisionValuesSection}
+      
+      ${responsePoliciesSection}
+      
+      ${initialProductsSection}
 
       **PERIODO DE PLANIFICACIÓN:** 
       De ${formattedDate} a ${endDate} (${durationDays} días)
@@ -170,6 +255,16 @@ export async function generateSchedule(
 
       **HISTORIAL DE CONTENIDO (EVITAR DUPLICACIÓN):**
       ${previousContentSection || "Sin historial de contenido previo disponible."}
+
+      **INSTRUCCIONES ADICIONALES:**
+      ${additionalInstructions || "Ninguna instrucción adicional."}
+
+      **DIRECTRICES CRÍTICAS PARA LA CREACIÓN DE CONTENIDO:**
+      1. COHERENCIA CON EL PROYECTO: Cada publicación debe reflejar los valores, objetivos y personalidad definidos arriba.
+      2. PERSONALIZACIÓN: Adapta el contenido específicamente para el buyer persona y arquetipos definidos.
+      3. ESTRATEGIA: Asegura que cada pieza de contenido apoye las estrategias de marketing establecidas.
+      4. VOZ DE MARCA: Mantén consistentemente el estilo de comunicación definido.
+      5. PRODUCTOS/SERVICIOS: Integra naturalmente los productos/servicios en el contenido sin ser excesivamente promocional.
 
       **DIRECTRICES PARA CREACIÓN DE CONTENIDO DE ALTA CALIDAD 2025:**
       1. STORYTELLING - Utiliza narrativas emocionales y personales que conecten con la audiencia.

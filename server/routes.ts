@@ -1259,6 +1259,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const contentHistory = await global.storage.getContentHistory(projectId);
       const previousContent = contentHistory.map(entry => entry.content);
       
+      // Get products for this project
+      const products = await global.storage.listProductsByProject(projectId);
+      console.log(`[CALENDAR] Productos encontrados para el proyecto: ${products.length}`);
+      
       // Generate schedule using Grok AI, passing previous content
       console.log("[CALENDAR] Iniciando generación de cronograma");
       console.log("[CALENDAR] Instrucciones adicionales: ", additionalInstructions || "Ninguna");
@@ -1269,7 +1273,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           client: project.client,
           description: project.description,
-          ...project.analysis
+          ...project.analysis,
+          // Incluir productos en formato esperado por el AI scheduler
+          initialProducts: products.map(p => ({
+            name: p.name,
+            description: p.description || ""
+          }))
         },
         startDate,
         specifications,

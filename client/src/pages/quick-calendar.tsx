@@ -70,17 +70,17 @@ export default function QuickCalendar() {
         throw new Error("Proyecto no encontrado");
       }
 
+      // Usar la ruta del proyecto para generar el calendario (la misma que usa el calendario avanzado)
+      // Esto asegura que se pasen todos los datos del proyecto incluyendo el análisis completo
       const requestData = {
-        projectName: selectedProject.name,
-        projectDetails: selectedProject.description || `Proyecto ${selectedProject.name}`,
+        projectId: parseInt(data.projectId),
         startDate: format(data.startDate, "yyyy-MM-dd"),
         specifications: data.specifications || `Cronograma rápido y simple`,
-        durationDays: parseInt(data.duration),
-        projectId: parseInt(data.projectId),
+        periodType: parseInt(data.duration) > 15 ? "mensual" : "quincenal",
         additionalInstructions: `Este es un calendario RÁPIDO y simple. IMPORTANTE: NO uses cantidad fija de publicaciones. Debes ADAPTARTE completamente a las especificaciones del proyecto y sus redes sociales configuradas. Si el proyecto define frecuencias mensuales (ej: 20 publicaciones/mes), calcula proporcionalmente para el período de ${data.duration} días. Mantén el contenido directo y efectivo pero respeta siempre las características específicas de cada proyecto.`,
       };
 
-      const response = await fetch("/api/schedules/generate", {
+      const response = await fetch(`/api/projects/${data.projectId}/schedule`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestData),
