@@ -1382,101 +1382,159 @@ export default function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-6">
-            {/* Profile Image Editor */}
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-full border-2 border-border bg-muted overflow-hidden">
-                  {user?.profileImage ? (
-                    <img
-                      src={user.profileImage}
-                      alt="Profile"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <User className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
+          <Tabs defaultValue="personal" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="personal">Personal</TabsTrigger>
+              <TabsTrigger value="professional">Profesional</TabsTrigger>
+            </TabsList>
+            
+            {/* Personal Tab */}
+            <TabsContent value="personal" className="space-y-6">
+              {/* Profile Image Editor */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-20 h-20 rounded-full border-2 border-border bg-muted overflow-hidden">
+                    {user?.profileImage ? (
+                      <img
+                        src={user.profileImage}
+                        alt="Profile"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <User className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleProfileImageUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
                 </div>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleProfileImageUpload}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
+                <div>
+                  <h3 className="font-medium">Imagen de Perfil</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Haz clic para cambiar tu imagen de perfil
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-medium">Imagen de Perfil</h3>
-                <p className="text-sm text-muted-foreground">
-                  Haz clic para cambiar tu imagen de perfil
-                </p>
-              </div>
-            </div>
 
-            {/* Basic Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium">Información Básica</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label>Nombre Completo</Label>
-                  <Input
-                    value={pendingChanges.fullName || user?.fullName || ''}
-                    onChange={(e) => handleFieldUpdate('fullName', e.target.value)}
-                    placeholder="Tu nombre completo"
-                  />
+              {/* Personal Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Información Personal</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Nombre Completo</Label>
+                    <Input
+                      value={pendingChanges.fullName || user?.fullName || ''}
+                      onChange={(e) => handleFieldUpdate('fullName', e.target.value)}
+                      placeholder="Tu nombre completo"
+                    />
+                  </div>
+                  <div>
+                    <Label>Nombre de usuario</Label>
+                    <Input
+                      value={pendingChanges.username || user?.username || ''}
+                      onChange={(e) => handleFieldUpdate('username', e.target.value)}
+                      placeholder="Tu nombre de usuario"
+                    />
+                  </div>
+                  <div>
+                    <Label>Teléfono</Label>
+                    <Input
+                      value={pendingChanges.phoneNumber || user?.phoneNumber || ''}
+                      onChange={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                      placeholder="Tu número de teléfono"
+                    />
+                  </div>
+                  <div>
+                    <Label>Ubicación</Label>
+                    <Input
+                      value={pendingChanges.location || user?.location || ''}
+                      onChange={(e) => handleFieldUpdate('location', e.target.value)}
+                      placeholder="Tu ubicación"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <Label>Nombre de usuario</Label>
-                  <Input
-                    value={pendingChanges.username || user?.username || ''}
-                    onChange={(e) => handleFieldUpdate('username', e.target.value)}
-                    placeholder="Tu nombre de usuario"
-                  />
-                </div>
-                <div>
-                  <Label>Cargo</Label>
-                  <Input
-                    value={pendingChanges.jobTitle || user?.jobTitle || ''}
-                    onChange={(e) => handleFieldUpdate('jobTitle', e.target.value)}
-                    placeholder="Tu cargo o posición"
-                  />
-                </div>
-                <div>
-                  <Label>Departamento</Label>
-                  <Input
-                    value={pendingChanges.department || user?.department || ''}
-                    onChange={(e) => handleFieldUpdate('department', e.target.value)}
-                    placeholder="Tu departamento"
-                  />
-                </div>
-                <div>
-                  <Label>Teléfono</Label>
-                  <Input
-                    value={pendingChanges.phoneNumber || user?.phoneNumber || ''}
-                    onChange={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
-                    placeholder="Tu número de teléfono"
-                  />
-                </div>
-                <div>
-                  <Label>Ubicación</Label>
-                  <Input
-                    value={pendingChanges.location || user?.location || ''}
-                    onChange={(e) => handleFieldUpdate('location', e.target.value)}
-                    placeholder="Tu ubicación"
+                  <Label>Biografía</Label>
+                  <Textarea
+                    value={pendingChanges.bio || user?.bio || ''}
+                    onChange={(e) => handleFieldUpdate('bio', e.target.value)}
+                    placeholder="Cuéntanos sobre ti"
+                    rows={3}
                   />
                 </div>
               </div>
-              <div>
-                <Label>Biografía</Label>
-                <Textarea
-                  value={pendingChanges.bio || user?.bio || ''}
-                  onChange={(e) => handleFieldUpdate('bio', e.target.value)}
-                  placeholder="Cuéntanos sobre ti"
-                  rows={3}
-                />
+            </TabsContent>
+
+            {/* Professional Tab */}
+            <TabsContent value="professional" className="space-y-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-medium">Información Profesional</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label>Cargo</Label>
+                    <Input
+                      value={pendingChanges.jobTitle || user?.jobTitle || ''}
+                      onChange={(e) => handleFieldUpdate('jobTitle', e.target.value)}
+                      placeholder="Tu cargo o posición"
+                    />
+                  </div>
+                  <div>
+                    <Label>Departamento</Label>
+                    <Input
+                      value={pendingChanges.department || user?.department || ''}
+                      onChange={(e) => handleFieldUpdate('department', e.target.value)}
+                      placeholder="Tu departamento"
+                    />
+                  </div>
+                  <div>
+                    <Label>Sitio Web</Label>
+                    <Input
+                      value={pendingChanges.website || user?.website || ''}
+                      onChange={(e) => handleFieldUpdate('website', e.target.value)}
+                      placeholder="Tu sitio web profesional"
+                    />
+                  </div>
+                  <div>
+                    <Label>LinkedIn</Label>
+                    <Input
+                      value={pendingChanges.socialLinks?.linkedin || user?.socialLinks?.linkedin || ''}
+                      onChange={(e) => handleFieldUpdate('socialLinks', { 
+                        ...pendingChanges.socialLinks, 
+                        linkedin: e.target.value 
+                      })}
+                      placeholder="Tu perfil de LinkedIn"
+                    />
+                  </div>
+                  <div>
+                    <Label>GitHub</Label>
+                    <Input
+                      value={pendingChanges.socialLinks?.github || user?.socialLinks?.github || ''}
+                      onChange={(e) => handleFieldUpdate('socialLinks', { 
+                        ...pendingChanges.socialLinks, 
+                        github: e.target.value 
+                      })}
+                      placeholder="Tu perfil de GitHub"
+                    />
+                  </div>
+                  <div>
+                    <Label>Twitter</Label>
+                    <Input
+                      value={pendingChanges.socialLinks?.twitter || user?.socialLinks?.twitter || ''}
+                      onChange={(e) => handleFieldUpdate('socialLinks', { 
+                        ...pendingChanges.socialLinks, 
+                        twitter: e.target.value 
+                      })}
+                      placeholder="Tu perfil de Twitter"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            </TabsContent>
 
             {/* Save Status */}
             {updateProfileMutation.isPending && (
@@ -1485,7 +1543,7 @@ export default function ProfilePage() {
                 <span className="text-sm text-muted-foreground">Guardando cambios...</span>
               </div>
             )}
-          </div>
+          </Tabs>
           
           <div className="flex justify-end p-6 border-t">
             <div className="flex gap-2">
