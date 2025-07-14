@@ -651,6 +651,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint para cambiar contraseña de cualquier usuario (solo para usuarios primarios)
+  app.post("/api/admin/users/:id/change-password", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const { newPassword } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ message: "ID de usuario requerido" });
+      }
+      
+      if (!newPassword) {
+        return res.status(400).json({ message: "Se requiere la nueva contraseña" });
+      }
+      
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "La nueva contraseña debe tener al menos 6 caracteres" });
+      }
+      
+      // Verificar que el usuario existe
+      const user = await global.storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "Usuario no encontrado" });
+      }
+      
+      // Hash de la nueva contraseña
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Actualizar contraseña
+      await global.storage.updateUser(userId, { password: hashedPassword });
+      
+      res.json({ 
+        message: "Contraseña actualizada correctamente",
+        targetUser: user.fullName 
+      });
+    } catch (error) {
+      console.error("Error changing user password:", error);
+      res.status(500).json({ message: "Error al cambiar la contraseña del usuario" });
+    }
+  });
+
   app.get("/api/users", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const users = await global.storage.getAllUsers();

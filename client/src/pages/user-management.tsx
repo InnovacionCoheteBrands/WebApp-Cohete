@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Redirect } from "wouter";
-import { Loader2, Plus, Search, Trash2, UserCog, UserPlus, ShieldCheck, ShieldAlert } from "lucide-react";
+import { Loader2, Plus, Search, Trash2, UserCog, UserPlus, ShieldCheck, ShieldAlert, Key } from "lucide-react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -68,6 +68,19 @@ const createUserSchema = z.object({
 
 type CreateUserFormValues = z.infer<typeof createUserSchema>;
 
+// Form schema for changing user password
+const changePasswordSchema = z.object({
+  newPassword: z.string()
+    .min(6, "La contraseña debe tener al menos 6 caracteres"),
+  confirmPassword: z.string()
+    .min(6, "La contraseña debe tener al menos 6 caracteres"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
+
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
 // Types for users
 type User = {
   id: number;
@@ -87,6 +100,8 @@ const UserManagementPage = () => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [changePasswordUser, setChangePasswordUser] = useState<User | null>(null);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
   
   // Check if user is primary, redirect if not
   if (!user) {
@@ -126,6 +141,15 @@ const UserManagementPage = () => {
       username: "",
       isPrimary: false,
       role: "content_creator",
+    },
+  });
+
+  // Form for changing password
+  const changePasswordForm = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      newPassword: "",
+      confirmPassword: "",
     },
   });
   
@@ -215,6 +239,34 @@ const UserManagementPage = () => {
     },
   });
   
+  // Mutation for changing user password
+  const changePasswordMutation = useMutation({
+    mutationFn: async ({ userId, newPassword }: { userId: number, newPassword: string }) => {
+      const res = await apiRequest("POST", `/api/admin/users/${userId}/change-password`, { newPassword });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Error al cambiar contraseña");
+      }
+      return await res.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Contraseña cambiada",
+        description: `La contraseña de ${data.targetUser} ha sido actualizada exitosamente`,
+      });
+      setIsChangePasswordDialogOpen(false);
+      setChangePasswordUser(null);
+      changePasswordForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al cambiar contraseña",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  
   // Handle form submission
   const onSubmit = (data: CreateUserFormValues) => {
     createUserMutation.mutate(data);
@@ -249,6 +301,26 @@ const UserManagementPage = () => {
   const confirmDelete = () => {
     if (deleteUserId) {
       deleteUserMutation.mutate(deleteUserId);
+    }
+  };
+  
+  // Handle change password
+  const handleChangePassword = (user: User) => {
+    setChangePasswordUser(user);
+    changePasswordForm.reset({
+      newPassword: "",
+      confirmPassword: "",
+    });
+    setIsChangePasswordDialogOpen(true);
+  };
+  
+  // Handle change password form submission
+  const onChangePasswordSubmit = (data: ChangePasswordFormValues) => {
+    if (changePasswordUser) {
+      changePasswordMutation.mutate({ 
+        userId: changePasswordUser.id, 
+        newPassword: data.newPassword 
+      });
     }
   };
   
@@ -349,6 +421,17 @@ const UserManagementPage = () => {
                         title="Editar permisos"
                       >
                         <UserCog className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* Botón de cambiar contraseña */}
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-amber-600" 
+                        onClick={() => handleChangePassword(user)}
+                        title="Cambiar contraseña"
+                      >
+                        <Key className="h-4 w-4" />
                       </Button>
                       
                       {/* No mostrar botón de eliminar para el usuario actual */}
@@ -655,6 +738,86 @@ const UserManagementPage = () => {
                       Actualizando...
                     </>
                   ) : "Actualizar permisos"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog para cambiar contraseña de usuario */}
+      <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cambiar contraseña</DialogTitle>
+            <DialogDescription>
+              Cambiar la contraseña de {changePasswordUser?.fullName}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...changePasswordForm}>
+            <form onSubmit={changePasswordForm.handleSubmit(onChangePasswordSubmit)} className="space-y-4">
+              <FormField
+                control={changePasswordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva contraseña</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Nueva contraseña" 
+                        {...field} 
+                        autoComplete="new-password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={changePasswordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar contraseña</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="password" 
+                        placeholder="Confirmar contraseña" 
+                        {...field} 
+                        autoComplete="new-password"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="pt-4">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  onClick={() => {
+                    setIsChangePasswordDialogOpen(false);
+                    setChangePasswordUser(null);
+                    changePasswordForm.reset();
+                  }} 
+                  disabled={changePasswordMutation.isPending}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={changePasswordMutation.isPending}
+                >
+                  {changePasswordMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cambiando...
+                    </>
+                  ) : "Cambiar contraseña"}
                 </Button>
               </DialogFooter>
             </form>
