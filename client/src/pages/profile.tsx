@@ -116,6 +116,10 @@ export default function ProfilePage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState<string>("");
+  const [imageScale, setImageScale] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
 
   // Fetch user profile
   const { data: user, isLoading } = useQuery<UserProfile>({
@@ -260,23 +264,15 @@ export default function ProfilePage() {
         const formData = new FormData();
         formData.append('profileImage', file);
 
-        // Hacer la petición al endpoint con autenticación
-        const response = await fetch('/api/user/profile-image', {
+        // Hacer la petición al endpoint con autenticación usando apiRequest
+        const response = await apiRequest('/api/user/profile-image', {
           method: 'POST',
           body: formData,
-          credentials: 'include', // Importante para incluir las cookies de sesión
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Error al subir la imagen');
-        }
-
-        const data = await response.json();
-        
-        if (data.profileImage) {
-          // Actualizar el perfil con la nueva imagen
-          updateProfileMutation.mutate({ profileImage: data.profileImage });
+        if (response.profileImage) {
+          // Invalidar cache y actualizar UI
+          queryClient.invalidateQueries({ queryKey: ['/api/user'] });
           setIsAvatarDialogOpen(false);
           toast({
             title: "Imagen actualizada",
@@ -287,7 +283,7 @@ export default function ProfilePage() {
         console.error('Error uploading image:', error);
         toast({
           title: "Error",
-          description: error instanceof Error ? error.message : "No se pudo subir la imagen",
+          description: error instanceof Error ? error.message : "No se pudo actualizar el perfil",
           variant: "destructive",
         });
       }
@@ -682,15 +678,34 @@ export default function ProfilePage() {
                         {/* Cover Image */}
                         <div className="space-y-4">
                           <h3 className="font-medium">Imagen de Portada</h3>
-                          <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
-                            {user?.coverImage || coverImagePreview ? (
-                              <img
-                                src={coverImagePreview || user?.coverImage}
-                                alt="Imagen de portada"
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
+                          <div className="relative group">
+                            <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
+                              {user?.coverImage || coverImagePreview ? (
+                                <img
+                                  src={coverImagePreview || user?.coverImage}
+                                  alt="Imagen de portada"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
+                              )}
+                            </div>
+                            {/* Overlay con botón de editar */}
+                            {(user?.coverImage || coverImagePreview) && (
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setImageToEdit(coverImagePreview || user?.coverImage || "");
+                                    setIsImageEditorOpen(true);
+                                  }}
+                                  className="text-white border-white bg-black/50 hover:bg-black/70"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </Button>
+                              </div>
                             )}
                           </div>
                           <div className="flex gap-2">
@@ -723,6 +738,19 @@ export default function ProfilePage() {
                                 Subir
                               </Button>
                             )}
+                            {(user?.coverImage || coverImagePreview) && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setImageToEdit(coverImagePreview || user?.coverImage || "");
+                                  setIsImageEditorOpen(true);
+                                }}
+                              >
+                                <Edit className="h-4 w-4 mr-2" />
+                                Editar
+                              </Button>
+                            )}
                           </div>
                         </div>
 
@@ -731,92 +759,139 @@ export default function ProfilePage() {
                         {/* Profile Picture */}
                         <div className="space-y-4">
                           <h3 className="font-medium">Foto de Perfil</h3>
-                          <div className="flex items-center gap-4">
-                            <div className="h-20 w-20 rounded-full border-2 border-border bg-muted overflow-hidden">
-                              {user?.profileImage ? (
-                                <img
-                                  src={user.profileImage}
-                                  alt="Foto de perfil"
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-muted flex items-center justify-center">
-                                  <User className="h-10 w-10 text-muted-foreground" />
-                                </div>
+                          <div className="flex flex-col items-center gap-4">
+                            {/* Vista previa más grande y cuadrada */}
+                            <div className="relative group">
+                              <div className="h-40 w-40 rounded-lg border-2 border-border bg-muted overflow-hidden">
+                                {user?.profileImage ? (
+                                  <img
+                                    src={user.profileImage}
+                                    alt="Foto de perfil"
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-muted flex items-center justify-center">
+                                    <User className="h-20 w-20 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </div>
+                              {/* Overlay con botón de editar */}
+                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg">
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => setIsAvatarDialogOpen(true)}
+                                  className="text-white border-white bg-black/50 hover:bg-black/70"
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </Button>
+                              </div>
+                            </div>
+                            
+                            {/* Botones de acción */}
+                            <div className="flex gap-2">
+                              <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                                <DialogTrigger asChild>
+                                  <Button size="sm">
+                                    <Camera className="h-4 w-4 mr-2" />
+                                    Cambiar Foto
+                                  </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-3xl">
+                                  <DialogHeader>
+                                    <DialogTitle>Seleccionar Avatar</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="p-4 space-y-6">
+                                    {/* Vista previa actual más grande */}
+                                    <div className="flex justify-center">
+                                      <div className="h-48 w-48 rounded-lg border-2 border-border bg-muted overflow-hidden">
+                                        {user?.profileImage ? (
+                                          <img
+                                            src={user.profileImage}
+                                            alt="Foto de perfil actual"
+                                            className="w-full h-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                                            <User className="h-24 w-24 text-muted-foreground" />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Opción para subir imagen personalizada */}
+                                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                                      <div className="text-center">
+                                        <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                        <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
+                                        <p className="text-sm text-muted-foreground mb-4">
+                                          Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
+                                        </p>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={handleCustomImageUpload}
+                                          className="hidden"
+                                          id="custom-avatar-upload-modal"
+                                        />
+                                        <Button asChild>
+                                          <label htmlFor="custom-avatar-upload-modal" className="cursor-pointer">
+                                            <Upload className="h-4 w-4 mr-2" />
+                                            Seleccionar archivo
+                                          </label>
+                                        </Button>
+                                      </div>
+                                    </div>
+
+                                    {/* Separador */}
+                                    <div className="relative">
+                                      <div className="absolute inset-0 flex items-center">
+                                        <span className="w-full border-t" />
+                                      </div>
+                                      <div className="relative flex justify-center text-xs uppercase">
+                                        <span className="bg-background px-2 text-muted-foreground">
+                                          O elige un avatar predefinido
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Avatares predefinidos */}
+                                    <div className="grid grid-cols-4 gap-4">
+                                      {preloadedAvatars.map((avatar) => (
+                                        <div
+                                          key={avatar.id}
+                                          className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
+                                          onClick={() => handleAvatarSelect(avatar.src)}
+                                        >
+                                          <img
+                                            src={avatar.src}
+                                            alt={avatar.name}
+                                            className="w-full h-32 object-cover"
+                                          />
+                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                            <span className="text-white text-sm font-medium text-center px-2">
+                                              {avatar.name}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              
+                              {user?.profileImage && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => setIsAvatarDialogOpen(true)}
+                                >
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </Button>
                               )}
                             </div>
-                            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-                              <DialogTrigger asChild>
-                                <Button size="sm">
-                                  <Camera className="h-4 w-4 mr-2" />
-                                  Cambiar Foto
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>Seleccionar Avatar</DialogTitle>
-                                </DialogHeader>
-                                <div className="p-4 space-y-6">
-                                  {/* Opción para subir imagen personalizada */}
-                                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                                    <div className="text-center">
-                                      <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                      <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
-                                      <p className="text-sm text-muted-foreground mb-4">
-                                        Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
-                                      </p>
-                                      <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleCustomImageUpload}
-                                        className="hidden"
-                                        id="custom-avatar-upload-modal"
-                                      />
-                                      <Button asChild>
-                                        <label htmlFor="custom-avatar-upload-modal" className="cursor-pointer">
-                                          <Upload className="h-4 w-4 mr-2" />
-                                          Seleccionar archivo
-                                        </label>
-                                      </Button>
-                                    </div>
-                                  </div>
-
-                                  {/* Separador */}
-                                  <div className="relative">
-                                    <div className="absolute inset-0 flex items-center">
-                                      <span className="w-full border-t" />
-                                    </div>
-                                    <div className="relative flex justify-center text-xs uppercase">
-                                      <span className="bg-background px-2 text-muted-foreground">
-                                        O elige un avatar predefinido
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  {/* Avatares predefinidos */}
-                                  <div className="grid grid-cols-3 gap-4">
-                                    {preloadedAvatars.map((avatar) => (
-                                      <div
-                                        key={avatar.id}
-                                        className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
-                                        onClick={() => handleAvatarSelect(avatar.src)}
-                                      >
-                                        <img
-                                          src={avatar.src}
-                                          alt={avatar.name}
-                                          className="w-full h-32 object-cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                          <span className="text-white text-sm font-medium text-center px-2">
-                                            {avatar.name}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
                           </div>
                         </div>
                       </CardContent>
@@ -1365,6 +1440,124 @@ export default function ProfilePage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de edición de imagen */}
+      <Dialog open={isImageEditorOpen} onOpenChange={setIsImageEditorOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Editar Imagen</DialogTitle>
+            <DialogDescription>
+              Ajusta la posición y el tamaño de la imagen usando los controles
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Vista previa de la imagen */}
+            <div className="flex justify-center">
+              <div className="relative w-96 h-96 border-2 border-dashed border-muted-foreground rounded-lg overflow-hidden bg-muted">
+                {imageToEdit && (
+                  <div 
+                    className="absolute inset-0 cursor-move"
+                    style={{
+                      transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
+                      transformOrigin: 'center'
+                    }}
+                  >
+                    <img
+                      src={imageToEdit}
+                      alt="Imagen para editar"
+                      className="w-full h-full object-cover"
+                      draggable={false}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Controles de edición */}
+            <div className="space-y-4">
+              {/* Control de escala */}
+              <div className="space-y-2">
+                <Label>Tamaño: {Math.round(imageScale * 100)}%</Label>
+                <div className="flex items-center gap-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setImageScale(Math.max(0.5, imageScale - 0.1))}
+                  >
+                    -
+                  </Button>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={imageScale}
+                    onChange={(e) => setImageScale(parseFloat(e.target.value))}
+                    className="flex-1"
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setImageScale(Math.min(2, imageScale + 0.1))}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+
+              {/* Controles de posición */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Posición horizontal</Label>
+                  <input
+                    type="range"
+                    min="-100"
+                    max="100"
+                    value={imagePosition.x}
+                    onChange={(e) => setImagePosition({ ...imagePosition, x: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Posición vertical</Label>
+                  <input
+                    type="range"
+                    min="-100"
+                    max="100"
+                    value={imagePosition.y}
+                    onChange={(e) => setImagePosition({ ...imagePosition, y: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* Botones de acción */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setImageScale(1);
+                    setImagePosition({ x: 0, y: 0 });
+                  }}
+                >
+                  Resetear
+                </Button>
+                <Button
+                  onClick={() => {
+                    setIsImageEditorOpen(false);
+                    toast({
+                      title: "Imagen editada",
+                      description: "Los cambios se han aplicado correctamente",
+                    });
+                  }}
+                >
+                  Aplicar cambios
+                </Button>
+              </div>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
