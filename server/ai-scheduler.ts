@@ -191,6 +191,40 @@ export async function generateSchedule(
          - TikTok: 3-5 posts/semana
          - YouTube: Consistencia semanal según capacidad
 
+      **ESPECIFICACIONES TÉCNICAS POR FORMATO 2025:**
+
+      📱 **INSTAGRAM:**
+      - Reels: 1080x1920px (9:16), máximo 90 segundos, MP4/MOV, 30fps, archivo máximo 650MB
+      - Posts: 1080x1080px (1:1) o 1080x1350px (4:5), imágenes JPG/PNG
+      - Stories: 1080x1920px (9:16), máximo 30 segundos, desaparecen en 24h
+      - Carruseles: Hasta 20 slides, 1080x1080px o 1080x1350px por slide
+
+      📘 **FACEBOOK:**
+      - Videos: 1080x1080px mínimo, hasta 240 minutos, MP4/MOV, 30fps, máximo 10GB
+      - Reels: 1440x2560px (9:16), sin límite de tiempo, MP4/MOV
+      - Posts imagen: 1200x630px (1.91:1), 4:5 ratio óptimo para feed
+      - Stories: 1080x1920px (9:16), máximo 30 minutos
+
+      💼 **LINKEDIN:**
+      - Videos: 1080x1080px (1:1) o 1080x1350px (4:5), hasta 15 minutos, MP4/MOV, máximo 5GB
+      - Posts imagen: 1200x627px (1.91:1) para enlaces, 1080x1080px (1:1) para posts
+      - Artículos: Imagen destacada 1192x628px, texto sin límite
+
+      🎵 **TIKTOK:**
+      - Videos: 1080x1920px (9:16), hasta 10 minutos, MP4/MOV, 30fps, máximo 500MB
+      - Duración óptima: 15-60 segundos para mayor engagement
+      - Audio: AAC 128kbps mínimo, H.264 codec recomendado
+
+      📺 **YOUTUBE:**
+      - Shorts: 1080x1920px (9:16), hasta 3 minutos, MP4/MOV, 1080p máximo
+      - Videos regulares: 1920x1080px (16:9), hasta 12 horas, MP4 preferido
+      - Thumbnails: 1280x720px (16:9), máximo 2MB
+
+      🐦 **TWITTER/X:**
+      - Videos: 1280x720px (16:9) o 720x1280px (9:16), hasta 2:20 min (usuarios gratuitos)
+      - Formato: MP4/MOV, H.264 codec, máximo 512MB
+      - Premium: Hasta 4 horas, máximo 16GB
+
       **ESTRUCTURA DE LAS PUBLICACIONES POR PLATAFORMA:**
       - TÍTULOS: Concisos, impactantes, con palabras potentes y gatillos emocionales.
       - CONTENIDO PRINCIPAL: Desarrolla ideas completas con narrativa estructurada (problema-solución-beneficio).

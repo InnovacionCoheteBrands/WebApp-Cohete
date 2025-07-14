@@ -114,6 +114,7 @@ Cohete Workflow is a comprehensive project management platform designed specific
 - **Database Compatibility**: Handles missing tables gracefully with fallback data
 
 ## Changelog
+- July 14, 2025. ENHANCED AI CALENDAR GENERATION - Added comprehensive technical specifications for all social media formats (Instagram, Facebook, LinkedIn, TikTok, YouTube, Twitter/X) to the AI scheduler prompt. System now generates content with exact dimensions, durations, and format requirements for each platform. Updated with Content Marketing 2025 best practices including optimal posting frequencies, engagement strategies, and platform-specific content types.
 - June 25, 2025. DEPLOYMENT COMPLETELY RESOLVED - Fixed all fileURLToPath and import.meta issues by implementing environment-based directory resolution. Production server now starts successfully without URL parsing errors, maintains all functionality while eliminating development-only dependencies
 - June 20, 2025. RESTORED original application - Removed incorrect dashboard components and restored user's original "Gestor de Proyectos" application
 - June 20, 2025. RESOLVED deployment blocking issue - Created deploy-build.js script that generates production-ready configuration without 'dev' commands, eliminating Replit security deployment blocks
