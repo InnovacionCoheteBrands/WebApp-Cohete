@@ -191,7 +191,7 @@ function App() {
                 
                 {/* Gestión de usuarios del sistema */}
                 {/* Solo accesible para usuarios administradores */}
-                <Route path="/user-management">
+                <Route path="/users-management">
                   <ProtectedRoute>
                     <MainLayout>
                       <UserManagementPage />

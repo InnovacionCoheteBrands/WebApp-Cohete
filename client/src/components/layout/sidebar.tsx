@@ -117,10 +117,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   Administración
                 </h2>
                 <NavItem 
-                  href="/users" 
+                  href="/users-management" 
                   icon={<Users className="mr-2 h-4 w-4" />} 
                   label="Gestión de Usuarios" 
-                  isActive={location === "/users"} 
+                  isActive={location === "/users-management"} 
                   onClick={onClose}
                 />
                 <NavItem 
