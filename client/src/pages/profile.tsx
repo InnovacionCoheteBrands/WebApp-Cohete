@@ -494,256 +494,344 @@ export default function ProfilePage() {
               <DialogHeader>
                 <DialogTitle>Editar Perfil</DialogTitle>
               </DialogHeader>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 p-4">
-                {/* Profile Images Section */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Camera className="h-5 w-5" />
-                      Imágenes de Perfil
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Cover Image */}
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Imagen de Portada</h3>
-                      <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
-                        {user?.coverImage || coverImagePreview ? (
-                          <img
-                            src={coverImagePreview || user?.coverImage}
-                            alt="Imagen de portada"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleCoverImageChange}
-                          className="hidden"
-                          id="cover-upload-modal"
-                        />
-                        <Label htmlFor="cover-upload-modal">
-                          <Button size="sm" className="cursor-pointer" asChild>
-                            <span>
-                              <Camera className="h-4 w-4 mr-2" />
-                              Cambiar Portada
-                            </span>
-                          </Button>
-                        </Label>
-                        {coverImagePreview && (
-                          <Button
-                            size="sm"
-                            onClick={handleCoverImageUpload}
-                            disabled={uploadCoverMutation.isPending}
-                          >
-                            {uploadCoverMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                            ) : (
-                              <Upload className="h-4 w-4 mr-2" />
-                            )}
-                            Subir
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+              <div className="p-4">
+                <Tabs defaultValue="personal" className="w-full">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="personal">Personal</TabsTrigger>
+                    <TabsTrigger value="professional">Profesional</TabsTrigger>
+                    <TabsTrigger value="images">Imágenes</TabsTrigger>
+                  </TabsList>
 
-                    <Separator />
-
-                    {/* Profile Picture */}
-                    <div className="space-y-4">
-                      <h3 className="font-medium">Foto de Perfil</h3>
-                      <div className="flex items-center gap-4">
-                        <div className="h-20 w-20 rounded-full border-2 border-border bg-muted overflow-hidden">
-                          {user?.profileImage ? (
-                            <img
-                              src={user.profileImage}
-                              alt="Foto de perfil"
-                              className="w-full h-full object-cover"
+                  {/* Personal Tab */}
+                  <TabsContent value="personal" className="space-y-6 mt-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <User className="h-5 w-5" />
+                          Información Personal
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="modal-fullName">Nombre Completo</Label>
+                            <Input
+                              id="modal-fullName"
+                              defaultValue={user?.fullName}
+                              onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
                             />
-                          ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center">
-                              <User className="h-10 w-10 text-muted-foreground" />
-                            </div>
-                          )}
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="modal-username">Nombre de Usuario</Label>
+                            <Input
+                              id="modal-username"
+                              defaultValue={user?.username}
+                              onBlur={(e) => handleFieldUpdate('username', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="modal-email">Correo Electrónico</Label>
+                            <Input
+                              id="modal-email"
+                              type="email"
+                              defaultValue={user?.email}
+                              onBlur={(e) => handleFieldUpdate('email', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="modal-phoneNumber">Teléfono</Label>
+                            <Input
+                              id="modal-phoneNumber"
+                              defaultValue={user?.phoneNumber}
+                              onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                            />
+                          </div>
                         </div>
-                        <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="sm">
-                              <Camera className="h-4 w-4 mr-2" />
-                              Cambiar Foto
+
+                        <div className="space-y-2">
+                          <Label htmlFor="modal-bio">Biografía</Label>
+                          <Textarea
+                            id="modal-bio"
+                            placeholder="Cuéntanos sobre ti..."
+                            defaultValue={user?.bio}
+                            onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
+                            rows={3}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  {/* Professional Tab */}
+                  <TabsContent value="professional" className="space-y-6 mt-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Briefcase className="h-5 w-5" />
+                          Información Profesional
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="modal-jobTitle">Cargo</Label>
+                            <Input
+                              id="modal-jobTitle"
+                              placeholder="Ej: Gerente de Marketing"
+                              defaultValue={user?.jobTitle}
+                              onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="modal-department">Departamento</Label>
+                            <Input
+                              id="modal-department"
+                              placeholder="Ej: Marketing Digital"
+                              defaultValue={user?.department}
+                              onBlur={(e) => handleFieldUpdate('department', e.target.value)}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Custom Fields */}
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <Label>Campos Personalizados</Label>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const newField: CustomField = {
+                                  id: Date.now().toString(),
+                                  name: '',
+                                  value: '',
+                                  type: 'text'
+                                };
+                                setCustomFields([...customFields, newField]);
+                              }}
+                            >
+                              <Plus className="h-4 w-4 mr-2" />
+                              Agregar Campo
                             </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl">
-                            <DialogHeader>
-                              <DialogTitle>Seleccionar Avatar</DialogTitle>
-                            </DialogHeader>
-                            <div className="p-4 space-y-6">
-                              {/* Opción para subir imagen personalizada */}
-                              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                                <div className="text-center">
-                                  <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                  <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
-                                  <p className="text-sm text-muted-foreground mb-4">
-                                    Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
-                                  </p>
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleCustomImageUpload}
-                                    className="hidden"
-                                    id="custom-avatar-upload-modal"
-                                  />
-                                  <Button asChild>
-                                    <label htmlFor="custom-avatar-upload-modal" className="cursor-pointer">
-                                      <Upload className="h-4 w-4 mr-2" />
-                                      Seleccionar archivo
-                                    </label>
-                                  </Button>
-                                </div>
-                              </div>
+                          </div>
 
-                              {/* Separador */}
-                              <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                  <span className="w-full border-t" />
-                                </div>
-                                <div className="relative flex justify-center text-xs uppercase">
-                                  <span className="bg-background px-2 text-muted-foreground">
-                                    O elige un avatar predefinido
-                                  </span>
-                                </div>
+                          {customFields.map((field) => (
+                            <div key={field.id} className="flex gap-2 items-end">
+                              <div className="flex-1">
+                                <Label htmlFor={`field-name-${field.id}`}>Nombre</Label>
+                                <Input
+                                  id={`field-name-${field.id}`}
+                                  placeholder="Ej: LinkedIn"
+                                  value={field.name}
+                                  onChange={(e) => updateCustomField(field.id, 'name', e.target.value)}
+                                />
                               </div>
+                              <div className="flex-1">
+                                <Label htmlFor={`field-value-${field.id}`}>Valor</Label>
+                                <Input
+                                  id={`field-value-${field.id}`}
+                                  placeholder="Ej: linkedin.com/in/usuario"
+                                  value={field.value}
+                                  onChange={(e) => updateCustomField(field.id, 'value', e.target.value)}
+                                />
+                              </div>
+                              <div className="w-24">
+                                <Label htmlFor={`field-type-${field.id}`}>Tipo</Label>
+                                <Select value={field.type} onValueChange={(value) => updateCustomField(field.id, 'type', value)}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="text">Texto</SelectItem>
+                                    <SelectItem value="email">Email</SelectItem>
+                                    <SelectItem value="url">URL</SelectItem>
+                                    <SelectItem value="tel">Teléfono</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => removeCustomField(field.id)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
 
-                              {/* Avatares predefinidos */}
-                              <div className="grid grid-cols-3 gap-4">
-                                {preloadedAvatars.map((avatar) => (
-                                  <div
-                                    key={avatar.id}
-                                    className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
-                                    onClick={() => handleAvatarSelect(avatar.src)}
-                                  >
-                                    <img
-                                      src={avatar.src}
-                                      alt={avatar.name}
-                                      className="w-full h-32 object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                      <span className="text-white text-sm font-medium text-center px-2">
-                                        {avatar.name}
+                  {/* Images Tab */}
+                  <TabsContent value="images" className="space-y-6 mt-6">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Camera className="h-5 w-5" />
+                          Imágenes de Perfil
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-6">
+                        {/* Cover Image */}
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Imagen de Portada</h3>
+                          <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
+                            {user?.coverImage || coverImagePreview ? (
+                              <img
+                                src={coverImagePreview || user?.coverImage}
+                                alt="Imagen de portada"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleCoverImageChange}
+                              className="hidden"
+                              id="cover-upload-modal"
+                            />
+                            <Label htmlFor="cover-upload-modal">
+                              <Button size="sm" className="cursor-pointer" asChild>
+                                <span>
+                                  <Camera className="h-4 w-4 mr-2" />
+                                  Cambiar Portada
+                                </span>
+                              </Button>
+                            </Label>
+                            {coverImagePreview && (
+                              <Button
+                                size="sm"
+                                onClick={handleCoverImageUpload}
+                                disabled={uploadCoverMutation.isPending}
+                              >
+                                {uploadCoverMutation.isPending ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                  <Upload className="h-4 w-4 mr-2" />
+                                )}
+                                Subir
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        <Separator />
+
+                        {/* Profile Picture */}
+                        <div className="space-y-4">
+                          <h3 className="font-medium">Foto de Perfil</h3>
+                          <div className="flex items-center gap-4">
+                            <div className="h-20 w-20 rounded-full border-2 border-border bg-muted overflow-hidden">
+                              {user?.profileImage ? (
+                                <img
+                                  src={user.profileImage}
+                                  alt="Foto de perfil"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-muted flex items-center justify-center">
+                                  <User className="h-10 w-10 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button size="sm">
+                                  <Camera className="h-4 w-4 mr-2" />
+                                  Cambiar Foto
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Seleccionar Avatar</DialogTitle>
+                                </DialogHeader>
+                                <div className="p-4 space-y-6">
+                                  {/* Opción para subir imagen personalizada */}
+                                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                                    <div className="text-center">
+                                      <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                      <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
+                                      <p className="text-sm text-muted-foreground mb-4">
+                                        Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
+                                      </p>
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleCustomImageUpload}
+                                        className="hidden"
+                                        id="custom-avatar-upload-modal"
+                                      />
+                                      <Button asChild>
+                                        <label htmlFor="custom-avatar-upload-modal" className="cursor-pointer">
+                                          <Upload className="h-4 w-4 mr-2" />
+                                          Seleccionar archivo
+                                        </label>
+                                      </Button>
+                                    </div>
+                                  </div>
+
+                                  {/* Separador */}
+                                  <div className="relative">
+                                    <div className="absolute inset-0 flex items-center">
+                                      <span className="w-full border-t" />
+                                    </div>
+                                    <div className="relative flex justify-center text-xs uppercase">
+                                      <span className="bg-background px-2 text-muted-foreground">
+                                        O elige un avatar predefinido
                                       </span>
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
 
-                {/* Profile Information Form */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="h-5 w-5" />
-                      Información de Perfil
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="grid grid-cols-1 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-fullName">Nombre Completo</Label>
-                        <Input
-                          id="modal-fullName"
-                          defaultValue={user?.fullName}
-                          onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-username">Nombre de Usuario</Label>
-                        <Input
-                          id="modal-username"
-                          defaultValue={user?.username}
-                          onBlur={(e) => handleFieldUpdate('username', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-email">Correo Electrónico</Label>
-                        <Input
-                          id="modal-email"
-                          type="email"
-                          defaultValue={user?.email}
-                          onBlur={(e) => handleFieldUpdate('email', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-jobTitle">Cargo</Label>
-                        <Input
-                          id="modal-jobTitle"
-                          placeholder="Ej: Gerente de Marketing"
-                          defaultValue={user?.jobTitle}
-                          onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-department">Departamento</Label>
-                        <Input
-                          id="modal-department"
-                          placeholder="Ej: Marketing Digital"
-                          defaultValue={user?.department}
-                          onBlur={(e) => handleFieldUpdate('department', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-phoneNumber">Teléfono</Label>
-                        <Input
-                          id="modal-phoneNumber"
-                          defaultValue={user?.phoneNumber}
-                          onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="modal-bio">Biografía</Label>
-                        <Textarea
-                          id="modal-bio"
-                          placeholder="Cuéntanos sobre ti..."
-                          defaultValue={user?.bio}
-                          onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                                  {/* Avatares predefinidos */}
+                                  <div className="grid grid-cols-3 gap-4">
+                                    {preloadedAvatars.map((avatar) => (
+                                      <div
+                                        key={avatar.id}
+                                        className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
+                                        onClick={() => handleAvatarSelect(avatar.src)}
+                                      >
+                                        <img
+                                          src={avatar.src}
+                                          alt={avatar.name}
+                                          className="w-full h-32 object-cover"
+                                        />
+                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                          <span className="text-white text-sm font-medium text-center px-2">
+                                            {avatar.name}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
               </div>
             </DialogContent>
           </Dialog>
         </div>
 
-        {/* Tabs Section */}
-        <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="personal">Personal</TabsTrigger>
-            <TabsTrigger value="professional">Profesional</TabsTrigger>
-            <TabsTrigger value="security">Seguridad</TabsTrigger>
-            <TabsTrigger value="preferences">Preferencias</TabsTrigger>
-            <TabsTrigger value="activity">Actividad</TabsTrigger>
-          </TabsList>
-
-          {/* Personal Information Tab */}
-          <TabsContent value="personal" className="space-y-6">
+        {/* Profile Display Section */}
+        <div className="space-y-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Personal Information Display */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -751,62 +839,45 @@ export default function ProfilePage() {
                   Información Personal
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName">Nombre Completo</Label>
-                    <Input
-                      id="fullName"
-                      defaultValue={user?.fullName}
-                      onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="username">Nombre de Usuario</Label>
-                    <Input
-                      id="username"
-                      defaultValue={user?.username}
-                      onBlur={(e) => handleFieldUpdate('username', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Correo Electrónico</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      defaultValue={user?.email}
-                      onBlur={(e) => handleFieldUpdate('email', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">Teléfono</Label>
-                    <Input
-                      id="phoneNumber"
-                      defaultValue={user?.phoneNumber}
-                      onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
-                    />
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Nombre Completo</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.fullName || 'No especificado'}
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Biografía</Label>
-                  <Textarea
-                    id="bio"
-                    placeholder="Cuéntanos sobre ti..."
-                    defaultValue={user?.bio}
-                    onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
-                    rows={4}
-                  />
+                  <Label className="text-sm font-medium text-muted-foreground">Nombre de Usuario</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.username || 'No especificado'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Correo Electrónico</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.email || 'No especificado'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Teléfono</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.phoneNumber || 'No especificado'}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Biografía</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.bio || 'No especificado'}
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
 
-          {/* Professional Information Tab */}
-          <TabsContent value="professional" className="space-y-6">
+            {/* Professional Information Display */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -814,95 +885,84 @@ export default function ProfilePage() {
                   Información Profesional
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="jobTitle">Cargo</Label>
-                    <Input
-                      id="jobTitle"
-                      placeholder="Ej: Gerente de Marketing"
-                      defaultValue={user?.jobTitle}
-                      onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="department">Departamento</Label>
-                    <Input
-                      id="department"
-                      placeholder="Ej: Marketing Digital"
-                      defaultValue={user?.department}
-                      onBlur={(e) => handleFieldUpdate('department', e.target.value)}
-                    />
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Cargo</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.jobTitle || 'No especificado'}
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Ubicación</Label>
-                    <Input
-                      id="location"
-                      placeholder="Ej: Ciudad de México, México"
-                      defaultValue={user?.location}
-                      onBlur={(e) => handleFieldUpdate('location', e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="website">Sitio Web</Label>
-                    <Input
-                      id="website"
-                      placeholder="https://tu-sitio.com"
-                      defaultValue={user?.website}
-                      onBlur={(e) => handleFieldUpdate('website', e.target.value)}
-                    />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Departamento</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.department || 'No especificado'}
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h3 className="text-lg font-medium">Redes Sociales</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="linkedin">LinkedIn</Label>
-                      <Input
-                        id="linkedin"
-                        placeholder="https://linkedin.com/in/tu-perfil"
-                        defaultValue={user?.socialLinks?.linkedin}
-                        onBlur={(e) => handleFieldUpdate('socialLinks', { 
-                          ...user?.socialLinks, 
-                          linkedin: e.target.value 
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="twitter">Twitter</Label>
-                      <Input
-                        id="twitter"
-                        placeholder="https://twitter.com/tu-usuario"
-                        defaultValue={user?.socialLinks?.twitter}
-                        onBlur={(e) => handleFieldUpdate('socialLinks', { 
-                          ...user?.socialLinks, 
-                          twitter: e.target.value 
-                        })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="github">GitHub</Label>
-                      <Input
-                        id="github"
-                        placeholder="https://github.com/tu-usuario"
-                        defaultValue={user?.socialLinks?.github}
-                        onBlur={(e) => handleFieldUpdate('socialLinks', { 
-                          ...user?.socialLinks, 
-                          github: e.target.value 
-                        })}
-                      />
-                    </div>
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Ubicación</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.location || 'No especificado'}
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-muted-foreground">Sitio Web</Label>
+                  <div className="p-3 bg-muted rounded-md">
+                    {user?.website || 'No especificado'}
+                  </div>
+                </div>
+
+                {/* Social Links Display */}
+                {(user?.socialLinks?.linkedin || user?.socialLinks?.twitter || user?.socialLinks?.github) && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Redes Sociales</Label>
+                    <div className="space-y-1">
+                      {user?.socialLinks?.linkedin && (
+                        <div className="p-2 bg-muted rounded-md text-sm">
+                          <span className="font-medium">LinkedIn:</span> {user.socialLinks.linkedin}
+                        </div>
+                      )}
+                      {user?.socialLinks?.twitter && (
+                        <div className="p-2 bg-muted rounded-md text-sm">
+                          <span className="font-medium">Twitter:</span> {user.socialLinks.twitter}
+                        </div>
+                      )}
+                      {user?.socialLinks?.github && (
+                        <div className="p-2 bg-muted rounded-md text-sm">
+                          <span className="font-medium">GitHub:</span> {user.socialLinks.github}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Custom Fields Display */}
+                {user?.customFields && user.customFields.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-muted-foreground">Campos Personalizados</Label>
+                    <div className="space-y-1">
+                      {user.customFields.map((field) => (
+                        <div key={field.id} className="p-2 bg-muted rounded-md text-sm">
+                          <span className="font-medium">{field.name}:</span> {field.value || 'No especificado'}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          </TabsContent>
+          </div>
+        </div>
+
+        {/* Tabs Section */}
+        <Tabs defaultValue="security" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="security">Seguridad</TabsTrigger>
+            <TabsTrigger value="preferences">Preferencias</TabsTrigger>
+            <TabsTrigger value="activity">Actividad</TabsTrigger>
+          </TabsList>
 
 
 
