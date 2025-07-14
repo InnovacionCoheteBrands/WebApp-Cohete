@@ -509,6 +509,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   
+  // Endpoint para obtener las estadísticas del usuario
+  app.get("/api/user/stats", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      
+      // Obtener estadísticas del usuario
+      const [projects, tasks, schedules] = await Promise.all([
+        storage.listProjectsByUser(userId),
+        storage.listTasksByAssignee(userId),
+        storage.listSchedulesByUser(userId)
+      ]);
+      
+      // Calcular estadísticas
+      const projectsCreated = projects.length;
+      const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
+      const totalSchedules = schedules.length;
+      const totalCollaborations = projects.reduce((count, project) => {
+        return count + (project.members?.length || 0);
+      }, 0);
+      
+      // Calcular completitud del perfil
+      const user = await storage.getUser(userId);
+      const fields = [
+        user?.fullName,
+        user?.email,
+        user?.bio,
+        user?.profileImage,
+        user?.jobTitle,
+        user?.department,
+        user?.phoneNumber,
+      ];
+      const completedFields = fields.filter(field => field && field.trim() !== '').length;
+      const profileCompleteness = Math.round((completedFields / fields.length) * 100);
+      
+      const stats = {
+        projectsCreated,
+        tasksCompleted,
+        totalSchedules,
+        totalCollaborations,
+        profileCompleteness
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting user stats:", error);
+      res.status(500).json({ message: "Error al obtener las estadísticas del usuario" });
+    }
+  });
+
+  // Endpoint para obtener la actividad reciente del usuario
+  app.get("/api/user/activity", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const userId = req.user.id;
+      const limit = parseInt(req.query.limit as string) || 10;
+      
+      // Obtener actividad reciente (últimos proyectos, tareas, etc.)
+      const [recentProjects, recentTasks, recentSchedules] = await Promise.all([
+        storage.listProjectsByUser(userId),
+        storage.listTasksByAssignee(userId),
+        storage.listSchedulesByUser(userId)
+      ]);
+      
+      // Crear lista de actividades
+      const activities = [];
+      
+      // Agregar proyectos recientes
+      recentProjects.slice(0, 3).forEach(project => {
+        activities.push({
+          id: `project-${project.id}`,
+          type: 'project',
+          description: `Creaste el proyecto "${project.name}"`,
+          timestamp: project.createdAt,
+          icon: 'briefcase'
+        });
+      });
+      
+      // Agregar tareas recientes
+      recentTasks.slice(0, 3).forEach(task => {
+        activities.push({
+          id: `task-${task.id}`,
+          type: 'task',
+          description: `${task.status === 'completed' ? 'Completaste' : 'Trabajaste en'} la tarea "${task.title}"`,
+          timestamp: task.updatedAt || task.createdAt,
+          icon: 'check-circle'
+        });
+      });
+      
+      // Agregar cronogramas recientes
+      recentSchedules.slice(0, 2).forEach(schedule => {
+        activities.push({
+          id: `schedule-${schedule.id}`,
+          type: 'schedule',
+          description: `Creaste el cronograma "${schedule.name}"`,
+          timestamp: schedule.createdAt,
+          icon: 'calendar'
+        });
+      });
+      
+      // Ordenar por fecha más reciente y limitar
+      const sortedActivities = activities
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+        .slice(0, limit);
+      
+      res.json(sortedActivities);
+    } catch (error) {
+      console.error("Error getting user activity:", error);
+      res.status(500).json({ message: "Error al obtener la actividad del usuario" });
+    }
+  });
+
   // Endpoint para actualizar el perfil del usuario actual
   app.patch("/api/user/profile", isAuthenticated, async (req: Request, res: Response) => {
     try {

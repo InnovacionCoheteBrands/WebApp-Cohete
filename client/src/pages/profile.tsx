@@ -9,9 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award, Lock, Activity, Bell, Shield, BarChart3, Calendar, Clock, CheckCircle2, Eye, EyeOff } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 
 // Import avatars from assets
 import astronaut1 from "@assets/Image_fx (81)_1750440002891.jpg";
@@ -49,7 +56,51 @@ interface UserProfile {
   department: string;
   phoneNumber: string;
   customFields: CustomField[];
+  isPrimary: boolean;
+  role: string;
+  createdAt: string;
+  location?: string;
+  website?: string;
+  socialLinks?: {
+    linkedin?: string;
+    twitter?: string;
+    github?: string;
+  };
+  preferences?: {
+    emailNotifications: boolean;
+    projectUpdates: boolean;
+    taskReminders: boolean;
+    weeklyReports: boolean;
+  };
 }
+
+interface UserStats {
+  projectsCreated: number;
+  tasksCompleted: number;
+  totalSchedules: number;
+  totalCollaborations: number;
+  profileCompleteness: number;
+}
+
+interface RecentActivity {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+  icon: string;
+}
+
+// Schema for change password form
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+  newPassword: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
+  confirmPassword: z.string().min(6, "La confirmación de contraseña es requerida"),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
+
+type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
 export default function ProfilePage() {
   const { toast } = useToast();
@@ -61,10 +112,36 @@ export default function ProfilePage() {
   const [customFields, setCustomFields] = useState<CustomField[]>([]);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<'text' | 'email' | 'url' | 'tel'>('text');
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Fetch user profile
   const { data: user, isLoading } = useQuery<UserProfile>({
     queryKey: ["/api/user"],
+  });
+
+  // Fetch user statistics
+  const { data: userStats } = useQuery<UserStats>({
+    queryKey: ["/api/user/stats"],
+    staleTime: 30000, // 30 seconds
+  });
+
+  // Fetch recent activity
+  const { data: recentActivity } = useQuery<RecentActivity[]>({
+    queryKey: ["/api/user/activity"],
+    staleTime: 60000, // 1 minute
+  });
+
+  // Form for changing password
+  const passwordForm = useForm<ChangePasswordFormValues>({
+    resolver: zodResolver(changePasswordSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
 
   // Update profile mutation
@@ -78,6 +155,7 @@ export default function ProfilePage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       toast({
         title: "Perfil actualizado",
         description: "Los cambios se han guardado correctamente",
@@ -87,6 +165,36 @@ export default function ProfilePage() {
       toast({
         title: "Error",
         description: "No se pudo actualizar el perfil",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Change password mutation
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: ChangePasswordFormValues) => {
+      const response = await apiRequest("POST", "/api/profile/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Error al cambiar la contraseña");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Contraseña cambiada",
+        description: "Tu contraseña ha sido actualizada exitosamente",
+      });
+      setIsChangePasswordOpen(false);
+      passwordForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error al cambiar contraseña",
+        description: error.message,
         variant: "destructive",
       });
     },
@@ -207,6 +315,27 @@ export default function ProfilePage() {
 
   const handleFieldUpdate = (field: keyof UserProfile, value: any) => {
     updateProfileMutation.mutate({ [field]: value });
+  };
+
+  const handlePasswordChange = (data: ChangePasswordFormValues) => {
+    changePasswordMutation.mutate(data);
+  };
+
+  const calculateProfileCompleteness = () => {
+    if (!user) return 0;
+    
+    const fields = [
+      user.fullName,
+      user.email,
+      user.bio,
+      user.profileImage,
+      user.jobTitle,
+      user.department,
+      user.phoneNumber,
+    ];
+    
+    const completedFields = fields.filter(field => field && field.trim() !== '').length;
+    return Math.round((completedFields / fields.length) * 100);
   };
 
   const addCustomField = () => {
@@ -408,12 +537,68 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* User Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Proyectos Creados</p>
+                  <p className="text-2xl font-bold">{userStats?.projectsCreated || 0}</p>
+                </div>
+                <Briefcase className="h-8 w-8 text-blue-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Tareas Completadas</p>
+                  <p className="text-2xl font-bold">{userStats?.tasksCompleted || 0}</p>
+                </div>
+                <CheckCircle2 className="h-8 w-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Cronogramas</p>
+                  <p className="text-2xl font-bold">{userStats?.totalSchedules || 0}</p>
+                </div>
+                <Calendar className="h-8 w-8 text-purple-500" />
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Completitud</p>
+                  <p className="text-2xl font-bold">{calculateProfileCompleteness()}%</p>
+                </div>
+                <BarChart3 className="h-8 w-8 text-orange-500" />
+              </div>
+              <div className="mt-2">
+                <Progress value={calculateProfileCompleteness()} className="h-2" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Tabs Section */}
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="personal">Información Personal</TabsTrigger>
-            <TabsTrigger value="professional">Información Profesional</TabsTrigger>
-            <TabsTrigger value="custom">Campos Personalizados</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="personal">Personal</TabsTrigger>
+            <TabsTrigger value="professional">Profesional</TabsTrigger>
+            <TabsTrigger value="security">Seguridad</TabsTrigger>
+            <TabsTrigger value="preferences">Preferencias</TabsTrigger>
+            <TabsTrigger value="activity">Actividad</TabsTrigger>
           </TabsList>
 
           {/* Personal Information Tab */}
@@ -510,11 +695,251 @@ export default function ProfilePage() {
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Ubicación</Label>
+                    <Input
+                      id="location"
+                      placeholder="Ej: Ciudad de México, México"
+                      defaultValue={user?.location}
+                      onBlur={(e) => handleFieldUpdate('location', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="website">Sitio Web</Label>
+                    <Input
+                      id="website"
+                      placeholder="https://tu-sitio.com"
+                      defaultValue={user?.website}
+                      onBlur={(e) => handleFieldUpdate('website', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-lg font-medium">Redes Sociales</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="linkedin">LinkedIn</Label>
+                      <Input
+                        id="linkedin"
+                        placeholder="https://linkedin.com/in/tu-perfil"
+                        defaultValue={user?.socialLinks?.linkedin}
+                        onBlur={(e) => handleFieldUpdate('socialLinks', { 
+                          ...user?.socialLinks, 
+                          linkedin: e.target.value 
+                        })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="twitter">Twitter</Label>
+                      <Input
+                        id="twitter"
+                        placeholder="https://twitter.com/tu-usuario"
+                        defaultValue={user?.socialLinks?.twitter}
+                        onBlur={(e) => handleFieldUpdate('socialLinks', { 
+                          ...user?.socialLinks, 
+                          twitter: e.target.value 
+                        })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="github">GitHub</Label>
+                      <Input
+                        id="github"
+                        placeholder="https://github.com/tu-usuario"
+                        defaultValue={user?.socialLinks?.github}
+                        onBlur={(e) => handleFieldUpdate('socialLinks', { 
+                          ...user?.socialLinks, 
+                          github: e.target.value 
+                        })}
+                      />
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* Custom Fields Tab */}
+          {/* Security Tab */}
+          <TabsContent value="security" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  Seguridad de la Cuenta
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Cambiar Contraseña</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Actualiza tu contraseña para mantener tu cuenta segura
+                      </p>
+                    </div>
+                    <Button onClick={() => setIsChangePasswordOpen(true)}>
+                      <Lock className="h-4 w-4 mr-2" />
+                      Cambiar
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Tipo de Cuenta</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Tu nivel de acceso en la plataforma
+                      </p>
+                    </div>
+                    <Badge variant={user?.isPrimary ? "default" : "secondary"}>
+                      {user?.isPrimary ? "Administrador" : "Usuario Estándar"}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className="font-medium">Miembro desde</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Fecha de registro en la plataforma
+                      </p>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Preferences Tab */}
+          <TabsContent value="preferences" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Preferencias de Notificaciones
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Notificaciones por Email</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Recibe actualizaciones importantes por correo electrónico
+                      </p>
+                    </div>
+                    <Switch
+                      checked={user?.preferences?.emailNotifications ?? true}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('preferences', { 
+                          ...user?.preferences, 
+                          emailNotifications: checked 
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Actualizaciones de Proyecto</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Notificaciones sobre cambios en tus proyectos
+                      </p>
+                    </div>
+                    <Switch
+                      checked={user?.preferences?.projectUpdates ?? true}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('preferences', { 
+                          ...user?.preferences, 
+                          projectUpdates: checked 
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Recordatorios de Tareas</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Recordatorios sobre tareas pendientes y vencimientos
+                      </p>
+                    </div>
+                    <Switch
+                      checked={user?.preferences?.taskReminders ?? true}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('preferences', { 
+                          ...user?.preferences, 
+                          taskReminders: checked 
+                        })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">Reportes Semanales</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Resumen semanal de tu actividad y progreso
+                      </p>
+                    </div>
+                    <Switch
+                      checked={user?.preferences?.weeklyReports ?? false}
+                      onCheckedChange={(checked) => 
+                        handleFieldUpdate('preferences', { 
+                          ...user?.preferences, 
+                          weeklyReports: checked 
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Activity Tab */}
+          <TabsContent value="activity" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  Actividad Reciente
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {recentActivity && recentActivity.length > 0 ? (
+                    recentActivity.map((activity) => (
+                      <div key={activity.id} className="flex items-start gap-3 p-3 border rounded-lg">
+                        <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Activity className="h-4 w-4 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{activity.description}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(activity.timestamp).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>No hay actividad reciente</p>
+                      <p className="text-sm">Comienza creando proyectos y tareas</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Custom Fields Tab (moved from original) */}
           <TabsContent value="custom" className="space-y-6">
             <Card>
               <CardHeader>
@@ -605,6 +1030,140 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Cambiar Contraseña</DialogTitle>
+            <DialogDescription>
+              Actualiza tu contraseña para mantener tu cuenta segura.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...passwordForm}>
+            <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4">
+              <FormField
+                control={passwordForm.control}
+                name="currentPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Contraseña actual</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showCurrentPassword ? "text" : "password"}
+                          placeholder="Ingresa tu contraseña actual"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={passwordForm.control}
+                name="newPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nueva contraseña</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showNewPassword ? "text" : "password"}
+                          placeholder="Ingresa tu nueva contraseña"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={passwordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirmar nueva contraseña</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Input
+                          {...field}
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirma tu nueva contraseña"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsChangePasswordOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={changePasswordMutation.isPending}
+                >
+                  {changePasswordMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Cambiando...
+                    </>
+                  ) : (
+                    "Cambiar contraseña"
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
