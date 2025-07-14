@@ -297,7 +297,17 @@ export default function ProfilePage() {
 
   const handleCoverImageUpload = () => {
     if (coverImageFile) {
-      uploadCoverMutation.mutate(coverImageFile);
+      // En lugar de subir directamente, agregar a cambios pendientes
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imageData = e.target?.result as string;
+        handleFieldUpdate('coverImage', imageData);
+        toast({
+          title: "Imagen preparada",
+          description: "La imagen de portada se guardará al hacer clic en 'Guardar Cambios'",
+        });
+      };
+      reader.readAsDataURL(coverImageFile);
     }
   };
 
@@ -336,7 +346,7 @@ export default function ProfilePage() {
     }));
   };
 
-  const handleSaveAllChanges = () => {
+  const handleSaveAllChanges = async () => {
     console.log("Cambios pendientes:", pendingChanges);
     console.log("Selected avatar:", selectedAvatar);
     
@@ -346,6 +356,28 @@ export default function ProfilePage() {
     // Si hay una imagen seleccionada, incluirla en los cambios
     if (selectedAvatar) {
       allChanges.profileImage = selectedAvatar;
+    }
+    
+    // Si hay una imagen de portada preparada, subirla primero
+    if (coverImageFile) {
+      try {
+        const formData = new FormData();
+        formData.append("coverImage", coverImageFile);
+        const response = await uploadFile("/api/user/cover-image", formData);
+        
+        if (response.ok) {
+          const result = await response.json();
+          allChanges.coverImage = result.coverImage;
+        }
+      } catch (error) {
+        console.error("Error uploading cover image:", error);
+        toast({
+          title: "Error",
+          description: "No se pudo subir la imagen de portada",
+          variant: "destructive",
+        });
+        return;
+      }
     }
     
     console.log("Todos los cambios a enviar:", allChanges);
@@ -1669,7 +1701,7 @@ export default function ProfilePage() {
                           ) : (
                             <>
                               <Upload className="h-4 w-4 mr-2" />
-                              Subir Portada
+                              Preparar Imagen
                             </>
                           )}
                         </Button>
