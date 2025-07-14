@@ -80,6 +80,37 @@ export async function apiRequest(
   }
 }
 
+// ===== FUNCIÓN PARA SUBIR ARCHIVOS =====
+// Función específica para subir archivos usando FormData
+export async function uploadFile(
+  url: string,
+  formData: FormData
+): Promise<Response> {
+  console.log(`Uploading file to: ${url}`);
+
+  const config: RequestInit = {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  };
+
+  try {
+    const response = await fetch(url, config);
+
+    console.log(`Upload response status: ${response.status} for ${url}`);
+
+    if (!response.ok && response.status === 401) {
+      // Redirect to login on 401
+      window.location.href = "/auth";
+    }
+
+    return response;
+  } catch (error) {
+    console.error(`Upload error for ${url}:`, error);
+    throw error;
+  }
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;

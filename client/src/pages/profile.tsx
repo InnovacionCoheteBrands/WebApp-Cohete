@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, uploadFile } from "@/lib/queryClient";
 import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award, Lock, Activity, Bell, Shield, BarChart3, Calendar, Clock, CheckCircle2, Eye, EyeOff, Edit, Save, Trash2, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
@@ -154,11 +154,7 @@ export default function ProfilePage() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: Partial<UserProfile>) => {
       console.log("Ejecutando mutación con datos:", data);
-      return apiRequest("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
+      return apiRequest("PATCH", "/api/user/profile", data);
     },
     onSuccess: (data) => {
       console.log("Mutación exitosa:", data);
@@ -184,13 +180,9 @@ export default function ProfilePage() {
   // Change password mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (data: ChangePasswordFormValues) => {
-      return apiRequest("/api/profile/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword: data.currentPassword,
-          newPassword: data.newPassword,
-        }),
+      return apiRequest("POST", "/api/profile/change-password", {
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
       });
     },
     onSuccess: () => {
@@ -215,10 +207,7 @@ export default function ProfilePage() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("coverImage", file);
-      return apiRequest("/api/user/cover-image", {
-        method: "POST",
-        body: formData,
-      });
+      return uploadFile("/api/user/cover-image", formData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
@@ -271,11 +260,8 @@ export default function ProfilePage() {
         const formData = new FormData();
         formData.append('profileImage', file);
 
-        // Hacer la petición al endpoint con autenticación usando apiRequest
-        const response = await apiRequest('/api/user/profile-image', {
-          method: 'POST',
-          body: formData,
-        });
+        // Hacer la petición al endpoint con autenticación usando uploadFile
+        const response = await uploadFile('/api/user/profile-image', formData);
 
         if (response.profileImage) {
           // Invalidar cache y actualizar UI
