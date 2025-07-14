@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -122,6 +122,9 @@ export default function ProfilePage() {
   const [imageScale, setImageScale] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 200, height: 200 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageRef = useRef<HTMLDivElement>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Partial<UserProfile>>({});
 
@@ -363,6 +366,46 @@ export default function ProfilePage() {
     
     setIsImageEditorOpen(true);
   };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - imagePosition.x,
+      y: e.clientY - imagePosition.y
+    });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+    
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
+    
+    // Limitar el movimiento dentro de límites razonables
+    const maxMove = 200;
+    const limitedX = Math.max(-maxMove, Math.min(maxMove, newX));
+    const limitedY = Math.max(-maxMove, Math.min(maxMove, newY));
+    
+    setImagePosition({ x: limitedX, y: limitedY });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  // Agregar event listeners para arrastre
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragStart]);
 
   const applyImageEdits = () => {
     // Crear un canvas para aplicar los cambios
@@ -2136,7 +2179,7 @@ export default function ProfilePage() {
           <DialogHeader>
             <DialogTitle>Editar Imagen</DialogTitle>
             <DialogDescription>
-              Ajusta la posición y el tamaño de la imagen usando los controles
+              Arrastra la imagen para posicionarla o usa los controles deslizantes. Ajusta el tamaño con el zoom.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
@@ -2145,18 +2188,28 @@ export default function ProfilePage() {
               <div className="relative w-96 h-96 border-2 border-dashed border-muted-foreground rounded-lg overflow-hidden bg-muted">
                 {imageToEdit && (
                   <div 
-                    className="absolute inset-0 cursor-move"
+                    ref={imageRef}
+                    className={`absolute inset-0 ${isDragging ? 'cursor-grabbing' : 'cursor-grab'} select-none`}
                     style={{
                       transform: `translate(${imagePosition.x}px, ${imagePosition.y}px) scale(${imageScale})`,
                       transformOrigin: 'center'
                     }}
+                    onMouseDown={handleMouseDown}
                   >
                     <img
                       src={imageToEdit}
                       alt="Imagen para editar"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover pointer-events-none"
                       draggable={false}
                     />
+                  </div>
+                )}
+                {!imageToEdit && (
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <ImageIcon className="h-12 w-12 mx-auto mb-2" />
+                      <p className="text-sm">Imagen para editar</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2195,28 +2248,31 @@ export default function ProfilePage() {
               </div>
 
               {/* Controles de posición */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Posición horizontal</Label>
-                  <input
-                    type="range"
-                    min="-100"
-                    max="100"
-                    value={imagePosition.x}
-                    onChange={(e) => setImagePosition({ ...imagePosition, x: parseInt(e.target.value) })}
-                    className="w-full"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Posición vertical</Label>
-                  <input
-                    type="range"
-                    min="-100"
-                    max="100"
-                    value={imagePosition.y}
-                    onChange={(e) => setImagePosition({ ...imagePosition, y: parseInt(e.target.value) })}
-                    className="w-full"
-                  />
+              <div className="space-y-2">
+                <Label>Posición (o arrastra la imagen directamente)</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Horizontal: {imagePosition.x}px</Label>
+                    <input
+                      type="range"
+                      min="-200"
+                      max="200"
+                      value={imagePosition.x}
+                      onChange={(e) => setImagePosition({ ...imagePosition, x: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">Vertical: {imagePosition.y}px</Label>
+                    <input
+                      type="range"
+                      min="-200"
+                      max="200"
+                      value={imagePosition.y}
+                      onChange={(e) => setImagePosition({ ...imagePosition, y: parseInt(e.target.value) })}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               </div>
 
