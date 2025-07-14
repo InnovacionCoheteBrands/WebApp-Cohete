@@ -1516,7 +1516,7 @@ export default function ProfilePage() {
                   <h4 className="font-medium">Foto de Perfil</h4>
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-24 h-24 rounded-full border-2 border-border bg-muted overflow-hidden">
+                      <div className="w-24 h-24 rounded-lg border-2 border-border bg-muted overflow-hidden">
                         {user?.profileImage ? (
                           <img
                             src={user.profileImage}
