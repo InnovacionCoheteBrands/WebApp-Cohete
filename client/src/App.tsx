@@ -35,6 +35,7 @@ import Analytics from "@/pages/analytics";
 import Profile from "@/pages/profile";
 import SettingsPage from "@/pages/settings";
 import ProjectImageAnalysisPage from "@/pages/project-image-analysis";
+import Calendars from "@/pages/calendars";
 
 // ===== IMPORTACIONES DE COMPONENTES Y PROVIDERS =====
 // Componente para proteger rutas que requieren autenticación
@@ -146,6 +147,16 @@ function App() {
                   <ProtectedRoute>
                     <MainLayout>
                       <CalendarCreator />
+                    </MainLayout>
+                  </ProtectedRoute>
+                </Route>
+                
+                {/* Página de calendarios */}
+                {/* Página de selección entre calendario rápido y avanzado */}
+                <Route path="/calendars">
+                  <ProtectedRoute>
+                    <MainLayout>
+                      <Calendars />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>

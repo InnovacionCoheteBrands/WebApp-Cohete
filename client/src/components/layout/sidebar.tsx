@@ -88,10 +88,10 @@ export function Sidebar({ open, onClose }: SidebarProps) {
             />
 
             <NavItem 
-              href="/calendar-creator" 
+              href="/calendars" 
               icon={<CalendarPlus className="mr-2 h-5 w-5" />} 
-              label="Calendario Avanzado" 
-              isActive={location === "/calendar-creator"} 
+              label="Calendarios" 
+              isActive={location === "/calendars" || location === "/calendar-creator" || location === "/quick-calendar"} 
               onClick={onClose}
             />
             {/* Temporalmente oculto hasta implementar integraciones con redes sociales */}
