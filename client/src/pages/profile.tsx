@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award, Lock, Activity, Bell, Shield, BarChart3, Calendar, Clock, CheckCircle2, Eye, EyeOff, Edit, Save } from "lucide-react";
+import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award, Lock, Activity, Bell, Shield, BarChart3, Calendar, Clock, CheckCircle2, Eye, EyeOff, Edit, Save, Trash2, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -1383,44 +1383,14 @@ export default function ProfilePage() {
           </DialogHeader>
           
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="personal">Personal</TabsTrigger>
               <TabsTrigger value="professional">Profesional</TabsTrigger>
+              <TabsTrigger value="images">Imágenes</TabsTrigger>
             </TabsList>
             
             {/* Personal Tab */}
             <TabsContent value="personal" className="space-y-6">
-              {/* Profile Image Editor */}
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-20 h-20 rounded-full border-2 border-border bg-muted overflow-hidden">
-                    {user?.profileImage ? (
-                      <img
-                        src={user.profileImage}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center">
-                        <User className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleProfileImageUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <h3 className="font-medium">Imagen de Perfil</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Haz clic para cambiar tu imagen de perfil
-                  </p>
-                </div>
-              </div>
-
               {/* Personal Information */}
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Información Personal</h3>
@@ -1531,6 +1501,154 @@ export default function ProfilePage() {
                       })}
                       placeholder="Tu perfil de Twitter"
                     />
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Images Tab */}
+            <TabsContent value="images" className="space-y-6">
+              <div className="space-y-6">
+                <h3 className="text-lg font-medium">Gestión de Imágenes</h3>
+                
+                {/* Profile Image Section */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Foto de Perfil</h4>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full border-2 border-border bg-muted overflow-hidden">
+                        {user?.profileImage ? (
+                          <img
+                            src={user.profileImage}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <User className="h-12 w-12 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfileImageUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Haz clic en la imagen para cambiar tu foto de perfil
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.querySelector('input[type="file"]')?.click()}
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          Cambiar Foto
+                        </Button>
+                        {user?.profileImage && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Aquí puedes agregar lógica para eliminar la imagen de perfil
+                              toast({
+                                title: "Funcionalidad pendiente",
+                                description: "La eliminación de imagen se implementará próximamente",
+                              });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Eliminar
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Cover Image Section */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Imagen de Portada</h4>
+                  <div className="space-y-4">
+                    <div className="relative h-40 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden border-2 border-dashed border-border">
+                      {user?.coverImage || coverImagePreview ? (
+                        <img
+                          src={coverImagePreview || user?.coverImage}
+                          alt="Cover"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                          <div className="text-center text-white">
+                            <ImageIcon className="h-12 w-12 mx-auto mb-2 opacity-70" />
+                            <p className="text-sm">Sin imagen de portada</p>
+                          </div>
+                        </div>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverImageChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.querySelectorAll('input[type="file"]')[1]?.click()}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Cambiar Portada
+                      </Button>
+                      {coverImagePreview && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={handleCoverImageUpload}
+                          disabled={uploadCoverMutation.isPending}
+                        >
+                          {uploadCoverMutation.isPending ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              Subiendo...
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4 mr-2" />
+                              Subir Portada
+                            </>
+                          )}
+                        </Button>
+                      )}
+                      {(user?.coverImage || coverImagePreview) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setCoverImagePreview(null);
+                            setCoverImageFile(null);
+                            // Aquí puedes agregar lógica para eliminar la imagen de portada del servidor
+                            toast({
+                              title: "Funcionalidad pendiente",
+                              description: "La eliminación de imagen se implementará próximamente",
+                            });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Recomendado: 1200x400 píxeles. Formatos: JPG, PNG, GIF (máx. 5MB)
+                    </p>
                   </div>
                 </div>
               </div>
