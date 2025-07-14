@@ -1568,6 +1568,44 @@ export default function ProfilePage() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Preloaded Avatars Section */}
+                  <div className="space-y-3">
+                    <h5 className="text-sm font-medium">Selecciona una imagen predefinida</h5>
+                    <div className="grid grid-cols-6 gap-3">
+                      {preloadedAvatars.map((avatar) => (
+                        <div
+                          key={avatar.id}
+                          className="relative cursor-pointer group"
+                          onClick={() => {
+                            // Simular selección de imagen predefinida
+                            const imageUrl = avatar.src;
+                            handleFieldUpdate('profileImage', imageUrl);
+                            toast({
+                              title: "Imagen seleccionada",
+                              description: `Has seleccionado: ${avatar.name}`,
+                            });
+                          }}
+                        >
+                          <div className="w-16 h-16 rounded-lg border-2 border-border bg-muted overflow-hidden hover:border-primary transition-colors">
+                            <img
+                              src={avatar.src}
+                              alt={avatar.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                              <CheckCircle2 className="h-6 w-6 text-white" />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Haz clic en cualquier imagen para seleccionarla como tu foto de perfil
+                    </p>
+                  </div>
                 </div>
 
                 <Separator />
