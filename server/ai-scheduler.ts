@@ -77,11 +77,19 @@ export async function generateSchedule(
           // Calculate posts per period based on monthly frequency
           const postsPerPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
 
+          // Extraer tipos de contenido con sus cantidades específicas
+          const contentTypeDetails = network.contentTypeDetails || [];
+          const selectedContentTypes = contentTypeDetails
+            .filter((type: any) => type.count > 0)
+            .map((type: any) => `${type.name} (${type.count} posts)`);
+
           return {
             name: network.name,
             postsPerMonth: network.postsPerMonth,
             postsForPeriod: postsPerPeriod,
-            contentTypes: network.contentTypes || []
+            contentTypes: network.contentTypes || [],
+            selectedContentTypes: selectedContentTypes,
+            contentTypeDetails: contentTypeDetails
           };
         });
 
@@ -99,11 +107,18 @@ export async function generateSchedule(
 
         TOTAL DE PUBLICACIONES A GENERAR: ${totalPostsFromNetworks}
         
-        INSTRUCCIONES CRÍTICAS:
+        INSTRUCCIONES CRÍTICAS - RESPETAR CONFIGURACIÓN DEL PROYECTO:
         - Genera EXACTAMENTE ${totalPostsFromNetworks} publicaciones (no más, no menos)
         - Respeta la distribución por red social según "postsForPeriod"
         - Esta cantidad se calculó proporcionalmente basándose en las frecuencias mensuales definidas para cada red social del proyecto
         - NO ignores esta distribución específica del proyecto
+        - TIPOS DE CONTENIDO: Usa SOLO los tipos de contenido seleccionados para cada red social
+        - ADAPTACIÓN 2025: Aplica las mejores prácticas específicas de cada plataforma:
+          * Instagram: Prioriza carruseles para engagement, Reels para alcance
+          * Facebook: Enfoca en Reels verticales <30s y contenido auténtico
+          * LinkedIn: Contenido B2B profesional, publicar en horario laboral
+          * TikTok: Videos cortos 10-15s, participación en tendencias
+        - RESPETA los valores de marca definidos en el análisis del proyecto
         `;
       } else {
         console.warn(`[CALENDAR] ¡Advertencia! No se encontraron redes sociales seleccionadas en el proyecto`);
@@ -156,21 +171,42 @@ export async function generateSchedule(
       **HISTORIAL DE CONTENIDO (EVITAR DUPLICACIÓN):**
       ${previousContentSection || "Sin historial de contenido previo disponible."}
 
-      **DIRECTRICES PARA CREACIÓN DE CONTENIDO DE ALTA CALIDAD:**
+      **DIRECTRICES PARA CREACIÓN DE CONTENIDO DE ALTA CALIDAD 2025:**
       1. STORYTELLING - Utiliza narrativas emocionales y personales que conecten con la audiencia.
       2. VALOR PRÁCTICO - Cada publicación debe ofrecer insights, consejos, o soluciones reales.
       3. LLAMADAS A LA ACCIÓN - Incluye CTAs claros y persuasivos que inciten al compromiso.
-      4. ADAPTACIÓN POR PLATAFORMA - Personaliza el tono y formato según cada red social.
+      4. ADAPTACIÓN POR PLATAFORMA - Personaliza el tono y formato según cada red social:
+         - INSTAGRAM: Carruseles para mayor engagement (0.55%), Reels para alcance (2x más), Stories diarios
+         - FACEBOOK: Reels verticales <30 segundos, contenido auténtico sin IA, live videos para engagement
+         - LINKEDIN: 3-5 posts/semana B2B, horario 10AM-12PM, contenido de liderazgo de pensamiento
+         - TIKTOK: Videos 10-15 segundos, 3-5x/semana, participar en tendencias y challenges
+         - YOUTUBE: Combinar Shorts (31-60s) con videos largos educativos
       5. ORIGINALIDAD - Evita clichés y lugares comunes del sector, busca ángulos únicos.
       6. ESTILO DISTINTIVO - Mantén coherencia con la voz de marca pero con variedad creativa.
       7. INSTRUCCIONES VISUALES - Sé específico sobre las imágenes/videos sugiriendo paletas de color, composición y elementos visuales distintivos.
+      8. FRECUENCIAS ÓPTIMAS 2025:
+         - Instagram: 3-4 posts/semana + 1-2 Stories/día
+         - Facebook: 3-5 posts/semana (mínimo), idealmente 1-2/día
+         - LinkedIn: 3-5 posts/semana en horario laboral
+         - TikTok: 3-5 posts/semana
+         - YouTube: Consistencia semanal según capacidad
 
-      **ESTRUCTURA DE LAS PUBLICACIONES:**
+      **ESTRUCTURA DE LAS PUBLICACIONES POR PLATAFORMA:**
       - TÍTULOS: Concisos, impactantes, con palabras potentes y gatillos emocionales.
       - CONTENIDO PRINCIPAL: Desarrolla ideas completas con narrativa estructurada (problema-solución-beneficio).
       - COPY IN: Texto que aparecerá sobre la imagen/diseño, corto y memorable.
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
-      - HASHTAGS: Mezcla hashtags populares y específicos del nicho (entre 3-7 por publicación).
+      - HASHTAGS: 
+        * Instagram: Menos de 5 hashtags relevantes (evitar 17-18 que reducen engagement)
+        * Facebook: 1-3 hashtags máximo, enfoque en contenido orgánico
+        * LinkedIn: 3-5 hashtags profesionales y de industria
+        * TikTok: 3-5 hashtags trending + nicho específico
+      - FORMATOS RECOMENDADOS 2025:
+        * Instagram: Carruseles (10-20 slides), Reels (90s max), Stories con polls/Q&A
+        * Facebook: Reels sin restricciones de formato, imágenes 4:5, texto largo o muy corto
+        * LinkedIn: Videos + artículos largos, contenido educativo B2B
+        * TikTok: Videos verticales 10-15s, participación en trends
+        * YouTube: Shorts 31-60s para descubrimiento, videos largos para profundidad
 
       **REQUISITOS CRÍTICOS DE CANTIDAD ADAPTATIVA:**
       - NO uses cantidades fijas de publicaciones
