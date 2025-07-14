@@ -173,15 +173,14 @@ export default function ProfilePage() {
   // Change password mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (data: ChangePasswordFormValues) => {
-      const response = await apiRequest("POST", "/api/profile/change-password", {
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword,
+      return apiRequest("/api/profile/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          currentPassword: data.currentPassword,
+          newPassword: data.newPassword,
+        }),
       });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error al cambiar la contraseña");
-      }
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -462,7 +461,7 @@ export default function ProfilePage() {
                   <DialogTrigger asChild>
                     <Button
                       size="icon"
-                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg border-2 border-background"
+                      className="absolute top-0 right-0 h-8 w-8 rounded-full shadow-lg border-2 border-background"
                     >
                       <Camera className="h-4 w-4" />
                     </Button>

@@ -515,16 +515,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       // Obtener estadísticas del usuario
-      const [projects, tasks, schedules] = await Promise.all([
-        storage.listProjectsByUser(userId),
-        storage.listTasksByAssignee(userId),
-        storage.listSchedulesByUser(userId)
+      const [projects, tasks] = await Promise.all([
+        storage.getProjectsByUser(userId),
+        storage.getTasksByUser(userId)
       ]);
+      
+      // Obtener cronogramas de todos los proyectos del usuario
+      const allSchedules = [];
+      for (const project of projects) {
+        const schedules = await storage.getSchedules(project.id);
+        allSchedules.push(...schedules);
+      }
       
       // Calcular estadísticas
       const projectsCreated = projects.length;
       const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
-      const totalSchedules = schedules.length;
+      const totalSchedules = allSchedules.length;
       const totalCollaborations = projects.reduce((count, project) => {
         return count + (project.members?.length || 0);
       }, 0);
@@ -565,11 +571,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const limit = parseInt(req.query.limit as string) || 10;
       
       // Obtener actividad reciente (últimos proyectos, tareas, etc.)
-      const [recentProjects, recentTasks, recentSchedules] = await Promise.all([
-        storage.listProjectsByUser(userId),
-        storage.listTasksByAssignee(userId),
-        storage.listSchedulesByUser(userId)
+      const [recentProjects, recentTasks] = await Promise.all([
+        storage.getProjectsByUser(userId),
+        storage.getTasksByUser(userId)
       ]);
+      
+      // Obtener cronogramas de todos los proyectos del usuario
+      const allRecentSchedules = [];
+      for (const project of recentProjects) {
+        const schedules = await storage.getSchedules(project.id);
+        allRecentSchedules.push(...schedules);
+      }
       
       // Crear lista de actividades
       const activities = [];
@@ -597,7 +609,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Agregar cronogramas recientes
-      recentSchedules.slice(0, 2).forEach(schedule => {
+      allRecentSchedules.slice(0, 2).forEach(schedule => {
         activities.push({
           id: `schedule-${schedule.id}`,
           type: 'schedule',
