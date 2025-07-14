@@ -210,7 +210,6 @@ export const queryClient = new QueryClient({
         const jitter = Math.random() * 1000;
         return baseDelay + jitter;
       },
-      staleTime: 30000, // Consider data fresh for 30 seconds
     },
 
     // ===== CONFIGURACIÓN DE MUTACIONES =====

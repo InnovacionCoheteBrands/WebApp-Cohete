@@ -312,6 +312,34 @@ export default function ProfilePage() {
     }
   };
 
+  const handleProfileImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tamaño del archivo (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "El archivo es demasiado grande. Máximo 5MB.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Error",
+          description: "Por favor selecciona una imagen válida.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Actualizar imagen de perfil
+      uploadProfileMutation.mutate(file);
+    }
+  };
+
   const handleFieldUpdate = (field: keyof UserProfile, value: any) => {
     setPendingChanges(prev => ({
       ...prev,
