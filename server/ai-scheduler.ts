@@ -95,10 +95,10 @@ export async function generateSchedule(
 
       // Calcular total de publicaciones basado en las especificaciones del proyecto
       const totalPostsFromNetworks = selectedNetworks.reduce((sum: number, network: any) => sum + network.postsForPeriod, 0);
-      
+
       console.log(`[CALENDAR] Redes sociales seleccionadas: ${selectedNetworks.length}`);
       console.log(`[CALENDAR] Total de publicaciones calculadas: ${totalPostsFromNetworks}`);
-      
+
       if (selectedNetworks.length > 0) {
         console.log(`[CALENDAR] Redes: ${selectedNetworks.map((n: any) => n.name).join(', ')}`);
         socialNetworksSection = `
@@ -106,7 +106,7 @@ export async function generateSchedule(
         ${JSON.stringify(selectedNetworks, null, 2)}
 
         TOTAL DE PUBLICACIONES A GENERAR: ${totalPostsFromNetworks}
-        
+
         INSTRUCCIONES CRÍTICAS - RESPETAR CONFIGURACIÓN DEL PROYECTO:
         - Genera EXACTAMENTE ${totalPostsFromNetworks} publicaciones (no más, no menos)
         - Respeta la distribución por red social según "postsForPeriod"
@@ -125,7 +125,7 @@ export async function generateSchedule(
         // Calcular cantidad mínima basada en el período cuando no hay redes configuradas
         const minimumPosts = Math.max(3, Math.ceil(durationDays / 5)); // Al menos 3 posts, o 1 cada 5 días
         console.log(`[CALENDAR] Usando cantidad mínima calculada: ${minimumPosts} publicaciones`);
-        
+
         socialNetworksSection = `
         SIN REDES SOCIALES ESPECÍFICAS CONFIGURADAS:
         - Genera ${minimumPosts} publicaciones para el período de ${durationDays} días
@@ -197,16 +197,16 @@ export async function generateSchedule(
       - COPY IN: Texto que aparecerá sobre la imagen/diseño, corto y memorable.
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
       - HASHTAGS: 
-        * Instagram: Menos de 5 hashtags relevantes (evitar 17-18 que reducen engagement)
-        * Facebook: 1-3 hashtags máximo, enfoque en contenido orgánico
-        * LinkedIn: 3-5 hashtags profesionales y de industria
-        * TikTok: 3-5 hashtags trending + nicho específico
+        * Instagram: Hashtags relevantes y específicos del nicho
+        * Facebook: Hashtags mínimos, enfoque en contenido orgánico
+        * LinkedIn: Hashtags profesionales y de industria
+        * TikTok: Hashtags trending combinados con nicho específico
       - FORMATOS RECOMENDADOS 2025:
-        * Instagram: Carruseles (10-20 slides), Reels (90s max), Stories con polls/Q&A
-        * Facebook: Reels sin restricciones de formato, imágenes 4:5, texto largo o muy corto
-        * LinkedIn: Videos + artículos largos, contenido educativo B2B
-        * TikTok: Videos verticales 10-15s, participación en trends
-        * YouTube: Shorts 31-60s para descubrimiento, videos largos para profundidad
+        * Instagram: Carruseles, Reels, Stories interactivas
+        * Facebook: Reels, imágenes optimizadas, contenido de valor
+        * LinkedIn: Videos educativos, artículos largos, contenido B2B
+        * TikTok: Videos verticales dinámicos
+        * YouTube: Shorts para descubrimiento, videos largos para profundidad
 
       **REQUISITOS CRÍTICOS DE CANTIDAD ADAPTATIVA:**
       - NO uses cantidades fijas de publicaciones
@@ -574,7 +574,7 @@ export async function generateSchedule(
                             entryStr = entryStr.replace(/"(\d{2})":\s*(\d{2})"/g, '"$1:$2"');
                             entryStr = entryStr.replace(/:\s*"(\d{2})":\s*(\d{2})"/g, ': "$1:$2"');
                             entryStr = entryStr.replace(/"ime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
-                            entryStr = entryStr.replace(/"time":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
+                            entryStr = entryStr.replace(/"time":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$$1:$2"');
                             entryStr = entryStr.replace(/"postTime":\s*"(\d{2})":\s*(\d{2})"/g, '"postTime": "$1:$2"');
 
                             // Corregir campo "Objetivo" problemático
