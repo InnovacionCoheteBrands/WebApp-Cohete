@@ -153,13 +153,15 @@ export default function ProfilePage() {
   // Update profile mutation
   const updateProfileMutation = useMutation({
     mutationFn: async (data: Partial<UserProfile>) => {
+      console.log("Ejecutando mutación con datos:", data);
       return apiRequest("/api/user/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Mutación exitosa:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
       setPendingChanges({}); // Limpiar cambios pendientes
@@ -169,7 +171,8 @@ export default function ProfilePage() {
         description: "Los cambios se han guardado correctamente",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error("Error en mutación:", error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el perfil",
@@ -348,8 +351,15 @@ export default function ProfilePage() {
   };
 
   const handleSaveAllChanges = () => {
+    console.log("Cambios pendientes:", pendingChanges);
     if (Object.keys(pendingChanges).length > 0) {
       updateProfileMutation.mutate(pendingChanges);
+    } else {
+      toast({
+        title: "No hay cambios",
+        description: "No se han realizado cambios para guardar",
+        variant: "destructive",
+      });
     }
   };
 

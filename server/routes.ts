@@ -637,6 +637,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const updateData = req.body;
       
+      console.log("Datos recibidos para actualizar perfil:", updateData);
+      console.log("User ID:", userId);
+      
       // Actualizar el perfil del usuario usando Drizzle
       const [updatedUser] = await db.update(schema.users)
         .set({
