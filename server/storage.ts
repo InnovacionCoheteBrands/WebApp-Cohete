@@ -3,7 +3,7 @@
 // It interfaces with PostgreSQL through the configured database connection
 
 import { db } from "./db";
-import { eq, asc, desc, and, or, sql, like, inArray } from "drizzle-orm";
+import { eq, asc, desc, and, or, sql, like, inArray, gt } from "drizzle-orm";
 import * as schema from "./schema";
 import type { 
   User, 
@@ -158,6 +158,9 @@ export interface IStorage {
   createTaskComment(comment: InsertTaskComment): Promise<TaskComment>;
   updateTaskComment(id: number, updates: Partial<InsertTaskComment>): Promise<TaskComment | null>;
   deleteTaskComment(id: number): Promise<void>;
+
+  // Content history
+  getContentHistory(projectId: number): Promise<any[]>;
 
   // Password reset
   getUserByIdentifier(identifier: string): Promise<User | null>;
@@ -1014,6 +1017,18 @@ export class DatabaseStorage implements IStorage {
 
   async deleteTaskComment(id: number): Promise<void> {
     await db.delete(schema.taskComments).where(eq(schema.taskComments.id, id));
+  }
+
+  // Content history methods
+  async getContentHistory(projectId: number): Promise<any[]> {
+    try {
+      // For now, return empty array since this is just for backward compatibility
+      // In the future, this could return actual content history from the contentHistory table
+      return [];
+    } catch (error) {
+      console.error('Error getting content history:', error);
+      return [];
+    }
   }
 }
 

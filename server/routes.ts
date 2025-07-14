@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para listar usuarios (solo para usuarios primarios)
   app.get("/api/admin/users", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
-      const users = await global.storage.listUsers();
+      const users = await global.storage.getAllUsers();
       
       // Eliminar contraseñas del resultado
       const sanitizedUsers = users.map(user => {
@@ -443,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Si se está removiendo permisos de administrador, verificar que no sea el último admin
       if (updateData.isPrimary === false && user.isPrimary) {
-        const allUsers = await global.storage.listUsers();
+        const allUsers = await global.storage.getAllUsers();
         const primaryUsers = allUsers.filter(u => u.isPrimary && u.id !== userId);
         
         if (primaryUsers.length === 0) {
@@ -490,7 +490,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Si es un usuario primario, verificar que no sea el último
       if (user.isPrimary) {
-        const allUsers = await global.storage.listUsers();
+        const allUsers = await global.storage.getAllUsers();
         const primaryUsers = allUsers.filter(u => u.isPrimary);
         
         if (primaryUsers.length <= 1) {
@@ -653,7 +653,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/users", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const users = await global.storage.listUsers();
+      const users = await global.storage.getAllUsers();
       
       // Incluir solo información básica de usuario para seguridad
       const safeUsers = users.map(user => ({
@@ -709,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/projects", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const projects = await global.storage.listProjectsByUser(req.user.id, req.user.isPrimary);
+      const projects = await global.storage.getProjectsByUser(req.user.id);
       res.json(projects);
     } catch (error) {
       console.error("Error listing projects:", error);
@@ -728,11 +728,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       console.log(`User ${req.user.id} access to project ${projectId}: ${hasAccess}`);
       
@@ -916,11 +912,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
@@ -1000,17 +992,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
       
-      const documents = await global.storage.listDocumentsByProject(projectId);
+      const documents = await global.storage.getDocuments(projectId);
       res.json(documents);
     } catch (error) {
       console.error("Error listing documents:", error);
@@ -1075,11 +1063,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
@@ -1107,7 +1091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get content history for this project to avoid repetition
-      const contentHistory = await global.storage.listContentHistoryByProject(projectId);
+      const contentHistory = await global.storage.getContentHistory(projectId);
       const previousContent = contentHistory.map(entry => entry.content);
       
       // Generate schedule using Grok AI, passing previous content
@@ -1251,17 +1235,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
       
-      const schedules = await global.storage.listSchedulesByProject(projectId);
+      const schedules = await global.storage.getSchedules(projectId);
       res.json(schedules);
     } catch (error) {
       console.error("Error listing schedules:", error);
@@ -1279,16 +1259,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 5;
       
-      // Obtener schedules recientes
-      const recentSchedules = await global.storage.listRecentSchedules(limit);
+      // Obtener todos los proyectos del usuario
+      const userProjects = await global.storage.getProjectsByUser(req.user.id);
       
-      if (!recentSchedules || recentSchedules.length === 0) {
+      // Obtener schedules de todos los proyectos del usuario
+      const recentSchedules = [];
+      for (const project of userProjects) {
+        const schedules = await global.storage.getSchedules(project.id);
+        recentSchedules.push(...schedules);
+      }
+      
+      // Ordenar por fecha de creación y limitar
+      recentSchedules.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const limitedSchedules = recentSchedules.slice(0, limit);
+      
+      if (!limitedSchedules || limitedSchedules.length === 0) {
         return res.json([]); // Retornar array vacío si no hay schedules
       }
       
       // Verificar que el usuario tenga acceso a los proyectos de los schedules
       const accessibleSchedules = [];
-      for (const schedule of recentSchedules) {
+      for (const schedule of limitedSchedules) {
         try {
           if (!schedule || !schedule.projectId) {
             console.warn("Schedule incompleto encontrado en el endpoint:", schedule);
@@ -1297,8 +1288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           const hasAccess = await global.storage.checkUserProjectAccess(
             req.user.id,
-            schedule.projectId,
-            req.user.isPrimary
+            schedule.projectId
           );
           
           if (hasAccess) {
@@ -1426,7 +1416,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Obtener historial de contenido para evitar repeticiones
-      const contentHistory = await global.storage.listContentHistoryByProject(schedule.projectId);
+      const contentHistory = await global.storage.getContentHistory(schedule.projectId);
       const previousContent = contentHistory.map(entry => entry.content);
       
       // Extraer fecha de inicio
@@ -2262,11 +2252,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       
       if (projectId) {
         // Check if user has access to project
-        const hasAccess = await global.storage.checkUserProjectAccess(
-          req.user.id,
-          projectId,
-          req.user.isPrimary
-        );
+        const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
         
         if (!hasAccess) {
           return res.status(403).json({ message: "You don't have access to this project" });
@@ -2279,7 +2265,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         }
         
         // Get context from previous messages
-        const previousMessages = await global.storage.listChatMessagesByProject(projectId);
+        const previousMessages = await global.storage.getChatMessages(projectId);
         
         // Convertir los mensajes anteriores al formato requerido por Grok
         const formattedMessages = previousMessages.map(msg => {
@@ -2343,17 +2329,13 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
       
-      const messages = await global.storage.listChatMessagesByProject(projectId);
+      const messages = await global.storage.getChatMessages(projectId);
       res.json(messages);
     } catch (error) {
       console.error("Error listing chat messages:", error);
@@ -2370,17 +2352,13 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
       
-      const tasks = await global.storage.listTasksByProject(projectId);
+      const tasks = await global.storage.getTasks(projectId);
       res.json(tasks);
     } catch (error) {
       console.error("Error listing tasks:", error);
@@ -2396,11 +2374,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
@@ -2544,7 +2518,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(403).json({ message: "You don't have access to this task" });
       }
       
-      const subtasks = await global.storage.listSubtasks(taskId);
+      const subtasks = await global.storage.getTasks(taskId);
       res.json(subtasks);
     } catch (error) {
       console.error("Error listing subtasks:", error);
@@ -2617,7 +2591,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(403).json({ message: "You don't have access to this task" });
       }
       
-      const comments = await global.storage.listTaskComments(taskId);
+      const comments = await global.storage.getTaskComments(taskId);
       res.json(comments);
     } catch (error) {
       console.error("Error listing task comments:", error);
@@ -2711,11 +2685,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
@@ -2728,7 +2698,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Get all users who can be assigned to tasks
-      const users = await global.storage.listUsers();
+      const users = await global.storage.getAllUsers();
       
       // Use AI to generate tasks (to be implemented in another file)
       // For now, create a few sample tasks
@@ -2799,11 +2769,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -2856,11 +2822,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3080,11 +3042,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3106,11 +3064,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3237,11 +3191,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3263,11 +3213,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3493,11 +3439,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3519,11 +3461,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3621,11 +3559,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
@@ -3647,11 +3581,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
       
       // Verificar acceso al proyecto
-      const hasAccess = await global.storage.checkUserProjectAccess(
-        req.user.id,
-        projectId,
-        req.user.isPrimary
-      );
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
       
       if (!hasAccess) {
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
