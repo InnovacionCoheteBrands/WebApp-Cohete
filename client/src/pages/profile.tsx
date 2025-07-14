@@ -401,42 +401,7 @@ export default function ProfilePage() {
                 <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
               )}
 
-              {/* Cover Image Upload Button */}
-              <div className="absolute top-4 right-4">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverImageChange}
-                  className="hidden"
-                  id="cover-upload"
-                />
-                <Label htmlFor="cover-upload">
-                  <Button size="sm" className="cursor-pointer" asChild>
-                    <span>
-                      <Camera className="h-4 w-4 mr-2" />
-                      Cambiar Portada
-                    </span>
-                  </Button>
-                </Label>
-              </div>
 
-              {/* Upload Cover Button */}
-              {coverImagePreview && (
-                <div className="absolute bottom-4 right-4">
-                  <Button
-                    size="sm"
-                    onClick={handleCoverImageUpload}
-                    disabled={uploadCoverMutation.isPending}
-                  >
-                    {uploadCoverMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <Upload className="h-4 w-4 mr-2" />
-                    )}
-                    Subir
-                  </Button>
-                </div>
-              )}
             </div>
 
             {/* Profile Picture */}
@@ -456,81 +421,7 @@ export default function ProfilePage() {
                   )}
                 </div>
 
-                {/* Profile Picture Change Button */}
-                <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button
-                      size="icon"
-                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg border-2 border-background"
-                    >
-                      <Camera className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>Seleccionar Avatar</DialogTitle>
-                    </DialogHeader>
-                    <div className="p-4 space-y-6">
-                      {/* Opción para subir imagen personalizada */}
-                      <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
-                        <div className="text-center">
-                          <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                          <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
-                          </p>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleCustomImageUpload}
-                            className="hidden"
-                            id="custom-avatar-upload"
-                          />
-                          <Button asChild>
-                            <label htmlFor="custom-avatar-upload" className="cursor-pointer">
-                              <Upload className="h-4 w-4 mr-2" />
-                              Seleccionar archivo
-                            </label>
-                          </Button>
-                        </div>
-                      </div>
 
-                      {/* Separador */}
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-background px-2 text-muted-foreground">
-                            O elige un avatar predefinido
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Avatares predefinidos */}
-                      <div className="grid grid-cols-3 gap-4">
-                        {preloadedAvatars.map((avatar) => (
-                          <div
-                            key={avatar.id}
-                            className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
-                            onClick={() => handleAvatarSelect(avatar.src)}
-                          >
-                            <img
-                              src={avatar.src}
-                              alt={avatar.name}
-                              className="w-full h-32 object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <span className="text-white text-sm font-medium text-center px-2">
-                                {avatar.name}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
               </div>
             </div>
           </CardContent>
@@ -592,9 +483,10 @@ export default function ProfilePage() {
 
         {/* Tabs Section */}
         <Tabs defaultValue="personal" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="personal">Personal</TabsTrigger>
             <TabsTrigger value="professional">Profesional</TabsTrigger>
+            <TabsTrigger value="edit">Editar Perfil</TabsTrigger>
             <TabsTrigger value="security">Seguridad</TabsTrigger>
             <TabsTrigger value="preferences">Preferencias</TabsTrigger>
             <TabsTrigger value="activity">Actividad</TabsTrigger>
@@ -760,6 +652,244 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Edit Profile Tab */}
+          <TabsContent value="edit" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Profile Images Section */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Camera className="h-5 w-5" />
+                    Imágenes de Perfil
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Cover Image */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Imagen de Portada</h3>
+                    <div className="relative h-32 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden">
+                      {user?.coverImage || coverImagePreview ? (
+                        <img
+                          src={coverImagePreview || user?.coverImage}
+                          alt="Imagen de portada"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-r from-blue-500 to-purple-600" />
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverImageChange}
+                        className="hidden"
+                        id="cover-upload-edit"
+                      />
+                      <Label htmlFor="cover-upload-edit">
+                        <Button size="sm" className="cursor-pointer" asChild>
+                          <span>
+                            <Camera className="h-4 w-4 mr-2" />
+                            Cambiar Portada
+                          </span>
+                        </Button>
+                      </Label>
+                      {coverImagePreview && (
+                        <Button
+                          size="sm"
+                          onClick={handleCoverImageUpload}
+                          disabled={uploadCoverMutation.isPending}
+                        >
+                          {uploadCoverMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          ) : (
+                            <Upload className="h-4 w-4 mr-2" />
+                          )}
+                          Subir
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Profile Picture */}
+                  <div className="space-y-4">
+                    <h3 className="font-medium">Foto de Perfil</h3>
+                    <div className="flex items-center gap-4">
+                      <div className="h-20 w-20 rounded-full border-2 border-border bg-muted overflow-hidden">
+                        {user?.profileImage ? (
+                          <img
+                            src={user.profileImage}
+                            alt="Foto de perfil"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <User className="h-10 w-10 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <Dialog open={isAvatarDialogOpen} onOpenChange={setIsAvatarDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm">
+                            <Camera className="h-4 w-4 mr-2" />
+                            Cambiar Foto
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>Seleccionar Avatar</DialogTitle>
+                          </DialogHeader>
+                          <div className="p-4 space-y-6">
+                            {/* Opción para subir imagen personalizada */}
+                            <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6">
+                              <div className="text-center">
+                                <Upload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                                <h3 className="text-lg font-medium mb-2">Subir imagen personalizada</h3>
+                                <p className="text-sm text-muted-foreground mb-4">
+                                  Sube tu propia foto de perfil (JPG, PNG, máx. 5MB)
+                                </p>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleCustomImageUpload}
+                                  className="hidden"
+                                  id="custom-avatar-upload-edit"
+                                />
+                                <Button asChild>
+                                  <label htmlFor="custom-avatar-upload-edit" className="cursor-pointer">
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Seleccionar archivo
+                                  </label>
+                                </Button>
+                              </div>
+                            </div>
+
+                            {/* Separador */}
+                            <div className="relative">
+                              <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t" />
+                              </div>
+                              <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-background px-2 text-muted-foreground">
+                                  O elige un avatar predefinido
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Avatares predefinidos */}
+                            <div className="grid grid-cols-3 gap-4">
+                              {preloadedAvatars.map((avatar) => (
+                                <div
+                                  key={avatar.id}
+                                  className="cursor-pointer group relative overflow-hidden rounded-lg hover:scale-105 transition-transform"
+                                  onClick={() => handleAvatarSelect(avatar.src)}
+                                >
+                                  <img
+                                    src={avatar.src}
+                                    alt={avatar.name}
+                                    className="w-full h-32 object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <span className="text-white text-sm font-medium text-center px-2">
+                                      {avatar.name}
+                                    </span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Profile Information Form */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Información de Perfil
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-fullName">Nombre Completo</Label>
+                      <Input
+                        id="edit-fullName"
+                        defaultValue={user?.fullName}
+                        onBlur={(e) => handleFieldUpdate('fullName', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-username">Nombre de Usuario</Label>
+                      <Input
+                        id="edit-username"
+                        defaultValue={user?.username}
+                        onBlur={(e) => handleFieldUpdate('username', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-email">Correo Electrónico</Label>
+                      <Input
+                        id="edit-email"
+                        type="email"
+                        defaultValue={user?.email}
+                        onBlur={(e) => handleFieldUpdate('email', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-jobTitle">Cargo</Label>
+                      <Input
+                        id="edit-jobTitle"
+                        placeholder="Ej: Gerente de Marketing"
+                        defaultValue={user?.jobTitle}
+                        onBlur={(e) => handleFieldUpdate('jobTitle', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-department">Departamento</Label>
+                      <Input
+                        id="edit-department"
+                        placeholder="Ej: Marketing Digital"
+                        defaultValue={user?.department}
+                        onBlur={(e) => handleFieldUpdate('department', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-phoneNumber">Teléfono</Label>
+                      <Input
+                        id="edit-phoneNumber"
+                        defaultValue={user?.phoneNumber}
+                        onBlur={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-bio">Biografía</Label>
+                      <Textarea
+                        id="edit-bio"
+                        placeholder="Cuéntanos sobre ti..."
+                        defaultValue={user?.bio}
+                        onBlur={(e) => handleFieldUpdate('bio', e.target.value)}
+                        rows={3}
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Security Tab */}
