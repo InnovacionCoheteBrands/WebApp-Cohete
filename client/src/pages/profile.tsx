@@ -1517,9 +1517,9 @@ export default function ProfilePage() {
                   <div className="flex items-center gap-4">
                     <div className="relative">
                       <div className="w-24 h-24 rounded-lg border-2 border-border bg-muted overflow-hidden">
-                        {user?.profileImage ? (
+                        {(selectedAvatar || user?.profileImage) ? (
                           <img
-                            src={user.profileImage}
+                            src={selectedAvatar || user?.profileImage}
                             alt="Profile"
                             className="w-full h-full object-cover"
                           />
@@ -1578,12 +1578,13 @@ export default function ProfilePage() {
                           key={avatar.id}
                           className="relative cursor-pointer group"
                           onClick={() => {
-                            // Simular selección de imagen predefinida
+                            // Actualizar imagen de perfil con imagen predefinida
                             const imageUrl = avatar.src;
+                            setSelectedAvatar(imageUrl);
                             handleFieldUpdate('profileImage', imageUrl);
                             toast({
                               title: "Imagen seleccionada",
-                              description: `Has seleccionado: ${avatar.name}`,
+                              description: `Has seleccionado: ${avatar.name}. Recuerda guardar los cambios.`,
                             });
                           }}
                         >
