@@ -30,7 +30,7 @@ import QuickCalendar from "@/pages/quick-calendar";
 import TaskManager from "@/pages/task-manager";
 import TaskManagerPage from "@/pages/task-manager-page";
 import ProjectManager from "@/pages/project-manager";
-import UserManagement from "@/pages/user-management";
+import UserManagementPage from "@/pages/user-management";
 import Analytics from "@/pages/analytics";
 import Profile from "@/pages/profile";
 import SettingsPage from "@/pages/settings";
@@ -194,7 +194,7 @@ function App() {
                 <Route path="/user-management">
                   <ProtectedRoute>
                     <MainLayout>
-                      <UserManagement />
+                      <UserManagementPage />
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
