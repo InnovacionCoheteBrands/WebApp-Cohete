@@ -118,8 +118,10 @@ export default function ProfilePage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isImageEditorOpen, setIsImageEditorOpen] = useState(false);
   const [imageToEdit, setImageToEdit] = useState<string>("");
+  const [editMode, setEditMode] = useState<'profile' | 'cover'>('profile');
   const [imageScale, setImageScale] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 200, height: 200 });
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [pendingChanges, setPendingChanges] = useState<Partial<UserProfile>>({});
 
@@ -344,6 +346,75 @@ export default function ProfilePage() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const openImageEditor = (imageUrl: string, mode: 'profile' | 'cover') => {
+    setImageToEdit(imageUrl);
+    setEditMode(mode);
+    setImageScale(1);
+    setImagePosition({ x: 0, y: 0 });
+    
+    // Configurar área de recorte según el modo
+    if (mode === 'profile') {
+      setCropArea({ x: 0, y: 0, width: 200, height: 200 });
+    } else {
+      setCropArea({ x: 0, y: 0, width: 800, height: 200 });
+    }
+    
+    setIsImageEditorOpen(true);
+  };
+
+  const applyImageEdits = () => {
+    // Crear un canvas para aplicar los cambios
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const img = new Image();
+    img.onload = () => {
+      // Configurar canvas según el modo
+      if (editMode === 'profile') {
+        canvas.width = 200;
+        canvas.height = 200;
+      } else {
+        canvas.width = 800;
+        canvas.height = 200;
+      }
+
+      // Aplicar transformaciones
+      ctx.save();
+      ctx.translate(imagePosition.x, imagePosition.y);
+      ctx.scale(imageScale, imageScale);
+      
+      // Dibujar imagen con recorte
+      ctx.drawImage(
+        img,
+        cropArea.x, cropArea.y, cropArea.width, cropArea.height,
+        0, 0, canvas.width, canvas.height
+      );
+      
+      ctx.restore();
+
+      // Convertir a base64
+      const editedImageData = canvas.toDataURL('image/jpeg', 0.9);
+      
+      // Aplicar cambios según el modo
+      if (editMode === 'profile') {
+        setSelectedAvatar(editedImageData);
+        handleFieldUpdate('profileImage', editedImageData);
+      } else {
+        handleFieldUpdate('coverImage', editedImageData);
+      }
+      
+      setIsImageEditorOpen(false);
+      
+      toast({
+        title: "Imagen editada",
+        description: "Los cambios se guardarán al hacer clic en 'Guardar Cambios'",
+      });
+    };
+    
+    img.src = imageToEdit;
   };
 
   const handleSaveAllChanges = async () => {
@@ -1589,6 +1660,16 @@ export default function ProfilePage() {
                           <Camera className="h-4 w-4 mr-2" />
                           Cambiar Foto
                         </Button>
+                        {(selectedAvatar || user?.profileImage) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openImageEditor(selectedAvatar || user?.profileImage || '', 'profile')}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                        )}
                         {user?.profileImage && (
                           <Button
                             variant="outline"
@@ -1704,6 +1785,16 @@ export default function ProfilePage() {
                               Preparar Imagen
                             </>
                           )}
+                        </Button>
+                      )}
+                      {(user?.coverImage || coverImagePreview) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openImageEditor(coverImagePreview || user?.coverImage || '', 'cover')}
+                        >
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
                         </Button>
                       )}
                       {(user?.coverImage || coverImagePreview) && (
@@ -2141,13 +2232,7 @@ export default function ProfilePage() {
                   Resetear
                 </Button>
                 <Button
-                  onClick={() => {
-                    setIsImageEditorOpen(false);
-                    toast({
-                      title: "Imagen editada",
-                      description: "Los cambios se han aplicado correctamente",
-                    });
-                  }}
+                  onClick={applyImageEdits}
                 >
                   Aplicar cambios
                 </Button>
