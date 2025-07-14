@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award, Lock, Activity, Bell, Shield, BarChart3, Calendar, Clock, CheckCircle2, Eye, EyeOff, Edit } from "lucide-react";
+import { Camera, Upload, User, Loader2, Settings, Plus, X, MapPin, Briefcase, Heart, Award, Lock, Activity, Bell, Shield, BarChart3, Calendar, Clock, CheckCircle2, Eye, EyeOff, Edit, Save } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
@@ -120,6 +120,8 @@ export default function ProfilePage() {
   const [imageToEdit, setImageToEdit] = useState<string>("");
   const [imageScale, setImageScale] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<Partial<UserProfile>>({});
 
   // Fetch user profile
   const { data: user, isLoading } = useQuery<UserProfile>({
@@ -160,6 +162,8 @@ export default function ProfilePage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       queryClient.invalidateQueries({ queryKey: ["/api/user/stats"] });
+      setPendingChanges({}); // Limpiar cambios pendientes
+      setIsEditModalOpen(false); // Cerrar modal de edición
       toast({
         title: "Perfil actualizado",
         description: "Los cambios se han guardado correctamente",
@@ -309,7 +313,16 @@ export default function ProfilePage() {
   };
 
   const handleFieldUpdate = (field: keyof UserProfile, value: any) => {
-    updateProfileMutation.mutate({ [field]: value });
+    setPendingChanges(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveAllChanges = () => {
+    if (Object.keys(pendingChanges).length > 0) {
+      updateProfileMutation.mutate(pendingChanges);
+    }
   };
 
   const handlePasswordChange = (data: ChangePasswordFormValues) => {
@@ -372,7 +385,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <>
+      <div className="container mx-auto p-6 max-w-6xl">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
@@ -479,17 +493,18 @@ export default function ProfilePage() {
 
         {/* Action Buttons */}
         <div className="flex justify-end mb-6">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button>
-                <Edit className="h-4 w-4 mr-2" />
-                Editar Perfil
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Editar Perfil</DialogTitle>
-              </DialogHeader>
+          <Button onClick={() => setIsEditModalOpen(true)}>
+            <Edit className="h-4 w-4 mr-2" />
+            Editar Perfil
+          </Button>
+        </div>
+
+        {/* Modal de Edición de Perfil */}
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Perfil</DialogTitle>
+            </DialogHeader>
               <div className="p-4">
                 <Tabs defaultValue="personal" className="w-full">
                   <TabsList className="grid w-full grid-cols-3">
@@ -899,6 +914,34 @@ export default function ProfilePage() {
                   </TabsContent>
                 </Tabs>
               </div>
+              
+              {/* Botón Guardar */}
+              <div className="flex justify-end p-6 border-t">
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditModalOpen(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    onClick={handleSaveAllChanges}
+                    disabled={updateProfileMutation.isPending}
+                  >
+                    {updateProfileMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Guardar Cambios
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
@@ -1299,149 +1342,419 @@ export default function ProfilePage() {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Save Status */}
-        {updateProfileMutation.isPending && (
-          <div className="flex items-center justify-center p-4">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            <span className="text-sm text-muted-foreground">Guardando cambios...</span>
-          </div>
-        )}
       </div>
-
-      {/* Change Password Dialog */}
-      <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      
+      {/* Edit Profile Modal */}
+      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Cambiar Contraseña</DialogTitle>
+            <DialogTitle>Editar Perfil</DialogTitle>
             <DialogDescription>
-              Actualiza tu contraseña para mantener tu cuenta segura.
+              Actualiza tu información personal y profesional
             </DialogDescription>
           </DialogHeader>
-          <Form {...passwordForm}>
-            <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4">
-              <FormField
-                control={passwordForm.control}
-                name="currentPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contraseña actual</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          {...field}
-                          type={showCurrentPassword ? "text" : "password"}
-                          placeholder="Ingresa tu contraseña actual"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        >
-                          {showCurrentPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={passwordForm.control}
-                name="newPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Nueva contraseña</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          {...field}
-                          type={showNewPassword ? "text" : "password"}
-                          placeholder="Ingresa tu nueva contraseña"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={passwordForm.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar nueva contraseña</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <Input
-                          {...field}
-                          type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirma tu nueva contraseña"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsChangePasswordOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={changePasswordMutation.isPending}
-                >
-                  {changePasswordMutation.isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Cambiando...
-                    </>
+          
+          <div className="space-y-6">
+            {/* Profile Image Editor */}
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-20 h-20 rounded-full border-2 border-border bg-muted overflow-hidden">
+                  {user?.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
-                    "Cambiar contraseña"
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <User className="h-8 w-8 text-muted-foreground" />
+                    </div>
                   )}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageUpload}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
+                />
+              </div>
+              <div>
+                <h3 className="font-medium">Imagen de Perfil</h3>
+                <p className="text-sm text-muted-foreground">
+                  Haz clic para cambiar tu imagen de perfil
+                </p>
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium">Información Básica</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Nombre Completo</Label>
+                  <Input
+                    value={pendingChanges.fullName || user?.fullName || ''}
+                    onChange={(e) => handleFieldUpdate('fullName', e.target.value)}
+                    placeholder="Tu nombre completo"
+                  />
+                </div>
+                <div>
+                  <Label>Nombre de usuario</Label>
+                  <Input
+                    value={pendingChanges.username || user?.username || ''}
+                    onChange={(e) => handleFieldUpdate('username', e.target.value)}
+                    placeholder="Tu nombre de usuario"
+                  />
+                </div>
+                <div>
+                  <Label>Cargo</Label>
+                  <Input
+                    value={pendingChanges.jobTitle || user?.jobTitle || ''}
+                    onChange={(e) => handleFieldUpdate('jobTitle', e.target.value)}
+                    placeholder="Tu cargo o posición"
+                  />
+                </div>
+                <div>
+                  <Label>Departamento</Label>
+                  <Input
+                    value={pendingChanges.department || user?.department || ''}
+                    onChange={(e) => handleFieldUpdate('department', e.target.value)}
+                    placeholder="Tu departamento"
+                  />
+                </div>
+                <div>
+                  <Label>Teléfono</Label>
+                  <Input
+                    value={pendingChanges.phoneNumber || user?.phoneNumber || ''}
+                    onChange={(e) => handleFieldUpdate('phoneNumber', e.target.value)}
+                    placeholder="Tu número de teléfono"
+                  />
+                </div>
+                <div>
+                  <Label>Ubicación</Label>
+                  <Input
+                    value={pendingChanges.location || user?.location || ''}
+                    onChange={(e) => handleFieldUpdate('location', e.target.value)}
+                    placeholder="Tu ubicación"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Biografía</Label>
+                <Textarea
+                  value={pendingChanges.bio || user?.bio || ''}
+                  onChange={(e) => handleFieldUpdate('bio', e.target.value)}
+                  placeholder="Cuéntanos sobre ti"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            {/* Save Status */}
+            {updateProfileMutation.isPending && (
+              <div className="flex items-center justify-center p-4">
+                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                <span className="text-sm text-muted-foreground">Guardando cambios...</span>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end p-6 border-t">
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsEditModalOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSaveAllChanges}
+                disabled={updateProfileMutation.isPending}
+              >
+                {updateProfileMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Guardando...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Guardar Cambios
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
+  
+  {/* Change Password Dialog */}
+  <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Cambiar Contraseña</DialogTitle>
+        <DialogDescription>
+          Actualiza tu contraseña para mantener tu cuenta segura.
+        </DialogDescription>
+      </DialogHeader>
+      <Form {...passwordForm}>
+        <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4">
+          <FormField
+            control={passwordForm.control}
+            name="currentPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contraseña actual</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Ingresa tu contraseña actual"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={passwordForm.control}
+            name="newPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nueva contraseña</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Ingresa tu nueva contraseña"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={passwordForm.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirmar nueva contraseña</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirma tu nueva contraseña"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsChangePasswordOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={changePasswordMutation.isPending}
+            >
+              {changePasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cambiando...
+                </>
+              ) : (
+                "Cambiar contraseña"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
+    </DialogContent>
+  </Dialog>
+  
+  {/* Change Password Dialog */}
+  <Dialog open={isChangePasswordOpen} onOpenChange={setIsChangePasswordOpen}>
+    <DialogContent className="sm:max-w-[425px]">
+      <DialogHeader>
+        <DialogTitle>Cambiar Contraseña</DialogTitle>
+        <DialogDescription>
+          Actualiza tu contraseña para mantener tu cuenta segura.
+        </DialogDescription>
+      </DialogHeader>
+      <Form {...passwordForm}>
+        <form onSubmit={passwordForm.handleSubmit(handlePasswordChange)} className="space-y-4">
+          <FormField
+            control={passwordForm.control}
+            name="currentPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Contraseña actual</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Ingresa tu contraseña actual"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={passwordForm.control}
+            name="newPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Nueva contraseña</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type={showNewPassword ? "text" : "password"}
+                      placeholder="Ingresa tu nueva contraseña"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={passwordForm.control}
+            name="confirmPassword"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Confirmar nueva contraseña</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      {...field}
+                      type={showConfirmPassword ? "text" : "password"}
+                      placeholder="Confirma tu nueva contraseña"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsChangePasswordOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={changePasswordMutation.isPending}
+            >
+              {changePasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Cambiando...
+                </>
+              ) : (
+                "Cambiar contraseña"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </Form>
+    </DialogContent>
+  </Dialog>
 
       {/* Modal de edición de imagen */}
       <Dialog open={isImageEditorOpen} onOpenChange={setIsImageEditorOpen}>
@@ -1560,6 +1873,6 @@ export default function ProfilePage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
