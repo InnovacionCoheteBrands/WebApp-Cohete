@@ -461,7 +461,7 @@ export default function ProfilePage() {
                   <DialogTrigger asChild>
                     <Button
                       size="icon"
-                      className="absolute -top-1 -right-1 h-8 w-8 rounded-full shadow-lg border-2 border-background"
+                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg border-2 border-background"
                     >
                       <Camera className="h-4 w-4" />
                     </Button>
