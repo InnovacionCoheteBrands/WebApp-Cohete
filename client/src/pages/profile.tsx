@@ -338,8 +338,20 @@ export default function ProfilePage() {
 
   const handleSaveAllChanges = () => {
     console.log("Cambios pendientes:", pendingChanges);
-    if (Object.keys(pendingChanges).length > 0) {
-      updateProfileMutation.mutate(pendingChanges);
+    console.log("Selected avatar:", selectedAvatar);
+    
+    // Crear objeto con todos los cambios, incluyendo la imagen seleccionada
+    const allChanges = { ...pendingChanges };
+    
+    // Si hay una imagen seleccionada, incluirla en los cambios
+    if (selectedAvatar) {
+      allChanges.profileImage = selectedAvatar;
+    }
+    
+    console.log("Todos los cambios a enviar:", allChanges);
+    
+    if (Object.keys(allChanges).length > 0) {
+      updateProfileMutation.mutate(allChanges);
     } else {
       toast({
         title: "No hay cambios",
