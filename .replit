@@ -57,3 +57,12 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node production-deploy.cjs"
+
+[[workflows.workflow]]
+name = "Robust Dev Server"
+author = 40701455
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node robust-dev-server.js"

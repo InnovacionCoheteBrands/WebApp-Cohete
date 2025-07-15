@@ -13,12 +13,16 @@ const serverProcess = spawn('node', ['dev-server.js'], {
   env: { ...process.env, NODE_ENV: 'development' }
 });
 
-// Start Vite dev server
+// Start Vite dev server with additional configuration
 console.log('Starting Vite development server...');
-const viteProcess = spawn('npx', ['vite', '--port', '5173', '--host', '0.0.0.0'], {
+const viteProcess = spawn('npx', ['vite', '--port', '5173', '--host', '0.0.0.0', '--force'], {
   cwd: path.join(__dirname, 'client'),
   stdio: 'pipe',
-  env: { ...process.env, NODE_ENV: 'development' }
+  env: { 
+    ...process.env, 
+    NODE_ENV: 'development',
+    VITE_DEV_SERVER_URL: 'http://localhost:5173'
+  }
 });
 
 let viteReady = false;
@@ -66,6 +70,20 @@ const checkReady = () => {
     console.log('🎉 Both servers are ready!');
     console.log('📡 Access the application at: http://0.0.0.0:5000');
     console.log('🔗 Vite dev server at: http://localhost:5173');
+    
+    // Test connection to Vite server
+    setTimeout(() => {
+      console.log('🔍 Testing Vite server connection...');
+      const http = require('http');
+      const req = http.get('http://localhost:5173', (res) => {
+        console.log('✅ Vite server connection successful');
+      });
+      req.on('error', (err) => {
+        console.warn('⚠️ Vite server connection test failed:', err.message);
+        console.log('🔄 This may cause proxy errors. Restarting if needed...');
+      });
+      req.setTimeout(5000);
+    }, 2000);
   } else {
     setTimeout(checkReady, 1000);
   }
