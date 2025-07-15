@@ -167,10 +167,10 @@ if (typeof globalThis.importMeta === 'undefined') {
       version: "1.0.0",
       description: "Sistema de gestión de proyectos y marketing con IA",
       type: "commonjs",
-      main: "index.js",
+      main: "dist/index.js",
       scripts: {
-        start: "NODE_ENV=production node index.js",
-        debug: "NODE_ENV=production node --inspect index.js"
+        start: "NODE_ENV=production node dist/index.js",
+        debug: "NODE_ENV=production node --inspect dist/index.js"
       },
       dependencies: {
         "pg": "^8.15.6"
@@ -184,7 +184,9 @@ if (typeof globalThis.importMeta === 'undefined') {
       }
     };
 
+    // Create package.json in both dist and root directory
     writeFileSync('dist/package.json', JSON.stringify(prodPackageJson, null, 2));
+    writeFileSync('package.json', JSON.stringify(prodPackageJson, null, 2));
 
     // Crear archivo de configuración de entorno
     const envConfig = `# Cohete Workflow - Production Environment
@@ -215,7 +217,7 @@ PORT=5000
     console.log('📋 Próximos pasos:');
     console.log('   1. Usar configuración de deployment actualizada');
     console.log('   2. Build: node deploy-build.js');
-    console.log('   3. Run: cd dist && npm install && npm start');
+    console.log('   3. Run: npm install && npm start');
     console.log('');
 
   } catch (error) {

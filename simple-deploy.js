@@ -152,10 +152,10 @@ global.__filename = __filename;
     const packageJson = {
       "name": "cohete-workflow-prod",
       "version": "1.0.0",
-      "main": "index.js",
+      "main": "dist/index.js",
       "type": "commonjs",
       "scripts": {
-        "start": "NODE_ENV=production node index.js"
+        "start": "NODE_ENV=production node dist/index.js"
       },
       "dependencies": {
         "pg": "^8.15.6",
@@ -167,7 +167,9 @@ global.__filename = __filename;
       }
     };
 
+    // Create package.json in both dist and root directory
     writeFileSync('dist/package.json', JSON.stringify(packageJson, null, 2));
+    writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 
     console.log('');
     console.log('✅ DESPLIEGUE COMPLETADO');
