@@ -14,29 +14,9 @@ const port = parseInt(process.env.PORT || "5000");
 console.log('Starting Vite development server...');
 const viteProcess = spawn('npx', ['vite', '--port', '5173', '--host', '0.0.0.0'], {
   cwd: path.join(__dirname, 'client'),
-  stdio: 'pipe',
+  stdio: 'inherit',
   env: { ...process.env, NODE_ENV: 'development' }
 });
-
-let viteReady = false;
-
-// Monitor Vite output
-if (viteProcess.stdout) {
-  viteProcess.stdout.on('data', (data) => {
-    const output = data.toString();
-    console.log('[Vite]', output);
-    if (output.includes('ready in') || output.includes('Local:')) {
-      viteReady = true;
-      console.log('🎉 Vite server is ready!');
-    }
-  });
-}
-
-if (viteProcess.stderr) {
-  viteProcess.stderr.on('data', (data) => {
-    console.log('[Vite]', data.toString());
-  });
-}
 
 // API endpoints
 app.use('/api/health', (req, res) => {
@@ -59,16 +39,10 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
-// Simple proxy function for non-API requests  
+// Simple proxy function for non-API requests
 app.use((req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ error: 'API endpoint not found' });
-  }
-  
-  // Wait for Vite to be ready before proxying
-  if (!viteReady) {
-    console.log('Waiting for Vite to be ready...');
-    return res.status(503).send('Vite server starting up, please wait...');
   }
   
   console.log(`Proxying ${req.method} ${req.path} to Vite`);
