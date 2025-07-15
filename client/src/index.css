@@ -79,7 +79,7 @@ html {
 /* Mejoras para el tema claro */
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   
   body {
@@ -440,7 +440,7 @@ main.hide-scrollbar::-webkit-scrollbar {
   /* --- FIN DE NUEVAS REGLAS / MODIFICACIONES --- */
 
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
 
   /* Fix input background color consistency */

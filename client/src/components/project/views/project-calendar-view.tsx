@@ -154,7 +154,7 @@ export default function ProjectCalendarView({ projectId, viewId }: ProjectCalend
         <PopoverTrigger asChild>
           <div
             className={`
-              h-full min-h-[100px] cursor-pointer p-1 border border-border/20 hover:bg-muted/50 
+              h-full min-h-[100px] cursor-pointer p-1 border border/20 hover:bg-muted/50 
               ${isSameDay(day, new Date()) ? "bg-blue-100/50 dark:bg-blue-900/20" : ""}
               ${selectedDay && isSameDay(day, selectedDay) ? "ring-2 ring-primary" : ""}
             `}
@@ -299,7 +299,7 @@ export default function ProjectCalendarView({ projectId, viewId }: ProjectCalend
         </Card>
 
         <div className="flex-1 min-w-0">
-          <div className="grid grid-cols-7 gap-0 border border-border/20 rounded-md overflow-hidden">
+          <div className="grid grid-cols-7 gap-0 border border/20 rounded-md overflow-hidden">
             {/* Días de la semana */}
             {["L", "M", "X", "J", "V", "S", "D"].map((day) => (
               <div key={day} className="p-2 text-center font-medium bg-muted/50">

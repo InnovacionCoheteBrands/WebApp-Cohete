@@ -1,14 +1,16 @@
-const express = require('express');
 const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
-const http = require('http');
 
-console.log('🚀 Cohete Workflow - Simple Vite Server');
+console.log('🚀 Cohete Workflow - Development Server');
 console.log('=======================================');
 
-const app = express();
-const port = parseInt(process.env.PORT || "5000");
+// Start the actual Express server with all routes
+console.log('Starting Express server with all routes...');
+const serverProcess = spawn('node', ['dev-server.js'], {
+  stdio: 'pipe',
+  env: { ...process.env, NODE_ENV: 'development' }
+});
 
 // Start Vite dev server
 console.log('Starting Vite development server...');
@@ -19,6 +21,25 @@ const viteProcess = spawn('npx', ['vite', '--port', '5173', '--host', '0.0.0.0']
 });
 
 let viteReady = false;
+let serverReady = false;
+
+// Monitor Express server output
+if (serverProcess.stdout) {
+  serverProcess.stdout.on('data', (data) => {
+    const output = data.toString();
+    console.log('[Express]', output);
+    if (output.includes('Server running on') || output.includes('🚀 HTTP Server created')) {
+      serverReady = true;
+      console.log('🎉 Express server is ready!');
+    }
+  });
+}
+
+if (serverProcess.stderr) {
+  serverProcess.stderr.on('data', (data) => {
+    console.log('[Express ERROR]', data.toString());
+  });
+}
 
 // Monitor Vite output
 if (viteProcess.stdout) {
@@ -34,96 +55,44 @@ if (viteProcess.stdout) {
 
 if (viteProcess.stderr) {
   viteProcess.stderr.on('data', (data) => {
-    console.log('[Vite]', data.toString());
+    console.log('[Vite ERROR]', data.toString());
   });
 }
 
-// API endpoints
-app.use('/api/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
-});
-
-app.use('/api/user', (req, res) => {
-  res.json({ authenticated: false, message: 'User system ready' });
-});
-
-app.use('/api/projects', (req, res) => {
-  res.json({ projects: [], message: 'Projects ready' });
-});
-
-app.use('/api/tasks', (req, res) => {
-  res.json({ tasks: [], message: 'Tasks ready' });
-});
-
-app.use('/api', (req, res) => {
-  res.status(404).json({ error: 'API endpoint not found' });
-});
-
-// Simple proxy function for non-API requests  
-app.use((req, res) => {
-  if (req.path.startsWith('/api')) {
-    return res.status(404).json({ error: 'API endpoint not found' });
+// Wait for both servers to be ready
+const checkReady = () => {
+  if (serverReady && viteReady) {
+    console.log('🎉 Both servers are ready!');
+    console.log('📡 Access the application at: http://0.0.0.0:5000');
+    console.log('🔗 Vite dev server at: http://localhost:5173');
+  } else {
+    setTimeout(checkReady, 1000);
   }
-  
-  // Wait for Vite to be ready before proxying
-  if (!viteReady) {
-    console.log('Waiting for Vite to be ready...');
-    return res.status(503).send('Vite server starting up, please wait...');
-  }
-  
-  console.log(`Proxying ${req.method} ${req.path} to Vite`);
-  
-  const options = {
-    hostname: 'localhost',
-    port: 5173,
-    path: req.path,
-    method: req.method,
-    headers: req.headers
-  };
+};
 
-  const proxyReq = http.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-    proxyRes.pipe(res);
-  });
-
-  proxyReq.on('error', (err) => {
-    console.error('Proxy error:', err.message);
-    res.status(500).send('Vite server not ready');
-  });
-
-  if (req.body) {
-    proxyReq.write(req.body);
-  }
-  
-  proxyReq.end();
-});
-
-// Start server
-const server = app.listen(port, '0.0.0.0', () => {
-  console.log(`✅ Server running on port ${port}`);
-  console.log(`📡 Access at: http://0.0.0.0:${port}`);
-  console.log(`🔗 Proxying to Vite at: http://localhost:5173`);
-});
+checkReady();
 
 // Cleanup
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down...');
+  if (serverProcess) {
+    serverProcess.kill();
+  }
   if (viteProcess) {
     viteProcess.kill();
   }
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
+  console.log('✅ Servers closed');
+  process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Received SIGTERM...');
+  if (serverProcess) {
+    serverProcess.kill();
+  }
   if (viteProcess) {
     viteProcess.kill();
   }
-  server.close(() => {
-    console.log('✅ Server closed');
-    process.exit(0);
-  });
+  console.log('✅ Servers closed');
+  process.exit(0);
 });

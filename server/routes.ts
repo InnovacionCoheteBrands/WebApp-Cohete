@@ -84,7 +84,6 @@ import {
   scheduleEntries,
   Product
 } from "@shared/schema";
-// import { WebSocketServer } from "ws"; // Temporarily commented out for development
 
 // Global declaration for storage
 declare global {
@@ -183,8 +182,12 @@ const marketingImageUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log('🔧 Starting route registration...');
+  
   // Setup Google OAuth authentication
+  console.log('🔐 Setting up Google OAuth...');
   await setupSimpleGoogleAuth(app);
+  console.log('✅ Google OAuth setup complete');
 
   // Serve static files for privacy policy
   app.use('/static', express.static(path.join(currentDirPath, 'public')));
@@ -4741,5 +4744,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  console.log('🎉 Route registration completed successfully!');
+  console.log('🚀 HTTP Server created and ready');
   return httpServer;
 }

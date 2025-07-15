@@ -959,7 +959,7 @@ export default function ProfilePage() {
                           <div className="flex flex-col items-center gap-4">
                             {/* Vista previa más grande y cuadrada */}
                             <div className="relative group">
-                              <div className="h-40 w-40 rounded-lg border-2 border-border bg-muted overflow-hidden">
+                              <div className="h-40 w-40 rounded-lg border-2 border bg-muted overflow-hidden">
                                 {user?.profileImage ? (
                                   <img
                                     src={user.profileImage}
@@ -1002,7 +1002,7 @@ export default function ProfilePage() {
                                   <div className="p-4 space-y-6">
                                     {/* Vista previa actual más grande */}
                                     <div className="flex justify-center">
-                                      <div className="h-48 w-48 rounded-lg border-2 border-border bg-muted overflow-hidden">
+                                      <div className="h-48 w-48 rounded-lg border-2 border bg-muted overflow-hidden">
                                         {user?.profileImage ? (
                                           <img
                                             src={user.profileImage}
@@ -1670,7 +1670,7 @@ export default function ProfilePage() {
                   <h4 className="font-medium">Foto de Perfil</h4>
                   <div className="flex items-center gap-4">
                     <div className="relative">
-                      <div className="w-24 h-24 rounded-lg border-2 border-border bg-muted overflow-hidden">
+                      <div className="w-24 h-24 rounded-lg border-2 border bg-muted overflow-hidden">
                         {(selectedAvatar || user?.profileImage) ? (
                           <img
                             src={selectedAvatar || user?.profileImage}
@@ -1752,7 +1752,7 @@ export default function ProfilePage() {
                             });
                           }}
                         >
-                          <div className="w-16 h-16 rounded-lg border-2 border-border bg-muted overflow-hidden hover:border-primary transition-colors">
+                          <div className="w-16 h-16 rounded-lg border-2 border bg-muted overflow-hidden hover:border-primary transition-colors">
                             <img
                               src={avatar.src}
                               alt={avatar.name}
@@ -1779,7 +1779,7 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <h4 className="font-medium">Imagen de Portada</h4>
                   <div className="space-y-4">
-                    <div className="relative h-40 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden border-2 border-dashed border-border">
+                    <div className="relative h-40 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden border-2 border-dashed border">
                       {user?.coverImage || coverImagePreview ? (
                         <img
                           src={coverImagePreview || user?.coverImage}
