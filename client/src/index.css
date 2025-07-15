@@ -83,7 +83,7 @@ html {
   }
   
   body {
-    @apply bg-background text-foreground;
+    @apply bg-card text-foreground;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
@@ -121,7 +121,7 @@ html {
   
   /* Mejoras para inputs */
   .input-field {
-    @apply bg-background border-input;
+    @apply bg-card border-input;
     transition: all 0.2s ease;
   }
   
@@ -428,7 +428,7 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground; /* Mantener existentes */
+    @apply font-sans antialiased bg-card text-foreground; /* Mantener existentes */
     min-height: 100%; /* Cambiado de height a min-height para permitir contenido más alto */
     overflow-y: auto; /* Permite el scroll vertical en el elemento body */
     margin: 0; /* Asegura que no haya márgenes por defecto */
@@ -456,6 +456,11 @@ main.hide-scrollbar::-webkit-scrollbar {
 
   input {
     background-color: hsl(var(--background)) !important;
+  }
+  
+  /* Define bg-background utility class for compatibility */
+  .bg-background {
+    background-color: hsl(var(--background));
   }
 
   input:focus {

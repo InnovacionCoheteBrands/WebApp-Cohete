@@ -155,7 +155,14 @@ app.use(createProxyMiddleware({
     // Only proxy non-API routes
     return !pathname.startsWith('/api/') && !pathname.startsWith('/auth/');
   },
-  logLevel: 'silent'
+  logLevel: 'debug',
+  onError: (err, req, res) => {
+    console.error('Proxy error:', err);
+    res.status(500).send('Proxy error');
+  },
+  onProxyReq: (proxyReq, req, res) => {
+    console.log('Proxying request:', req.method, req.url);
+  }
 }));
 
 // Error handling middleware
