@@ -58,13 +58,13 @@ function App() {
     // QueryClientProvider: Proporciona el cliente de React Query a toda la app
     <QueryClientProvider client={queryClient}>
       {/* ThemeProvider: Maneja el sistema de temas (claro/oscuro/sistema) */}
-      <ThemeProvider defaultTheme="system">
+      <ThemeProvider defaultTheme="light">
         {/* AuthProvider: Maneja el estado de autenticación del usuario */}
         <AuthProvider>
           {/* AppTourProvider: Maneja los tours guiados de la aplicación */}
           <AppTourProvider>
             {/* Container principal con altura mínima y color de fondo dinámico */}
-            <div style={{ minHeight: '100vh', backgroundColor: 'var(--background)' }}>
+            <div style={{ minHeight: '100vh', backgroundColor: 'hsl(220 14% 96%)' }}>
               {/* ===== SISTEMA DE ROUTING ===== */}
               {/* Switch: Renderiza solo la primera ruta que coincida */}
               <Switch>
