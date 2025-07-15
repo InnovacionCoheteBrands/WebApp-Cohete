@@ -3,7 +3,7 @@
 import axios from 'axios';
 // Server HTTP y WebSocket para streaming en tiempo real
 import { Server } from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
+// import { WebSocketServer, WebSocket } from 'ws'; // Temporarily commented out for development
 
 // ===== INTERFACES PARA STREAMING =====
 /**
@@ -43,7 +43,7 @@ interface StreamResponse {
 export class GrokService {
   private apiKey: string; // Clave API de acceso a Grok
   private baseURL = 'https://api.x.ai/v1'; // URL base de la API de X.AI (Grok)
-  private wss: WebSocketServer | null = null; // Servidor WebSocket para streaming
+  // private wss: WebSocketServer | null = null; // Servidor WebSocket para streaming - Temporarily disabled
 
   // ===== CONSTRUCTOR =====
   constructor(apiKey: string) {
@@ -56,6 +56,9 @@ export class GrokService {
    * @param server Servidor HTTP de Express
    */
   initWebSocketServer(server: Server) {
+    console.log('[GROK-WS] WebSocket functionality temporarily disabled for development');
+    // Temporarily commented out to avoid ws dependency issues
+    /*
     try {
       console.log('[GROK-WS] Inicializando servidor WebSocket para streaming de IA...');
       this.wss = new WebSocket.WebSocketServer({ server });
@@ -126,6 +129,7 @@ export class GrokService {
     } catch (error) {
       console.error('[GROK-WS] Error inicializando servidor WebSocket:', error);
     }
+    */
   }
 
   /**

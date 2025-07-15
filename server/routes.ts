@@ -84,7 +84,7 @@ import {
   scheduleEntries,
   Product
 } from "@shared/schema";
-import { WebSocketServer } from "ws";
+// import { WebSocketServer } from "ws"; // Temporarily commented out for development
 
 // Global declaration for storage
 declare global {

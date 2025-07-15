@@ -1,14 +1,12 @@
 {
-  "name": "cohete-workflow-dev",
+  "name": "cohete-workflow-production",
   "version": "1.0.0",
-  "description": "Sistema de gestión de proyectos y marketing con IA - Development",
+  "description": "Sistema de gestión de proyectos y marketing con IA",
   "type": "commonjs",
-  "main": "start-dev.js",
+  "main": "dist/index.js",
   "scripts": {
-    "dev": "node start-dev.js",
-    "start": "node start-dev.js",
-    "build": "echo 'Build not required for development'",
-    "test": "echo 'Tests not configured'"
+    "start": "NODE_ENV=production node dist/index.js",
+    "debug": "NODE_ENV=production node --inspect dist/index.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",
