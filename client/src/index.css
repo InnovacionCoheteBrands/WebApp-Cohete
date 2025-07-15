@@ -83,7 +83,8 @@ html {
   }
   
   body {
-    @apply bg-card text-foreground;
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
@@ -91,13 +92,15 @@ html {
 /* Mejoras para cards y elementos interactivos */
 @layer components {
   .card {
-    @apply bg-card text-card-foreground shadow-sm;
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
     border: 1px solid hsl(var(--border));
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
   }
   
   .card:hover {
-    @apply shadow-md;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     transform: translateY(-1px);
   }
   
@@ -111,22 +114,26 @@ html {
   
   /* Mejoras para botones */
   .btn-primary {
-    @apply bg-primary text-primary-foreground hover:bg-primary/90;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .btn-primary:hover {
+    background-color: hsl(var(--primary) / 0.9);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
   
   /* Mejoras para inputs */
   .input-field {
-    @apply bg-card border-input;
+    background-color: hsl(var(--card));
+    border-color: hsl(var(--input));
     transition: all 0.2s ease;
   }
   
   .input-field:focus {
-    @apply ring-2 ring-ring ring-offset-2;
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
     border-color: hsl(var(--primary));
   }
 }
@@ -190,7 +197,12 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
 
   .glass-effect {
-    @apply backdrop-blur-sm bg-white/80 dark:bg-card/80;
+    backdrop-filter: blur(4px);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  .dark .glass-effect {
+    background-color: hsl(var(--card) / 0.8);
   }
 
   /* Mejorar contraste en tema claro */
@@ -211,7 +223,8 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
   
   .light .bg-card {
-    @apply bg-white border-slate-200;
+    background-color: white;
+    border-color: rgb(226 232 240);
   }
   
   .light .text-card-foreground {
@@ -282,7 +295,9 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
   
   .dark .dark-card {
-    @apply bg-card/95 backdrop-blur-sm border-[#2a3349]/80;
+    background-color: hsl(var(--card) / 0.95);
+    backdrop-filter: blur(4px);
+    border-color: rgba(42, 51, 73, 0.8);
     box-shadow: 0 0 15px rgba(255, 196, 0, 0.08);
     background-image: 
       linear-gradient(to bottom right, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%),
@@ -428,7 +443,11 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
 
   body {
-    @apply font-sans antialiased bg-card text-foreground; /* Mantener existentes */
+    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    background-color: hsl(var(--card));
+    color: hsl(var(--foreground));
     min-height: 100%; /* Cambiado de height a min-height para permitir contenido más alto */
     overflow-y: auto; /* Permite el scroll vertical en el elemento body */
     margin: 0; /* Asegura que no haya márgenes por defecto */
