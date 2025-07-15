@@ -64,7 +64,12 @@ function App() {
           {/* AppTourProvider: Maneja los tours guiados de la aplicación */}
           <AppTourProvider>
             {/* Container principal con altura mínima y color de fondo dinámico */}
-            <div style={{ minHeight: '100vh', backgroundColor: 'hsl(220 14% 96%)' }}>
+            <div style={{ 
+              minHeight: '100vh', 
+              backgroundColor: 'hsl(220 14% 96%)',
+              width: '100%',
+              position: 'relative'
+            }}>
               {/* ===== SISTEMA DE ROUTING ===== */}
               {/* Switch: Renderiza solo la primera ruta que coincida */}
               <Switch>
