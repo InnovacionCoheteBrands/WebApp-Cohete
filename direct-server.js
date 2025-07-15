@@ -53,7 +53,7 @@ app.use('/api/tasks', (req, res) => {
   res.json({ tasks: [], message: 'Tasks ready' });
 });
 
-app.use('/api', (req, res) => {
+app.use('/api/*', (req, res) => {
   res.status(404).json({ error: 'API endpoint not found' });
 });
 
@@ -69,13 +69,7 @@ const viteProxy = createProxyMiddleware({
   }
 });
 
-// Proxy non-API requests to Vite
-app.use((req, res, next) => {
-  if (req.path.startsWith('/api/')) {
-    return next();
-  }
-  viteProxy(req, res, next);
-});
+app.use('*', viteProxy);
 
 // Start server
 const server = app.listen(port, '0.0.0.0', () => {
