@@ -111,7 +111,9 @@ app.get('/auth/logout', (req, res) => {
 
 app.get('/api/auth/user', (req, res) => {
   if (req.isAuthenticated()) {
-    res.json(req.user);
+    // Remove password from response for security
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
   } else {
     res.status(401).json({ message: 'Not authenticated' });
   }
@@ -120,7 +122,9 @@ app.get('/api/auth/user', (req, res) => {
 // Add the missing /api/user endpoint
 app.get('/api/user', (req, res) => {
   if (req.isAuthenticated()) {
-    res.json(req.user);
+    // Remove password from response for security
+    const { password, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
   } else {
     res.status(401).json({ message: 'Not authenticated' });
   }
@@ -151,11 +155,9 @@ app.post('/api/login', async (req, res) => {
     }
     
     // Find user by username in database
-    console.log('Looking for user:', identifier);
     const result = await sql`SELECT * FROM users WHERE username = ${identifier} OR email = ${identifier} LIMIT 1`;
     
     const user = result[0];
-    console.log('Found user:', user ? user.username : 'none');
     
     if (!user) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
@@ -163,13 +165,10 @@ app.post('/api/login', async (req, res) => {
     
     // Check password
     if (!user.password) {
-      console.log('User has no password, redirecting to Google auth');
       return res.status(401).json({ message: 'Este usuario debe iniciar sesión con Google' });
     }
     
-    console.log('Checking password for user:', user.username);
     const isValid = await bcrypt.compare(password, user.password);
-    console.log('Password valid:', isValid);
     
     if (!isValid) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
