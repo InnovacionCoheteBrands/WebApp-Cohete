@@ -126,22 +126,101 @@ app.get('/api/user', (req, res) => {
   }
 });
 
-// Basic API routes placeholders
-app.get('/api/projects', (req, res) => {
-  res.json([]);
-});
+// Import required modules for database operations
+const bcrypt = require('bcryptjs');
+const { eq } = require('drizzle-orm');
 
-app.get('/api/schedules/recent', (req, res) => {
-  res.json([]);
-});
-
-app.get('/api/users/profile', (req, res) => {
+// Authentication middleware
+const isAuthenticated = (req, res, next) => {
   if (req.isAuthenticated()) {
-    res.json(req.user);
-  } else {
-    res.status(401).json({ message: 'Not authenticated' });
+    return next();
+  }
+  res.status(401).json({ message: 'Not authenticated' });
+};
+
+// Essential API routes
+console.log('🔧 Registering essential API routes...');
+
+// User login route
+app.post('/api/login', async (req, res) => {
+  try {
+    const { identifier, password } = req.body;
+    
+    if (!identifier || !password) {
+      return res.status(400).json({ message: 'Usuario y contraseña son requeridos' });
+    }
+    
+    // Find user by username in database
+    console.log('Looking for user:', identifier);
+    const result = await sql`SELECT * FROM users WHERE username = ${identifier} OR email = ${identifier} LIMIT 1`;
+    
+    const user = result[0];
+    console.log('Found user:', user ? user.username : 'none');
+    
+    if (!user) {
+      return res.status(401).json({ message: 'Credenciales inválidas' });
+    }
+    
+    // Check password
+    if (!user.password) {
+      console.log('User has no password, redirecting to Google auth');
+      return res.status(401).json({ message: 'Este usuario debe iniciar sesión con Google' });
+    }
+    
+    console.log('Checking password for user:', user.username);
+    const isValid = await bcrypt.compare(password, user.password);
+    console.log('Password valid:', isValid);
+    
+    if (!isValid) {
+      return res.status(401).json({ message: 'Credenciales inválidas' });
+    }
+    
+    // Create session
+    req.login(user, (err) => {
+      if (err) {
+        return res.status(500).json({ message: 'Error al crear sesión' });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    });
+    
+  } catch (error) {
+    console.error('Error in login:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', error.message);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
+
+// Basic API routes
+app.get('/api/projects', isAuthenticated, async (req, res) => {
+  try {
+    const result = await sql`SELECT * FROM projects WHERE created_by = ${req.user.id} ORDER BY created_at DESC`;
+    res.json(result);
+  } catch (error) {
+    console.error('Error listing projects:', error);
+    res.status(500).json({ message: 'Error al listar proyectos' });
+  }
+});
+
+app.get('/api/schedules/recent', isAuthenticated, async (req, res) => {
+  try {
+    const limit = req.query.limit ? parseInt(req.query.limit) : 5;
+    const result = await sql`SELECT s.*, p.name as project_name 
+       FROM schedules s 
+       JOIN projects p ON s.project_id = p.id 
+       WHERE p.created_by = ${req.user.id} 
+       ORDER BY s.created_at DESC 
+       LIMIT ${limit}`;
+    res.json(result);
+  } catch (error) {
+    console.error('Error listing recent schedules:', error);
+    res.status(500).json({ message: 'Error al listar cronogramas' });
+  }
+});
+
+console.log('✅ Essential API routes registered successfully');
 
 // Serve React app - proxy to Vite dev server
 const http = require('http');
@@ -174,9 +253,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start server
-app.listen(port, '0.0.0.0', () => {
-  console.log(`🚀 Dev Server running on http://0.0.0.0:${port}`);
-  console.log(`📱 Environment: development`);
-  console.log(`🔗 API endpoints available at /api/*`);
-});
+// Start server after routes are registered
+setTimeout(() => {
+  app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 Dev Server running on http://0.0.0.0:${port}`);
+    console.log(`📱 Environment: development`);
+    console.log(`🔗 API endpoints available at /api/*`);
+  });
+}, 1000); // Wait for routes to be registered

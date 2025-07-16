@@ -314,6 +314,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // User Management API
   
+  // Endpoint crítico para verificar el estado de autenticación del usuario
+  app.get("/api/user", async (req: Request, res: Response) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
+      // Eliminar password del response
+      const { password: _, ...userWithoutPassword } = req.user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error getting user:", error);
+      res.status(500).json({ message: "Error al obtener datos del usuario" });
+    }
+  });
+  
+  // Endpoint de verificación de salud del servidor
+  app.get("/api/health", (req: Request, res: Response) => {
+    res.json({ status: "OK", timestamp: new Date().toISOString() });
+  });
+  
   // Endpoint para la ruta secreta de creación de cuenta de administrador principal
   const PRIMARY_ACCOUNT_SECRET = process.env.PRIMARY_ACCOUNT_SECRET || 'cohete-workflow-secret';
   
