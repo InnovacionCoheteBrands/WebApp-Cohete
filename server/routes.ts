@@ -183,6 +183,12 @@ const marketingImageUpload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Agregar middleware para capturar errores de rutas
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error('Route registration error:', err);
+    next(err);
+  });
+
   // Setup Google OAuth authentication
   await setupSimpleGoogleAuth(app);
 
@@ -3150,9 +3156,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
   });
   
   // Actualizar comentarios de una entrada del cronograma
-  app.patch("/api/schedule-entries/:id/comments", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/schedule-entries/:entryId/comments", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const entryId = parseInt(req.params.id);
+      const entryId = parseInt(req.params.entryId);
       const { comments } = req.body;
       
       if (isNaN(entryId)) {
