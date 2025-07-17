@@ -841,8 +841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ===== BLOQUE 3: PROYECTOS API (COMENTADO TEMPORALMENTE) =====
-  /*
+  // ===== BLOQUE 3: PROYECTOS API =====
   // Projects API
   app.post("/api/projects", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
@@ -1072,10 +1071,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  */
-  
-  // ===== BLOQUE 4: DOCUMENTOS API (COMENTADO TEMPORALMENTE) =====
-  /*
+  // ===== BLOQUE 4: DOCUMENTOS API =====
   // Documents API
   app.post("/api/projects/:projectId/documents", isAuthenticated, documentUpload.single('file'), async (req: Request, res: Response) => {
     try {
@@ -1221,10 +1217,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  */
-  
-  // ===== BLOQUE 5: CRONOGRAMAS API (COMENTADO TEMPORALMENTE) =====
-  /*
+  // ===== BLOQUE 5: CRONOGRAMAS API =====
   // Schedules API
   app.post("/api/projects/:projectId/schedule", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -2427,10 +2420,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
   // Endpoint para generar imágenes eliminado (ya no se generan imágenes)
 
-  */
-  
-  // ===== BLOQUE 6: CHAT Y TAREAS API (COMENTADO TEMPORALMENTE) =====
-  /*
+  // ===== BLOQUE 6: CHAT Y TAREAS API =====
   // Chat API
   app.post("/api/chat", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -2950,10 +2940,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
-  */
-  
-  // ===== BLOQUE 7: PRODUCTOS Y SISTEMA MONDAY (COMENTADO TEMPORALMENTE) =====
-  /*
+  // ===== BLOQUE 7: PRODUCTOS Y SISTEMA MONDAY =====
   // Products API
   app.post("/api/projects/:projectId/products", isAuthenticated, upload.single('image'), async (req: Request, res: Response) => {
     try {
@@ -4761,7 +4748,5 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
-  */
-  
   return httpServer;
 }
