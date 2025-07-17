@@ -82,6 +82,22 @@ app.use(express.json());
 // Parsear datos de formularios URL-encoded
 app.use(express.urlencoded({ extended: false }));
 
+// ===== MIDDLEWARE DE DEBUGGING =====
+// Agregar debugging para identificar rutas problemáticas
+app.use((req, res, next) => {
+  try {
+    next();
+  } catch (error) {
+    console.error('Route error:', {
+      method: req.method,
+      path: req.path,
+      url: req.url,
+      error: error.message
+    });
+    throw error;
+  }
+});
+
 // ===== MIDDLEWARE DE LOGGING =====
 // Interceptar y loggear todas las peticiones a la API
 app.use((req, res, next) => {
