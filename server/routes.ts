@@ -204,6 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Authentication routes are now handled in simple-oauth.ts
   
+  // ===== BLOQUE 1: RUTAS DE AUTENTICACIÓN =====
   // Traditional login/logout routes (in addition to Google OAuth)
   app.post("/api/login", async (req: Request, res: Response) => {
     try {
@@ -309,6 +310,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== BLOQUE 2: GESTIÓN DE USUARIOS =====
   // User Management API
   
   // Endpoint para la ruta secreta de creación de cuenta de administrador principal
@@ -839,6 +841,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== BLOQUE 3: PROYECTOS API (COMENTADO TEMPORALMENTE) =====
+  /*
   // Projects API
   app.post("/api/projects", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
@@ -1068,6 +1072,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  */
+  
+  // ===== BLOQUE 4: DOCUMENTOS API (COMENTADO TEMPORALMENTE) =====
+  /*
   // Documents API
   app.post("/api/projects/:projectId/documents", isAuthenticated, documentUpload.single('file'), async (req: Request, res: Response) => {
     try {
@@ -1213,6 +1221,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  */
+  
+  // ===== BLOQUE 5: CRONOGRAMAS API (COMENTADO TEMPORALMENTE) =====
+  /*
   // Schedules API
   app.post("/api/projects/:projectId/schedule", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -2415,6 +2427,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
   // Endpoint para generar imágenes eliminado (ya no se generan imágenes)
 
+  */
+  
+  // ===== BLOQUE 6: CHAT Y TAREAS API (COMENTADO TEMPORALMENTE) =====
+  /*
   // Chat API
   app.post("/api/chat", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -2934,6 +2950,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  */
+  
+  // ===== BLOQUE 7: PRODUCTOS Y SISTEMA MONDAY (COMENTADO TEMPORALMENTE) =====
+  /*
   // Products API
   app.post("/api/projects/:projectId/products", isAuthenticated, upload.single('image'), async (req: Request, res: Response) => {
     try {
@@ -4741,5 +4761,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     }
   });
 
+  */
+  
   return httpServer;
 }

@@ -19,7 +19,7 @@ localPort = 5000
 externalPort = 80
 
 [workflows]
-runButton = "Debug and Start"
+runButton = "Test Routes Block 1-2"
 
 [[workflows.workflow]]
 name = "Project"
@@ -66,6 +66,19 @@ args = "echo \"🔍 Debugging application startup...\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "echo \"🔧 Checking for route configuration issues...\""
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Test Routes Block 1-2"
+author = 40701455
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "echo \"🧪 Testing with only Authentication and User Management routes active...\""
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
