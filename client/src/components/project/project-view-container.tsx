@@ -420,7 +420,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
       </div>
 
       {activeView ? (
-        <div className="border border rounded-lg bg-card">
+        <div className="border border-border rounded-lg bg-background">
           {activeView.type === "list" && <ProjectListView projectId={parseInt(projectId!)} viewId={activeView.id} />}
           {activeView.type === "kanban" && <ProjectKanbanView projectId={parseInt(projectId!)} viewId={activeView.id} />}
           {activeView.type === "gantt" && <ProjectGanttView projectId={parseInt(projectId!)} viewId={activeView.id} />}
@@ -429,7 +429,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
           {activeView.type === "board" && <ProjectBoardView projectId={parseInt(projectId!)} viewId={activeView.id} />}
         </div>
       ) : (
-        <div className="border border rounded-lg p-8 text-center bg-card">
+        <div className="border border-border rounded-lg p-8 text-center bg-card">
           <p className="text-muted-foreground mb-4">No hay vistas disponibles. Crea una nueva vista para comenzar.</p>
           <Button onClick={() => setIsCreatingView(true)}>
             <PlusCircle className="h-4 w-4 mr-2" />

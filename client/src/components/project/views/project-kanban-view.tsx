@@ -623,7 +623,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 <select
                   id="priority"
                   defaultValue={taskToEdit.priority}
-                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background"
+                  className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
                   onChange={(e) => setTaskToEdit({ ...taskToEdit, priority: e.target.value as any })}
                 >
                   <option value="low">Baja</option>
@@ -696,7 +696,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                   <select
                     id="dependencies"
                     multiple
-                    className="w-full h-24 rounded-md border border-input bg-card px-3 py-2 text-sm"
+                    className="w-full h-24 rounded-md border border-input bg-background px-3 py-2 text-sm"
                     defaultValue={taskToEdit?.dependencies?.map(String) || []}
                     onChange={(e) => {
                       const selectedOptions = Array.from(e.target.selectedOptions).map(option => parseInt(option.value));
@@ -784,7 +784,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
               <select
                 id="new-priority"
                 defaultValue="medium"
-                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background"
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 <option value="low">Baja</option>
                 <option value="medium">Media</option>
@@ -801,7 +801,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
               <select
                 id="new-status"
                 defaultValue={newTaskStatus || "pending"}
-                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background"
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 <option value="pending">Pendiente</option>
                 <option value="in_progress">En progreso</option>
@@ -842,7 +842,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
               </label>
               <select
                 id="new-assignee"
-                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm ring-offset-background"
+                className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
                 <option value="">Sin asignar</option>
                 {users.map((user: any) => (

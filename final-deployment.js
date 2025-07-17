@@ -114,9 +114,9 @@ process.env.NODE_ENV = 'production';
     const prodPackageJson = {
       name: "cohete-workflow-production",
       version: "1.0.0",
-      main: "dist/index.js",
+      main: "index.js",
       scripts: {
-        start: "NODE_ENV=production node dist/index.js"
+        start: "NODE_ENV=production node index.js"
       },
       dependencies: {
         "pg": "^8.15.6"
@@ -130,12 +130,7 @@ process.env.NODE_ENV = 'production';
       }
     };
     
-    // Create package.json in dist directory
     writeFileSync('dist/package.json', JSON.stringify(prodPackageJson, null, 2));
-    
-    // Create production package.json in root only for deployment
-    // This will be used by Replit deployment system
-    writeFileSync('package.production.json', JSON.stringify(prodPackageJson, null, 2));
     
     const bundleSize = (statSync('dist/index.js').size / (1024 * 1024)).toFixed(2);
     
@@ -146,12 +141,11 @@ process.env.NODE_ENV = 'production';
     console.log('📁 Files created:');
     console.log('   ├── dist/index.js (production server)');
     console.log('   ├── dist/package.json');
-    console.log('   ├── package.json (root directory)');
     console.log('   ├── dist/public/index.html');
     console.log('   └── dist/uploads/ & dist/migrations/');
     console.log('');
     console.log('🚀 Ready for Replit deployment!');
-    console.log('Commands: npm install && npm start');
+    console.log('Commands: cd dist && npm install && npm start');
     
   } catch (error) {
     console.error('❌ Deployment failed:', error);

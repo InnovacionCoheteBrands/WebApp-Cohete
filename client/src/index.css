@@ -2,47 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fallback styles to prevent blank page */
-* {
-  box-sizing: border-box;
-}
-
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-#root {
-  min-height: 100vh;
-  width: 100%;
-}
-
-/* Ensure visibility of main elements */
-.bg-background {
-  background-color: #ffffff;
-}
-
-.text-foreground {
-  color: #000000;
-}
-
-/* Basic button styles */
-button {
-  cursor: pointer;
-  padding: 8px 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #f8f9fa;
-}
-
-button:hover {
-  background: #e9ecef;
-}
-
 /* Configuración base para scrollbars personalizadas */
-html {
+html, body {
   overflow-x: hidden;
   width: 100%;
   height: 100%;
@@ -50,16 +11,6 @@ html {
   font-smoothing: antialiased;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f7fa !important;
-}
-
-body {
-  overflow-x: hidden;
-  width: 100%;
-  height: 100%;
-  max-width: 100vw;
-  background-color: #f5f7fa !important;
-  color: #1a202c !important;
 }
 
 #root {
@@ -128,12 +79,11 @@ html {
 /* Mejoras para el tema claro */
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
   
   body {
-    background-color: hsl(var(--card));
-    color: hsl(var(--foreground));
+    @apply bg-background text-foreground;
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
@@ -141,15 +91,13 @@ html {
 /* Mejoras para cards y elementos interactivos */
 @layer components {
   .card {
-    background-color: hsl(var(--card));
-    color: hsl(var(--card-foreground));
+    @apply bg-card text-card-foreground shadow-sm;
     border: 1px solid hsl(var(--border));
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
   }
   
   .card:hover {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    @apply shadow-md;
     transform: translateY(-1px);
   }
   
@@ -163,26 +111,22 @@ html {
   
   /* Mejoras para botones */
   .btn-primary {
-    background-color: hsl(var(--primary));
-    color: hsl(var(--primary-foreground));
+    @apply bg-primary text-primary-foreground hover:bg-primary/90;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .btn-primary:hover {
-    background-color: hsl(var(--primary) / 0.9);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
   }
   
   /* Mejoras para inputs */
   .input-field {
-    background-color: hsl(var(--card));
-    border-color: hsl(var(--input));
+    @apply bg-background border-input;
     transition: all 0.2s ease;
   }
   
   .input-field:focus {
-    outline: 2px solid hsl(var(--ring));
-    outline-offset: 2px;
+    @apply ring-2 ring-ring ring-offset-2;
     border-color: hsl(var(--primary));
   }
 }
@@ -216,165 +160,105 @@ main.hide-scrollbar::-webkit-scrollbar {
 @layer utilities {
   /* Transiciones y efectos base */
   .transition-standard {
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    @apply transition-all duration-300 ease-out;
   }
   
   .transition-fast {
-    transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    @apply transition-all duration-150 ease-out;
   }
 
   .transition-slow {
-    transition: all 500ms cubic-bezier(0.4, 0, 0.2, 1);
+    @apply transition-all duration-500 ease-in-out;
   }
   
   /* Elementos interactivos */
   .card-hover {
-    position: relative;
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    &:hover {
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    }
+    @apply hover:shadow-lg transition-standard relative;
     &::after {
       content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      opacity: 0;
-      transition: opacity 300ms;
+      @apply absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-300;
       background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.08) 0%, transparent 60%);
       pointer-events: none;
     }
     &:hover::after {
-      opacity: 1;
+      @apply opacity-100;
     }
   }
   
   .interactive-element {
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    &:hover {
-      filter: brightness(1.1);
-    }
-    &:active {
-      transform: scale(0.97);
-    }
-    &:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px hsl(var(--ring) / 0.3), 0 0 0 4px hsl(var(--ring) / 0.1);
-    }
+    @apply transition-standard hover:brightness-110 active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-primary/30 focus:ring-offset-1;
   }
 
   .glass-effect {
-    backdrop-filter: blur(4px);
-    background-color: rgba(255, 255, 255, 0.8);
-  }
-  
-  .dark .glass-effect {
-    background-color: hsl(var(--card) / 0.8);
+    @apply backdrop-blur-sm bg-white/80 dark:bg-card/80;
   }
 
   /* Mejorar contraste en tema claro */
   .light .text-muted-foreground {
-    color: rgb(71 85 105);
+    @apply text-slate-600;
   }
   
   .light .text-foreground {
-    color: rgb(15 23 42);
+    @apply text-slate-900;
   }
   
   .light .border {
-    border-color: rgb(203 213 225);
+    @apply border-slate-300;
   }
   
   .light .bg-muted {
-    background-color: rgb(241 245 249);
+    @apply bg-slate-100;
   }
   
   .light .bg-card {
-    background-color: white;
-    border-color: rgb(226 232 240);
+    @apply bg-white border-slate-200;
   }
   
   .light .text-card-foreground {
-    color: rgb(15 23 42);
+    @apply text-slate-900;
   }
 
   /* Efectos de elevación y profundidad */
   .elevation-1 {
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    @apply shadow-sm;
   }
   
   .elevation-2 {
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    @apply shadow;
   }
   
   .elevation-3 {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    @apply shadow-md;
   }
   
   .elevation-4 {
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    @apply shadow-lg;
   }
 
   /* Efectos de entrada */
   .fade-in-effect {
-    animation: fade-in 500ms ease-in-out forwards;
+    @apply animate-in fade-in duration-500;
   }
   
   .slide-in-bottom {
-    animation: slide-in-from-bottom 300ms ease-in-out forwards;
+    @apply animate-in slide-in-from-bottom-4 duration-300;
   }
   
   .slide-in-right {
-    animation: slide-in-from-right 300ms ease-in-out forwards;
-  }
-  
-  /* Definir animaciones */
-  @keyframes fade-in {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slide-in-from-bottom {
-    from {
-      transform: translateY(1rem);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-  
-  @keyframes slide-in-from-right {
-    from {
-      transform: translateX(1rem);
-      opacity: 0;
-    }
-    to {
-      transform: translateX(0);
-      opacity: 1;
-    }
+    @apply animate-in slide-in-from-right-4 duration-300;
   }
 
   /* Mejoras para el tema claro */
   .light-card {
-    background-color: rgba(255, 255, 255, 0.95);
-    border: 1px solid rgba(243, 244, 246, 0.8);
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    @apply bg-white/95 border border-gray-100/80 shadow-sm;
     background-image: 
       linear-gradient(to bottom right, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0) 100%),
       linear-gradient(to bottom, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
   }
   
   .light-hover {
-    transition: all 300ms;
+    @apply hover:shadow-md hover:border-primary/20 transition-all duration-300;
     &:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      border-color: hsl(var(--primary) / 0.2);
       transform: translateY(-1px);
     }
   }
@@ -384,14 +268,12 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
   
   .light-highlight {
-    background-color: white;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    @apply bg-white shadow-sm;
     background-image: linear-gradient(to bottom right, rgba(255,255,255,1) 0%, rgba(245,245,245,0.5) 100%);
   }
 
   .light-accent {
-    color: hsl(var(--primary));
-    font-weight: 500;
+    @apply text-primary font-medium;
   }
 
   /* Mejoras para el modo oscuro */
@@ -400,9 +282,7 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
   
   .dark .dark-card {
-    background-color: hsl(var(--card) / 0.95);
-    backdrop-filter: blur(4px);
-    border-color: rgba(42, 51, 73, 0.8);
+    @apply bg-card/95 backdrop-blur-sm border-[#2a3349]/80;
     box-shadow: 0 0 15px rgba(255, 196, 0, 0.08);
     background-image: 
       linear-gradient(to bottom right, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%),
@@ -410,9 +290,8 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
   
   .dark .dark-hover {
-    transition: all 300ms;
+    @apply hover:border-primary/30 transition-all duration-300;
     &:hover {
-      border-color: hsl(var(--primary) / 0.3);
       box-shadow: 0 0 15px rgba(255, 196, 0, 0.15);
       transform: translateY(-1px);
     }
@@ -423,12 +302,12 @@ main.hide-scrollbar::-webkit-scrollbar {
   }
 
   .dark .dark-highlight-text {
-    color: hsl(var(--primary));
+    @apply text-primary;
     text-shadow: 0 0 10px rgba(255, 196, 0, 0.3);
   }
 
   .dark .dark-accent-bg {
-    background-color: #1e293b;
+    @apply bg-[#1e293b];
     background-image: linear-gradient(to bottom right, rgba(30,41,59,1) 0%, rgba(23,33,47,1) 100%);
   }
   
@@ -440,18 +319,6 @@ main.hide-scrollbar::-webkit-scrollbar {
   .dark .subtle-pattern {
     background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.828-1.415 1.415L51.8 0h2.827zM5.373 0l-.83.828L5.96 2.243 8.2 0H5.374zM48.97 0l3.657 3.657-1.414 1.414L46.143 0h2.828zM11.03 0L7.372 3.657 8.787 5.07 13.857 0H11.03zm32.284 0L49.8 6.485 48.384 7.9l-7.9-7.9h2.83zM16.686 0L10.2 6.485 11.616 7.9l7.9-7.9h-2.83zm20.97 0l9.315 9.314-1.414 1.414L34.828 0h2.83zM22.344 0L13.03 9.314l1.414 1.414L25.172 0h-2.83zM32 0l12.142 12.142-1.414 1.414L30 .828 17.272 13.556l-1.414-1.414L28 0h4zM.284 0l28 28-1.414 1.414L0 2.544V0h.284zM0 5.373l25.456 25.455-1.414 1.415L0 8.2V5.374zm0 5.656l22.627 22.627-1.414 1.414L0 13.86v-2.83zm0 5.656l19.8 19.8-1.415 1.413L0 19.514v-2.83zm0 5.657l16.97 16.97-1.414 1.415L0 25.172v-2.83zM0 28l14.142 14.142-1.414 1.414L0 30.828V28zm0 5.657L11.314 44.97 9.9 46.386l-9.9-9.9v-2.828zm0 5.657L8.485 47.8 7.07 49.212 0 42.143v-2.83zm0 5.657l5.657 5.657-1.414 1.415L0 47.8v-2.83zm0 5.657l2.828 2.83-1.414 1.413L0 53.456v-2.83zM54.627 60L30 35.373 5.373 60H8.2L30 38.2 51.8 60h2.827zm-5.656 0L30 41.03 11.03 60h2.828L30 43.858 46.142 60h2.83zm-5.656 0L30 46.686 16.686 60h2.83L30 49.515 40.485 60h2.83zm-5.657 0L30 52.343 22.344 60h2.83L30 55.172 34.828 60h2.83zM32 60l-2-2-2 2h4zM59.716 0l-28 28 1.414 1.414L60 2.544V0h-.284zM60 5.373L34.544 30.828l1.414 1.415L60 8.2V5.374zm0 5.656L37.373 33.656l1.414 1.414L60 13.86v-2.83zm0 5.656l-19.8 19.8 1.415 1.413L60 19.514v-2.83zm0 5.657l-16.97 16.97 1.414 1.415L60 25.172v-2.83zM60 28L45.858 42.142l1.414 1.414L60 30.828V28zm0 5.657L48.686 44.97l1.415 1.415 9.9-9.9v-2.828zm0 5.657L51.515 47.8l1.414 1.413 7.07-7.07v-2.83zm0 5.657l-5.657 5.657 1.414 1.415L60 47.8v-2.83zm0 5.657l-2.828 2.83 1.414 1.413L60 53.456v-2.83zM39.9 16.385l1.414-1.414L30 3.658 18.686 14.97l1.415 1.415 9.9-9.9 9.9 9.9zm-2.83 2.828l1.415-1.414L30 9.313 21.515 17.8l1.414 1.413L30 11.97l7.07 7.07z' fill='currentColor' fill-opacity='0.03' fill-rule='evenodd'/%3E%3C/svg%3E");
   }
-}
-
-/* Asegurar que el body tenga fondo claro por defecto */
-body {
-  background-color: hsl(220 14% 96%);
-  color: hsl(222.2 47.4% 11.2%);
-}
-
-/* Fondo oscuro cuando se aplica la clase dark */
-body.dark {
-  background-color: hsl(220 26% 9%);
-  color: hsl(210 40% 98%);
 }
 
 @layer base {
@@ -561,11 +428,7 @@ body.dark {
   }
 
   body {
-    font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    background-color: hsl(var(--card));
-    color: hsl(var(--foreground));
+    @apply font-sans antialiased bg-background text-foreground; /* Mantener existentes */
     min-height: 100%; /* Cambiado de height a min-height para permitir contenido más alto */
     overflow-y: auto; /* Permite el scroll vertical en el elemento body */
     margin: 0; /* Asegura que no haya márgenes por defecto */
@@ -577,7 +440,7 @@ body.dark {
   /* --- FIN DE NUEVAS REGLAS / MODIFICACIONES --- */
 
   * {
-    border-color: hsl(var(--border));
+    @apply border-border;
   }
 
   /* Fix input background color consistency */
@@ -593,11 +456,6 @@ body.dark {
 
   input {
     background-color: hsl(var(--background)) !important;
-  }
-  
-  /* Define bg-background utility class for compatibility */
-  .bg-background {
-    background-color: hsl(var(--background));
   }
 
   input:focus {

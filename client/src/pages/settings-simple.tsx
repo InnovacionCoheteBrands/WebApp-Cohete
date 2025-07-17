@@ -32,7 +32,7 @@ export default function SettingsPage() {
 
   return (
     <div className="container max-w-4xl mx-auto p-6 space-y-6">
-      <div className="border-b border pb-4">
+      <div className="border-b border-border pb-4">
         <h1 className="text-3xl font-bold text-foreground">Configuración</h1>
         <p className="text-muted-foreground mt-2">
           Gestiona tu cuenta, preferencias y configuración de la aplicación

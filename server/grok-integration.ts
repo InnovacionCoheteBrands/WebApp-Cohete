@@ -1,8 +1,9 @@
 // ===== IMPORTACIONES PARA INTEGRACIÓN GROK =====
 // Axios: Cliente HTTP para peticiones a la API de Grok
 import axios from 'axios';
-// Server HTTP para integración con Express
+// Server HTTP y WebSocket para streaming en tiempo real
 import { Server } from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 
 // ===== INTERFACES PARA STREAMING =====
 /**
@@ -42,6 +43,7 @@ interface StreamResponse {
 export class GrokService {
   private apiKey: string; // Clave API de acceso a Grok
   private baseURL = 'https://api.x.ai/v1'; // URL base de la API de X.AI (Grok)
+  private wss: WebSocketServer | null = null; // Servidor WebSocket para streaming
 
   // ===== CONSTRUCTOR =====
   constructor(apiKey: string) {
@@ -50,13 +52,80 @@ export class GrokService {
   }
   
   /**
-   * Inicializa funcionalidades de streaming (WebSocket deshabilitado por compatibilidad)
+   * Inicializa el servidor WebSocket para streaming
    * @param server Servidor HTTP de Express
    */
   initWebSocketServer(server: Server) {
-    console.log('[GROK-SERVICE] WebSocket streaming deshabilitado - usando HTTP polling para compatibilidad');
-    // WebSocket funcionalidad removida para evitar conflictos de dependencias
-    // El streaming se maneja através de HTTP polling o Server-Sent Events
+    try {
+      console.log('[GROK-WS] Inicializando servidor WebSocket para streaming de IA...');
+      this.wss = new WebSocket.WebSocketServer({ server });
+      
+      this.wss.on('connection', (ws: WebSocket) => {
+        console.log('[GROK-WS] Nueva conexión WebSocket establecida');
+        
+        ws.on('message', async (message: WebSocket.Data) => {
+          try {
+            const data = JSON.parse(message.toString());
+            console.log('[GROK-WS] Mensaje recibido:', JSON.stringify(data).substring(0, 200) + '...');
+            
+            if (data.type === 'stream-request') {
+              console.log('[GROK-WS] Iniciando streaming de respuesta IA...');
+              
+              // Configurar callbacks para streaming
+              const callbacks: StreamCallbacks = {
+                onMessage: (chunk) => {
+                  ws.send(JSON.stringify({ type: 'chunk', content: chunk }));
+                },
+                onComplete: (fullResponse) => {
+                  ws.send(JSON.stringify({ type: 'complete', content: fullResponse }));
+                },
+                onError: (error) => {
+                  console.error('[GROK-WS] Error en streaming:', error);
+                  ws.send(JSON.stringify({ 
+                    type: 'error', 
+                    error: error.message || 'Error desconocido en streaming'
+                  }));
+                }
+              };
+              
+              // Generar respuesta en streaming
+              try {
+                await this.generateTextStream(
+                  data.prompt,
+                  callbacks,
+                  {
+                    model: data.model,
+                    temperature: data.temperature,
+                    maxTokens: data.maxTokens
+                    // responseFormat removido - Grok no lo soporta
+                  }
+                );
+              } catch (error: any) {
+                callbacks.onError(error);
+              }
+            }
+          } catch (error) {
+            console.error('[GROK-WS] Error procesando mensaje WebSocket:', error);
+            ws.send(JSON.stringify({ 
+              type: 'error', 
+              error: 'Error procesando solicitud'
+            }));
+          }
+        });
+        
+        ws.on('close', () => {
+          console.log('[GROK-WS] Conexión WebSocket cerrada');
+        });
+        
+        ws.on('error', (error: Error) => {
+          console.error('[GROK-WS] Error en conexión WebSocket:', error);
+        });
+      });
+      
+      console.log('[GROK-WS] Servidor WebSocket inicializado correctamente');
+    } catch (error) {
+      console.error('[GROK-WS] Error inicializando servidor WebSocket:', error);
+    }
   }
 
   /**

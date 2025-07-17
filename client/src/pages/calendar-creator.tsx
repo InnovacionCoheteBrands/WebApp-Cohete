@@ -1935,7 +1935,7 @@ export default function CalendarCreator() {
                           transition-all duration-300 cursor-pointer overflow-hidden
                           ${selectedPlatforms.includes(platform.id) 
                             ? `bg-primary/5 border-primary shadow-sm dark:bg-primary/10 dark:border-primary/40` 
-                            : `bg-white border hover:border-primary/40 hover:bg-primary/5 
+                            : `bg-white border-border hover:border-primary/40 hover:bg-primary/5 
                                dark:bg-[#1e293b] dark:border-[#3e4a6d] dark:hover:border-primary/40 dark:hover:bg-primary/10`
                           }
                         `}

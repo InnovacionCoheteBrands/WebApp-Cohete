@@ -1,14 +1,14 @@
 modules = ["nodejs-20", "web", "postgresql-16"]
-run = "node robust-dev-server.js"
+run = "npm run dev"
 hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 
 [nix]
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "node final-deployment.js"]
-run = ["sh", "-c", "cd dist && npm install && npm start"]
-deploymentTarget = "cloudrun"
+build = ["sh", "-c", "node production-deploy.js"]
+run = ["sh", "-c", "cd dist && node index.js"]
+publicDir = "client/dist"
 
 [[deployment.rewrites]]
 from = "/*"
@@ -17,18 +17,6 @@ to = "/index.html"
 [[ports]]
 localPort = 5000
 externalPort = 80
-
-[[ports]]
-localPort = 5173
-externalPort = 5173
-
-[[ports]]
-localPort = 5174
-externalPort = 3000
-
-[[ports]]
-localPort = 5175
-externalPort = 3001
 
 [workflows]
 runButton = "Project"
@@ -65,12 +53,3 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "node production-deploy.cjs"
-
-[[workflows.workflow]]
-name = "Robust Dev Server"
-author = 40701455
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "node robust-dev-server.js"

@@ -19,7 +19,7 @@ import fs from 'fs';
 // ===== CONFIGURACIÓN DE DIRECTORIO =====
 // Resolver el directorio actual de forma segura para producción
 // En producción usa el directorio dist, en desarrollo usa el directorio actual
-const currentDir = process.env.NODE_ENV === 'production' ? '/home/runner/workspace/dist' : dirname(fileURLToPath(import.meta.url));
+const __dirname = process.env.NODE_ENV === 'production' ? '/home/runner/workspace/dist' : dirname(fileURLToPath(import.meta.url));
 
 // ===== VARIABLES GLOBALES =====
 // Hacer disponibles fs y path globalmente para compatibilidad con módulos
@@ -171,7 +171,7 @@ app.use((req, res, next) => {
     // Configuración específica para producción en Replit
     if (process.env.NODE_ENV === 'production') {
       // Servir archivos estáticos del build de producción
-      const staticPath = path.join(currentDir, '../client/dist');
+      const staticPath = path.join(__dirname, '../client/dist');
       console.log('Serving static files from:', staticPath);
 
       // Verificar si el directorio existe

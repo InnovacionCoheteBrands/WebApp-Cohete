@@ -352,9 +352,9 @@ process.on('SIGINT', () => {
       "name": "cohete-workflow-production",
       "version": "1.0.0",
       "description": "Cohete Workflow - Sistema de gestión de proyectos",
-      "main": "dist/index.js",
+      "main": "index.js",
       "scripts": {
-        "start": "node dist/index.js"
+        "start": "node index.js"
       },
       "dependencies": {
         "express": "^4.21.2",
@@ -365,9 +365,7 @@ process.on('SIGINT', () => {
       }
     };
 
-    // Create package.json in both dist and root directory
     fs.writeFileSync('dist/package.json', JSON.stringify(packageJson, null, 2));
-    fs.writeFileSync('package.json', JSON.stringify(packageJson, null, 2));
 
     // Copiar archivos estáticos si existen
     const dirsToCheck = ['uploads', 'migrations'];
