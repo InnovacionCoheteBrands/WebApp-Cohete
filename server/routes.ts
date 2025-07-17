@@ -3156,9 +3156,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
   });
   
   // Actualizar comentarios de una entrada del cronograma
-  app.patch("/api/schedule-entries/:entryId/comments", isAuthenticated, async (req: Request, res: Response) => {
+  app.patch("/api/schedule-entries/:id/comments", isAuthenticated, async (req: Request, res: Response) => {
     try {
-      const entryId = parseInt(req.params.entryId);
+      const entryId = parseInt(req.params.id);
       const { comments } = req.body;
       
       if (isNaN(entryId)) {
