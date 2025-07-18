@@ -15,6 +15,10 @@ import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 // Sistema de archivos de Node.js
 import fs from 'fs';
+// Replit optimizations
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 
 // ===== CONFIGURACIÓN DE DIRECTORIO =====
 // Resolver el directorio actual de forma segura para producción
@@ -55,6 +59,32 @@ if (process.env.NODE_ENV === 'production') {
 
 // Agregar variantes adicionales de localhost para desarrollo
 allowedOrigins.push('http://127.0.0.1:5000', 'http://localhost:5000', 'http://0.0.0.0:5000');
+
+// ===== REPLIT OPTIMIZATIONS =====
+// Trust proxy for Replit deployment
+app.set('trust proxy', 1);
+
+// Apply security headers
+app.use(helmet({
+  contentSecurityPolicy: false // Disable CSP for now to avoid conflicts
+}));
+
+// Enable compression
+app.use(compression());
+
+// Rate limiting for production
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: {
+      error: 'Too many requests from this IP, please try again later.'
+    },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  });
+  app.use('/api/', limiter);
+}
 
 // ===== MIDDLEWARE CORS =====
 // Configurar CORS con validación de orígenes
@@ -161,10 +191,30 @@ app.use((req, res, next) => {
       });
     });
 
-    // Configurar trust proxy para Replit
-    app.set('trust proxy', 1);
+    // Trust proxy configuration already set above
 
-    // Health check endpoint (moved to /api/health)
+    // Enhanced health check endpoints for Replit monitoring
+    app.get('/health', (req, res) => {
+      res.status(200).json({ 
+        status: 'OK', 
+        timestamp: new Date().toISOString(),
+        service: 'Cohete Workflow',
+        version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        uptime: process.uptime(),
+        memory: process.memoryUsage(),
+        replit: {
+          slug: process.env.REPL_SLUG || 'unknown',
+          owner: process.env.REPL_OWNER || 'unknown',
+          id: process.env.REPL_ID || 'unknown'
+        },
+        database: {
+          connected: !!process.env.DATABASE_URL,
+          url_configured: !!process.env.DATABASE_URL
+        }
+      }); 
+    });
+
     app.get('/api/health', (req, res) => {
       res.status(200).json({ 
         status: 'OK', 
