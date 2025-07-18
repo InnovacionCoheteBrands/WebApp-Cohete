@@ -19,6 +19,8 @@ import fs from 'fs';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
+import { applyReplitOptimizations, validateReplitEnvironment, addReplitMonitoring } from './replit-optimizations';
+import { optimizeStaticFiles, addAssetOptimizations } from './static-optimization';
 
 // ===== CONFIGURACIÓN DE DIRECTORIO =====
 // Resolver el directorio actual de forma segura para producción
@@ -61,30 +63,77 @@ if (process.env.NODE_ENV === 'production') {
 allowedOrigins.push('http://127.0.0.1:5000', 'http://localhost:5000', 'http://0.0.0.0:5000');
 
 // ===== REPLIT OPTIMIZATIONS =====
+// Validate Replit environment and configuration
+const { isReplit, missing } = validateReplitEnvironment();
+
 // Trust proxy for Replit deployment
 app.set('trust proxy', 1);
 
-// Apply security headers
-app.use(helmet({
-  contentSecurityPolicy: false // Disable CSP for now to avoid conflicts
+// Apply security headers with environment-specific configuration
+if (process.env.NODE_ENV === 'production') {
+  // Production: Full security headers
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "https:", "blob:"],
+        scriptSrc: ["'self'"],
+        connectSrc: ["'self'", "https://api.x.ai"]
+      }
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
+  }));
+} else {
+  // Development: Relaxed security for Vite
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disable CSP in development for Vite compatibility
+    crossOriginEmbedderPolicy: false,
+    hsts: false
+  }));
+}
+
+// Enable compression with optimized settings
+app.use(compression({
+  level: 6,
+  threshold: 1024,
+  filter: (req, res) => {
+    // Don't compress already compressed files
+    const contentType = res.getHeader('content-type');
+    if (typeof contentType === 'string') {
+      return !contentType.includes('image/') && !contentType.includes('video/');
+    }
+    return compression.filter(req, res);
+  }
 }));
 
-// Enable compression
-app.use(compression());
-
-// Rate limiting for production
+// Production rate limiting
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 500, // Increased limit for better UX
     message: {
-      error: 'Too many requests from this IP, please try again later.'
+      error: 'Too many requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
     },
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    standardHeaders: true,
+    legacyHeaders: false,
+    skip: (req) => {
+      // Skip rate limiting for health checks
+      return req.path === '/health' || req.path === '/api/health';
+    }
   });
   app.use('/api/', limiter);
 }
+
+// Apply comprehensive Replit optimizations
+applyReplitOptimizations(app);
+addReplitMonitoring(app);
 
 // ===== MIDDLEWARE CORS =====
 // Configurar CORS con validación de orígenes
@@ -210,7 +259,13 @@ app.use((req, res, next) => {
         },
         database: {
           connected: !!process.env.DATABASE_URL,
-          url_configured: !!process.env.DATABASE_URL
+          url_configured: !!process.env.DATABASE_URL,
+          provider: process.env.DATABASE_URL?.includes('neon') ? 'neon' : 'unknown'
+        },
+        features: {
+          ai: !!process.env.XAI_API_KEY,
+          oauth: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+          email: !!process.env.SENDGRID_API_KEY
         }
       }); 
     });
@@ -236,37 +291,12 @@ app.use((req, res, next) => {
 
     // Configuración específica para producción en Replit
     if (process.env.NODE_ENV === 'production') {
-      // Servir archivos estáticos del build de producción
-      const staticPath = path.join(__dirname, '../client/dist');
-      console.log('Serving static files from:', staticPath);
-
-      // Verificar si el directorio existe
-      if (require('fs').existsSync(staticPath)) {
-        app.use(express.static(staticPath, {
-          maxAge: '1d',
-          etag: false
-        }));
-
-        // Catch-all handler para React routes en producción
-        app.get('*', (req, res, next) => {
-          if (req.path.startsWith('/api/')) {
-            return next(); // Dejar que las rutas API se manejen normalmente
-          }
-          const indexPath = path.join(staticPath, 'index.html');
-          if (require('fs').existsSync(indexPath)) {
-            res.sendFile(indexPath);
-          } else {
-            res.status(404).send('Build files not found. Please run: cd client && npm run build');
-          }
-        });
-      } else {
-        console.error('Static files directory not found:', staticPath);
-        app.get('*', (req, res) => {
-          res.status(500).send('Build files not found. Please run: cd client && npm run build');
-        });
-      }
+      console.log('🏭 Setting up production static file serving with Replit optimizations...');
+      optimizeStaticFiles(app, __dirname);
+      addAssetOptimizations(app);
     } else {
       // Configuración para desarrollo con Vite
+      console.log("🔧 Setting up Vite development server...");
       await setupVite(app, server);
     }
 
