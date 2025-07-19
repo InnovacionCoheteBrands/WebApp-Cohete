@@ -19,13 +19,11 @@ import fs from 'fs';
 import helmet from 'helmet';
 import compression from 'compression';
 import rateLimit from 'express-rate-limit';
-import { applyReplitOptimizations, validateReplitEnvironment, addReplitMonitoring } from './replit-optimizations';
-import { optimizeStaticFiles, addAssetOptimizations } from './static-optimization';
 
 // ===== CONFIGURACIÓN DE DIRECTORIO =====
-// Resolver el directorio actual de forma segura para producción
-// En producción usa el directorio dist, en desarrollo usa el directorio actual
-const __dirname = process.env.NODE_ENV === 'production' ? '/home/runner/workspace/dist' : dirname(fileURLToPath(import.meta.url));
+// Resolver el directorio actual de forma segura para todas las plataformas
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ===== VARIABLES GLOBALES =====
 // Hacer disponibles fs y path globalmente para compatibilidad con módulos
@@ -63,15 +61,20 @@ if (process.env.NODE_ENV === 'production') {
 allowedOrigins.push('http://127.0.0.1:5000', 'http://localhost:5000', 'http://0.0.0.0:5000');
 
 // ===== REPLIT OPTIMIZATIONS =====
-// Validate Replit environment and configuration
-const { isReplit, missing } = validateReplitEnvironment();
+// Detectar entorno Replit
+const isReplit = !!(process.env.REPL_SLUG || process.env.REPL_OWNER || process.env.REPL_ID);
+
+console.log(`[REPLIT] Detected environment: ${isReplit ? 'Replit' : 'Local'}`);
+if (isReplit) {
+  console.log(`[REPLIT] Repl: ${process.env.REPL_SLUG || 'unknown'}`);
+  console.log(`[REPLIT] Owner: ${process.env.REPL_OWNER || 'unknown'}`);
+}
 
 // Trust proxy for Replit deployment
 app.set('trust proxy', 1);
 
-// Apply security headers with environment-specific configuration
+// Security headers optimizados para entorno
 if (process.env.NODE_ENV === 'production') {
-  // Production: Full security headers
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -82,58 +85,31 @@ if (process.env.NODE_ENV === 'production') {
         scriptSrc: ["'self'"],
         connectSrc: ["'self'", "https://api.x.ai"]
       }
-    },
-    hsts: {
-      maxAge: 31536000,
-      includeSubDomains: true,
-      preload: true
     }
   }));
 } else {
-  // Development: Relaxed security for Vite
+  // Development: headers relajados para Vite
   app.use(helmet({
-    contentSecurityPolicy: false, // Disable CSP in development for Vite compatibility
-    crossOriginEmbedderPolicy: false,
-    hsts: false
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
   }));
 }
 
-// Enable compression with optimized settings
-app.use(compression({
-  level: 6,
-  threshold: 1024,
-  filter: (req, res) => {
-    // Don't compress already compressed files
-    const contentType = res.getHeader('content-type');
-    if (typeof contentType === 'string') {
-      return !contentType.includes('image/') && !contentType.includes('video/');
-    }
-    return compression.filter(req, res);
-  }
-}));
+// Compresión optimizada
+app.use(compression());
 
-// Production rate limiting
+// Rate limiting para producción
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500, // Increased limit for better UX
-    message: {
-      error: 'Too many requests from this IP, please try again later.',
-      retryAfter: '15 minutes'
-    },
+    windowMs: 15 * 60 * 1000,
+    max: 500,
+    message: { error: 'Too many requests' },
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => {
-      // Skip rate limiting for health checks
-      return req.path === '/health' || req.path === '/api/health';
-    }
+    skip: (req) => req.path === '/health' || req.path === '/api/health'
   });
   app.use('/api/', limiter);
 }
-
-// Apply comprehensive Replit optimizations
-applyReplitOptimizations(app);
-addReplitMonitoring(app);
 
 // ===== MIDDLEWARE CORS =====
 // Configurar CORS con validación de orígenes
@@ -266,6 +242,11 @@ app.use((req, res, next) => {
           ai: !!process.env.XAI_API_KEY,
           oauth: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
           email: !!process.env.SENDGRID_API_KEY
+        },
+        startup: {
+          timestamp: new Date().toISOString(),
+          directory: __dirname,
+          isReplit: isReplit
         }
       }); 
     });
@@ -291,9 +272,38 @@ app.use((req, res, next) => {
 
     // Configuración específica para producción en Replit
     if (process.env.NODE_ENV === 'production') {
-      console.log('🏭 Setting up production static file serving with Replit optimizations...');
-      optimizeStaticFiles(app, __dirname);
-      addAssetOptimizations(app);
+      console.log('🏭 Setting up production static file serving...');
+      // Servir archivos estáticos del build de producción
+      const staticPath = path.join(__dirname, '../client/dist');
+      console.log('Serving static files from:', staticPath);
+
+      if (fs.existsSync(staticPath)) {
+        app.use(express.static(staticPath, {
+          maxAge: '1d',
+          etag: true,
+          lastModified: true
+        }));
+
+        // Catch-all handler para React routes
+        app.get('*', (req, res, next) => {
+          if (req.path.startsWith('/api/')) {
+            return next();
+          }
+          const indexPath = path.join(staticPath, 'index.html');
+          if (fs.existsSync(indexPath)) {
+            res.sendFile(indexPath);
+          } else {
+            res.status(404).send('Build files not found');
+          }
+        });
+      } else {
+        console.error('Static files directory not found:', staticPath);
+        app.get('*', (req, res) => {
+          if (!req.path.startsWith('/api/')) {
+            res.status(500).send('Build files not found');
+          }
+        });
+      }
     } else {
       // Configuración para desarrollo con Vite
       console.log("🔧 Setting up Vite development server...");
