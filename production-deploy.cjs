@@ -30,9 +30,29 @@ async function createProductionBuild() {
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const helmet = require('helmet');
+const compression = require('compression');
 
 const app = express();
 const port = parseInt(process.env.PORT || "5000");
+
+// Production optimizations
+if (process.env.NODE_ENV === 'production') {
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+      },
+    },
+  }));
+  app.use(compression());
+}
+
+app.set('trust proxy', true);
 
 // Configuración CORS para Replit
 const allowedOrigins = [
@@ -59,6 +79,24 @@ app.use(express.urlencoded({ extended: false }));
 
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Health check for Replit deployment monitoring
+app.get('/health', (req, res) => {
+  const healthData = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'production',
+    version: '1.0.0',
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    replit: {
+      slug: process.env.REPL_SLUG,
+      owner: process.env.REPL_OWNER,
+      id: process.env.REPL_ID
+    }
+  };
+  res.json(healthData);
+});
 
 // API endpoints básicos
 app.get('/api/health', (req, res) => {
@@ -328,11 +366,14 @@ process.on('SIGINT', () => {
       "description": "Cohete Workflow - Sistema de gestión de proyectos",
       "main": "index.js",
       "scripts": {
-        "start": "node index.js"
+        "start": "node index.js",
+        "health": "curl -f http://localhost:5000/health || exit 1"
       },
       "dependencies": {
         "express": "^4.21.2",
-        "cors": "^2.8.5"
+        "cors": "^2.8.5",
+        "helmet": "^8.1.0",
+        "compression": "^1.8.1"
       },
       "engines": {
         "node": ">=18.0.0"
@@ -340,6 +381,17 @@ process.on('SIGINT', () => {
     };
 
     fs.writeFileSync('dist/package.json', JSON.stringify(packageJson, null, 2));
+
+    // Instalar dependencias de producción en dist
+    console.log('📦 Instalando dependencias de producción...');
+    process.chdir('dist');
+    try {
+      execSync('npm install --production --silent', { stdio: 'inherit' });
+      console.log('✅ Dependencias de producción instaladas');
+    } catch (error) {
+      console.warn('⚠️ Warning: Error installing production dependencies');
+    }
+    process.chdir('..');
 
     // Copiar archivos estáticos si existen
     const dirsToCheck = ['uploads', 'migrations'];

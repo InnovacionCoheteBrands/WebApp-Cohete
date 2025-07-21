@@ -6,8 +6,8 @@ hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
 channel = "stable-24_05"
 
 [deployment]
-build = ["sh", "-c", "node production-deploy.js"]
-run = ["sh", "-c", "cd dist && node index.js"]
+build = ["sh", "-c", "node production-deploy.cjs"]
+run = ["sh", "-c", "cd dist && npm install && npm start"]
 publicDir = "client/dist"
 
 [[deployment.rewrites]]
@@ -105,3 +105,12 @@ args = "echo \"🧪 Testing with minimal route configuration...\""
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+[[workflows.workflow]]
+name = "Production Deploy"
+author = 40701455
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "node production-deploy.cjs"
