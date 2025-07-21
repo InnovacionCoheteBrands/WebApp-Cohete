@@ -81,51 +81,61 @@ app.use(express.urlencoded({ extended: false }));
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
-// CRITICAL: Root endpoint for Replit health checks
+// CRITICAL: Root endpoint for Replit health checks - ALWAYS respond quickly
 app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'public', 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    // Fallback response if index.html doesn't exist
-    res.status(200).send(\`
-<!DOCTYPE html>
+  // Set headers immediately to prevent timeout
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache');
+  
+  // ALWAYS send a successful response immediately
+  const healthResponse = \`<!DOCTYPE html>
 <html>
 <head>
     <title>Cohete Workflow</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        .status { color: #4CAF50; font-size: 24px; }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .status { color: #4CAF50; font-size: 24px; margin: 20px 0; }
+        .container { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 15px; max-width: 600px; margin: 0 auto; }
     </style>
 </head>
 <body>
-    <h1>🚀 Cohete Workflow</h1>
-    <div class="status">✅ Application is running successfully</div>
-    <p>Timestamp: \${new Date().toISOString()}</p>
-    <p>Environment: \${process.env.NODE_ENV || 'production'}</p>
+    <div class="container">
+        <h1>🚀 Cohete Workflow</h1>
+        <div class="status">✅ Sistema Activo</div>
+        <p><strong>Status:</strong> Running Successfully</p>
+        <p><strong>Timestamp:</strong> \${new Date().toLocaleString()}</p>
+        <p><strong>Environment:</strong> \${process.env.NODE_ENV || 'production'}</p>
+        <p><strong>Server:</strong> Replit Deployment</p>
+        <div style="margin-top: 30px;">
+            <a href="/api/health" style="color: #4CAF50; text-decoration: none;">🔍 Health Check</a> | 
+            <a href="/api/user" style="color: #4CAF50; text-decoration: none;">👤 API Status</a>
+        </div>
+    </div>
 </body>
-</html>
-    \`);
-  }
+</html>\`;
+  
+  res.status(200).send(healthResponse);
 });
 
-// Health check for Replit deployment monitoring
+// Health check for Replit deployment monitoring - FAST RESPONSE
 app.get('/health', (req, res) => {
+  // Set headers immediately
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'no-cache');
+  
+  // Create minimal health data for speed
   const healthData = {
     status: 'OK',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'production',
-    version: '1.0.0',
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    replit: {
-      slug: process.env.REPL_SLUG,
-      owner: process.env.REPL_OWNER,
-      id: process.env.REPL_ID
-    }
+    uptime: Math.floor(process.uptime()),
+    environment: 'production',
+    service: 'cohete-workflow',
+    version: '1.0.0'
   };
+  
+  // Send response immediately
   res.status(200).json(healthData);
 });
 
@@ -186,20 +196,28 @@ app.use((err, req, res, next) => {
 });
 
 const server = app.listen(port, "0.0.0.0", () => {
-  console.log(\`🚀 Cohete Workflow funcionando en http://0.0.0.0:\${port}\`);
-  console.log(\`📱 Entorno: producción\`);
-  console.log(\`🔗 API disponible en /api/*\`);
-  console.log(\`✅ Health check disponible en /health\`);
-  console.log(\`✅ Aplicación lista para Replit deployment\`);
+  console.log(\`🚀 Cohete Workflow Server Started Successfully\`);
+  console.log(\`📡 Listening on: http://0.0.0.0:\${port}\`);
+  console.log(\`🌍 External access: ENABLED for Replit\`);
+  console.log(\`📱 Environment: \${process.env.NODE_ENV || 'production'}\`);
+  console.log(\`✅ Root endpoint (/) ready for health checks\`);
+  console.log(\`✅ Health endpoint (/health) ready\`);
+  console.log(\`🔗 API endpoints available at /api/*\`);
+  console.log(\`🚀 REPLIT DEPLOYMENT READY\`);
 });
 
 server.on('error', (error) => {
-  console.error('❌ Error del servidor:', error);
+  console.error('❌ Server Error:', error.message);
   if (error.code === 'EADDRINUSE') {
-    console.error(\`❌ Puerto \${port} en uso\`);
+    console.error(\`❌ Port \${port} already in use\`);
   }
-  // No usar process.exit(1) en producción para evitar crashes
+  // Log but don't exit - let Replit handle restarts
 });
+
+// Log that server is starting immediately
+console.log('🔄 Starting Cohete Workflow server...');
+console.log(\`📍 Target port: \${port}\`);
+console.log('⏳ Initializing endpoints...');
 
 // Graceful shutdown para Replit
 process.on('SIGTERM', () => {
