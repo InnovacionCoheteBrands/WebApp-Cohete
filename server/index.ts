@@ -193,7 +193,11 @@ app.use((req, res, next) => {
 
 (async () => {
   try {
-    const server = await registerRoutes(app);
+    // Wrap route registration in additional error handling
+    const server = await registerRoutes(app).catch((routeError) => {
+      console.error('❌ Error registering routes:', routeError);
+      throw new Error(`Route registration failed: ${routeError.message}`);
+    });
 
     app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
@@ -202,6 +206,7 @@ app.use((req, res, next) => {
       // Log detallado del error
       console.error('Server Error:', {
         error: err,
+        stack: err.stack,
         path: req.path,
         method: req.method,
         headers: req.headers,
@@ -209,11 +214,15 @@ app.use((req, res, next) => {
         timestamp: new Date().toISOString()
       });
 
-      res.status(status).json({ 
-        message,
+      // No exponer detalles del error en producción
+      const response = {
+        message: process.env.NODE_ENV === 'production' ? 'Internal server error' : message,
+        status: 'ERROR',
         path: req.path,
         timestamp: new Date().toISOString()
-      });
+      };
+
+      res.status(status).json(response);
     });
 
     // Trust proxy configuration already set above
@@ -330,6 +339,35 @@ app.use((req, res, next) => {
         process.exit(1);
       } else {
         console.error('❌ Server error:', error);
+        process.exit(1);
+      }
+    });
+
+    // Process-level error handlers
+    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+      // Don't exit in production, just log the error
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Stack trace:', reason?.stack);
+      }
+    });
+
+    process.on('uncaughtException', (error: Error) => {
+      console.error('❌ Uncaught Exception:', error);
+      console.error('Stack trace:', error.stack);
+      // In production, attempt graceful shutdown
+      if (process.env.NODE_ENV === 'production') {
+        console.error('🔄 Attempting graceful shutdown due to uncaught exception...');
+        serverInstance.close(() => {
+          console.log('✅ Server closed due to uncaught exception');
+          process.exit(1);
+        });
+        // Force exit after 5 seconds if graceful shutdown fails
+        setTimeout(() => {
+          console.error('⚠️ Forced shutdown due to timeout');
+          process.exit(1);
+        }, 5000);
+      } else {
         process.exit(1);
       }
     });
