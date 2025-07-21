@@ -153,6 +153,16 @@ app.use((req, res, next) => {
   }
 });
 
+// ===== ROOT ENDPOINT FOR HEALTH CHECKS =====
+// Simple root endpoint that responds quickly for Replit health checks
+app.get('/', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK',
+    service: 'Cohete Workflow',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // ===== MIDDLEWARE DE LOGGING =====
 // Interceptar y loggear todas las peticiones a la API
 app.use((req, res, next) => {
@@ -226,14 +236,6 @@ app.use((req, res, next) => {
     });
 
     // Trust proxy configuration already set above
-
-    // Root endpoint for Replit health checks - optimized for speed
-    app.get('/', (req, res) => {
-      res.status(200).json({ 
-        status: 'OK',
-        timestamp: new Date().toISOString()
-      }); 
-    });
 
     // Simplified health check endpoint for Replit monitoring
     app.get('/health', (req, res) => {
