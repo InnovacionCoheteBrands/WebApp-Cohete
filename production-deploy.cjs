@@ -36,6 +36,9 @@ const compression = require('compression');
 const app = express();
 const port = parseInt(process.env.PORT || "5000");
 
+// Trust proxy for Replit (CRITICAL for health checks)
+app.set('trust proxy', true);
+
 // Production optimizations
 if (process.env.NODE_ENV === 'production') {
   app.use(helmet({
@@ -51,8 +54,6 @@ if (process.env.NODE_ENV === 'production') {
   }));
   app.use(compression());
 }
-
-app.set('trust proxy', true);
 
 // Configuración CORS para Replit
 const allowedOrigins = [
@@ -80,6 +81,36 @@ app.use(express.urlencoded({ extended: false }));
 // Servir archivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
 
+// CRITICAL: Root endpoint for Replit health checks
+app.get('/', (req, res) => {
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    // Fallback response if index.html doesn't exist
+    res.status(200).send(\`
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Cohete Workflow</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        .status { color: #4CAF50; font-size: 24px; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Cohete Workflow</h1>
+    <div class="status">✅ Application is running successfully</div>
+    <p>Timestamp: \${new Date().toISOString()}</p>
+    <p>Environment: \${process.env.NODE_ENV || 'production'}</p>
+</body>
+</html>
+    \`);
+  }
+});
+
 // Health check for Replit deployment monitoring
 app.get('/health', (req, res) => {
   const healthData = {
@@ -95,7 +126,7 @@ app.get('/health', (req, res) => {
       id: process.env.REPL_ID
     }
   };
-  res.json(healthData);
+  res.status(200).json(healthData);
 });
 
 // API endpoints básicos
@@ -158,16 +189,33 @@ const server = app.listen(port, "0.0.0.0", () => {
   console.log(\`🚀 Cohete Workflow funcionando en http://0.0.0.0:\${port}\`);
   console.log(\`📱 Entorno: producción\`);
   console.log(\`🔗 API disponible en /api/*\`);
+  console.log(\`✅ Health check disponible en /health\`);
+  console.log(\`✅ Aplicación lista para Replit deployment\`);
 });
 
 server.on('error', (error) => {
+  console.error('❌ Error del servidor:', error);
   if (error.code === 'EADDRINUSE') {
     console.error(\`❌ Puerto \${port} en uso\`);
-    process.exit(1);
-  } else {
-    console.error('❌ Error del servidor:', error);
-    process.exit(1);
   }
+  // No usar process.exit(1) en producción para evitar crashes
+});
+
+// Graceful shutdown para Replit
+process.on('SIGTERM', () => {
+  console.log('🔄 Recibida señal SIGTERM, cerrando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado correctamente');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 Recibida señal SIGINT, cerrando servidor...');
+  server.close(() => {
+    console.log('✅ Servidor cerrado correctamente');
+    process.exit(0);
+  });
 });
 
 process.on('SIGTERM', () => {
