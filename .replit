@@ -22,85 +22,17 @@ externalPort = 80
 runButton = "Start Clean"
 
 [[workflows.workflow]]
-name = "Project"
-mode = "parallel"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Start application"
-
-[[workflows.workflow]]
-name = "Start application"
-author = "agent"
-
-[workflows.workflow.metadata]
-agentRequireRestartOnSave = false
-
-[[workflows.workflow.tasks]]
-task = "packager.installForAll"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Build for Deployment"
+name = "Start Clean"
 author = 40701455
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "node production-deploy.cjs"
-
-[[workflows.workflow]]
-name = "Debug and Start"
-author = 40701455
-mode = "sequential"
+args = "pkill -f \"tsx server/index.ts\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "echo \"🔍 Debugging application startup...\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🔧 Checking for route configuration issues...\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
-name = "Test Routes Block 1-2"
-author = 40701455
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🧪 Testing with only Authentication and User Management routes active...\""
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
-name = "Start App"
-author = 40701455
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-[[workflows.workflow]]
-name = "Test Minimal Routes"
-author = 40701455
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "echo \"🧪 Testing with minimal route configuration...\""
+args = "pkill -f \"node.*5000\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
@@ -116,17 +48,9 @@ task = "shell.exec"
 args = "node production-deploy.cjs"
 
 [[workflows.workflow]]
-name = "Start Clean"
+name = "Start App"
 author = 40701455
 mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f \"tsx server/index.ts\" || true"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "pkill -f \"node.*5000\" || true"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
