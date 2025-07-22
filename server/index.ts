@@ -38,14 +38,22 @@ const app = express();
 
 // ===== CONFIGURACIÓN DE PUERTO PARA REPLIT =====
 // CRÍTICO: Replit deployments requieren usar exactamente el puerto que proporcionan
-// En development usa 5000, en production usa el PORT de Replit
+// Detectar si estamos en deployment o desarrollo
+
+console.log('🔍 Environment detection:');
+console.log('  NODE_ENV:', process.env.NODE_ENV || 'undefined');
+console.log('  PORT:', process.env.PORT || 'undefined');
+console.log('  REPL_ID:', process.env.REPL_ID || 'undefined');
+
 let port: number;
-if (process.env.NODE_ENV === 'production') {
-  // En producción, SIEMPRE usar el puerto que Replit proporciona
-  port = parseInt(process.env.PORT || "80");
-  console.log(`🚀 PRODUCTION MODE: Using Replit PORT ${port}`);
+
+// REPLIT DEPLOYMENT: Si PORT está definido, usar ese (deployment)
+if (process.env.PORT) {
+  port = parseInt(process.env.PORT);
+  console.log(`🚀 REPLIT DEPLOYMENT MODE: Using PORT ${port}`);
+  process.env.NODE_ENV = 'production'; // Asegurar production mode
 } else {
-  // En desarrollo, usar puerto 5000
+  // DESARROLLO: Usar puerto 5000
   port = 5000;
   console.log(`🔧 DEVELOPMENT MODE: Using port ${port}`);
 }
@@ -169,26 +177,42 @@ app.use((req, res, next) => {
 // CRÍTICO: Health checks DEBEN estar ANTES de otros middleware según docs.replit.com
 // Estos endpoints deben responder inmediatamente para deployment verification
 
-// Root health check - REQUERIDO por Replit deployments
-app.get('/', (req, res) => {
-  // CRÍTICO: Respuesta instantánea para health check de Replit
-  if (req.headers['user-agent']?.includes('replit') || 
-      req.headers['x-replit-health-check'] ||
-      process.env.NODE_ENV === 'production') {
-    return res.status(200).json({ status: 'OK' });
+// ROOT HEALTH CHECK - REQUERIDO por Replit deployments
+// CRITICAL FIX: SIEMPRE responder, nunca hacer return sin respuesta
+app.get('/', (req, res, next) => {
+  // Detectar si es un health check de deployment
+  const isHealthCheck = req.headers['user-agent']?.includes('replit') || 
+                       req.headers['x-replit-health-check'] ||
+                       process.env.PORT; // Si PORT está definido, estamos en deployment
+  
+  if (isHealthCheck) {
+    // RESPUESTA INMEDIATA para health check
+    return res.status(200).json({ 
+      status: 'OK',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development',
+      port: port
+    });
   }
-  // En desarrollo, continuar con la aplicación React (esto será manejado por Vite después)
-  return;
+  
+  // En desarrollo, permitir que continue a Vite/React
+  next();
 });
 
-// Health check adicional según documentación Replit
+// Health check endpoint adicional
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
+  res.status(200).json({ 
+    status: 'OK',
+    timestamp: new Date().toISOString()
+  });
 });
 
 // API health check 
 app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK' });
+  res.status(200).json({ 
+    status: 'OK',
+    api: 'cohete-workflow'
+  });
 });
 
 // ===== MIDDLEWARE DE LOGGING =====
@@ -301,7 +325,7 @@ app.use((req, res, next) => {
     });
 
     // ===== STATIC FILE SERVING - OPTIMIZADO PARA REPLIT =====
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.PORT || process.env.NODE_ENV === 'production') {
       console.log('🏭 Setting up production static file serving...');
       
       // Intentar múltiples ubicaciones para el build
