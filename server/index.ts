@@ -37,25 +37,27 @@ if (typeof global !== 'undefined') {
 const app = express();
 
 // ===== CONFIGURACIÓN DE PUERTO PARA REPLIT =====
-// CRÍTICO: Replit deployments requieren usar exactamente el puerto que proporcionan
-// Detectar si estamos en deployment o desarrollo
+// CRÍTICO: Replit workspace siempre usa puerto 5000 según docs.replit.com
+// Deployment usa variable PORT dinámicamente
 
 console.log('🔍 Environment detection:');
 console.log('  NODE_ENV:', process.env.NODE_ENV || 'undefined');
 console.log('  PORT:', process.env.PORT || 'undefined');
-console.log('  REPL_ID:', process.env.REPL_ID || 'undefined');
+console.log('  REPL_ID:', process.env.REPL_ID ? 'present' : 'undefined');
 
 let port: number;
+let isProduction = false;
 
-// REPLIT DEPLOYMENT: Si PORT está definido, usar ese (deployment)
+// REPLIT DEPLOYMENT: Si PORT está definido por Replit
 if (process.env.PORT) {
   port = parseInt(process.env.PORT);
+  isProduction = true;
+  process.env.NODE_ENV = 'production';
   console.log(`🚀 REPLIT DEPLOYMENT MODE: Using PORT ${port}`);
-  process.env.NODE_ENV = 'production'; // Asegurar production mode
 } else {
-  // DESARROLLO: Usar puerto 5000
+  // DESARROLLO/WORKSPACE: Siempre puerto 5000
   port = 5000;
-  console.log(`🔧 DEVELOPMENT MODE: Using port ${port}`);
+  console.log(`🔧 REPLIT WORKSPACE MODE: Using port ${port}`);
 }
 
 // ===== CONFIGURACIÓN CORS =====
@@ -325,7 +327,7 @@ app.use((req, res, next) => {
     });
 
     // ===== STATIC FILE SERVING - OPTIMIZADO PARA REPLIT =====
-    if (process.env.PORT || process.env.NODE_ENV === 'production') {
+    if (isProduction) {
       console.log('🏭 Setting up production static file serving...');
       
       // Intentar múltiples ubicaciones para el build
