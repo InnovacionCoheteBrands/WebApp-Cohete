@@ -330,11 +330,12 @@ app.use((req, res, next) => {
     if (isProduction) {
       console.log('🏭 Setting up production static file serving...');
       
-      // Intentar múltiples ubicaciones para el build
+      // Rutas corregidas para deployment desde dist/
       const possiblePaths = [
-        path.join(__dirname, '../client/dist'),
-        path.join(__dirname, '../dist/public'),
-        path.join(__dirname, 'public')
+        path.join(__dirname, 'public'),              // dist/public/ (build output)
+        path.join(__dirname, '../client/dist'),      // client/dist/ (vite build)
+        path.join(process.cwd(), 'dist/public'),     // absolute from project root
+        path.join(process.cwd(), 'client/dist')      // absolute client build
       ];
       
       let staticPath = null;

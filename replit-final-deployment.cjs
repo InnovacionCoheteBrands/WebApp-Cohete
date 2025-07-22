@@ -40,7 +40,38 @@ async function finalDeploy() {
       throw new Error('Build failed - missing index.html');
     }
 
-    // 3. Create CORRECTED startup script for deployment
+    // 3. Fix DEPENDENCY SYNCHRONIZATION
+    console.log('\n🔄 Fixing dependency synchronization...');
+    
+    // Ensure dist/package.json has all required dependencies
+    const packageJson = require('./dist/package.json');
+    if (packageJson.dependencies && Object.keys(packageJson.dependencies).length < 15) {
+      console.log('⚠️  FIXING: Incomplete dependencies in dist/package.json');
+      exec('cp dist/package.json dist/package.json.backup');
+      
+      // Update package.json with required dependencies
+      const requiredDeps = {
+        "@neondatabase/serverless": "^0.10.4",
+        "express": "^4.21.2", 
+        "cors": "^2.8.5",
+        "helmet": "^8.1.0",
+        "compression": "^1.8.1",
+        "express-rate-limit": "^8.0.1",
+        "express-session": "^1.18.1",
+        "drizzle-orm": "^0.39.1",
+        "bcryptjs": "^3.0.2",
+        "multer": "^1.4.5",
+        "axios": "^1.8.4"
+      };
+      
+      packageJson.dependencies = { ...packageJson.dependencies, ...requiredDeps };
+      packageJson.scripts.start = "NODE_ENV=production node index.js";
+      
+      fs.writeFileSync('dist/package.json', JSON.stringify(packageJson, null, 2));
+      console.log('✅ Dependencies synchronized');
+    }
+
+    // 4. Create CORRECTED startup script for deployment
     console.log('\n📝 Creating corrected startup script...');
     
     const correctedStart = `
