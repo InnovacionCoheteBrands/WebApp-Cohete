@@ -28,15 +28,27 @@ const __dirname = dirname(__filename);
 // ===== VARIABLES GLOBALES =====
 // Hacer disponibles fs y path globalmente para compatibilidad con módulos
 if (typeof global !== 'undefined') {
-  global.fs = fs;
-  global.path = path;
+  (global as any).fs = fs;
+  (global as any).path = path;
 }
 
 // ===== CONFIGURACIÓN DE EXPRESS =====
 // Crear instancia de la aplicación Express
 const app = express();
-// Configurar puerto desde variable de entorno o usar 5000 por defecto
-const port = parseInt(process.env.PORT || "5000");
+
+// ===== CONFIGURACIÓN DE PUERTO PARA REPLIT =====
+// CRÍTICO: Replit deployments requieren usar exactamente el puerto que proporcionan
+// En development usa 5000, en production usa el PORT de Replit
+let port: number;
+if (process.env.NODE_ENV === 'production') {
+  // En producción, SIEMPRE usar el puerto que Replit proporciona
+  port = parseInt(process.env.PORT || "80");
+  console.log(`🚀 PRODUCTION MODE: Using Replit PORT ${port}`);
+} else {
+  // En desarrollo, usar puerto 5000
+  port = 5000;
+  console.log(`🔧 DEVELOPMENT MODE: Using port ${port}`);
+}
 
 // ===== CONFIGURACIÓN CORS =====
 // CORS (Cross-Origin Resource Sharing) permite que el frontend acceda al backend
@@ -147,21 +159,14 @@ app.use((req, res, next) => {
       method: req.method,
       path: req.path,
       url: req.url,
-      error: error.message
+      error: error instanceof Error ? error.message : String(error)
     });
     throw error;
   }
 });
 
-// ===== ROOT ENDPOINT FOR HEALTH CHECKS =====
-// Simple root endpoint that responds quickly for Replit health checks
-app.get('/', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK',
-    service: 'Cohete Workflow',
-    timestamp: new Date().toISOString()
-  });
-});
+// ===== STATUS ENDPOINT (NO ROOT INTERFERENCE) =====
+// Status endpoint que no interfiere con la aplicación React
 
 // ===== MIDDLEWARE DE LOGGING =====
 // Interceptar y loggear todas las peticiones a la API
