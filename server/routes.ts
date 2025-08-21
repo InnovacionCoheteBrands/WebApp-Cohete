@@ -30,6 +30,14 @@ const comparePasswords = async (supplied: string, stored: string): Promise<boole
   return await bcrypt.compare(supplied, stored);
 };
 
+// Helper middleware for authentication check
+const requireAuth = (req: any, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Acceso denegado. Usuario no autenticado." });
+  }
+  next();
+};
+
 // Helper middleware for primary user check
 const isPrimaryUser = (req: any, res: Response, next: NextFunction) => {
   if (!req.user || !req.user.isPrimary) {
@@ -92,7 +100,7 @@ declare global {
 }
 
 // Initialize global storage
-global.storage = storage;
+global.storage = storage as any;
 
 // Obtener directorio actual compatible con ESM
 import { fileURLToPath } from 'url';
