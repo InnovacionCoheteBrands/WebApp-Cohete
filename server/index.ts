@@ -179,15 +179,17 @@ app.use((req, res, next) => {
 // CRÍTICO: Health checks DEBEN estar ANTES de otros middleware según docs.replit.com
 // Estos endpoints deben responder inmediatamente para deployment verification
 
-// ROOT HEALTH CHECK - REQUERIDO por Replit deployments
-// CRITICAL FIX: ALWAYS respond immediately with 200 status for health checks
-app.get('/', (req, res) => {
-  // ALWAYS respond immediately with 200 status
-  res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-cache');
+// ROOT HEALTH CHECK - SMART DETECTION for Development vs Production
+app.get('/', (req, res, next) => {
+  // Detectar si estamos en deployment (production) basado en PORT variable
+  const isDeployment = !!process.env.PORT || process.env.NODE_ENV === 'production';
   
-  // Simple and fast HTML response for health checks
-  const healthResponse = `<!DOCTYPE html>
+  if (isDeployment) {
+    // EN DEPLOYMENT: Respuesta rápida para health checks
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    const healthResponse = `<!DOCTYPE html>
 <html>
 <head>
     <title>Cohete Workflow</title>
@@ -200,8 +202,12 @@ app.get('/', (req, res) => {
     <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
 </body>
 </html>`;
+    
+    return res.status(200).send(healthResponse);
+  }
   
-  res.status(200).send(healthResponse);
+  // EN DESARROLLO: Continuar al middleware de Vite/React
+  next();
 });
 
 // Health check endpoint adicional - FAST RESPONSE
