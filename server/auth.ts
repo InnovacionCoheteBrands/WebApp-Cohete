@@ -17,7 +17,7 @@ declare global {
 
 // Define our own type for Express.User
 type AppUser = {
-  id: number;
+  id: string; // Changed to string to match database VARCHAR
   username: string;
   password: string;
   fullName: string;
@@ -87,7 +87,7 @@ export function setupAuth(app: Express) {
           // Buscar usuario por identificador (username o email)
           const user = await storage.getUserByIdentifier(identifier);
           
-          if (!user || !(await comparePasswords(password, user.password))) {
+          if (!user || !(await comparePasswords(password, user.password || ""))) {
             return done(null, false, { message: "Credenciales inválidas" });
           } else {
             return done(null, user as unknown as Express.User);
@@ -100,7 +100,7 @@ export function setupAuth(app: Express) {
   );
 
   passport.serializeUser((user, done) => done(null, user.id));
-  passport.deserializeUser(async (id: number, done) => {
+  passport.deserializeUser(async (id: string, done) => {
     try {
       const user = await storage.getUser(id);
       done(null, user as unknown as Express.User);
@@ -127,7 +127,7 @@ export function setupAuth(app: Express) {
         }
       }
 
-      const hashedPassword = await hashPassword(validatedData.password);
+      const hashedPassword = await hashPassword(validatedData.password || "");
       const newUser = await storage.createUser({
         ...validatedData,
         password: hashedPassword,
@@ -283,7 +283,7 @@ export function setupAuth(app: Express) {
       }
       
       // Obtener usuario
-      const user = await global.storage.getUser(tokenData.userId);
+      const user = await global.storage.getUser(tokenData.userId.toString());
       
       if (!user) {
         return res.status(400).json({ message: "Usuario no encontrado" });

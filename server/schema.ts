@@ -116,7 +116,7 @@ export const tasks = pgTable("tasks", {
   completedAt: timestamp("completed_at"), // Fecha de finalización
   estimatedHours: integer("estimated_hours"), // Horas estimadas para completar
   dependencies: text("dependencies").array(), // IDs de tareas de las que depende
-  parentTaskId: integer("parent_task_id").references(() => tasks.id, { onDelete: "set null" }), // Tarea padre (para subtareas)
+  parentTaskId: integer("parent_task_id"), // Tarea padre (para subtareas)
   progress: integer("progress").default(0), // Porcentaje de progreso (0-100)
   attachments: jsonb("attachments"), // Archivos adjuntos en formato JSON
   groupId: integer("group_id"), // ID del grupo para organización adicional
@@ -494,6 +494,27 @@ export const insertProjectMemberSchema = createInsertSchema(projectMembers);
 export const insertTaskGroupSchema = createInsertSchema(taskGroups);
 export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings);
 export const insertTaskColumnValueSchema = createInsertSchema(taskColumnValues);
+
+// Esquemas adicionales para autenticación
+export const loginSchema = z.object({
+  identifier: z.string().min(1, "Se requiere nombre de usuario o email"),
+  password: z.string().min(1, "Se requiere contraseña")
+});
+
+export const updateProfileSchema = z.object({
+  fullName: z.string().optional(),
+  bio: z.string().optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  preferredLanguage: z.string().optional(),
+  theme: z.string().optional(),
+  profileImage: z.string().optional(),
+  coverImage: z.string().optional(),
+  nickname: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional()
+});
 
 // Export enum types
 export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "grok-beta"]);

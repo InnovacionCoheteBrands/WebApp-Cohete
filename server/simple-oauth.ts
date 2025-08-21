@@ -120,7 +120,7 @@ export async function setupSimpleGoogleAuth(app: Express) {
         // Verificar si el usuario ya está en el equipo de Cohete Brands
         await ensureUserInTeam(updatedUser.id, email);
 
-        return done(null, updatedUser);
+        return done(null, updatedUser as any);
       } else {
         // Create new user
         const [newUser] = await db.insert(users)
@@ -142,7 +142,7 @@ export async function setupSimpleGoogleAuth(app: Express) {
         // Asignar automáticamente al equipo de Cohete Brands
         await ensureUserInTeam(newUser.id, email);
 
-        return done(null, newUser);
+        return done(null, newUser as any);
       }
     } catch (error) {
       console.error('Error in Google Auth strategy:', error);
@@ -155,7 +155,7 @@ export async function setupSimpleGoogleAuth(app: Express) {
   passport.deserializeUser(async (id: string, cb) => {
     try {
       const [user] = await db.select().from(users).where(eq(users.id, id));
-      return cb(null, user || false);
+      return cb(null, (user as any) || false);
     } catch (error) {
       return cb(error);
     }
