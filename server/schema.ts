@@ -124,28 +124,46 @@ export const tasks = pgTable("tasks", {
   updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
 });
 
-// Analysis Results table
+// Analysis Results table - Almacena todos los datos del formulario de proyecto para uso de IA
 export const analysisResults = pgTable("analysis_results", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  
+  // Pestaña MVV (Misión, Visión, Valores)
   mission: text("mission"),
   vision: text("vision"),
   coreValues: text("core_values"),
+  
+  // Pestaña Objetivos
+  objectives: text("objectives"),
   communicationObjectives: text("communication_objectives"),
+  
+  // Pestaña Persona
   buyerPersona: text("buyer_persona"),
-  archetypes: jsonb("archetypes"),
-  socialNetworks: jsonb("social_networks"),
+  targetAudience: text("target_audience"),
+  
+  // Pestaña Estrategias
   marketingStrategies: text("marketing_strategies"),
+  archetypes: jsonb("archetypes"),
+  
+  // Pestaña Comunicación
   brandCommunicationStyle: text("brand_communication_style"),
+  brandTone: text("brand_tone"),
+  socialNetworks: jsonb("social_networks"),
+  
+  // Pestaña Políticas
   responsePolicyPositive: text("response_policy_positive"),
   responsePolicyNegative: text("response_policy_negative"),
-  // Campos legacy mantenidos para compatibilidad
-  objectives: text("objectives"),
-  targetAudience: text("target_audience"),
-  brandTone: text("brand_tone"),
+  
+  // Campos adicionales para contenido y análisis
   keywords: text("keywords"),
   contentThemes: jsonb("content_themes"),
   competitorAnalysis: jsonb("competitor_analysis"),
+  
+  // Campos para datos generales del proyecto (de la pestaña General)
+  projectDescription: text("project_description"),
+  additionalNotes: text("additional_notes"),
+  
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });

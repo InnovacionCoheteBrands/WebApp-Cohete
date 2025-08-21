@@ -50,7 +50,7 @@ export interface ContentSchedule {
  */
 export async function generateSchedule(
   projectName: string,
-  projectDetails: any,
+  projectDetails: any, // Note: 'any' used here, consider using a more specific type if available
   startDate: string,
   specifications?: string,
   durationDays: number = 15, // Periodo quincenal fijo (15 días)
@@ -150,99 +150,134 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
     }
 
-    // Extraer campos específicos del proyecto
-    const projectData = typeof projectDetails === 'object' ? projectDetails : {};
-    
+    // Obtener información completa del proyecto y análisis existente
+    const projectInfo = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+      with: {
+        // Aquí podrías incluir relaciones si las tienes definidas
+      }
+    });
+
+    const analysisInfo = await db.query.analysisResults.findFirst({
+      where: eq(analysisResults.projectId, projectId)
+    });
+
+    const productsInfo = await db.query.products.findMany({
+      where: eq(products.projectId, projectId)
+    });
+
     // Preparar secciones detalladas del proyecto
-    const communicationObjectivesSection = projectData.communicationObjectives 
+    const communicationObjectivesSection = analysisInfo.communicationObjectives 
       ? `**OBJETIVOS DE COMUNICACIÓN:**
-      ${projectData.communicationObjectives}
-      
+      ${analysisInfo.communicationObjectives}
+
       APLICACIÓN: Todo el contenido debe alinearse con estos objetivos específicos.`
       : "";
-    
-    const buyerPersonaSection = projectData.buyerPersona 
+
+    const buyerPersonaSection = analysisInfo.buyerPersona 
       ? `**BUYER PERSONA:**
-      ${projectData.buyerPersona}
-      
+      ${analysisInfo.buyerPersona}
+
       APLICACIÓN: Adapta el tono, contenido y mensajes para resonar con este perfil específico.`
       : "";
-    
-    const archetypesSection = projectData.archetypes && projectData.archetypes.length > 0
+
+    const archetypesSection = analysisInfo.archetypes && analysisInfo.archetypes.length > 0
       ? `**ARQUETIPOS DE MARCA:**
-      ${projectData.archetypes.map((arch: any) => `
+      ${analysisInfo.archetypes.map((arch: any) => `
       - ${arch.name || "Sin nombre"}: ${arch.profile || "Sin perfil"}
       `).join('\n')}
-      
+
       APLICACIÓN: Utiliza estos arquetipos para dar personalidad y consistencia a la comunicación.`
       : "";
-    
-    const marketingStrategiesSection = projectData.marketingStrategies
+
+    const marketingStrategiesSection = analysisInfo.marketingStrategies
       ? `**ESTRATEGIAS DE MARKETING:**
-      ${projectData.marketingStrategies}
-      
+      ${analysisInfo.marketingStrategies}
+
       APLICACIÓN: Cada publicación debe reforzar al menos una de estas estrategias.`
       : "";
-    
-    const brandCommunicationStyleSection = projectData.brandCommunicationStyle
+
+    const brandCommunicationStyleSection = analysisInfo.brandCommunicationStyle
       ? `**ESTILO DE COMUNICACIÓN DE MARCA:**
-      ${projectData.brandCommunicationStyle}
-      
+      ${analysisInfo.brandCommunicationStyle}
+
       APLICACIÓN: Mantén este estilo consistentemente en todas las publicaciones.`
       : "";
-    
-    const missionVisionValuesSection = (projectData.mission || projectData.vision || projectData.coreValues)
+
+    const missionVisionValuesSection = (analysisInfo.mission || analysisInfo.vision || analysisInfo.coreValues)
       ? `**MISIÓN, VISIÓN Y VALORES (MVV):**
-      ${projectData.mission ? `Misión: ${projectData.mission}` : ""}
-      ${projectData.vision ? `Visión: ${projectData.vision}` : ""}
-      ${projectData.coreValues ? `Valores Centrales: ${projectData.coreValues}` : ""}
-      
+      ${analysisInfo.mission ? `Misión: ${analysisInfo.mission}` : ""}
+      ${analysisInfo.vision ? `Visión: ${analysisInfo.vision}` : ""}
+      ${analysisInfo.coreValues ? `Valores Centrales: ${analysisInfo.coreValues}` : ""}
+
       APLICACIÓN: Asegura que el contenido refleje y promueva estos elementos fundamentales.`
       : "";
-    
-    const responsePoliciesSection = (projectData.responsePolicyPositive || projectData.responsePolicyNegative)
+
+    const responsePoliciesSection = (analysisInfo.responsePolicyPositive || analysisInfo.responsePolicyNegative)
       ? `**POLÍTICAS DE RESPUESTA:**
-      ${projectData.responsePolicyPositive ? `Respuesta Positiva: ${projectData.responsePolicyPositive}` : ""}
-      ${projectData.responsePolicyNegative ? `Respuesta Negativa: ${projectData.responsePolicyNegative}` : ""}
-      
+      ${analysisInfo.responsePolicyPositive ? `Respuesta Positiva: ${analysisInfo.responsePolicyPositive}` : ""}
+      ${analysisInfo.responsePolicyNegative ? `Respuesta Negativa: ${analysisInfo.responsePolicyNegative}` : ""}
+
       APLICACIÓN: Considera estas políticas al crear contenido que pueda generar interacciones.`
       : "";
-    
-    const initialProductsSection = projectData.initialProducts && projectData.initialProducts.length > 0
+
+    const initialProductsSection = productsInfo && productsInfo.length > 0
       ? `**PRODUCTOS/SERVICIOS PRINCIPALES:**
-      ${projectData.initialProducts.map((product: any) => `
+      ${productsInfo.map((product: any) => `
       - ${product.name || "Sin nombre"}: ${product.description || "Sin descripción"}
       `).join('\n')}
-      
+
       APLICACIÓN: Crea contenido que destaque estos productos/servicios de manera estratégica.`
       : "";
+
+    const projectContext = analysisInfo ? `
+    INFORMACIÓN COMPLETA DEL PROYECTO:
+    - Cliente: ${projectInfo?.client}
+    - Descripción: ${projectInfo?.description || analysisInfo.projectDescription || 'No especificada'}
+
+    MISIÓN, VISIÓN Y VALORES:
+    - Misión: ${analysisInfo.mission || 'No especificada'}
+    - Visión: ${analysisInfo.vision || 'No especificada'}
+    - Valores fundamentales: ${analysisInfo.coreValues || 'No especificados'}
+
+    OBJETIVOS:
+    - Objetivos generales: ${analysisInfo.objectives || 'No especificados'}
+    - Objetivos de comunicación: ${analysisInfo.communicationObjectives || 'No especificados'}
+
+    AUDIENCIA Y PERSONA:
+    - Buyer Persona: ${analysisInfo.buyerPersona || 'No especificada'}
+    - Audiencia objetivo: ${analysisInfo.targetAudience || 'No especificada'}
+
+    ESTRATEGIAS DE MARKETING:
+    - Estrategias principales: ${analysisInfo.marketingStrategies || 'No especificadas'}
+    - Arquetipos de marca: ${analysisInfo.archetypes ? JSON.stringify(analysisInfo.archetypes) : 'No especificados'}
+
+    COMUNICACIÓN Y TONO:
+    - Estilo de comunicación: ${analysisInfo.brandCommunicationStyle || 'No especificado'}
+    - Tono de marca: ${analysisInfo.brandTone || 'No especificado'}
+    - Redes sociales objetivo: ${analysisInfo.socialNetworks ? JSON.stringify(analysisInfo.socialNetworks) : 'No especificadas'}
+
+    POLÍTICAS DE RESPUESTA:
+    - Política para comentarios positivos: ${analysisInfo.responsePolicyPositive || 'No especificada'}
+    - Política para comentarios negativos: ${analysisInfo.responsePolicyNegative || 'No especificada'}
+
+    CONTENIDO ADICIONAL:
+    - Palabras clave: ${analysisInfo.keywords || 'No especificadas'}
+    - Temas de contenido: ${analysisInfo.contentThemes ? JSON.stringify(analysisInfo.contentThemes) : 'No especificados'}
+    - Notas adicionales: ${analysisInfo.additionalNotes || 'Ninguna'}
+
+    PRODUCTOS:
+    ${productsInfo.length > 0 ? productsInfo.map(product => `- ${product.name}: ${product.description || 'Sin descripción'}`).join('\n    ') : '- No hay productos registrados'}
+    ` : `
+    INFORMACIÓN DEL PROYECTO:
+    - Cliente: ${projectInfo?.client}
+    - Descripción: ${projectInfo?.description || 'No especificada'}
+    `;
 
     const prompt = `
       Crea un cronograma avanzado de contenido para redes sociales para el proyecto "${projectName}". Actúa como un experto profesional en marketing digital con especialización en contenidos de alto impacto, branding y narrativa de marca. Tu objetivo es crear contenido estratégico, persuasivo y memorable que genere engagement.
 
-      **PROYECTO:**
-      Nombre: ${projectName}
-      Cliente: ${projectData.client || "No especificado"}
-      Descripción: ${projectData.description || "No especificada"}
-      Fecha de inicio: ${projectData.startDate || formattedDate}
-      Fecha de fin: ${projectData.endDate || endDate}
-      Estado: ${projectData.status || "En planificación"}
-
-      ${communicationObjectivesSection}
-      
-      ${buyerPersonaSection}
-      
-      ${archetypesSection}
-      
-      ${marketingStrategiesSection}
-      
-      ${brandCommunicationStyleSection}
-      
-      ${missionVisionValuesSection}
-      
-      ${responsePoliciesSection}
-      
-      ${initialProductsSection}
+      ${projectContext}
 
       **PERIODO DE PLANIFICACIÓN:** 
       De ${formattedDate} a ${endDate} (${durationDays} días)
@@ -578,7 +613,15 @@ export async function generateSchedule(
           // Reemplazar comillas españolas por comillas inglesas
           jsonContent = jsonContent.replace(/«/g, '"').replace(/»/g, '"');
           // Asegurar comillas alrededor de strings en español con acentos y ñ
-          jsonContent = jsonContent.replace(/:(\s*)([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)(\s*[,}])/g, ':"$2"$3');
+          jsonContent = jsonContent.replace(/:[^"\[\{]*?([\wáéíóúüñÁÉÍÓÚÜÑ\s]+)[^"\]\}]*?([,}\]])/g, (match, p1, p2) => {
+            const value = p1.trim();
+            const separator = p2.trim();
+            // Si es un valor que se ve como un número o booleano, no añadir comillas
+            if (/^(\-?\d+\.?\d*|true|false|null)$/.test(value)) {
+              return `:"${value}"${separator}`;
+            }
+            return `:"${value}"${separator}`;
+          });
 
           // Limpiar casos de comas incorrectas o faltantes
           jsonContent = jsonContent.replace(/",\s*"/g, '","');
@@ -823,7 +866,7 @@ export async function generateSchedule(
           console.warn("Error en reparación general:", repairError);
         }
 
-        // Si la reparación general falló, continuamos con la extracción pieza porpieza
+        // Si la reparación general falló, continuamos con la extracción pieza por pieza
         while ((match = entriesRegex.exec(scheduleText)) !== null) {
           try {
             let entryText = match[0];
@@ -1140,8 +1183,6 @@ export async function generateSchedule(
     throw enhancedError;
   }
 }
-
-// Función de generación de imágenes eliminada (ya no se generan imágenes)
 
 /**
  * Extrae el contenido después de una etiqueta o dos puntos en una línea
