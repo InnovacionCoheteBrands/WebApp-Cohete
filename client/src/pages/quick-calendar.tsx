@@ -176,7 +176,7 @@ export default function QuickCalendar() {
                                 </SelectItem>
                               ))
                             ) : (
-                              <SelectItem value="" disabled>
+                              <SelectItem value="no-projects" disabled>
                                 No hay proyectos disponibles
                               </SelectItem>
                             )}

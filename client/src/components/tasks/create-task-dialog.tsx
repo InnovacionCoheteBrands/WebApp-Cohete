@@ -236,7 +236,7 @@ export function CreateTaskDialog({ projectId, children }: CreateTaskDialogProps)
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="unassigned">Sin asignar</SelectItem>
                         {users.map((user: any) => (
                           <SelectItem key={user.id} value={user.id}>
                             {user.fullName}

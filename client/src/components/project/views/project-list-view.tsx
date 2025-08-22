@@ -205,12 +205,12 @@ export default function ProjectListView({ projectId, viewId }: ProjectListViewPr
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Select value={statusFilter || ""} onValueChange={(val) => setStatusFilter(val || null)}>
+          <Select value={statusFilter || "all-status"} onValueChange={(val) => setStatusFilter(val === "all-status" ? null : val)}>
             <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los estados</SelectItem>
+              <SelectItem value="all-status">Todos los estados</SelectItem>
               {Object.values(taskStatusEnum.enumValues).map((status) => (
                 <SelectItem key={status} value={status}>
                   {translateStatus(status)}
@@ -219,12 +219,12 @@ export default function ProjectListView({ projectId, viewId }: ProjectListViewPr
             </SelectContent>
           </Select>
 
-          <Select value={priorityFilter || ""} onValueChange={(val) => setPriorityFilter(val || null)}>
+          <Select value={priorityFilter || "all-priority"} onValueChange={(val) => setPriorityFilter(val === "all-priority" ? null : val))}>
             <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="Prioridad" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas las prioridades</SelectItem>
+              <SelectItem value="all-priority">Todas las prioridades</SelectItem>
               {Object.values(taskPriorityEnum.enumValues).map((priority) => (
                 <SelectItem key={priority} value={priority}>
                   {translatePriority(priority)}

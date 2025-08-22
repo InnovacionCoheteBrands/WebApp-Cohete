@@ -319,12 +319,12 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Select value={statusFilter || ""} onValueChange={(val) => setStatusFilter(val || null)}>
+          <Select value={statusFilter || "all-status"} onValueChange={(val) => setStatusFilter(val === "all-status" ? null : val))}>
             <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos los estados</SelectItem>
+              <SelectItem value="all-status">Todos los estados</SelectItem>
               {Object.values(taskStatusEnum.enumValues).map((status) => (
                 <SelectItem key={status} value={status}>
                   {translateStatus(status)}

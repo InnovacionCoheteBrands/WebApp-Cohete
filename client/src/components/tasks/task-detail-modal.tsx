@@ -252,14 +252,14 @@ export function TaskDetailModal({ taskId, children }: TaskDetailModalProps) {
                   <Label>Asignado a</Label>
                   {isEditing ? (
                     <Select
-                      value={editedTask.assignedToId || ""}
-                      onValueChange={(value) => setEditedTask({ ...editedTask, assignedToId: value || null })}
+                      value={editedTask.assignedToId || "unassigned"}
+                      onValueChange={(value) => setEditedTask({ ...editedTask, assignedToId: value === "unassigned" ? null : value })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar usuario" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Sin asignar</SelectItem>
+                        <SelectItem value="unassigned">Sin asignar</SelectItem>
                         {users.map((user) => (
                           <SelectItem key={user.id} value={user.id}>
                             {user.fullName}

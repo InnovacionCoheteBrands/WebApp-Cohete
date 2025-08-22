@@ -702,7 +702,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                       const selectedOptions = Array.from(e.target.selectedOptions).map(option => parseInt(option.value));
                       setTaskToEdit({
                         ...taskToEdit!,
-                        dependencies: selectedOptions
+                        dependencies: selectedOptions.map(String)
                       });
                     }}
                   >
@@ -844,7 +844,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 id="new-assignee"
                 className="col-span-3 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
               >
-                <option value="">Sin asignar</option>
+                <option value="0">Sin asignar</option>
                 {users.map((user: any) => (
                   <option key={user.id} value={user.id}>
                     {user.fullName || user.username}
@@ -883,7 +883,7 @@ export default function ProjectKanbanView({ projectId, viewId }: ProjectKanbanVi
                 status: statusInput.value as any,
                 dueDate: dueDateInput.value ? new Date(dueDateInput.value) : null,
                 estimatedHours: estimatedHoursInput.value ? parseInt(estimatedHoursInput.value) : null,
-                assignedToId: assigneeInput.value ? parseInt(assigneeInput.value) : null,
+                assignedToId: assigneeInput.value !== "0" ? assigneeInput.value : null,
                 projectId: projectId
               });
               
