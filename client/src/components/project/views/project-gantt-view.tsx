@@ -98,10 +98,10 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
     // Filtrar por fechas (solo mostrar tareas que tengan fechas y que estén en el rango)
     filtered = filtered.filter((task) => {
       // Si no hay fechas, no mostramos en el gantt
-      if (!task.startDate && !task.dueDate) return false;
+      if (!task.dueDate && !task.dueDate) return false;
       
       // Si hay fecha de inicio o fecha límite, asegurarse que esté en el rango
-      const taskStart = task.startDate ? new Date(task.startDate) : null;
+      const taskStart = task.dueDate ? new Date(task.dueDate) : null;
       const taskEnd = task.dueDate ? new Date(task.dueDate) : null;
       
       if (taskStart && taskEnd) {
@@ -120,8 +120,8 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
 
     // Ordenar por fecha de inicio
     filtered.sort((a, b) => {
-      const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
-      const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
+      const aStart = a.dueDate ? new Date(a.dueDate).getTime() : 0;
+      const bStart = b.dueDate ? new Date(b.dueDate).getTime() : 0;
       
       if (aStart === 0 && bStart === 0) {
         // Si ambos no tienen fecha de inicio, ordenar por fecha límite
@@ -165,18 +165,18 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
 
   // Generar la barra de tarea
   const renderTaskBar = (task: Task) => {
-    if (!task.startDate && !task.dueDate) return null;
+    if (!task.dueDate && !task.dueDate) return null;
     
-    const startDate = task.startDate 
-      ? new Date(task.startDate) 
+    const startDate = task.dueDate 
+      ? new Date(task.dueDate) 
       : task.dueDate 
         ? new Date(task.dueDate) 
         : null;
         
     const endDate = task.dueDate 
       ? new Date(task.dueDate) 
-      : task.startDate 
-        ? new Date(task.startDate) 
+      : task.dueDate 
+        ? new Date(task.dueDate) 
         : null;
     
     if (!startDate || !endDate) return null;
@@ -309,17 +309,19 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
     <div className="p-4 space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Input
-            placeholder="Buscar tareas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-9 w-full sm:w-[300px]"
-            prefix={<Search className="h-4 w-4 text-muted-foreground" />}
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar tareas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 w-full sm:w-[300px] pl-10"
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          <Select value={statusFilter || "all-status"} onValueChange={(val) => setStatusFilter(val === "all-status" ? null : val))}>
+          <Select value={statusFilter || "all-status"} onValueChange={(val) => setStatusFilter(val === "all-status" ? null : val)}>
             <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="Estado" />
             </SelectTrigger>
@@ -375,15 +377,15 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
                 <div className="w-[250px] min-w-[250px] border-r shrink-0 p-2 truncate">
                   <div className="font-medium truncate">{task.title}</div>
                   <div className="text-xs text-muted-foreground">
-                    {task.startDate && (
+                    {task.dueDate && (
                       <span>
-                        {new Date(task.startDate).toLocaleDateString("es-ES", {
+                        {new Date(task.dueDate).toLocaleDateString("es-ES", {
                           day: "2-digit",
                           month: "short",
                         })}
                       </span>
                     )}
-                    {task.startDate && task.dueDate && " - "}
+                    {task.dueDate && task.dueDate && " - "}
                     {task.dueDate && (
                       <span>
                         {new Date(task.dueDate).toLocaleDateString("es-ES", {
@@ -403,7 +405,7 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
         </div>
       </div>
 
-      <style jsx global>{`
+      <style>{`
         .grid-cols-31 {
           display: grid;
           grid-template-columns: repeat(${dateRange.days.length}, minmax(30px, 1fr));

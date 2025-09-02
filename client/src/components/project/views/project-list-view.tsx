@@ -195,13 +195,15 @@ export default function ProjectListView({ projectId, viewId }: ProjectListViewPr
     <div className="space-y-4 p-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center space-x-2 w-full sm:w-auto">
-          <Input
-            placeholder="Buscar tareas..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="h-9 w-full sm:w-[300px]"
-            prefix={<Search className="h-4 w-4 text-muted-foreground" />}
-          />
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar tareas..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-9 w-full sm:w-[300px] pl-10"
+            />
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
@@ -219,7 +221,7 @@ export default function ProjectListView({ projectId, viewId }: ProjectListViewPr
             </SelectContent>
           </Select>
 
-          <Select value={priorityFilter || "all-priority"} onValueChange={(val) => setPriorityFilter(val === "all-priority" ? null : val))}>
+          <Select value={priorityFilter || "all-priority"} onValueChange={(val) => setPriorityFilter(val === "all-priority" ? null : val)}>
             <SelectTrigger className="w-[150px] h-9">
               <SelectValue placeholder="Prioridad" />
             </SelectTrigger>
@@ -331,7 +333,7 @@ export default function ProjectListView({ projectId, viewId }: ProjectListViewPr
                       : "-"}
                   </TableCell>
                   <TableCell>{task.assignedToId ? "Asignado" : "Sin asignar"}</TableCell>
-                  <TableCell>{task.taskGroup}</TableCell>
+                  <TableCell>{task.group}</TableCell>
                 </TableRow>
               ))
             )}
