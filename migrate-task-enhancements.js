@@ -4,10 +4,19 @@
  * Fixes type mismatches for OAuth user support
  */
 
-import { neon } from '@neondatabase/serverless';
+import postgres from 'postgres';
 
 async function runMigration() {
-  const sql = neon(process.env.DATABASE_URL);
+  const connectionString = process.env.DATABASE_URL;
+
+  if (!connectionString) {
+    throw new Error('DATABASE_URL must be set before running migrations');
+  }
+
+  const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+  const sql = postgres(connectionString, disableSSL ? {} : { ssl: { rejectUnauthorized: false } });
   
   try {
     console.log('Starting task enhancements migration...');
@@ -110,6 +119,8 @@ async function runMigration() {
   } catch (error) {
     console.error('Migration failed:', error);
     throw error;
+  } finally {
+    await sql.end({ timeout: 5 });
   }
 }
 

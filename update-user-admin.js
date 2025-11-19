@@ -1,18 +1,21 @@
 
-import { neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool } from '@neondatabase/serverless';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 import { eq } from 'drizzle-orm';
-import ws from 'ws';
 import * as schema from './shared/schema.js';
-
-neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL must be set');
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL;
+const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+const pool = new Pool({
+  connectionString,
+  ssl: disableSSL ? undefined : { rejectUnauthorized: false }
+});
 const db = drizzle(pool, { schema });
 
 async function updateUserToAdmin() {

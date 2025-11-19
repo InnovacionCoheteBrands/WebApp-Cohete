@@ -1,3 +1,4 @@
+import 'dotenv/config';
 // ===== IMPORTACIONES =====
 // Express: Framework web para Node.js
 import express, { type Request, Response, NextFunction } from "express";
@@ -5,8 +6,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 // Módulo para configurar Vite en desarrollo y servir archivos estáticos
 import { setupVite, serveStatic, log } from "./vite";
-// Servicio de integración con Grok AI para generación de contenido
-import { grokService } from "./grok-integration";
+// Servicio de integración con Gemini para generación de contenido
 // CORS: Middleware para manejar políticas de mismo origen
 import cors from 'cors';
 // Utilitarios para manejo de rutas de archivos
@@ -40,51 +40,48 @@ const app = express();
 // CRÍTICO: Replit workspace siempre usa puerto 5000 según docs.replit.com
 // Deployment usa variable PORT dinámicamente
 
+const isReplitEnvironment = !!(process.env.REPL_SLUG || process.env.REPL_OWNER || process.env.REPL_ID);
+const resolvedNodeEnv = process.env.NODE_ENV ?? (isReplitEnvironment ? 'production' : 'development');
+process.env.NODE_ENV = resolvedNodeEnv;
+const isProduction = resolvedNodeEnv === 'production';
+const DEFAULT_PORT = 5000;
+const requestedPort = parseInt(process.env.PORT ?? `${DEFAULT_PORT}`, 10);
+const port = Number.isNaN(requestedPort) ? DEFAULT_PORT : requestedPort;
+
 console.log('🔍 Environment detection:');
-console.log('  NODE_ENV:', process.env.NODE_ENV || 'undefined');
-console.log('  PORT:', process.env.PORT || 'undefined');
+console.log('  NODE_ENV:', resolvedNodeEnv);
+console.log('  PORT:', port);
 console.log('  REPL_ID:', process.env.REPL_ID ? 'present' : 'undefined');
-
-let port: number;
-let isProduction = false;
-
-// REPLIT DEPLOYMENT: Si PORT está definido por Replit
-if (process.env.PORT) {
-  port = parseInt(process.env.PORT);
-  isProduction = true;
-  process.env.NODE_ENV = 'production';
-  console.log(`🚀 REPLIT DEPLOYMENT MODE: Using PORT ${port}`);
-} else {
-  // DESARROLLO/WORKSPACE: Siempre puerto 5000
-  port = 5000;
-  console.log(`🔧 REPLIT WORKSPACE MODE: Using port ${port}`);
-}
 
 // ===== CONFIGURACIÓN CORS =====
 // CORS (Cross-Origin Resource Sharing) permite que el frontend acceda al backend
 // Lista de orígenes permitidos para hacer peticiones al servidor
-const allowedOrigins: string[] = [];
+const allowedOrigins = new Set<string>();
 
 // Configuración específica para producción en Replit
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   // Agregar dominios de Replit para deployment
   if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
-    allowedOrigins.push(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
+    allowedOrigins.add(`https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`);
   }
   // Agregar dominios alternativos de Replit
-  allowedOrigins.push(`https://${process.env.REPL_SLUG || 'localhost'}.replit.dev`);
-  allowedOrigins.push(`https://${process.env.REPL_ID || 'localhost'}.replit.app`);
+  allowedOrigins.add(`https://${process.env.REPL_SLUG || 'localhost'}.replit.dev`);
+  allowedOrigins.add(`https://${process.env.REPL_ID || 'localhost'}.replit.app`);
 } else {
   // Configuración para desarrollo local
-  allowedOrigins.push('http://localhost:5173', 'http://localhost:5000', 'http://0.0.0.0:5000');
+  ['http://localhost:5173', 'http://127.0.0.1:5173', 'http://0.0.0.0:5173'].forEach(origin => allowedOrigins.add(origin));
 }
 
 // Agregar variantes adicionales de localhost para desarrollo
-allowedOrigins.push('http://127.0.0.1:5000', 'http://localhost:5000', 'http://0.0.0.0:5000');
+[
+  `http://127.0.0.1:${port}`,
+  `http://localhost:${port}`,
+  `http://0.0.0.0:${port}`
+].forEach(origin => allowedOrigins.add(origin));
 
 // ===== REPLIT OPTIMIZATIONS =====
 // Detectar entorno Replit
-const isReplit = !!(process.env.REPL_SLUG || process.env.REPL_OWNER || process.env.REPL_ID);
+const isReplit = isReplitEnvironment;
 
 console.log(`[REPLIT] Detected environment: ${isReplit ? 'Replit' : 'Local'}`);
 if (isReplit) {
@@ -96,7 +93,7 @@ if (isReplit) {
 app.set('trust proxy', 1);
 
 // Security headers optimizados para entorno
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   app.use(helmet({
     contentSecurityPolicy: {
       directives: {
@@ -105,7 +102,7 @@ if (process.env.NODE_ENV === 'production') {
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         imgSrc: ["'self'", "data:", "https:", "blob:"],
         scriptSrc: ["'self'"],
-        connectSrc: ["'self'", "https://api.x.ai"]
+        connectSrc: ["'self'", "https://generativelanguage.googleapis.com"]
       }
     }
   }));
@@ -121,7 +118,7 @@ if (process.env.NODE_ENV === 'production') {
 app.use(compression());
 
 // Rate limiting para producción
-if (process.env.NODE_ENV === 'production') {
+if (isProduction) {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 500,
@@ -141,7 +138,7 @@ app.use(cors({
     if (!origin) return callback(null, true);
 
     // Permitir siempre en desarrollo o si el origen está en la lista permitida
-    if (process.env.NODE_ENV !== 'production' || allowedOrigins.indexOf(origin) !== -1) {
+  if (!isProduction || allowedOrigins.has(origin)) {
       callback(null, true);
     } else {
       console.log('CORS blocked origin:', origin);
@@ -181,14 +178,24 @@ app.use((req, res, next) => {
 
 // ROOT HEALTH CHECK - SMART DETECTION for Development vs Production
 app.get('/', (req, res, next) => {
-  // Detectar si estamos en deployment (production) basado en PORT variable
-  const isDeployment = !!process.env.PORT || process.env.NODE_ENV === 'production';
-  
-  if (isDeployment) {
-    // EN DEPLOYMENT: Respuesta rápida para health checks
+  // Detectar si estamos en deployment (production) o en Replit
+  const isDeployment = isProduction || isReplit;
+
+  // Solo responder con el HTML del health check cuando se solicite explícitamente.
+  const healthQuery = req.query.health;
+  const requestedHealthQuery = Array.isArray(healthQuery) ? healthQuery[0] : healthQuery;
+  const wantsHealthViaQuery =
+    requestedHealthQuery === '1' ||
+    requestedHealthQuery === 'true';
+  const healthHeader = req.header('x-health-check');
+  const wantsHealthViaHeader = healthHeader === '1' || healthHeader === 'true';
+  const isExplicitHealthCheck = wantsHealthViaQuery || wantsHealthViaHeader;
+
+  if (isDeployment && isExplicitHealthCheck) {
+    // EN DEPLOYMENT: Respuesta rápida para health checks solicitados explícitamente
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.setHeader('Cache-Control', 'no-cache');
-    
+
     const healthResponse = `<!DOCTYPE html>
 <html>
 <head>
@@ -202,11 +209,11 @@ app.get('/', (req, res, next) => {
     <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
 </body>
 </html>`;
-    
+
     return res.status(200).send(healthResponse);
   }
-  
-  // EN DESARROLLO: Continuar al middleware de Vite/React
+
+  // Para navegación normal, continuar al middleware de Vite/React
   next();
 });
 
@@ -325,7 +332,11 @@ app.use((req, res, next) => {
         database: {
           connected: !!process.env.DATABASE_URL,
           url_configured: !!process.env.DATABASE_URL,
-          provider: process.env.DATABASE_URL?.includes('neon') ? 'neon' : 'unknown'
+          provider: process.env.DATABASE_URL?.includes('supabase')
+            ? 'supabase'
+            : process.env.DATABASE_URL?.includes('neon')
+              ? 'neon'
+              : 'postgres'
         },
         features: {
           ai: !!process.env.XAI_API_KEY,

@@ -51,7 +51,6 @@ async function finalDeploy() {
       
       // Update package.json with required dependencies
       const requiredDeps = {
-        "@neondatabase/serverless": "^0.10.4",
         "express": "^4.21.2", 
         "cors": "^2.8.5",
         "helmet": "^8.1.0",
@@ -59,6 +58,7 @@ async function finalDeploy() {
         "express-rate-limit": "^8.0.1",
         "express-session": "^1.18.1",
         "drizzle-orm": "^0.39.1",
+        "postgres": "^3.4.5",
         "bcryptjs": "^3.0.2",
         "multer": "^1.4.5",
         "axios": "^1.8.4"

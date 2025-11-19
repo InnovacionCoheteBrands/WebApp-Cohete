@@ -62,7 +62,7 @@ async function deploy() {
       `--external:passport-google-oauth20 ` +
       `--external:passport-local ` +
       `--external:pg ` +
-      `--external:@neondatabase/serverless ` +
+      `--external:postgres ` +
       `--external:drizzle-orm ` +
       `--external:bcryptjs ` +
       `--external:@sendgrid/mail ` +

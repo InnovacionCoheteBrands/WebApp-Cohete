@@ -1,11 +1,7 @@
 // Script de migración manual para el gestor de proyectos avanzado
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
+import { Pool } from 'pg';
+import { drizzle } from 'drizzle-orm/node-postgres';
 import { sql } from 'drizzle-orm';
-import ws from 'ws';
-import * as schema from './shared/schema';
-
-neonConfig.webSocketConstructor = ws;
 
 async function main() {
   console.log('Iniciando migración para gestor de proyectos avanzado...');
@@ -15,7 +11,14 @@ async function main() {
     process.exit(1);
   }
 
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const connectionString = process.env.DATABASE_URL!;
+  const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+  const pool = new Pool({
+    connectionString,
+    ssl: disableSSL ? undefined : { rejectUnauthorized: false }
+  });
   const db = drizzle(pool);
 
   try {

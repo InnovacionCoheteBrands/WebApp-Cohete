@@ -86,8 +86,8 @@ async function build() {
       dependencies: {
         // Solo las dependencias runtime críticas que no se pueden bundlear
         "pg": originalPackage.dependencies.pg,
-        "bcryptjs": originalPackage.dependencies.bcryptjs,
-        "@neondatabase/serverless": originalPackage.dependencies["@neondatabase/serverless"]
+        "postgres": originalPackage.dependencies.postgres,
+        "bcryptjs": originalPackage.dependencies.bcryptjs
       }
     };
 

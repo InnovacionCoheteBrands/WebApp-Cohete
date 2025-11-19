@@ -4,14 +4,37 @@ import session from "express-session";
 import type { Express, RequestHandler } from "express";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { users } from "@shared/schema";
+import { users } from "../shared/schema";
 import { eq } from "drizzle-orm";
+
+function getPgConnectionOptions() {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL must be set for session handling");
+  }
+
+  const isLocalHost = databaseUrl.includes("localhost") || databaseUrl.includes("127.0.0.1");
+  const disableSSL = process.env.SUPABASE_USE_SSL === "false" || isLocalHost;
+
+  const connection: Record<string, unknown> = {
+    connectionString: databaseUrl,
+  };
+
+  if (!disableSSL) {
+    connection.ssl = {
+      rejectUnauthorized: false,
+    };
+  }
+
+  return connection;
+}
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
+    conObject: getPgConnectionOptions(),
     createTableIfMissing: false,
     ttl: sessionTtl,
     tableName: "sessions",
@@ -37,9 +60,9 @@ export async function setupSimpleGoogleAuth(app: Express) {
 
     app.use(session({
       store: new PgSession({
-        // No need to pass pool, it will use DATABASE_URL from environment
         tableName: 'sessions',
-        errorLog: () => {} // Suppress error logs
+        conObject: getPgConnectionOptions(),
+        errorLog: () => { } // Suppress error logs
       }),
       secret: process.env.SESSION_SECRET || 'fallback-secret-please-change',
       resave: false,
@@ -77,78 +100,82 @@ export async function setupSimpleGoogleAuth(app: Express) {
 
   // Dynamic callback URL based on current host
   const currentHost = process.env.REPLIT_DOMAINS || 'localhost:5000';
-  const callbackURL = currentHost.includes('localhost') 
+  const callbackURL = currentHost.includes('localhost')
     ? `http://${currentHost}/api/auth/google/callback`
     : `https://${currentHost}/api/auth/google/callback`;
 
-  passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID!,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    callbackURL: callbackURL
-  },
-  async (accessToken, refreshToken, profile, done) => {
-    try {
-      // Generate user data from Google profile
-      const email = profile.emails?.[0]?.value || '';
-      const firstName = profile.name?.givenName || '';
-      const lastName = profile.name?.familyName || '';
-      const fullName = `${firstName} ${lastName}`.trim() || email;
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    console.warn("⚠️ Google OAuth credentials missing. Google Auth will not work.");
+  } else {
+    passport.use(new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: callbackURL
+    },
+      async (accessToken, refreshToken, profile, done) => {
+        try {
+          // Generate user data from Google profile
+          const email = profile.emails?.[0]?.value || '';
+          const firstName = profile.name?.givenName || '';
+          const lastName = profile.name?.familyName || '';
+          const fullName = `${firstName} ${lastName}`.trim() || email;
 
-      // Generate username from email or name
-      let username = email.split('@')[0] || firstName.toLowerCase();
-      if (!username) {
-        username = `user_${profile.id}`;
-      }
+          // Generate username from email or name
+          let username = email.split('@')[0] || firstName.toLowerCase();
+          if (!username) {
+            username = `user_${profile.id}`;
+          }
 
-      // Try to find existing user first
-      const [existingUser] = await db.select().from(users).where(eq(users.id, profile.id));
+          // Try to find existing user first
+          const [existingUser] = await db.select().from(users).where(eq(users.id, profile.id));
 
-      if (existingUser) {
-        // Update existing user with latest profile data
-        const [updatedUser] = await db.update(users)
-          .set({
-            email: email,
-            firstName: firstName,
-            lastName: lastName,
-            fullName: fullName,
-            profileImageUrl: profile.photos?.[0]?.value || '',
-            updatedAt: new Date(),
-          })
-          .where(eq(users.id, profile.id))
-          .returning();
+          if (existingUser) {
+            // Update existing user with latest profile data
+            const [updatedUser] = await db.update(users)
+              .set({
+                email: email,
+                firstName: firstName,
+                lastName: lastName,
+                fullName: fullName,
+                profileImageUrl: profile.photos?.[0]?.value || '',
+                updatedAt: new Date(),
+              })
+              .where(eq(users.id, profile.id))
+              .returning();
 
-        // Verificar si el usuario ya está en el equipo de Cohete Brands
-        await ensureUserInTeam(updatedUser.id, email);
+            // Verificar si el usuario ya está en el equipo de Cohete Brands
+            await ensureUserInTeam(updatedUser.id, email);
 
-        return done(null, updatedUser as any);
-      } else {
-        // Create new user
-        const [newUser] = await db.insert(users)
-          .values({
-            id: profile.id,
-            email: email,
-            firstName: firstName,
-            lastName: lastName,
-            fullName: fullName,
-            username: username,
-            profileImageUrl: profile.photos?.[0]?.value || '',
-            isPrimary: false,
-            role: 'content_creator',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          })
-          .returning();
+            return done(null, updatedUser as any);
+          } else {
+            // Create new user
+            const [newUser] = await db.insert(users)
+              .values({
+                id: profile.id,
+                email: email,
+                firstName: firstName,
+                lastName: lastName,
+                fullName: fullName,
+                username: username,
+                profileImageUrl: profile.photos?.[0]?.value || '',
+                isPrimary: false,
+                role: 'content_creator',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .returning();
 
-        // Asignar automáticamente al equipo de Cohete Brands
-        await ensureUserInTeam(newUser.id, email);
+            // Asignar automáticamente al equipo de Cohete Brands
+            await ensureUserInTeam(newUser.id, email);
 
-        return done(null, newUser as any);
-      }
-    } catch (error) {
-      console.error('Error in Google Auth strategy:', error);
-      return done(error, false);
-    }
-  }));
+            return done(null, newUser as any);
+          }
+        } catch (error) {
+          console.error('Error in Google Auth strategy:', error);
+          return done(error, false);
+        }
+      }));
+  }
 
   passport.serializeUser((user: any, cb) => cb(null, user.id));
 
@@ -162,9 +189,15 @@ export async function setupSimpleGoogleAuth(app: Express) {
   });
 
   // Auth routes
-  app.get("/api/auth/google", 
-    passport.authenticate("google", { scope: ["profile", "email"] })
-  );
+  app.get("/api/auth/google", (req, res, next) => {
+    if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+      return res.status(503).json({
+        message: "Google Login is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in your environment variables.",
+        code: "GOOGLE_AUTH_NOT_CONFIGURED"
+      });
+    }
+    passport.authenticate("google", { scope: ["profile", "email"] })(req, res, next);
+  });
 
   app.get("/api/auth/google/callback",
     passport.authenticate("google", { failureRedirect: "/auth" }),
@@ -235,7 +268,7 @@ async function ensureUserInTeam(userId: string, email: string) {
 
       console.log(`✅ Usuario ${userId} (${email}) marcado como miembro del equipo de Cohete Brands`);
       console.log(`📊 Departamento actualizado a: Cohete Brands`);
-      
+
     } catch (error) {
       console.error('Error al procesar usuario de Cohete Brands:', error);
     }

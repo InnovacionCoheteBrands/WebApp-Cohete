@@ -64,7 +64,7 @@ async function initializePdfParse() {
 }
 import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
-import { grokService } from "./grok-integration";
+import { geminiService } from "./gemini-integration";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import ExcelJS from 'exceljs';
@@ -72,8 +72,8 @@ import { db } from "./db";
 import { eq, asc, desc, and, or, sql, like, inArray } from "drizzle-orm";
 import * as htmlPdf from 'html-pdf-node';
 import { jsPDF } from 'jspdf';
-import { AIModel } from "@shared/schema";
-import * as schema from "@shared/schema";
+import { AIModel } from "../shared/schema";
+import * as schema from "../shared/schema";
 import { format } from "date-fns";
 import {
   insertProjectSchema,
@@ -91,7 +91,7 @@ import {
   updateProfileSchema,
   scheduleEntries,
   Product
-} from "@shared/schema";
+} from "../shared/schema";
 import { WebSocketServer } from "ws";
 
 // Global declaration for storage
@@ -128,7 +128,7 @@ const multerStorage = multer.diskStorage({
 });
 
 // Configuración de multer para documentos (PDF, DOCX, TXT)
-const documentUpload = multer({ 
+const documentUpload = multer({
   storage: multerStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
@@ -174,7 +174,7 @@ const marketingImageUpload = multer({
   storage: multerStorage,
   limits: { fileSize: 8 * 1024 * 1024 }, // 8MB limit para imágenes de marketing (algunas pueden ser de mayor calidad)
   fileFilter: (req, file, cb) => {
-    // Aceptar solo formatos de imagen que funcionen bien con Grok Vision
+    // Aceptar solo formatos de imagen que funcionen bien con Gemini Vision
     const allowedTypes = [
       'image/jpeg',
       'image/jpg',
@@ -226,8 +226,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/create-primary-account", async (req: Request, res: Response) => {
     try {
-      console.log("Creating primary account request:", { 
-        body: { ...req.body, password: '[REDACTED]', secretKey: '[REDACTED]' } 
+      console.log("Creating primary account request:", {
+        body: { ...req.body, password: '[REDACTED]', secretKey: '[REDACTED]' }
       });
 
       const { fullName, username, password, secretKey } = req.body;
@@ -716,9 +716,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar contraseña
       await global.storage.updateUser(userId, { password: hashedPassword });
 
-      res.json({ 
+      res.json({
         message: "Contraseña actualizada correctamente",
-        targetUser: user.fullName 
+        targetUser: user.fullName
       });
     } catch (error) {
       console.error("Error changing user password:", error);
@@ -837,7 +837,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(safeProject);
     } catch (error) {
       console.error("Error detallado al obtener proyecto:", error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "Error al cargar el proyecto",
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -924,7 +924,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Análisis de Imágenes de Marketing con Grok Vision
+  // Análisis de Imágenes de Marketing con Gemini Vision
   app.post("/api/projects/:projectId/analyze-image", isAuthenticated, marketingImageUpload.single('image'), async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
@@ -954,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tipo de análisis inválido. Debe ser 'brand', 'content' o 'audience'" });
       }
 
-      // Realizar análisis de la imagen con Grok Vision
+      // Realizar análisis de la imagen con Gemini Vision
       const analysisResult = await analyzeMarketingImage(req.file.path, analysisType);
 
       // Devolver el resultado del análisis
@@ -972,9 +972,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Error analizando imagen de marketing:", error);
-      res.status(500).json({ 
-        message: "Error al analizar la imagen", 
-        error: (error as Error).message 
+      res.status(500).json({
+        message: "Error al analizar la imagen",
+        error: (error as Error).message
       });
     }
   });
@@ -1148,17 +1148,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate required data
-      const { startDate, specifications, periodType, additionalInstructions } = req.body;
+      const { startDate, specifications, periodType, additionalInstructions, durationDays } = req.body;
       if (!startDate) {
         return res.status(400).json({ message: "Start date is required" });
       }
 
-      // Forzamos el uso de Grok como único modelo de IA disponible
-      const selectedAIModel = AIModel.GROK;
+      // Forzamos el uso de Gemini como único modelo de IA disponible
 
-      // Determinar el número de días según el tipo de periodo
+      // Determinar el número de días según el tipo de periodo o duración específica
       let periodDays = 15; // Valor predeterminado: quincenal (15 días)
-      if (periodType === "mensual") {
+
+      if (durationDays) {
+        periodDays = parseInt(durationDays);
+      } else if (periodType === "mensual") {
         periodDays = 31; // Periodo mensual: 31 días
       }
 
@@ -1176,7 +1178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await global.storage.listProductsByProject(projectId);
       console.log(`[CALENDAR] Productos encontrados para el proyecto: ${products.length}`);
 
-      // Generate schedule using Grok AI, passing previous content
+      // Generate schedule using Gemini, passing previous content
       console.log("[CALENDAR] Iniciando generación de cronograma");
       console.log("[CALENDAR] Instrucciones adicionales: ", additionalInstructions || "Ninguna");
 
@@ -1268,24 +1270,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[CALENDAR ROUTE] Error tipo: ${errorType}, Mensaje: ${errorMessage}`);
 
       // Mensajes de error específicos basados en el tipo de error
-      if (errorType === "NETWORK" || errorMessage.includes("connect") || errorMessage.includes("Servicio de Grok AI temporalmente no disponible")) {
-        // Error de conexión o disponibilidad de Grok API
-        return res.status(503).json({ 
-          message: "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.", 
+      if (errorType === "NETWORK" || errorMessage.includes("connect") || errorMessage.includes("Servicio de Gemini temporalmente no disponible")) {
+        // Error de conexión o disponibilidad de Gemini
+        return res.status(503).json({
+          message: "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.",
           error: errorMessage,
           errorType: "SERVICIO_NO_DISPONIBLE"
         });
       } else if (errorType === "RATE_LIMIT" || errorMessage.includes("límite de peticiones")) {
         // Error de límite de peticiones
-        return res.status(429).json({ 
-          message: "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.", 
+        return res.status(429).json({
+          message: "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.",
           error: errorMessage,
           errorType: "LIMITE_EXCEDIDO"
         });
       } else if (errorType === "AUTH" || errorMessage.includes("autenticación") || errorMessage.includes("authentication")) {
         // Error de autenticación con la API
-        return res.status(401).json({ 
-          message: "Error en la configuración del servicio de IA. Por favor contacta al administrador.", 
+        return res.status(401).json({
+          message: "Error en la configuración del servicio de IA. Por favor contacta al administrador.",
           error: errorMessage,
           errorType: "ERROR_AUTENTICACION"
         });
@@ -1306,8 +1308,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Errores generales
-      res.status(500).json({ 
-        message: "Ocurrió un error al crear el calendario. Por favor intenta con menos plataformas o en otro momento.", 
+      res.status(500).json({
+        message: "Ocurrió un error al crear el calendario. Por favor intenta con menos plataformas o en otro momento.",
         error: errorMessage,
         errorType: "ERROR_GENERAL"
       });
@@ -1518,10 +1520,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map(([area, _]) => {
             const areaNames = {
               titles: "títulos",
-              descriptions: "descripciones", 
+              descriptions: "descripciones",
               content: "contenido",
               copyIn: "texto integrado (copyIn)",
-              copyOut: "texto descripción (copyOut)", 
+              copyOut: "texto descripción (copyOut)",
               designInstructions: "instrucciones de diseño",
               platforms: "plataformas",
               hashtags: "hashtags"
@@ -1540,7 +1542,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (selected && specificInstructions[area] && specificInstructions[area].trim()) {
               const areaNames = {
                 titles: "TÍTULOS",
-                descriptions: "DESCRIPCIONES", 
+                descriptions: "DESCRIPCIONES",
                 content: "CONTENIDO",
                 copyIn: "TEXTO INTEGRADO (copyIn)",
                 copyOut: "TEXTO DESCRIPCIÓN (copyOut)",
@@ -1609,10 +1611,10 @@ RESPONDE ÚNICAMENTE CON UN JSON VÁLIDO con esta estructura exacta:
 IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el valor original EXACTAMENTE como está.`;
 
         try {
-          const editedContentText = await grokService.generateText(editPrompt, {
+          const editedContentText = await geminiService.generateText(editPrompt, {
             temperature: 0.7,
             maxTokens: 2000,
-            model: 'grok-3-mini-beta'
+            model: 'gemini-1.5-pro'
           });
 
           console.log(`[REGENERATE] Respuesta de edición para entrada ${i + 1}:`, editedContentText.substring(0, 200));
@@ -1676,9 +1678,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       res.json(updatedSchedule);
     } catch (error) {
       console.error("Error al regenerar cronograma:", error);
-      res.status(500).json({ 
-        message: "Error al regenerar cronograma", 
-        error: (error as Error).message 
+      res.status(500).json({
+        message: "Error al regenerar cronograma",
+        error: (error as Error).message
       });
     }
   });
@@ -1796,8 +1798,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         worksheet.getCell('A4').alignment = { horizontal: 'right' };
 
         worksheet.mergeCells('C4:D4');
-        worksheet.getCell('C4').value = new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', { 
-          day: '2-digit', month: '2-digit', year: 'numeric' 
+        worksheet.getCell('C4').value = new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', {
+          day: '2-digit', month: '2-digit', year: 'numeric'
         });
 
         worksheet.mergeCells('E4:F4');
@@ -1806,7 +1808,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         worksheet.getCell('E4').alignment = { horizontal: 'right' };
 
         worksheet.mergeCells('G4:J4');
-        worksheet.getCell('G4').value = new Date().toLocaleDateString('es-ES', { 
+        worksheet.getCell('G4').value = new Date().toLocaleDateString('es-ES', {
           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
@@ -1834,8 +1836,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         // Agregar encabezados manualmente a la fila correspondiente
         const headerRow = worksheet.getRow(headerRowIndex);
         headerRow.values = [
-          'Fecha', 'Hora', 'Plataforma', 'Formato', 'Título', 
-          'Copy In (texto en diseño)', 'Copy Out (descripción)', 
+          'Fecha', 'Hora', 'Plataforma', 'Formato', 'Título',
+          'Copy In (texto en diseño)', 'Copy Out (descripción)',
           'Hashtags', 'Instrucciones de Diseño', 'URL de Imagen'
         ];
 
@@ -1861,8 +1863,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         sortedEntries.forEach((entry, index) => {
           const rowIndex = headerRowIndex + index + 1;
           const row = worksheet.addRow({
-            postDate: entry.postDate ? new Date(entry.postDate).toLocaleDateString('es-ES', { 
-              day: '2-digit', month: '2-digit', year: 'numeric' 
+            postDate: entry.postDate ? new Date(entry.postDate).toLocaleDateString('es-ES', {
+              day: '2-digit', month: '2-digit', year: 'numeric'
             }) : 'Sin fecha',
             postTime: entry.postTime || 'Sin hora',
             platform: entry.platform,
@@ -1891,8 +1893,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             };
 
             // Ajustar texto para celdas con mucho contenido
-            cell.alignment = { 
-              vertical: 'top', 
+            cell.alignment = {
+              vertical: 'top',
               wrapText: true,
               shrinkToFit: false // Deshabilitar la reducción del tamaño de texto
             };
@@ -1902,7 +1904,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           const platformCell = row.getCell(3);
           let platformColor = '4F46E5'; // Color por defecto (indigo)
 
-          switch(entry.platform) {
+          switch (entry.platform) {
             case 'Instagram':
               platformColor = 'E1306C'; // Rosa Instagram
               break;
@@ -2025,10 +2027,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           });
 
           // Definir colores mejorados
-          const primaryColor = [79/255, 70/255, 229/255]; // #4F46E5 en RGB
-          const primaryLightColor = [224/255, 231/255, 255/255]; // #E0E7FF en RGB
-          const grayColor = [107/255, 114/255, 128/255]; // #6B7280 en RGB
-          const accentColor = [245/255, 158/255, 11/255]; // #F59E0B en RGB - Amber
+          const primaryColor = [79 / 255, 70 / 255, 229 / 255]; // #4F46E5 en RGB
+          const primaryLightColor = [224 / 255, 231 / 255, 255 / 255]; // #E0E7FF en RGB
+          const grayColor = [107 / 255, 114 / 255, 128 / 255]; // #6B7280 en RGB
+          const accentColor = [245 / 255, 158 / 255, 11 / 255]; // #F59E0B en RGB - Amber
 
           // Añadir imágenes y diseños
 
@@ -2062,12 +2064,12 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             { title: 'PROYECTO', value: project.name },
             { title: 'CLIENTE', value: project.client },
             { title: 'TOTAL PUBLICACIONES', value: sortedEntries.length.toString() },
-            { 
-              title: 'FECHA DE INICIO', 
-              value: schedule.startDate 
-                ? new Date(schedule.startDate).toLocaleDateString('es-ES', { 
-                    day: '2-digit', month: '2-digit', year: 'numeric' 
-                  })
+            {
+              title: 'FECHA DE INICIO',
+              value: schedule.startDate
+                ? new Date(schedule.startDate).toLocaleDateString('es-ES', {
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+                })
                 : 'No definida'
             }
           ];
@@ -2107,9 +2109,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(8);
           doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-          const currentDate = new Date().toLocaleDateString('es-ES', { 
-            day: '2-digit', month: '2-digit', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit' 
+          const currentDate = new Date().toLocaleDateString('es-ES', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
           });
           doc.text(`Generado el: ${currentDate}`, 260, 55, { align: 'right' });
 
@@ -2208,10 +2210,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             }
 
             // Formatear fecha
-            const dateFormatted = entry.postDate 
+            const dateFormatted = entry.postDate
               ? new Date(entry.postDate).toLocaleDateString('es-ES', {
-                  day: '2-digit', month: '2-digit', year: 'numeric'
-                })
+                day: '2-digit', month: '2-digit', year: 'numeric'
+              })
               : 'Sin fecha';
 
             // Convertir color de plataforma
@@ -2355,7 +2357,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         // Get context from previous messages
         const previousMessages = await global.storage.getChatMessages(projectId);
 
-        // Convertir los mensajes anteriores al formato requerido por Grok
+        // Convertir los mensajes anteriores al formato requerido por Gemini
         const formattedMessages = previousMessages.map(msg => {
           // En el schema tenemos 'role' pero la API necesita 'user' o 'assistant'
           return {
@@ -3076,7 +3078,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       // Actualizar los comentarios
       await global.storage.updateScheduleEntry(entryId, { comments });
 
-      res.status(200).json({ 
+      res.status(200).json({
         message: "Comentarios actualizados correctamente",
         entryId
       });
@@ -3990,9 +3992,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         team: teams,
         membership: teamMembers
       })
-      .from(teamMembers)
-      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(eq(teamMembers.userId, req.user.id));
+        .from(teamMembers)
+        .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+        .where(eq(teamMembers.userId, req.user.id));
 
       res.json(userTeams);
     } catch (error) {
@@ -4036,9 +4038,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           joinedAt: teamMembers.joinedAt
         }
       })
-      .from(teamMembers)
-      .innerJoin(users, eq(teamMembers.userId, users.id))
-      .where(eq(teamMembers.teamId, teamId));
+        .from(teamMembers)
+        .innerJoin(users, eq(teamMembers.userId, users.id))
+        .where(eq(teamMembers.teamId, teamId));
 
       res.json(members);
     } catch (error) {
@@ -4209,10 +4211,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           username: schema.users.username
         }
       })
-      .from(schema.tasks)
-      .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
-      .where(eq(schema.tasks.id, taskId))
-      .limit(1);
+        .from(schema.tasks)
+        .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
+        .where(eq(schema.tasks.id, taskId))
+        .limit(1);
 
       if (taskWithDetails.length === 0) {
         return res.status(404).json({ message: "Tarea no encontrada" });
@@ -4512,9 +4514,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           role: schema.users.role,
         }
       })
-      .from(schema.taskAssignees)
-      .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
-      .where(eq(schema.taskAssignees.taskId, taskId));
+        .from(schema.taskAssignees)
+        .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
+        .where(eq(schema.taskAssignees.taskId, taskId));
 
       res.json(assignees);
     } catch (error) {
@@ -4588,13 +4590,13 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           'completed': { id: 'completed', name: 'Completadas', color: '#10b981', position: 2 }
         };
 
-        const group = taskGroups.find(g => g.id === task.groupId) || 
-                     defaultGroups[task.group] || 
-                     defaultGroups['todo'];
+        const group = taskGroups.find(g => g.id === task.groupId) ||
+          defaultGroups[task.group] ||
+          defaultGroups['todo'];
 
         const project = projects.find(p => p.id === task.projectId);
-        const assignee = users.find(u => u.id === task.assignedToId) || 
-                        users.find(u => u.id === task.createdById);
+        const assignee = users.find(u => u.id === task.assignedToId) ||
+          users.find(u => u.id === task.createdById);
 
         return {
           task: {
@@ -4840,9 +4842,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         team: teams,
         membership: teamMembers
       })
-      .from(teamMembers)
-      .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-      .where(eq(teamMembers.userId, req.user.id));
+        .from(teamMembers)
+        .innerJoin(teams, eq(teamMembers.teamId, teams.id))
+        .where(eq(teamMembers.userId, req.user.id));
 
       res.json(userTeams);
     } catch (error) {
@@ -4886,9 +4888,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           joinedAt: teamMembers.joinedAt
         }
       })
-      .from(teamMembers)
-      .innerJoin(users, eq(teamMembers.userId, users.id))
-      .where(eq(teamMembers.teamId, teamId));
+        .from(teamMembers)
+        .innerJoin(users, eq(teamMembers.userId, users.id))
+        .where(eq(teamMembers.teamId, teamId));
 
       res.json(members);
     } catch (error) {
@@ -5059,10 +5061,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           username: schema.users.username
         }
       })
-      .from(schema.tasks)
-      .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
-      .where(eq(schema.tasks.id, taskId))
-      .limit(1);
+        .from(schema.tasks)
+        .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
+        .where(eq(schema.tasks.id, taskId))
+        .limit(1);
 
       if (taskWithDetails.length === 0) {
         return res.status(404).json({ message: "Tarea no encontrada" });
@@ -5362,9 +5364,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           role: schema.users.role,
         }
       })
-      .from(schema.taskAssignees)
-      .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
-      .where(eq(schema.taskAssignees.taskId, taskId));
+        .from(schema.taskAssignees)
+        .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
+        .where(eq(schema.taskAssignees.taskId, taskId));
 
       res.json(assignees);
     } catch (error) {
@@ -5438,13 +5440,13 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           'completed': { id: 'completed', name: 'Completadas', color: '#10b981', position: 2 }
         };
 
-        const group = taskGroups.find(g => g.id === task.groupId) || 
-                     defaultGroups[task.group] || 
-                     defaultGroups['todo'];
+        const group = taskGroups.find(g => g.id === task.groupId) ||
+          defaultGroups[task.group] ||
+          defaultGroups['todo'];
 
         const project = projects.find(p => p.id === task.projectId);
-        const assignee = users.find(u => u.id === task.assignedToId) || 
-                        users.find(u => u.id === task.createdById);
+        const assignee = users.find(u => u.id === task.assignedToId) ||
+          users.find(u => u.id === task.createdById);
 
         return {
           task: {

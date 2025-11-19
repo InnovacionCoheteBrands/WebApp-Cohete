@@ -68,7 +68,7 @@ DATABASE_URL=your_postgresql_connection_string
 ### Optional Environment Variables
 
 ```bash
-XAI_API_KEY=your_grok_api_key
+GEMINI_API_KEY=your_gemini_api_key
 GOOGLE_CLIENT_ID=your_google_oauth_client_id
 GOOGLE_CLIENT_SECRET=your_google_oauth_secret
 SENDGRID_API_KEY=your_sendgrid_api_key
@@ -178,7 +178,7 @@ Provides detailed performance metrics for autoscaling and monitoring.
 
 2. **Database Connection Failed**
    - Verify DATABASE_URL environment variable
-   - Check Neon PostgreSQL connection string
+   - Check Supabase PostgreSQL connection string (Project Settings → Database → Connection string → Node)
 
 3. **Build Failures**
    - Ensure all dependencies are installed
@@ -242,7 +242,7 @@ For issues related to:
 - **Replit Platform**: Contact Replit Support
 - **Application Issues**: Check console logs and health endpoints
 - **Performance**: Monitor `/api/metrics` endpoint
-- **Database**: Verify Neon PostgreSQL connection
+- **Database**: Verify Supabase PostgreSQL connection
 
 ---
 

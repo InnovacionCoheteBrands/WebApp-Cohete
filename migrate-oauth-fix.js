@@ -3,18 +3,21 @@
  * Actualiza las referencias de user_id de integer a varchar para compatibilidad con OAuth
  */
 
-import { neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import { Pool } from '@neondatabase/serverless';
-import ws from 'ws';
-
-neonConfig.webSocketConstructor = ws;
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
 
 if (!process.env.DATABASE_URL) {
   throw new Error('DATABASE_URL must be set');
 }
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const connectionString = process.env.DATABASE_URL!;
+const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+const pool = new Pool({
+  connectionString,
+  ssl: disableSSL ? undefined : { rejectUnauthorized: false }
+});
 const db = drizzle({ client: pool });
 
 async function runMigration() {

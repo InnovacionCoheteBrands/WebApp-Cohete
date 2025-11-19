@@ -78,7 +78,7 @@ Cohete Workflow is a comprehensive project management platform designed specific
 ## External Dependencies
 
 ### Core Dependencies
-- **Database**: Neon PostgreSQL serverless
+- **Database**: Supabase PostgreSQL (managed Postgres)
 - **AI Service**: Grok AI API (X.AI)
 - **Authentication**: Google OAuth 2.0
 - **File Storage**: Local storage with expansion capability

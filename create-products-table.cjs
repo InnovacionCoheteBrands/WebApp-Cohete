@@ -1,11 +1,20 @@
-const { Pool, neonConfig } = require('@neondatabase/serverless');
-const { drizzle } = require('drizzle-orm/neon-serverless');
+const { Pool } = require('pg');
+const { drizzle } = require('drizzle-orm/node-postgres');
 const { sql } = require('drizzle-orm');
-const ws = require('ws');
 
-neonConfig.webSocketConstructor = ws;
+const connectionString = process.env.DATABASE_URL;
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be set before running migrations');
+}
+
+const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+const pool = new Pool({
+  connectionString,
+  ssl: disableSSL ? undefined : { rejectUnauthorized: false }
+});
 const client = drizzle(pool);
 
 async function main() {

@@ -1,12 +1,12 @@
 // ===== IMPORTACIONES PARA ANÁLISIS CON IA =====
-// Servicio de integración con Grok AI
-import { grokService } from "./grok-integration";
+// Servicio de integración con Gemini
+import { geminiService } from "./gemini-integration";
 // Módulos de Node.js para manejo de archivos
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
 // ===== CONFIGURACIÓN DE IA =====
-// Usamos exclusivamente los modelos de Grok para todas las funcionalidades de IA
+// Usamos exclusivamente los modelos de Gemini para todas las funcionalidades de IA
 
 // ===== INTERFACE PARA RESULTADOS DE ANÁLISIS =====
 /**
@@ -36,7 +36,7 @@ export interface DocumentAnalysisResult {
 
 /**
  * ===== FUNCIÓN PRINCIPAL DE ANÁLISIS DE DOCUMENTOS =====
- * Analiza un documento utilizando Grok AI para extraer insights de marketing
+ * Analiza un documento utilizando Gemini para extraer insights de marketing
  * @param documentText - Texto del documento a analizar
  * @returns Promise con los resultados del análisis estructurado
  */
@@ -87,15 +87,15 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
       ${documentText}
     `;
 
-    // Usamos Grok para el análisis de documentos
-    const analysisText = await grokService.generateText(prompt, {
-      model: "grok-3-mini-beta", // Usando modelo disponible de Grok
+    // Usamos Gemini para el análisis de documentos
+    const analysisText = await geminiService.generateText(prompt, {
+      model: "gemini-1.5-pro", // Usando modelo disponible de Gemini
       temperature: 0.7,
       maxTokens: 2000
     });
     
     if (!analysisText) {
-      throw new Error("Empty response from Grok AI");
+      throw new Error("Empty response from Gemini");
     }
 
     // Intentar parsear la respuesta JSON
@@ -125,7 +125,7 @@ export async function analyzeDocument(documentText: string): Promise<DocumentAna
  * Processes a chat message in the context of a marketing project
  */
 /**
- * Analiza una imagen de marketing utilizando la capacidad de visión de Grok
+ * Analiza una imagen de marketing utilizando la capacidad de visión de Gemini
  * @param imagePath Ruta a la imagen a analizar
  * @param analysisType Tipo de análisis a realizar: 'brand', 'content', o 'audience'
  */
@@ -176,12 +176,12 @@ export async function analyzeMarketingImage(
         break;
     }
     
-    // Usar el modelo de visión de Grok para analizar la imagen
-    const analysisResult = await grokService.generateTextWithImage(
+    // Usar el modelo de visión de Gemini para analizar la imagen
+    const analysisResult = await geminiService.generateTextWithImage(
       prompt,
       base64Image,
       {
-        model: "grok-vision-beta",
+        model: "gemini-1.5-pro",
         temperature: 0.5,
         maxTokens: 1500
       }
@@ -255,7 +255,7 @@ export async function processChatMessage(
   chatHistory?: { role: string; content: string }[]
 ): Promise<string> {
   try {
-    // Usar el servicio de Grok en lugar de OpenAI
+    // Usar el servicio de Gemini en lugar de OpenAI
     const systemPrompt = projectContext 
       ? `Eres un asistente de marketing para un proyecto llamado "${projectContext.name}" para el cliente "${projectContext.client}". 
          Utiliza el siguiente contexto del proyecto en tus respuestas cuando sea relevante:
@@ -277,9 +277,9 @@ export async function processChatMessage(
     // Añadir el mensaje actual
     promptText += `Usuario: ${message}\n\nAsistente:`;
 
-    // Usar el servicio de Grok con el modelo solicitado
-    const response = await grokService.generateText(promptText, {
-      model: "grok-3-mini-beta", // Usando modelo de la familia Grok 3
+    // Usar el servicio de Gemini con el modelo solicitado
+    const response = await geminiService.generateText(promptText, {
+      model: "gemini-1.5-pro",
       temperature: 0.7,
       maxTokens: 1000
     });

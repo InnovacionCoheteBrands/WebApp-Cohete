@@ -166,7 +166,7 @@ const formSchema = z.object({
   periodType: z.enum(["quincenal", "mensual"]).default("quincenal"),
   specifications: z.string().optional(),
   additionalInstructions: z.string().optional(), // Nuevo campo de instrucciones adicionales
-  aiModel: z.enum(["grok"]).default("grok"), // Forzamos siempre a usar Grok
+  aiModel: z.enum(["gemini-1.5-pro"]).default("gemini-1.5-pro"), // Forzamos siempre a usar Gemini
   advanced: z.object({
     includeCopyIn: z.boolean().default(true),
     includeCopyOut: z.boolean().default(true),
@@ -262,7 +262,7 @@ export default function CalendarCreator() {
       specifications: "",
       additionalInstructions: "", // Valor por defecto para instrucciones adicionales
       periodType: "quincenal", // Por defecto usamos periodo quincenal
-      aiModel: "grok", // Forzamos el uso de Grok
+      aiModel: "gemini-1.5-pro", // Forzamos el uso de Gemini
       advanced: {
         includeCopyIn: true,
         includeCopyOut: true,

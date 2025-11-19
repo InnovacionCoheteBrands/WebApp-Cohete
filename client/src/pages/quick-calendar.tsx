@@ -17,7 +17,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { CalendarIcon, Clock, ArrowLeft, Sparkles, Zap } from "lucide-react";
+import { CalendarIcon, Clock, ArrowLeft, Sparkles, Zap, CheckCircle2, LayoutTemplate, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const quickCalendarSchema = z.object({
@@ -31,12 +31,10 @@ const quickCalendarSchema = z.object({
 
 type QuickCalendarFormData = z.infer<typeof quickCalendarSchema>;
 
-
-
 const durationOptions = [
-  { value: "7", label: "1 semana (7 días)" },
-  { value: "14", label: "2 semanas (14 días)" },
-  { value: "30", label: "1 mes (30 días)" },
+  { value: "7", label: "1 semana (7 días)", desc: "Ideal para campañas cortas" },
+  { value: "14", label: "2 semanas (14 días)", desc: "Sprint quincenal estándar" },
+  { value: "30", label: "1 mes (30 días)", desc: "Planificación mensual completa" },
 ];
 
 export default function QuickCalendar() {
@@ -64,19 +62,18 @@ export default function QuickCalendar() {
       if (!projects || projects.length === 0) {
         throw new Error("No hay proyectos disponibles");
       }
-      
+
       const selectedProject = projects.find((p: any) => p.id.toString() === data.projectId);
       if (!selectedProject) {
         throw new Error("Proyecto no encontrado");
       }
 
-      // Usar la ruta del proyecto para generar el calendario (la misma que usa el calendario avanzado)
-      // Esto asegura que se pasen todos los datos del proyecto incluyendo el análisis completo
       const requestData = {
         projectId: parseInt(data.projectId),
         startDate: format(data.startDate, "yyyy-MM-dd"),
         specifications: data.specifications || `Cronograma rápido y simple`,
         periodType: parseInt(data.duration) > 15 ? "mensual" : "quincenal",
+        durationDays: parseInt(data.duration),
         additionalInstructions: `Este es un calendario RÁPIDO y simple. IMPORTANTE: NO uses cantidad fija de publicaciones. Debes ADAPTARTE completamente a las especificaciones del proyecto y sus redes sociales configuradas. Si el proyecto define frecuencias mensuales (ej: 20 publicaciones/mes), calcula proporcionalmente para el período de ${data.duration} días. Mantén el contenido directo y efectivo pero respeta siempre las características específicas de cada proyecto.`,
       };
 
@@ -121,229 +118,261 @@ export default function QuickCalendar() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => setLocation("/dashboard")}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Zap className="h-6 w-6 text-blue-500" />
-            Calendario Rápido
-          </h1>
-          <p className="text-muted-foreground">
-            Genera un cronograma básico en minutos con opciones simples
-          </p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-6">
+      <div className="container mx-auto max-w-6xl space-y-8">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="space-y-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation("/dashboard")}
+              className="mb-2 hover:bg-white/50 -ml-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver al Dashboard
+            </Button>
+            <h1 className="text-4xl font-bold tracking-tight flex items-center gap-3">
+              <div className="p-2 bg-blue-500/10 rounded-xl">
+                <Zap className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <span className="text-gradient">Calendario Rápido</span>
+            </h1>
+            <p className="text-muted-foreground text-lg max-w-2xl">
+              Genera cronogramas optimizados por IA en segundos. Ideal para sprints y campañas ágiles.
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Formulario */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Configuración Rápida
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {/* Proyecto */}
-                  <FormField
-                    control={form.control}
-                    name="projectId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Proyecto</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona un proyecto" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {projects && projects.length > 0 ? (
-                              projects.map((project: any) => (
-                                <SelectItem key={project.id} value={project.id.toString()}>
-                                  {project.name}
-                                </SelectItem>
-                              ))
-                            ) : (
-                              <SelectItem value="no-projects" disabled>
-                                No hay proyectos disponibles
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {/* Fecha de inicio */}
-                  <FormField
-                    control={form.control}
-                    name="startDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel>Fecha de Inicio</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "PPP", { locale: es })
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Formulario Principal */}
+          <div className="lg:col-span-8 space-y-6">
+            <Card className="glass-card border-0 shadow-premium overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <Sparkles className="h-5 w-5 text-indigo-500" />
+                  Configuración del Sprint
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Proyecto */}
+                      <FormField
+                        control={form.control}
+                        name="projectId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-medium">Proyecto</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-12 input-premium">
+                                  <SelectValue placeholder="Selecciona un proyecto" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {projects && projects.length > 0 ? (
+                                  projects.map((project: any) => (
+                                    <SelectItem key={project.id} value={project.id.toString()}>
+                                      {project.name}
+                                    </SelectItem>
+                                  ))
                                 ) : (
-                                  <span>Selecciona una fecha</span>
+                                  <SelectItem value="no-projects" disabled>
+                                    No hay proyectos disponibles
+                                  </SelectItem>
                                 )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => date < new Date()}
-                              initialFocus
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                  {/* Duración */}
-                  <FormField
-                    control={form.control}
-                    name="duration"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Duración</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      {/* Duración */}
+                      <FormField
+                        control={form.control}
+                        name="duration"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-base font-medium">Duración</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-12 input-premium">
+                                  <SelectValue placeholder="Selecciona duración" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {durationOptions.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    <span className="font-medium">{option.label}</span>
+                                    <span className="ml-2 text-muted-foreground text-xs hidden sm:inline">
+                                      - {option.desc}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* Fecha de inicio */}
+                    <FormField
+                      control={form.control}
+                      name="startDate"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="text-base font-medium">Fecha de Inicio</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "h-12 w-full pl-3 text-left font-normal input-premium",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP", { locale: es })
+                                  ) : (
+                                    <span>Selecciona una fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) => date < new Date()}
+                                initialFocus
+                                className="rounded-md border shadow-lg"
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* Especificaciones adicionales */}
+                    <FormField
+                      control={form.control}
+                      name="specifications"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-base font-medium">Instrucciones Específicas (Opcional)</FormLabel>
                           <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecciona duración" />
-                            </SelectTrigger>
+                            <Textarea
+                              placeholder="Ej: Enfocarse en la promoción de verano, usar tono energético, incluir llamadas a la acción claras..."
+                              className="min-h-[120px] resize-none input-premium text-base"
+                              {...field}
+                            />
                           </FormControl>
-                          <SelectContent>
-                            {durationOptions.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                  
+                    {/* Botón de envío */}
+                    <Button
+                      type="submit"
+                      className="w-full h-14 text-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                      disabled={isGenerating}
+                    >
+                      {isGenerating ? (
+                        <div className="flex items-center gap-3">
+                          <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Generando tu cronograma con IA...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Rocket className="h-5 w-5 animate-pulse" />
+                          <span>Generar Calendario Ahora</span>
+                        </div>
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
+            </Card>
+          </div>
 
-                  {/* Especificaciones adicionales */}
-                  <FormField
-                    control={form.control}
-                    name="specifications"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Instrucciones Adicionales (Opcional)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Ejemplo: Enfoque en promociones de verano, tono casual, incluir testimonios..."
-                            className="resize-none"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          {/* Sidebar Informativo */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Feature Cards */}
+            <div className="grid gap-4">
+              <Card className="glass-card border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+                <CardContent className="p-4 flex items-start gap-4">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <Clock className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Ultrarrápido</h3>
+                    <p className="text-sm text-muted-foreground">Generación completa en menos de 2 minutos.</p>
+                  </div>
+                </CardContent>
+              </Card>
 
-                  {/* Botón de envío */}
+              <Card className="glass-card border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+                <CardContent className="p-4 flex items-start gap-4">
+                  <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <Sparkles className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">IA Avanzada</h3>
+                    <p className="text-sm text-muted-foreground">Contenido optimizado por Gemini 3 Pro.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="glass-card border-0 shadow-sm hover:shadow-md transition-all duration-300 group">
+                <CardContent className="p-4 flex items-start gap-4">
+                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg group-hover:scale-110 transition-transform duration-300">
+                    <LayoutTemplate className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold">Estructurado</h3>
+                    <p className="text-sm text-muted-foreground">Formato listo para publicar y compartir.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Comparison Card */}
+            <Card className="glass-card border-0 shadow-premium bg-gradient-to-br from-slate-900 to-slate-800 text-white">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-green-400" />
+                  ¿Por qué usar Quick Mode?
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-slate-300 text-sm">
+                  Perfecto cuando necesitas resultados inmediatos sin configuraciones complejas. La IA tomará decisiones inteligentes basadas en tu proyecto.
+                </p>
+                <div className="pt-4 border-t border-white/10">
+                  <p className="text-xs text-slate-400 mb-2">¿Necesitas más control?</p>
                   <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isGenerating}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setLocation("/calendar-creator")}
+                    className="w-full bg-white/10 hover:bg-white/20 text-white border-0"
                   >
-                    {isGenerating ? (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4 animate-spin" />
-                        Generando Cronograma...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="mr-2 h-4 w-4" />
-                        Generar Calendario Rápido
-                      </>
-                    )}
+                    Ir al Modo Avanzado
                   </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Información lateral */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">¿Qué incluye?</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-blue-500" />
-                <span>Generación en 1-2 minutos</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <Sparkles className="h-4 w-4 text-blue-500" />
-                <span>Contenido optimizado por IA</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <CalendarIcon className="h-4 w-4 text-blue-500" />
-                <span>Cronograma automático</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Diferencias</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div>
-                <h4 className="font-medium">Calendario Rápido:</h4>
-                <p className="text-muted-foreground">Opciones básicas, generación inmediata</p>
-              </div>
-              <div>
-                <h4 className="font-medium">Calendario Avanzado:</h4>
-                <p className="text-muted-foreground">Control total, personalización detallada</p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLocation("/calendar-creator")}
-                className="w-full"
-              >
-                Ir a Calendario Avanzado
-              </Button>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

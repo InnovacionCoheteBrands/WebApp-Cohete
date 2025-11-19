@@ -61,12 +61,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <div className="flex flex-1 flex-col min-w-0 overflow-hidden">
         {/* Contenido principal con mejoras visuales */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-background/50 transition-all duration-300 min-h-0 subtle-pattern hide-scrollbar">
-          
+
           {/* ===== BOTÓN DE MENU MÓVIL =====*/}
           {/* Solo visible en dispositivos móviles */}
           <div className="md:hidden flex items-center mb-6">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               onClick={toggleSidebar}
               className="flex items-center gap-3 rounded-md p-2 hover:bg-accent interactive-element"
             >
@@ -84,10 +84,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
           {/* ===== CONTENEDOR DEL CONTENIDO =====*/}
           {/* Contenedor principal con transiciones y efectos de scroll */}
-          <div 
-            className={`w-full max-w-7xl mx-auto transition-all duration-300 fade-in-effect ${
-              scrolled ? 'pt-2' : 'pt-3' // Ajustar padding según el estado de scroll
-            }`}
+          <div
+            className={`w-full max-w-7xl mx-auto transition-all duration-300 fade-in-effect ${scrolled ? 'pt-2' : 'pt-3' // Ajustar padding según el estado de scroll
+              }`}
           >
             {/* Renderizar el contenido hijo pasado al layout */}
             {children}

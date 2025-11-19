@@ -63,8 +63,9 @@ This creates:
 ## Environment Variables Required
 
 Ensure these are set in production:
-- `DATABASE_URL` - PostgreSQL connection string
-- `GROK_API_KEY` or `XAI_API_KEY` - For AI functionality
+- `DATABASE_URL` - PostgreSQL connection string (use the Supabase "Connection string" > "Node" URI)
+- `SUPABASE_USE_SSL` *(optional)* - Set to `false` only when connecting to a local Postgres instance without TLS
+- `GEMINI_API_KEY` - For AI functionality
 - `NODE_ENV=production`
 
 ## What's Bundled
@@ -73,7 +74,7 @@ The production build includes:
 - ✅ `cors` - CORS middleware
 - ✅ `express` - Web framework
 - ✅ `drizzle-orm` - Database ORM
-- ✅ `pg` - PostgreSQL driver
+- ✅ `pg` / `postgres` - PostgreSQL drivers
 - ✅ All other application dependencies
 
 ## What's External

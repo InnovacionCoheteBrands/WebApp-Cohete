@@ -173,7 +173,7 @@ export default function ImageAnalysisPanel() {
             Análisis de {result.analysisType === 'brand' ? 'Marca' : result.analysisType === 'content' ? 'Contenido' : 'Audiencia'}
           </CardTitle>
           <CardDescription>
-            Análisis realizado con Grok Vision
+            Análisis realizado con Gemini Vision
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -197,7 +197,7 @@ export default function ImageAnalysisPanel() {
         <CardHeader>
           <CardTitle>Análisis de Imágenes de Marketing</CardTitle>
           <CardDescription>
-            Analiza tus materiales visuales desde diferentes perspectivas usando Grok Vision.
+            Analiza tus materiales visuales desde diferentes perspectivas usando Gemini Vision.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -335,7 +335,7 @@ export default function ImageAnalysisPanel() {
           <DialogHeader>
             <DialogTitle>Analizando imagen</DialogTitle>
             <DialogDescription>
-              Grok Vision está analizando tu imagen. Este proceso puede tardar unos segundos.
+              Gemini Vision está analizando tu imagen. Este proceso puede tardar unos segundos.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-center items-center py-10">

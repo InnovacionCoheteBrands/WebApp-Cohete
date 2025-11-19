@@ -1,5 +1,5 @@
 
-const { neon } = require('@neondatabase/serverless');
+const postgres = require('postgres');
 
 async function addAnalysisFields() {
   if (!process.env.DATABASE_URL) {
@@ -7,7 +7,11 @@ async function addAnalysisFields() {
     process.exit(1);
   }
 
-  const sql = neon(process.env.DATABASE_URL);
+  const connectionString = process.env.DATABASE_URL;
+  const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+  const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+  const sql = postgres(connectionString, disableSSL ? {} : { ssl: { rejectUnauthorized: false } });
   
   try {
     console.log('🔄 Iniciando migración de campos de análisis...');
@@ -107,6 +111,8 @@ async function addAnalysisFields() {
       detail: error.detail
     });
     process.exit(1);
+  } finally {
+    await sql.end({ timeout: 5 });
   }
 }
 

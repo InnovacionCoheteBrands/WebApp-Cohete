@@ -1,15 +1,21 @@
 // Ejecuta este script para actualizar la tabla de tareas
 // Node.js script para actualizar la tabla de tareas en la base de datos
 
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from 'ws';
-import fs from 'fs';
+import { Pool } from 'pg';
 
-// Configuración para Neon DB
-neonConfig.webSocketConstructor = ws;
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const db = drizzle(pool);
+const connectionString = process.env.DATABASE_URL;
+
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be set before running migrations');
+}
+
+const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+const pool = new Pool({
+  connectionString,
+  ssl: disableSSL ? undefined : { rejectUnauthorized: false }
+});
 
 async function runMigration() {
   console.log('Iniciando migración de las tablas...');

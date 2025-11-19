@@ -41,7 +41,7 @@ export const automationTriggerEnum = pgEnum("automation_trigger", ["status_chang
 export const automationActionEnum = pgEnum("automation_action", ["notify", "assign", "move", "update_status", "create_task"]);
 
 // Modelos de IA soportados por el sistema
-export const aiModelEnum = pgEnum("ai_model", ["gpt-4", "gpt-3.5-turbo", "grok-beta"]);
+export const aiModelEnum = pgEnum("ai_model", ["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"]);
 
 // ===== DEFINICIÓN DE TABLAS =====
 
@@ -128,42 +128,42 @@ export const tasks = pgTable("tasks", {
 export const analysisResults = pgTable("analysis_results", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  
+
   // Pestaña MVV (Misión, Visión, Valores)
   mission: text("mission"),
   vision: text("vision"),
   coreValues: text("core_values"),
-  
+
   // Pestaña Objetivos
   objectives: text("objectives"),
   communicationObjectives: text("communication_objectives"),
-  
+
   // Pestaña Persona
   buyerPersona: text("buyer_persona"),
   targetAudience: text("target_audience"),
-  
+
   // Pestaña Estrategias
   marketingStrategies: text("marketing_strategies"),
   archetypes: jsonb("archetypes"),
-  
+
   // Pestaña Comunicación
   brandCommunicationStyle: text("brand_communication_style"),
   brandTone: text("brand_tone"),
   socialNetworks: jsonb("social_networks"),
-  
+
   // Pestaña Políticas
   responsePolicyPositive: text("response_policy_positive"),
   responsePolicyNegative: text("response_policy_negative"),
-  
+
   // Campos adicionales para contenido y análisis
   keywords: text("keywords"),
   contentThemes: jsonb("content_themes"),
   competitorAnalysis: jsonb("competitor_analysis"),
-  
+
   // Campos para datos generales del proyecto (de la pestaña General)
   projectDescription: text("project_description"),
   additionalNotes: text("additional_notes"),
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
@@ -430,7 +430,17 @@ export const activityLog = pgTable("activity_log", {
   action: text("action").notNull(),
   description: text("description"),
   metadata: jsonb("metadata"),
-  createdAt: timestamp("created_at").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Password Reset Tokens table
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // User Settings table
@@ -490,6 +500,8 @@ export type InsertProjectMember = typeof projectMembers.$inferInsert;
 export type ProjectAssignment = typeof projectAssignments.$inferSelect;
 
 // Define schemas for validation
+// import { createInsertSchema } from "drizzle-zod";
+// ...
 export const insertUserSchema = createInsertSchema(users);
 export const insertProjectSchema = createInsertSchema(projects);
 export const insertTaskSchema = createInsertSchema(tasks);
@@ -535,5 +547,5 @@ export const updateProfileSchema = z.object({
 });
 
 // Export enum types
-export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "grok-beta"]);
+export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"]);
 export type AIModelType = z.infer<typeof AIModel>;

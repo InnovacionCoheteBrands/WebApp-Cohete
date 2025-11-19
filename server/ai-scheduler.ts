@@ -1,11 +1,11 @@
 // ===== IMPORTACIONES PARA PROGRAMACIÓN DE CONTENIDO =====
 // date-fns: Librería para manejo y formateo de fechas
 import { format, parseISO, addDays } from "date-fns";
-// Servicio de integración con Grok AI
-import { grokService } from "./grok-integration";
+// Servicio de integración con Gemini AI
+import { geminiService } from "./gemini-integration";
 
 // ===== CONFIGURACIÓN DE IA =====
-// Integración exclusiva con Grok para todas las funcionalidades de IA
+// Integración exclusiva con Gemini para todas las funcionalidades de IA
 
 // ===== INTERFACES PARA CRONOGRAMA DE CONTENIDO =====
 /**
@@ -37,7 +37,7 @@ export interface ContentSchedule {
 
 /**
  * ===== FUNCIÓN PRINCIPAL DE GENERACIÓN DE CRONOGRAMA =====
- * Genera un cronograma de contenido para redes sociales usando exclusivamente Grok AI
+ * Genera un cronograma de contenido para redes sociales usando exclusivamente Gemini
  * Tiene en cuenta la frecuencia mensual de publicaciones definida para cada red social
  * @param projectName - Nombre del proyecto
  * @param projectDetails - Detalles y análisis del proyecto
@@ -61,6 +61,65 @@ export async function generateSchedule(
   console.log(`[CALENDAR] Parámetros: startDate=${startDate}, durationDays=${durationDays}, prevContent.length=${previousContent.length}`);
 
   try {
+    const safeParseArray = (value: unknown): any[] => {
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return [];
+        }
+
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (Array.isArray(parsed)) {
+            return parsed;
+          }
+          if (parsed && typeof parsed === "object") {
+            return [parsed];
+          }
+        } catch {
+          return trimmed
+            .split(/[\n,;]+/)
+            .map((item) => item.trim())
+            .filter(Boolean);
+        }
+      }
+
+      if (value && typeof value === "object") {
+        return [value];
+      }
+
+      return [];
+    };
+
+    const toSentenceList = (value: unknown): string => {
+      const arrayValue = safeParseArray(value);
+      return arrayValue.length > 0
+        ? arrayValue
+          .map((item) => {
+            if (typeof item === "string") {
+              return item.trim();
+            }
+            if (item && typeof item === "object") {
+              if ("name" in item && typeof (item as any).name === "string") {
+                const name = ((item as any).name as string).trim();
+                const count = Number((item as any).count ?? (item as any).posts ?? (item as any).frequency ?? 0);
+                return count > 0 ? `${name} (${count})` : name;
+              }
+              return JSON.stringify(item);
+            }
+            return String(item);
+          })
+          .filter(Boolean)
+          .join(", ")
+        : typeof value === "string"
+          ? value
+          : "";
+    };
+
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
@@ -70,26 +129,73 @@ export async function generateSchedule(
     let socialNetworksSection = "";
     try {
       console.log(`[CALENDAR] Procesando datos de redes sociales del proyecto`);
-      const socialNetworks = projectDetails?.analysisResults?.socialNetworks || [];
-      const selectedNetworks = socialNetworks
-        .filter((network: any) => network.selected && typeof network.postsPerMonth === 'number')
-        .map((network: any) => {
+      const rawSocialNetworksSources = [
+        projectDetails?.analysisResults?.socialNetworks,
+        projectDetails?.analysis?.socialNetworks,
+        projectDetails?.socialNetworks
+      ];
+
+      const socialNetworksRaw = rawSocialNetworksSources.reduce<any[]>((acc, candidate) => {
+        const parsed = safeParseArray(candidate);
+        if (parsed.length) {
+          return acc.concat(parsed);
+        }
+        return acc;
+      }, []);
+
+      const normalizedNetworks = socialNetworksRaw.map((network: any) => {
+        const postsPerMonth =
+          typeof network?.postsPerMonth === "number"
+            ? network.postsPerMonth
+            : Number(network?.postsPerMonth ?? network?.frequency ?? network?.monthlyPosts ?? 0);
+
+        const contentTypeDetailsRaw = safeParseArray(network?.contentTypeDetails);
+        const contentTypeDetails = contentTypeDetailsRaw.map((detail: any) => {
+          if (typeof detail === "string") {
+            const match = detail.match(/(.+?)\s*\((\d+)/);
+            if (match) {
+              return { name: match[1].trim(), count: Number(match[2]) };
+            }
+            return { name: detail.trim(), count: 0 };
+          }
+
+          return {
+            name: detail?.name || detail?.type || detail?.title || "Formato",
+            count: Number(detail?.count ?? detail?.posts ?? detail?.quantity ?? 0)
+          };
+        });
+
+        const contentTypes = safeParseArray(network?.contentTypes).map((type: any) => {
+          if (typeof type === "string") {
+            return type.trim();
+          }
+          return type?.name || type?.type || JSON.stringify(type);
+        });
+
+        return {
+          name: network?.name || network?.platform || "Red social",
+          selected: network?.selected ?? postsPerMonth > 0,
+          postsPerMonth,
+          contentTypes,
+          contentTypeDetails
+        };
+      });
+
+      const selectedNetworks = normalizedNetworks
+        .filter((network) => network.selected && network.postsPerMonth > 0)
+        .map((network) => {
           // Calculate posts per period based on monthly frequency
-          const postsPerPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
+          const postsForPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
 
           // Extraer tipos de contenido con sus cantidades específicas
-          const contentTypeDetails = network.contentTypeDetails || [];
-          const selectedContentTypes = contentTypeDetails
-            .filter((type: any) => type.count > 0)
+          const selectedContentTypes = network.contentTypeDetails
+            .filter((type: any) => Number(type.count) > 0)
             .map((type: any) => `${type.name} (${type.count} posts)`);
 
           return {
-            name: network.name,
-            postsPerMonth: network.postsPerMonth,
-            postsForPeriod: postsPerPeriod,
-            contentTypes: network.contentTypes || [],
-            selectedContentTypes: selectedContentTypes,
-            contentTypeDetails: contentTypeDetails
+            ...network,
+            postsForPeriod,
+            selectedContentTypes
           };
         });
 
@@ -150,129 +256,188 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
     }
 
-    // Obtener información completa del proyecto y análisis existente
-    const projectInfo = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
-      with: {
-        // Aquí podrías incluir relaciones si las tienes definidas
-      }
-    });
+    const analysisInfo: any =
+      projectDetails?.analysisResults ??
+      projectDetails?.analysis ??
+      projectDetails ??
+      {};
 
-    const analysisInfo = await db.query.analysisResults.findFirst({
-      where: eq(analysisResults.projectId, projectId)
-    });
+    const clientName =
+      (projectDetails && (projectDetails as any).client && String((projectDetails as any).client).trim()) ||
+      (analysisInfo.client && String(analysisInfo.client).trim()) ||
+      "Cliente sin nombre definido";
 
-    const productsInfo = await db.query.products.findMany({
-      where: eq(products.projectId, projectId)
-    });
+    const projectDescription =
+      (projectDetails && (projectDetails as any).description && String((projectDetails as any).description).trim()) ||
+      (analysisInfo.projectDescription && String(analysisInfo.projectDescription).trim()) ||
+      (analysisInfo.description && String(analysisInfo.description).trim()) ||
+      "No especificada";
 
-    // Preparar secciones detalladas del proyecto
-    const communicationObjectivesSection = analysisInfo.communicationObjectives 
+    const normalizedProducts = safeParseArray((projectDetails as any)?.initialProducts).map((product: any) => ({
+      name: product?.name || product?.title || "Producto/Servicio",
+      description: product?.description || product?.valueProposal || "Sin descripción definida",
+      differentiator: product?.differentiator || product?.keyBenefit || ""
+    }));
+
+    const initialProductsSection = normalizedProducts.length
+      ? `**PRODUCTOS/SERVICIOS PRINCIPALES:**
+      ${normalizedProducts
+        .map(
+          (product: any) =>
+            `- ${product.name}: ${product.description}${product.differentiator ? ` | Diferenciador clave: ${product.differentiator}` : ""
+            }`
+        )
+        .join('\n')}
+
+      APLICACIÓN: Destaca estos productos enlazando beneficios con los dolores y motivadores del buyer persona en cada pieza.`
+      : "";
+
+    const communicationObjectivesSection = analysisInfo.communicationObjectives
       ? `**OBJETIVOS DE COMUNICACIÓN:**
       ${analysisInfo.communicationObjectives}
 
-      APLICACIÓN: Todo el contenido debe alinearse con estos objetivos específicos.`
+      APLICACIÓN: Cada publicación debe reforzar estos objetivos con un ángulo claro y accionable.`
       : "";
 
-    const buyerPersonaSection = analysisInfo.buyerPersona 
-      ? `**BUYER PERSONA:**
+    const buyerPersonaSection = analysisInfo.buyerPersona
+      ? `**RETRATO DEL BUYER PERSONA:**
       ${analysisInfo.buyerPersona}
 
-      APLICACIÓN: Adapta el tono, contenido y mensajes para resonar con este perfil específico.`
+      APLICACIÓN: Ajusta el lenguaje, ejemplos, pain points y CTA a este perfil específico.`
       : "";
 
-    const archetypesSection = analysisInfo.archetypes && analysisInfo.archetypes.length > 0
+    const archetypesArray = safeParseArray(analysisInfo.archetypes);
+    const archetypesSection = archetypesArray.length
       ? `**ARQUETIPOS DE MARCA:**
-      ${analysisInfo.archetypes.map((arch: any) => `
-      - ${arch.name || "Sin nombre"}: ${arch.profile || "Sin perfil"}
-      `).join('\n')}
+      ${archetypesArray
+        .map(
+          (arch: any) =>
+            `- ${arch?.name || arch?.title || "Arquetipo"}: ${arch?.profile || arch?.description || "Sin perfil definido"}`
+        )
+        .join('\n')}
 
-      APLICACIÓN: Utiliza estos arquetipos para dar personalidad y consistencia a la comunicación.`
+      APLICACIÓN: Usa estos arquetipos para asegurar consistencia narrativa, tono y estética.`
       : "";
 
     const marketingStrategiesSection = analysisInfo.marketingStrategies
-      ? `**ESTRATEGIAS DE MARKETING:**
-      ${analysisInfo.marketingStrategies}
+      ? `**ESTRATEGIAS DE MARKETING PRIORITARIAS:**
+      ${typeof analysisInfo.marketingStrategies === "string"
+        ? analysisInfo.marketingStrategies
+        : toSentenceList(analysisInfo.marketingStrategies)
+      }
 
-      APLICACIÓN: Cada publicación debe reforzar al menos una de estas estrategias.`
+      APLICACIÓN: Alinea CTA, métricas y micro-mensajes a estas estrategias prioritarias.`
       : "";
 
-    const brandCommunicationStyleSection = analysisInfo.brandCommunicationStyle
-      ? `**ESTILO DE COMUNICACIÓN DE MARCA:**
-      ${analysisInfo.brandCommunicationStyle}
+    const brandCommunicationStyleSection = (analysisInfo.brandCommunicationStyle || analysisInfo.brandTone)
+      ? `**VOZ Y ESTILO DE MARCA:**
+      ${analysisInfo.brandCommunicationStyle || analysisInfo.brandTone}
 
-      APLICACIÓN: Mantén este estilo consistentemente en todas las publicaciones.`
+      APLICACIÓN: Mantén vocabulario, ritmo y emociones coherentes con este tono en todas las piezas.`
       : "";
 
-    const missionVisionValuesSection = (analysisInfo.mission || analysisInfo.vision || analysisInfo.coreValues)
-      ? `**MISIÓN, VISIÓN Y VALORES (MVV):**
+    const missionVisionValuesSection =
+      analysisInfo.mission || analysisInfo.vision || analysisInfo.coreValues
+        ? `**MISIÓN, VISIÓN Y VALORES (MVV):**
       ${analysisInfo.mission ? `Misión: ${analysisInfo.mission}` : ""}
       ${analysisInfo.vision ? `Visión: ${analysisInfo.vision}` : ""}
-      ${analysisInfo.coreValues ? `Valores Centrales: ${analysisInfo.coreValues}` : ""}
+      ${analysisInfo.coreValues ? `Valores: ${analysisInfo.coreValues}` : ""}
 
-      APLICACIÓN: Asegura que el contenido refleje y promueva estos elementos fundamentales.`
-      : "";
+      APLICACIÓN: Refuerza estos pilares en storytelling, beneficios y llamados a la acción.`.trim()
+        : "";
 
-    const responsePoliciesSection = (analysisInfo.responsePolicyPositive || analysisInfo.responsePolicyNegative)
-      ? `**POLÍTICAS DE RESPUESTA:**
-      ${analysisInfo.responsePolicyPositive ? `Respuesta Positiva: ${analysisInfo.responsePolicyPositive}` : ""}
-      ${analysisInfo.responsePolicyNegative ? `Respuesta Negativa: ${analysisInfo.responsePolicyNegative}` : ""}
+    const responsePoliciesSection =
+      analysisInfo.responsePolicyPositive || analysisInfo.responsePolicyNegative
+        ? `**POLÍTICAS DE RESPUESTA Y COMMUNITY CARE:**
+      ${analysisInfo.responsePolicyPositive
+            ? `Guía para casos positivos: ${analysisInfo.responsePolicyPositive}`
+            : ""
+          }
+      ${analysisInfo.responsePolicyNegative
+            ? `Gestión de crisis/comentarios negativos: ${analysisInfo.responsePolicyNegative}`
+            : ""
+          }
 
-      APLICACIÓN: Considera estas políticas al crear contenido que pueda generar interacciones.`
-      : "";
+      APLICACIÓN: Ajusta tono, disclaimers y CTA para fortalecer la interacción comunitaria bajo estas reglas.`.trim()
+        : "";
 
-    const initialProductsSection = productsInfo && productsInfo.length > 0
-      ? `**PRODUCTOS/SERVICIOS PRINCIPALES:**
-      ${productsInfo.map((product: any) => `
-      - ${product.name || "Sin nombre"}: ${product.description || "Sin descripción"}
-      `).join('\n')}
+    const competitorAnalysisSection = (() => {
+      const competitors = safeParseArray(analysisInfo.competitorAnalysis);
+      if (competitors.length === 0) {
+        if (typeof analysisInfo.competitorAnalysis === "string" && analysisInfo.competitorAnalysis.trim()) {
+          return `**ANÁLISIS DE COMPETENCIA:**
+      ${analysisInfo.competitorAnalysis}
 
-      APLICACIÓN: Crea contenido que destaque estos productos/servicios de manera estratégica.`
-      : "";
+      APLICACIÓN: Destaca diferenciadores frente a estos competidores en cada narrativa.`;
+        }
+        return "";
+      }
 
-    const projectContext = analysisInfo ? `
+      const competitorLines = competitors
+        .map((competitor: any) => {
+          if (typeof competitor === "string") {
+            return `- ${competitor}`;
+          }
+          const name = competitor?.name || competitor?.brand || "Competidor";
+          const differentiator = competitor?.advantage || competitor?.differentiator || competitor?.insight || "";
+          return differentiator ? `- ${name}: ${differentiator}` : `- ${name}`;
+        })
+        .join('\n');
+
+      return `**ANÁLISIS DE COMPETENCIA:**
+      ${competitorLines}
+
+      APLICACIÓN: Refuerza la propuesta de valor diferenciando frente a estos jugadores.`;
+    })();
+
+    const keywordsText = analysisInfo.keywords
+      ? typeof analysisInfo.keywords === "string"
+        ? analysisInfo.keywords
+        : toSentenceList(analysisInfo.keywords)
+      : "No especificadas";
+
+    const contentThemesText = (() => {
+      const themes = safeParseArray(analysisInfo.contentThemes);
+      if (themes.length === 0) {
+        return "No especificados";
+      }
+      return themes
+        .map((theme: any) =>
+          typeof theme === "string"
+            ? theme
+            : theme?.name || theme?.title || theme?.theme || JSON.stringify(theme)
+        )
+        .join(", ");
+    })();
+
+    const baseProjectSummary = [
+      `- Cliente: ${clientName}`,
+      `- Descripción del proyecto: ${projectDescription}`,
+      `- Objetivos generales: ${analysisInfo.objectives || "No especificados"}`,
+      `- Buyer persona principal: ${analysisInfo.buyerPersona || "No especificada"}`,
+      `- Audiencia objetivo: ${analysisInfo.targetAudience || "No especificada"}`,
+      `- Palabras clave estratégicas: ${keywordsText}`,
+      `- Temas/pilares de contenido: ${contentThemesText}`,
+      `- Notas adicionales: ${analysisInfo.additionalNotes || "Ninguna observación adicional"}`
+    ].join('\n');
+
+    const projectContextSections = [
+      communicationObjectivesSection,
+      buyerPersonaSection,
+      archetypesSection,
+      marketingStrategiesSection,
+      brandCommunicationStyleSection,
+      missionVisionValuesSection,
+      responsePoliciesSection,
+      competitorAnalysisSection,
+      initialProductsSection
+    ].filter((section) => section && section.trim().length > 0);
+
+    const projectContext = `
     INFORMACIÓN COMPLETA DEL PROYECTO:
-    - Cliente: ${projectInfo?.client}
-    - Descripción: ${projectInfo?.description || analysisInfo.projectDescription || 'No especificada'}
-
-    MISIÓN, VISIÓN Y VALORES:
-    - Misión: ${analysisInfo.mission || 'No especificada'}
-    - Visión: ${analysisInfo.vision || 'No especificada'}
-    - Valores fundamentales: ${analysisInfo.coreValues || 'No especificados'}
-
-    OBJETIVOS:
-    - Objetivos generales: ${analysisInfo.objectives || 'No especificados'}
-    - Objetivos de comunicación: ${analysisInfo.communicationObjectives || 'No especificados'}
-
-    AUDIENCIA Y PERSONA:
-    - Buyer Persona: ${analysisInfo.buyerPersona || 'No especificada'}
-    - Audiencia objetivo: ${analysisInfo.targetAudience || 'No especificada'}
-
-    ESTRATEGIAS DE MARKETING:
-    - Estrategias principales: ${analysisInfo.marketingStrategies || 'No especificadas'}
-    - Arquetipos de marca: ${analysisInfo.archetypes ? JSON.stringify(analysisInfo.archetypes) : 'No especificados'}
-
-    COMUNICACIÓN Y TONO:
-    - Estilo de comunicación: ${analysisInfo.brandCommunicationStyle || 'No especificado'}
-    - Tono de marca: ${analysisInfo.brandTone || 'No especificado'}
-    - Redes sociales objetivo: ${analysisInfo.socialNetworks ? JSON.stringify(analysisInfo.socialNetworks) : 'No especificadas'}
-
-    POLÍTICAS DE RESPUESTA:
-    - Política para comentarios positivos: ${analysisInfo.responsePolicyPositive || 'No especificada'}
-    - Política para comentarios negativos: ${analysisInfo.responsePolicyNegative || 'No especificada'}
-
-    CONTENIDO ADICIONAL:
-    - Palabras clave: ${analysisInfo.keywords || 'No especificadas'}
-    - Temas de contenido: ${analysisInfo.contentThemes ? JSON.stringify(analysisInfo.contentThemes) : 'No especificados'}
-    - Notas adicionales: ${analysisInfo.additionalNotes || 'Ninguna'}
-
-    PRODUCTOS:
-    ${productsInfo.length > 0 ? productsInfo.map(product => `- ${product.name}: ${product.description || 'Sin descripción'}`).join('\n    ') : '- No hay productos registrados'}
-    ` : `
-    INFORMACIÓN DEL PROYECTO:
-    - Cliente: ${projectInfo?.client}
-    - Descripción: ${projectInfo?.description || 'No especificada'}
-    `;
+    ${baseProjectSummary}
+    ${projectContextSections.length ? `\n\n${projectContextSections.join('\n\n')}` : ""}
+    `.trim();
 
     const prompt = `
       Crea un cronograma avanzado de contenido para redes sociales para el proyecto "${projectName}". Actúa como un experto profesional en marketing digital con especialización en contenidos de alto impacto, branding y narrativa de marca. Tu objetivo es crear contenido estratégico, persuasivo y memorable que genere engagement.
@@ -320,6 +485,14 @@ export async function generateSchedule(
          - LinkedIn: 3-5 posts/semana en horario laboral
          - TikTok: 3-5 posts/semana
          - YouTube: Consistencia semanal según capacidad
+      9. MEDICIÓN - Define para cada publicación la fase del embudo (Awareness, Consideración, Conversión o Fidelización) y plantea el KPI esperado.
+
+      **CHECKLIST DE CONTENT MARKETING PREMIUM:**
+      - Declara el objetivo del funnel en el campo "description" iniciando con "Objetivo: ...".
+      - Estructura el campo "content" con la secuencia Hook → Insight → CTA, separando claramente cada parte.
+      - Integra datos, prueba social o storytelling que refuerce la propuesta de valor del proyecto.
+      - Finaliza con un CTA accionable, medible y coherente con el objetivo declarado.
+      - Resalta diferenciadores competitivos y mantén consistencia con el tono/valores definidos.
 
       **ESPECIFICACIONES TÉCNICAS POR FORMATO 2025:**
 
@@ -357,7 +530,8 @@ export async function generateSchedule(
 
       **ESTRUCTURA DE LAS PUBLICACIONES POR PLATAFORMA:**
       - TÍTULOS: Concisos, impactantes, con palabras potentes y gatillos emocionales.
-      - CONTENIDO PRINCIPAL: Desarrolla ideas completas con narrativa estructurada (problema-solución-beneficio).
+      - DESCRIPTION: Comienza con "Objetivo: [fase del funnel] | KPI sugerido: ..." seguido de la estrategia táctica.
+      - CONTENIDO PRINCIPAL: Desarrolla ideas con la secuencia Hook → Insight → CTA, resaltando beneficios tangibles.
       - COPY IN: Texto que aparecerá sobre la imagen/diseño, corto y memorable.
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
       - HASHTAGS: 
@@ -406,8 +580,8 @@ export async function generateSchedule(
       }
     `;
 
-    // Usamos exclusivamente Grok AI para generar el cronograma
-    console.log("[CALENDAR] Generando cronograma con Grok AI");
+    // Usamos exclusivamente Gemini para generar el cronograma
+    console.log("[CALENDAR] Generando cronograma con Gemini");
 
     // Modificamos el prompt para forzar una respuesta más estructurada y evitar errores de formato
     const enhancedPrompt = `${prompt}\n\nCRÍTICO: Responde EXCLUSIVAMENTE con el objeto JSON solicitado. No incluyas texto extra, anotaciones, ni marcadores de código. Formato estricto requerido:
@@ -427,31 +601,31 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Se añadieron instrucciones críticas del usuario: "${additionalInstructions.substring(0, 200)}${additionalInstructions.length > 200 ? '...' : ''}"`);
     }
 
-    // Usamos Grok con configuración optimizada para generación consistente
-    const scheduleText = await grokService.generateText(finalPrompt, {
+    // Usamos Gemini con configuración optimizada para generación consistente
+    const scheduleText = await geminiService.generateText(finalPrompt, {
       // Reducimos temperatura para respuestas más consistentes y estructuradas
       temperature: 0.8,
       // Incrementamos tokens para permitir respuestas completas
       maxTokens: 6000,
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
-      // Utilizamos exclusivamente el modelo Grok 3 mini beta como solicitado
-      model: 'grok-3-mini-beta'
+      // Utilizamos el modelo solicitado (Gemini 3 Pro Preview)
+      model: 'gemini-3-pro-preview'
     });
 
     // Registramos una versión truncada para debug
-    console.log(`[CALENDAR] Respuesta de Grok AI recibida. Longitud: ${scheduleText.length} caracteres`);
+    console.log(`[CALENDAR] Respuesta de Gemini recibida. Longitud: ${scheduleText.length} caracteres`);
     console.log(`[CALENDAR] Primeros 200 caracteres de la respuesta: "${scheduleText.substring(0, 200)}... [truncado]"`);
     console.log(`[CALENDAR] Últimos 200 caracteres de la respuesta: "...${scheduleText.substring(Math.max(0, scheduleText.length - 200))}"`)
 
     // Escribir respuesta completa en el log para diagnóstico
-    console.log(`[CALENDAR] RESPUESTA COMPLETA DE GROK AI (inicio):`);
+    console.log(`[CALENDAR] RESPUESTA COMPLETA DE GEMINI (inicio):`);
     // Dividir respuesta en chunks de 1000 caracteres para evitar truncamiento en logs
     const chunkSize = 1000;
     for (let i = 0; i < scheduleText.length; i += chunkSize) {
-        console.log(scheduleText.substring(i, i + chunkSize));
+      console.log(scheduleText.substring(i, i + chunkSize));
     }
-    console.log(`[CALENDAR] RESPUESTA COMPLETA DE GROK AI (fin)`);
+    console.log(`[CALENDAR] RESPUESTA COMPLETA DE GEMINI (fin)`);
 
     try {
       console.log(`[CALENDAR] Iniciando procesamiento de la respuesta (Estrategia 1: JSON directo)`);
@@ -510,8 +684,8 @@ export async function generateSchedule(
             } else {
               console.log(`[CALENDAR] Verificando campos requeridos en las entradas`);
               // Verificar que las entradas tengan los campos requeridos mínimos
-              const validEntries = parsedContent.entries.filter((entry: any) => 
-                entry.title && entry.platform && entry.postDate && 
+              const validEntries = parsedContent.entries.filter((entry: any) =>
+                entry.title && entry.platform && entry.postDate &&
                 typeof entry.title === 'string' &&
                 typeof entry.platform === 'string' &&
                 typeof entry.postDate === 'string'
@@ -529,7 +703,7 @@ export async function generateSchedule(
                   console.log(`[CALENDAR] Se filtraron ${parsedContent.entries.length - validEntries.length} entradas inválidas`);
                   // Mostrar la primera entrada inválida para diagnóstico
                   if (parsedContent.entries.length > validEntries.length) {
-                    const invalidEntry = parsedContent.entries.find((entry: any) => 
+                    const invalidEntry = parsedContent.entries.find((entry: any) =>
                       !entry.title || !entry.platform || !entry.postDate ||
                       typeof entry.title !== 'string' ||
                       typeof entry.platform !== 'string' ||
@@ -646,7 +820,7 @@ export async function generateSchedule(
           // Asegurar que todas las propiedades tengan comillas dobles
           jsonContent = jsonContent.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
 
-          console.log("JSON limpiado (primeros 100 caracteres):", 
+          console.log("JSON limpiado (primeros 100 caracteres):",
             jsonContent.substring(0, 100) + "... [truncado]");
 
           try {
@@ -655,7 +829,7 @@ export async function generateSchedule(
             if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
               console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
               // Verificar entradas válidas
-              const validEntries = parsedContent.entries.filter((entry: any) => 
+              const validEntries = parsedContent.entries.filter((entry: any) =>
                 entry.title && entry.platform && entry.postDate
               );
 
@@ -847,7 +1021,7 @@ export async function generateSchedule(
 
               if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
                 console.log(`JSON reparado correctamente con ${parsedContent.entries.length} entradas`);
-                const validEntries = parsedContent.entries.filter((entry: any) => 
+                const validEntries = parsedContent.entries.filter((entry: any) =>
                   entry.title && entry.platform && entry.postDate
                 );
 
@@ -974,8 +1148,8 @@ export async function generateSchedule(
           if (!line) continue;
 
           // Buscar plataformas
-          const platformFound = potentialPlatforms.find(platform => 
-            line.includes(platform) || 
+          const platformFound = potentialPlatforms.find(platform =>
+            line.includes(platform) ||
             line.toLowerCase().includes(platform.toLowerCase())
           );
 
@@ -1021,10 +1195,10 @@ export async function generateSchedule(
               // Usar esta línea como título si parece un título (no demasiado largo)
               if (line.length < 100) {
                 currentEntry.title = line;
-              } 
+              }
               // O intenta ver si la siguiente línea podría ser un título
-              else if (i+1 < lines.length && lines[i+1].length < 100) {
-                currentEntry.title = lines[i+1].trim();
+              else if (i + 1 < lines.length && lines[i + 1].length < 100) {
+                currentEntry.title = lines[i + 1].trim();
               }
             }
           }
@@ -1052,8 +1226,8 @@ export async function generateSchedule(
             }
 
             // Si no tenemos título y esta línea parece un buen candidato, úsala
-            if (!currentEntry.title && line.length > 5 && line.length < 100 && 
-                !line.includes(':') && !line.includes('{') && !line.includes('}')) {
+            if (!currentEntry.title && line.length > 5 && line.length < 100 &&
+              !line.includes(':') && !line.includes('{') && !line.includes('}')) {
               currentEntry.title = line;
             }
 
@@ -1146,9 +1320,9 @@ export async function generateSchedule(
     let errorMessage = "";
 
     // Loggeamos información detallada del error
-    console.log("[CALENDAR ERROR] Detalles completos:", { 
-      message: error.message, 
-      type: error.errorType, 
+    console.log("[CALENDAR ERROR] Detalles completos:", {
+      message: error.message,
+      type: error.errorType,
       stack: error.stack,
       originalError: error
     });
@@ -1156,16 +1330,16 @@ export async function generateSchedule(
     if (error.message && typeof error.message === 'string') {
       if (errorType === "NETWORK" || error.message.includes("connect")) {
         errorType = "NETWORK";
-        errorMessage = `Error de conexión con la API de Grok: ${error.message}`;
+        errorMessage = `Error de conexión con la API de Gemini: ${error.message}`;
       } else if (errorType === "JSON_PARSING" || error.message.includes("JSON") || error.message.includes("parse")) {
         errorType = "JSON_PARSING";
         errorMessage = `Error de procesamiento de respuesta JSON: ${error.message}`;
       } else if (errorType === "RATE_LIMIT" || error.message.includes("limit")) {
         errorType = "RATE_LIMIT";
-        errorMessage = `Se ha excedido el límite de peticiones a Grok AI: ${error.message}`;
+        errorMessage = `Se ha excedido el límite de peticiones a Gemini: ${error.message}`;
       } else if (errorType === "AUTH" || error.message.includes("autenticación") || error.message.includes("authentication")) {
         errorType = "AUTH";
-        errorMessage = `Error de autenticación con Grok AI: ${error.message}`;
+        errorMessage = `Error de autenticación con Gemini: ${error.message}`;
       } else if (error.message.startsWith("ERROR_JSON_PROCESSING:")) {
         // Error ya categorizado
         errorType = "JSON_PROCESSING";

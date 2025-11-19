@@ -1,13 +1,21 @@
 // No importamos los archivos db o schema ya que pueden tener problemas de importación
 // Hacemos la migración directamente con SQL
-const { drizzle } = require('drizzle-orm/neon-serverless');
-const { Pool, neonConfig } = require('@neondatabase/serverless');
+const { drizzle } = require('drizzle-orm/node-postgres');
+const { Pool } = require('pg');
 const { sql } = require('drizzle-orm');
-const ws = require('ws');
+const connectionString = process.env.DATABASE_URL;
 
-neonConfig.webSocketConstructor = ws;
+if (!connectionString) {
+  throw new Error('DATABASE_URL must be set before running migrations');
+}
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isLocalHost = connectionString.includes('localhost') || connectionString.includes('127.0.0.1');
+const disableSSL = process.env.SUPABASE_USE_SSL === 'false' || isLocalHost;
+
+const pool = new Pool({
+  connectionString,
+  ssl: disableSSL ? undefined : { rejectUnauthorized: false }
+});
 const client = drizzle(pool);
 
 async function main() {

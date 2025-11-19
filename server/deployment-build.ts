@@ -114,7 +114,11 @@ export function createHealthCheck() {
     },
     database: {
       connected: !!process.env.DATABASE_URL,
-      provider: process.env.DATABASE_URL?.includes('neon') ? 'neon' : 'unknown'
+    provider: process.env.DATABASE_URL?.includes('supabase')
+      ? 'supabase'
+      : process.env.DATABASE_URL?.includes('neon')
+        ? 'neon'
+        : 'postgres'
     },
     features: {
       ai: !!process.env.XAI_API_KEY,

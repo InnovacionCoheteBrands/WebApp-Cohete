@@ -6,7 +6,7 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import connectPgSimple from "connect-pg-simple";
 import { DatabaseStorage } from "./storage";
-import { User as SchemaUser, InsertUser, loginSchema, insertUserSchema } from "@shared/schema";
+import { User as SchemaUser, InsertUser, loginSchema, insertUserSchema } from "../shared/schema";
 import { ZodError } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -28,7 +28,7 @@ type AppUser = {
 // Extend Express namespace with our user type
 declare global {
   namespace Express {
-    interface User extends AppUser {}
+    interface User extends AppUser { }
   }
 }
 
@@ -86,7 +86,7 @@ export function setupAuth(app: Express) {
         try {
           // Buscar usuario por identificador (username o email)
           const user = await storage.getUserByIdentifier(identifier);
-          
+
           if (!user || !(await comparePasswords(password, user.password || ""))) {
             return done(null, false, { message: "Credenciales inválidas" });
           } else {
@@ -112,13 +112,13 @@ export function setupAuth(app: Express) {
   app.post("/api/register", async (req, res, next) => {
     try {
       const validatedData = insertUserSchema.parse(req.body);
-      
+
       // Verificamos tanto el nombre de usuario como el correo electrónico
       const existingUsername = await storage.getUserByUsername(validatedData.username);
       if (existingUsername) {
         return res.status(400).json({ message: "El nombre de usuario ya existe" });
       }
-      
+
       // Verificar si el correo electrónico ya existe (si se proporciona)
       if (validatedData.email) {
         const existingEmail = await storage.getUserByEmail(validatedData.email);
@@ -153,26 +153,26 @@ export function setupAuth(app: Express) {
     try {
       // Modificamos el esquema de validación para usar 'identifier' en lugar de 'username'
       const loginData = req.body;
-      
+
       // Verificamos que el campo identifier esté presente
       if (!loginData.identifier) {
         return res.status(400).json({ message: "Se requiere nombre de usuario o correo electrónico" });
       }
-      
+
       // Verificamos que el campo password esté presente
       if (!loginData.password) {
         return res.status(400).json({ message: "Se requiere contraseña" });
       }
-      
+
       passport.authenticate("local", (err: Error, user: Express.User) => {
         if (err) return next(err);
         if (!user) {
           return res.status(401).json({ message: "Credenciales inválidas" });
         }
-        
+
         req.login(user, (loginErr) => {
           if (loginErr) return next(loginErr);
-          
+
           // Remove password from response
           const { password, ...userWithoutPassword } = user;
           return res.status(200).json(userWithoutPassword);
@@ -196,110 +196,110 @@ export function setupAuth(app: Express) {
 
   app.get("/api/user", (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    
+
     // Remove password from response
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
 
   // Endpoints para recuperación de contraseña
-  
+
   // 1. Solicitar restablecimiento de contraseña
   app.post("/api/request-password-reset", async (req, res, next) => {
     try {
       const { identifier } = req.body;
-      
+
       if (!identifier) {
         return res.status(400).json({ message: "Se requiere nombre de usuario" });
       }
-      
+
       // Buscar usuario
       const user = await global.storage.getUserByIdentifier(identifier);
-      
+
       if (!user) {
         // Por seguridad, no revelamos si el usuario existe o no
-        return res.status(200).json({ 
-          message: "Si el usuario existe, se ha enviado un correo con instrucciones para restablecer la contraseña" 
+        return res.status(200).json({
+          message: "Si el usuario existe, se ha enviado un correo con instrucciones para restablecer la contraseña"
         });
       }
-      
+
       // Generar token
       const token = await global.storage.createPasswordResetToken(user.id);
-      
+
       // En un entorno real, enviaríamos un correo electrónico
       // Para nuestro caso de prueba, devolvemos el token en la respuesta
       console.log(`Token de restablecimiento para ${identifier}: ${token.token}`);
-      
-      return res.status(200).json({ 
+
+      return res.status(200).json({
         message: "Si el usuario existe, se ha enviado un correo con instrucciones para restablecer la contraseña",
         // Solo para pruebas, en un entorno real no enviaríamos esto en la respuesta
-        debugToken: token.token 
+        debugToken: token.token
       });
-      
+
     } catch (error) {
       console.error("Error requesting password reset:", error);
       next(error);
     }
   });
-  
+
   // 2. Verificar token de restablecimiento
   app.get("/api/verify-reset-token/:token", async (req, res, next) => {
     try {
       const { token } = req.params;
-      
+
       if (!token) {
         return res.status(400).json({ message: "Token requerido" });
       }
-      
+
       // Verificar token
       const tokenData = await global.storage.getPasswordResetToken(token);
-      
+
       if (!tokenData) {
         return res.status(400).json({ message: "Token inválido o expirado" });
       }
-      
+
       return res.status(200).json({ valid: true });
-      
+
     } catch (error) {
       console.error("Error verifying reset token:", error);
       next(error);
     }
   });
-  
+
   // 3. Restablecer contraseña
   app.post("/api/reset-password", async (req, res, next) => {
     try {
       const { token, newPassword } = req.body;
-      
+
       if (!token || !newPassword) {
         return res.status(400).json({ message: "Token y nueva contraseña son requeridos" });
       }
-      
+
       // Verificar token
       const tokenData = await global.storage.getPasswordResetToken(token);
-      
+
       if (!tokenData) {
         return res.status(400).json({ message: "Token inválido o expirado" });
       }
-      
+
       // Obtener usuario
       const user = await global.storage.getUser(tokenData.userId.toString());
-      
+
       if (!user) {
         return res.status(400).json({ message: "Usuario no encontrado" });
       }
-      
+
       // Hashear nueva contraseña
       const hashedPassword = await hashPassword(newPassword);
-      
+
       // Actualizar contraseña
       await global.storage.updateUser(user.id, { password: hashedPassword });
-      
+
       // Eliminar token
       await global.storage.deletePasswordResetToken(token);
-      
+
       return res.status(200).json({ message: "Contraseña restablecida con éxito" });
-      
+
     } catch (error) {
       console.error("Error resetting password:", error);
       next(error);
