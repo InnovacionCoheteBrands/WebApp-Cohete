@@ -4,3 +4,27 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment
+.env
+.env.*
+*-DESKTOP-*.env
+
+# Logs
+*.log
+server_log.txt
+server_error.log
+server_error_2.log
+
+# IDE & Tools
+.clinerules
+.cursorrules
+.context/
+.gemini/
+
+# Backup & Temp
+client/src/components/tasks/create-task-dialog-DESKTOP-8KFIU26.tsx
+migrate-content-quality.cjs
+server/ai-scheduler-concepts.ts
+server/mem-storage.ts
+types/express-overrides.d.ts
