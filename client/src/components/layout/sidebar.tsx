@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/use-auth";
 import { Link, useLocation } from "wouter";
-import { 
-  Rocket, 
+import {
+  Rocket,
   LayoutDashboard,
   Grid2X2,
   LineChart,
@@ -35,35 +35,36 @@ export function Sidebar({ open, onClose }: SidebarProps) {
     <>
       {/* Mobile overlay */}
       {open && (
-        <div 
-          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
+        <div
+          className="fixed inset-0 z-40 bg-black/80 backdrop-blur-sm md:hidden"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
-      <div 
+      <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 border-r bg-card/95 backdrop-blur-sm shadow-lg md:static md:z-0 transform transition-all duration-300 ease-in-out overflow-hidden",
+          "fixed inset-y-0 left-0 z-50 w-64 border-r border-white/10 bg-black/60 backdrop-blur-xl shadow-[0_0_30px_rgba(0,0,0,0.5)] md:static md:z-0 transform transition-all duration-300 ease-in-out overflow-hidden",
           open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
         data-tour="main-navigation"
       >
-        <div className="flex flex-col p-4 h-full overflow-hidden hide-scrollbar">
+        <div className="flex flex-col h-full overflow-hidden hide-scrollbar">
           {/* Logo */}
-          <div className="flex items-center gap-2 px-2 py-2 mb-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary shadow-sm transition-all duration-200 hover:shadow-md">
-              <Rocket className="h-5 w-5 text-primary-foreground" />
+          <div className="flex items-center gap-3 px-6 py-6 mb-2 border-b border-white/5">
+            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 shadow-[0_0_15px_rgba(var(--primary),0.3)] border border-primary/20 group">
+              <Rocket className="h-5 w-5 text-primary transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              <div className="absolute inset-0 rounded-xl bg-primary/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </div>
             <div className="flex flex-col">
-              <h1 className="text-base font-bold tracking-tight text-primary">Cohete Workflow</h1>
-              <p className="text-xs text-muted-foreground">Gestión de Marketing</p>
+              <h1 className="text-base font-bold tracking-[0.1em] text-white uppercase">Cohete<span className="text-primary">.AI</span></h1>
+              <p className="text-[10px] text-gray-400 tracking-widest uppercase">Command Center</p>
             </div>
             {/* Close button - mobile only */}
             <Button
               variant="ghost"
               size="icon"
-              className="ml-auto md:hidden interactive-element"
+              className="ml-auto md:hidden text-gray-400 hover:text-white hover:bg-white/10"
               onClick={onClose}
             >
               <X className="h-4 w-4" />
@@ -71,63 +72,50 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <div className="space-y-1 flex-1 min-h-0">
-            <NavItem 
-              href="/" 
-              icon={<LayoutDashboard className="mr-2 h-5 w-5" />} 
-              label="Dashboard" 
-              isActive={location === "/"} 
+          <div className="space-y-1 flex-1 min-h-0 px-3 py-4">
+            <NavItem
+              href="/"
+              icon={<LayoutDashboard className="mr-3 h-5 w-5" />}
+              label="Dashboard"
+              isActive={location === "/"}
               onClick={onClose}
             />
-            <NavItem 
-              href="/projects" 
-              icon={<Grid2X2 className="mr-2 h-5 w-5" />} 
-              label="Proyectos" 
-              isActive={location === "/projects" || (location.startsWith("/projects/") && !location.includes("/tasks"))} 
+            <NavItem
+              href="/projects"
+              icon={<Grid2X2 className="mr-3 h-5 w-5" />}
+              label="Proyectos"
+              isActive={location === "/projects" || (location.startsWith("/projects/") && !location.includes("/tasks"))}
               onClick={onClose}
             />
 
-            <NavItem 
-              href="/calendars" 
-              icon={<CalendarPlus className="mr-2 h-5 w-5" />} 
-              label="Calendarios" 
-              isActive={location === "/calendars" || location === "/calendar-creator" || location === "/quick-calendar"} 
+            <NavItem
+              href="/calendars"
+              icon={<CalendarPlus className="mr-3 h-5 w-5" />}
+              label="Calendarios"
+              isActive={location === "/calendars" || location === "/calendar-creator" || location === "/quick-calendar"}
               onClick={onClose}
             />
-            {/* Temporalmente oculto hasta implementar integraciones con redes sociales */}
-            {/* <NavItem 
-              href="/analytics" 
-              icon={<LineChart className="mr-2 h-5 w-5" />} 
-              label="Analíticas" 
-              isActive={location === "/analytics"} 
-              onClick={onClose}
-            /> */}
-            <NavItem 
-              href="/project-manager" 
-              icon={<ListChecks className="mr-2 h-5 w-5" />} 
-              label="Gestor de Proyectos" 
-              isActive={location === "/project-manager"} 
-              onClick={onClose}
-            />
+
+
 
             {/* Admin section for Primary users only */}
             {isPrimary && (
-              <div className="mt-3 border-t pt-3">
-                <h2 className="mb-1 px-3 text-xs font-medium text-primary">
-                  Administración
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <h2 className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.2em] text-gray-500">
+                  Sistemas
                 </h2>
-                <NavItem 
-                  href="/users-management" 
-                  icon={<Users className="mr-2 h-4 w-4" />} 
-                  label="Gestión de Usuarios" 
-                  isActive={location === "/users-management"} 
+                <NavItem
+                  href="/users-management"
+                  icon={<Users className="mr-3 h-4 w-4" />}
+                  label="Usuarios"
+                  isActive={location === "/users-management"}
                   onClick={onClose}
                 />
-                <NavItem 
-                  href="/settings" 
-                  icon={<Settings className="mr-2 h-4 w-4" />} 
-                  label="Configuración" 
-                  isActive={location === "/settings"} 
+                <NavItem
+                  href="/settings"
+                  icon={<Settings className="mr-3 h-4 w-4" />}
+                  label="Configuración"
+                  isActive={location === "/settings"}
                   onClick={onClose}
                 />
               </div>
@@ -135,28 +123,25 @@ export function Sidebar({ open, onClose }: SidebarProps) {
           </div>
 
           {/* User Profile */}
-          <div className="border-t pt-3 mt-auto">
+          <div className="border-t border-white/10 p-4 mt-auto bg-black/20">
             <Link href="/profile">
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-accent/30 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-sm">
+              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-all duration-200 cursor-pointer group border border-transparent hover:border-white/10">
+                <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
                   <Users className="h-4 w-4" />
+                  <div className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-black shadow-[0_0_5px_rgba(34,197,94,0.5)]"></div>
                 </div>
                 <div className="flex flex-col flex-1 min-w-0">
-                  <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
-                    {user?.fullName}
+                  <span className="text-sm font-bold text-gray-200 truncate group-hover:text-primary transition-colors tracking-wide">
+                    {user?.fullName?.split(' ')[0]}
                   </span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    <span className={cn(
-                      "h-1.5 w-1.5 rounded-full", 
-                      user?.isPrimary ? "bg-green-500" : "bg-primary"
-                    )}></span>
-                    Mi Perfil
+                  <span className="text-[10px] text-gray-500 uppercase tracking-wider">
+                    {user?.isPrimary ? "Comandante" : "Piloto"}
                   </span>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="rounded-md p-1 hover:bg-accent interactive-element opacity-0 group-hover:opacity-100 transition-opacity"
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-md text-gray-500 hover:text-red-400 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all duration-200"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -164,7 +149,7 @@ export function Sidebar({ open, onClose }: SidebarProps) {
                   }}
                   title="Cerrar sesión"
                 >
-                  <LogOut className="h-3 w-3" />
+                  <LogOut className="h-4 w-4" />
                 </Button>
               </div>
             </Link>
@@ -188,33 +173,31 @@ function NavItem({ href, icon, label, isActive, onClick }: NavItemProps) {
     <Link href={href}>
       <div
         className={cn(
-          "flex w-full items-center rounded-md px-3 py-2 text-sm font-medium transition-all duration-200 relative overflow-hidden group",
+          "flex w-full items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-300 relative overflow-hidden group mb-1",
           isActive
-            ? "bg-accent text-accent-foreground shadow-sm"
-            : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground interactive-element"
+            ? "bg-primary/10 text-primary shadow-[0_0_15px_rgba(var(--primary),0.15)] border border-primary/20"
+            : "text-gray-400 hover:bg-white/5 hover:text-white hover:border-white/10 border border-transparent"
         )}
         onClick={onClick}
       >
         {isActive && (
-          <div className="absolute left-0 top-1 bottom-1 w-1 bg-primary" />
+          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary shadow-[0_0_10px_rgba(var(--primary),0.8)]" />
         )}
-        <div className="flex items-center w-full">
+        <div className="flex items-center w-full relative z-10">
           <div className={cn(
-            "mr-2", 
-            isActive 
-              ? "text-primary" 
-              : "group-hover:text-primary transition-colors duration-200"
+            "transition-colors duration-300",
+            isActive
+              ? "text-primary drop-shadow-[0_0_5px_rgba(var(--primary),0.5)]"
+              : "group-hover:text-primary"
           )}>
             {icon}
           </div>
-          <span className={isActive ? "" : "group-hover:text-foreground transition-colors duration-200"}>
+          <span className={cn(
+            "tracking-wide transition-colors duration-300",
+            isActive ? "font-bold" : ""
+          )}>
             {label}
           </span>
-          {isActive && (
-            <div className="ml-auto">
-              <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-            </div>
-          )}
         </div>
       </div>
     </Link>

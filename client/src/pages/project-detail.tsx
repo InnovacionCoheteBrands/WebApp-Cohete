@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { Link, useLocation } from "wouter";
-import { 
-  Tabs, 
-  TabsContent, 
-  TabsList, 
-  TabsTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
 } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +34,7 @@ import ProjectWorkflows from "@/components/projects/project-workflows";
 import ProjectDocuments from "@/components/projects/project-documents";
 import ProjectChat from "@/components/projects/project-chat";
 import ProductList from "@/components/products/product-list";
-import ProjectViewContainer from "@/components/project/project-view-container";
+
 
 interface ProjectDetailProps {
   id: number;
@@ -73,7 +73,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [_, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("tasks");
+  const [activeTab, setActiveTab] = useState("analysis");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editFormData, setEditFormData] = useState({
     name: "",
@@ -134,10 +134,10 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
   };
 
   // Fetch project details with analysis
-  const { 
-    data: project, 
-    isLoading, 
-    error 
+  const {
+    data: project,
+    isLoading,
+    error
   } = useQuery<ProjectWithAnalysis>({
     queryKey: [`/api/projects/${id}`],
     retry: 3,
@@ -196,9 +196,9 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
     <div className="flex flex-col">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={() => navigate("/projects")}
             className="mr-2"
           >
@@ -207,8 +207,8 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
           <h1 className="text-xl font-semibold">{projectData.name}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             className="hidden sm:flex"
           >
@@ -216,8 +216,8 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
             Exportar Calendario
           </Button>
           {user?.isPrimary && (
-            <Button 
-              variant="default" 
+            <Button
+              variant="default"
               size="sm"
               onClick={handleEditProject}
             >
@@ -232,79 +232,55 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
           <div className="border-b">
             <TabsList className="bg-transparent h-auto p-0">
-              <TabsTrigger 
-                value="tasks" 
+              <TabsTrigger
+                value="analysis"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
-                Tareas
+                Estrategia
               </TabsTrigger>
-              <TabsTrigger 
-                value="analysis" 
+              <TabsTrigger
+                value="calendars"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
-                Project Analysis
+                Calendarios
               </TabsTrigger>
-              <TabsTrigger 
-                value="workflows" 
+              <TabsTrigger
+                value="documents"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
-                Workflows
+                Documentos
               </TabsTrigger>
-              <TabsTrigger 
-                value="documents" 
-                className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
-              >
-                Documents
-              </TabsTrigger>
-              <TabsTrigger 
-                value="products" 
+              <TabsTrigger
+                value="products"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
                 Productos
               </TabsTrigger>
-              <TabsTrigger 
-                value="chat" 
+              <TabsTrigger
+                value="chat"
                 className="rounded-none border-b-2 border-transparent px-4 py-3 data-[state=active]:border-primary data-[state=active]:bg-transparent shadow-none"
               >
                 Chat
               </TabsTrigger>
             </TabsList>
           </div>
-          
-          <TabsContent value="tasks" className="mt-0 pt-4">
-            <div className="text-center py-12 bg-card rounded-lg border">
-              <div className="max-w-md mx-auto">
-                <h3 className="text-lg font-semibold mb-2">Gestión Avanzada de Tareas</h3>
-                <p className="text-muted-foreground mb-6">
-                  Accede al gestor completo de tareas con vistas Kanban, Lista, Gantt y más funcionalidades colaborativas.
-                </p>
-                <Button 
-                  onClick={() => window.location.href = '/project-manager'}
-                  className="gap-2"
-                >
-                  <ArrowRight className="h-4 w-4" />
-                  Ir al Gestor de Proyectos
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
-          
+
           <TabsContent value="analysis" className="mt-0 pt-4">
             <ProjectAnalysis project={projectData} isPrimary={user?.isPrimary || false} />
           </TabsContent>
-          
-          <TabsContent value="workflows" className="mt-0 pt-4">
+
+          <TabsContent value="calendars" className="mt-0 pt-4">
             <ProjectWorkflows projectId={projectData.id} />
           </TabsContent>
-          
+
           <TabsContent value="documents" className="mt-0 pt-4">
             <ProjectDocuments projectId={projectData.id} />
           </TabsContent>
-          
+
           <TabsContent value="products" className="mt-0 pt-4">
             <ProductList projectId={projectData.id} />
           </TabsContent>
-          
+
           <TabsContent value="chat" className="mt-0 pt-4">
             <ProjectChat projectId={projectData.id} />
           </TabsContent>
@@ -327,7 +303,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                   <Input
                     id="name"
                     value={editFormData.name}
-                    onChange={(e) => setEditFormData({...editFormData, name: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
                     placeholder="Nombre del proyecto"
                   />
                 </div>
@@ -336,7 +312,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                   <Input
                     id="client"
                     value={editFormData.client}
-                    onChange={(e) => setEditFormData({...editFormData, client: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, client: e.target.value })}
                     placeholder="Nombre del cliente"
                   />
                 </div>
@@ -346,7 +322,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                 <Textarea
                   id="description"
                   value={editFormData.description}
-                  onChange={(e) => setEditFormData({...editFormData, description: e.target.value})}
+                  onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
                   placeholder="Descripción del proyecto"
                   rows={3}
                 />
@@ -363,7 +339,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                     id="startDate"
                     type="date"
                     value={editFormData.startDate}
-                    onChange={(e) => setEditFormData({...editFormData, startDate: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, startDate: e.target.value })}
                   />
                 </div>
                 <div>
@@ -372,14 +348,14 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
                     id="endDate"
                     type="date"
                     value={editFormData.endDate}
-                    onChange={(e) => setEditFormData({...editFormData, endDate: e.target.value})}
+                    onChange={(e) => setEditFormData({ ...editFormData, endDate: e.target.value })}
                   />
                 </div>
                 <div>
                   <Label htmlFor="status">Estado del Proyecto</Label>
                   <Select
                     value={editFormData.status}
-                    onValueChange={(value) => setEditFormData({...editFormData, status: value})}
+                    onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Seleccionar estado" />
@@ -396,7 +372,7 @@ export default function ProjectDetail({ id }: ProjectDetailProps) {
               </div>
             </div>
           </div>
-          
+
           <div className="flex justify-end space-x-2 pt-4 border-t">
             <Button
               variant="outline"

@@ -52,7 +52,7 @@ import CopilotButton from "@/components/copilot/copilot-button";
 // ===== COMPONENTE PRINCIPAL DE LA APLICACIÓN =====
 function App() {
   console.log("App component rendering...");
-  
+
   return (
     // ===== PROVIDERS ANIDADOS =====
     // QueryClientProvider: Proporciona el cliente de React Query a toda la app
@@ -83,7 +83,7 @@ function App() {
 
                 {/* ===== RUTAS PROTEGIDAS ===== */}
                 {/* Todas estas rutas requieren autenticación válida */}
-                
+
                 {/* Ruta raíz: Dashboard principal de la aplicación */}
                 <Route path="/">
                   <ProtectedRoute>
@@ -92,7 +92,7 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
+
                 {/* Página de listado de todos los proyectos */}
                 <Route path="/projects">
                   <ProtectedRoute>
@@ -101,7 +101,7 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
+
                 {/* Página de detalle específico de un proyecto */}
                 {/* Recibe el ID del proyecto como parámetro de URL */}
                 <Route path="/projects/:id">
@@ -113,14 +113,14 @@ function App() {
                     </ProtectedRoute>
                   )}
                 </Route>
-                
+
                 {/* Página de detalle de un cronograma específico dentro de un proyecto */}
                 {/* Recibe tanto el ID del proyecto como el ID del cronograma */}
                 <Route path="/projects/:id/schedule/:scheduleId">
                   {(params) => (
                     <ProtectedRoute>
                       <MainLayout>
-                        <ScheduleDetail 
+                        <ScheduleDetail
                           projectId={parseInt(params.id)}
                           scheduleId={parseInt(params.scheduleId)}
                         />
@@ -128,7 +128,7 @@ function App() {
                     </ProtectedRoute>
                   )}
                 </Route>
-                
+
                 {/* Página de análisis de imágenes para un proyecto específico */}
                 {/* Permite analizar imágenes de marketing usando IA */}
                 <Route path="/projects/:id/image-analysis">
@@ -140,7 +140,7 @@ function App() {
                     </ProtectedRoute>
                   )}
                 </Route>
-                
+
                 {/* Página del creador de calendarios de contenido */}
                 {/* Herramienta principal para generar cronogramas con IA */}
                 <Route path="/calendar-creator">
@@ -150,7 +150,7 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
+
                 {/* Página de calendarios */}
                 {/* Página de selección entre calendario rápido y avanzado */}
                 <Route path="/calendars">
@@ -160,7 +160,7 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
+
                 {/* Página de calendario rápido */}
                 {/* Version simplificada del creador de calendarios */}
                 <Route path="/quick-calendar">
@@ -170,36 +170,13 @@ function App() {
                     </MainLayout>
                   </ProtectedRoute>
                 </Route>
-                
-                {/* Gestión de tareas - versión principal */}
-                <Route path="/task-manager">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <TaskManager />
-                    </MainLayout>
-                  </ProtectedRoute>
-                </Route>
-                
-                {/* Gestión de tareas - página alternativa */}
-                {/* Implementación diferente del gestor de tareas */}
-                <Route path="/task-manager-page">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <TaskManagerPage />
-                    </MainLayout>
-                  </ProtectedRoute>
-                </Route>
-                
-                {/* Gestión de proyectos - vista de administración */}
-                {/* Herramientas avanzadas para gestionar proyectos */}
-                <Route path="/project-manager">
-                  <ProtectedRoute>
-                    <MainLayout>
-                      <ProjectManager />
-                    </MainLayout>
-                  </ProtectedRoute>
-                </Route>
-                
+
+
+
+
+
+
+
                 {/* Gestión de usuarios del sistema */}
                 {/* Solo accesible para usuarios administradores */}
                 <Route path="/users-management">
@@ -243,7 +220,7 @@ function App() {
                 {/* Página 404 - Se muestra cuando ninguna ruta coincide */}
                 <Route component={NotFound} />
               </Switch>
-              
+
               {/* ===== COMPONENTES GLOBALES ===== */}
               {/* Botón del asistente AI - Disponible en todas las páginas */}
               <CopilotButton />

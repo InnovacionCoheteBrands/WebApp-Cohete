@@ -102,25 +102,25 @@ const UserManagementPage = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [changePasswordUser, setChangePasswordUser] = useState<User | null>(null);
   const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
-  
+
   // Check if user is primary, redirect if not
   if (!user) {
     return <Redirect to="/auth" />;
   }
-  
+
   if (!user.isPrimary) {
     return <Redirect to="/" />;
   }
-  
+
   // Get the current user's ID
   const currentUserId = user?.id;
-  
+
   // Query for fetching users
   const { data: users, isLoading, isError, error } = useQuery<User[]>({
     queryKey: ["/api/admin/users"],
     staleTime: 30000, // 30 seconds
   });
-  
+
   // Form for creating users
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
@@ -152,7 +152,7 @@ const UserManagementPage = () => {
       confirmPassword: "",
     },
   });
-  
+
   // Mutation for creating users
   const createUserMutation = useMutation({
     mutationFn: async (data: CreateUserFormValues) => {
@@ -180,7 +180,7 @@ const UserManagementPage = () => {
       });
     },
   });
-  
+
   // Mutation for updating users
   const updateUserMutation = useMutation({
     mutationFn: async ({ userId, data }: { userId: number, data: Partial<CreateUserFormValues> }) => {
@@ -238,7 +238,7 @@ const UserManagementPage = () => {
       setIsDeleteDialogOpen(false);
     },
   });
-  
+
   // Mutation for changing user password
   const changePasswordMutation = useMutation({
     mutationFn: async ({ userId, newPassword }: { userId: number, newPassword: string }) => {
@@ -266,12 +266,12 @@ const UserManagementPage = () => {
       });
     },
   });
-  
+
   // Handle form submission
   const onSubmit = (data: CreateUserFormValues) => {
     createUserMutation.mutate(data);
   };
-  
+
   // Handle edit user
   const handleEditUser = (user: User) => {
     setEditingUser(user);
@@ -287,8 +287,8 @@ const UserManagementPage = () => {
   // Handle edit form submission
   const onEditSubmit = (data: Partial<CreateUserFormValues>) => {
     if (editingUser) {
-      updateUserMutation.mutate({ 
-        userId: editingUser.id, 
+      updateUserMutation.mutate({
+        userId: editingUser.id,
         data: {
           ...data,
           password: undefined // No enviar password al actualizar
@@ -303,7 +303,7 @@ const UserManagementPage = () => {
       deleteUserMutation.mutate(deleteUserId);
     }
   };
-  
+
   // Handle change password
   const handleChangePassword = (user: User) => {
     setChangePasswordUser(user);
@@ -313,174 +313,200 @@ const UserManagementPage = () => {
     });
     setIsChangePasswordDialogOpen(true);
   };
-  
+
   // Handle change password form submission
   const onChangePasswordSubmit = (data: ChangePasswordFormValues) => {
     if (changePasswordUser) {
-      changePasswordMutation.mutate({ 
-        userId: changePasswordUser.id, 
-        newPassword: data.newPassword 
+      changePasswordMutation.mutate({
+        userId: changePasswordUser.id,
+        newPassword: data.newPassword
       });
     }
   };
-  
+
   // Filter users based on search term
-  const filteredUsers = users?.filter(user => 
-    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredUsers = users?.filter(user =>
+    user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  
+
   return (
-    <div className="container py-8 mx-auto space-y-6">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Usuarios</h1>
-          <p className="text-muted-foreground mt-1">
-            Administra los usuarios de Cohete Workflow
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-primary">/</span> GESTIÓN DE USUARIOS
+          </h1>
+          <p className="text-gray-400 tracking-wide mt-1">
+            Administración de personal y credenciales de acceso
           </p>
         </div>
-        
-        <Button onClick={() => setIsCreateDialogOpen(true)}>
+
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold tracking-wider uppercase shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all duration-300 hover:scale-105">
           <UserPlus className="mr-2 h-4 w-4" />
           Nuevo Usuario
         </Button>
-      </header>
-      
-      <Separator className="my-6" />
-      
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between mb-6">
-        <div className="relative w-full md:w-auto">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+      </div>
+
+      {/* Stats & Search Section */}
+      <div className="glass-panel-dark tech-border p-6 rounded-xl space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-black/40 border border-white/10 rounded-lg p-4 flex items-center gap-4">
+            <div className="p-3 rounded-full bg-primary/10 text-primary">
+              <ShieldCheck className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Administradores</p>
+              <p className="text-2xl font-bold text-white">{users?.filter(user => user.isPrimary).length || 0}</p>
+            </div>
+          </div>
+
+          <div className="bg-black/40 border border-white/10 rounded-lg p-4 flex items-center gap-4">
+            <div className="p-3 rounded-full bg-blue-500/10 text-blue-400">
+              <ShieldAlert className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Estándar</p>
+              <p className="text-2xl font-bold text-white">{users?.filter(user => !user.isPrimary).length || 0}</p>
+            </div>
+          </div>
+
+          <div className="bg-black/40 border border-white/10 rounded-lg p-4 flex items-center gap-4">
+            <div className="p-3 rounded-full bg-purple-500/10 text-purple-400">
+              <UserCog className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wider">Total Usuarios</p>
+              <p className="text-2xl font-bold text-white">{users?.length || 0}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-4 h-4" />
           <Input
-            placeholder="Buscar usuarios..."
-            className="pl-8 w-full md:w-[300px]"
+            placeholder="Buscar por nombre o credencial..."
+            className="pl-10 bg-black/40 border-white/10 text-white placeholder:text-gray-500 focus:border-primary/50 focus:ring-primary/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="rounded-lg px-3 py-1">
-            <ShieldCheck className="mr-1 h-3.5 w-3.5" />
-            <span>Administradores: {users?.filter(user => user.isPrimary).length || 0}</span>
-          </Badge>
-          <Badge variant="outline" className="rounded-lg px-3 py-1">
-            <ShieldAlert className="mr-1 h-3.5 w-3.5" />
-            <span>Estándar: {users?.filter(user => !user.isPrimary).length || 0}</span>
-          </Badge>
-          <Badge variant="outline" className="rounded-lg px-3 py-1">
-            <UserCog className="mr-1 h-3.5 w-3.5" />
-            <span>Total: {users?.length || 0}</span>
-          </Badge>
-        </div>
       </div>
-      
+
       {isLoading ? (
-        <div className="flex justify-center items-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="ml-2 text-lg">Cargando usuarios...</span>
+        <div className="flex items-center justify-center h-64">
+          <div className="relative h-16 w-16">
+            <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            <Loader2 className="absolute inset-0 m-auto h-6 w-6 text-primary animate-pulse" />
+          </div>
         </div>
       ) : isError ? (
-        <Card className="bg-destructive/10 border-destructive">
-          <CardContent className="p-6">
-            <div className="flex flex-col items-center text-center">
-              <p className="text-xl font-semibold">Error al cargar usuarios</p>
-              <p className="text-muted-foreground">
-                {error instanceof Error ? error.message : "Ha ocurrido un error al cargar los usuarios"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="glass-panel-dark border-red-500/20 bg-red-500/5 p-8 rounded-xl text-center">
+          <ShieldAlert className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Error de Sistema</h3>
+          <p className="text-red-400">
+            {error instanceof Error ? error.message : "Fallo en la recuperación de datos de usuarios"}
+          </p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredUsers && filteredUsers.length > 0 ? (
             filteredUsers.map((user) => (
-              <Card key={user.id} className="overflow-hidden">
-                <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
+              <div key={user.id} className="glass-panel-dark tech-border group relative overflow-hidden rounded-xl transition-all duration-300 hover:shadow-[0_0_20px_rgba(var(--primary),0.15)] hover:-translate-y-1">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <UserCog className="w-24 h-24 text-primary" />
+                </div>
+
+                <div className="p-6 relative z-10">
+                  <div className="flex justify-between items-start mb-4">
                     <div>
-                      <CardTitle className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg text-white group-hover:text-primary transition-colors flex items-center gap-2">
                         {user.fullName}
                         {user.isPrimary && (
-                          <Badge className="ml-2" variant="default">
-                            <ShieldCheck className="mr-1 h-3 w-3" />
-                            Admin
-                          </Badge>
+                          <span className="flex h-2 w-2 rounded-full bg-primary shadow-[0_0_5px_rgba(var(--primary),0.8)]"></span>
                         )}
-                      </CardTitle>
-                      <CardDescription>@{user.username}</CardDescription>
+                      </h3>
+                      <p className="text-sm text-gray-400 font-mono">@{user.username}</p>
                     </div>
-                    
-                    <div className="flex gap-1">
-                      {/* Botón de editar permisos */}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-blue-600" 
-                        onClick={() => handleEditUser(user)}
-                        title="Editar permisos"
-                      >
-                        <UserCog className="h-4 w-4" />
-                      </Button>
-                      
-                      {/* Botón de cambiar contraseña */}
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-amber-600" 
-                        onClick={() => handleChangePassword(user)}
-                        title="Cambiar contraseña"
-                      >
-                        <Key className="h-4 w-4" />
-                      </Button>
-                      
-                      {/* No mostrar botón de eliminar para el usuario actual */}
-                      {user.id !== currentUserId && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive" 
-                          onClick={() => {
-                            setDeleteUserId(user.id);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                          title="Eliminar usuario"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
+                    {user.isPrimary ? (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 uppercase text-[10px] tracking-wider">
+                        Admin
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/20 uppercase text-[10px] tracking-wider">
+                        Estándar
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 mb-6">
+                    <div className="flex justify-between text-sm border-b border-white/5 pb-2">
+                      <span className="text-gray-500">Rol</span>
+                      <span className="text-gray-300 uppercase text-xs font-bold tracking-wide">{user.role || "N/A"}</span>
+                    </div>
+                    <div className="flex justify-between text-sm border-b border-white/5 pb-2">
+                      <span className="text-gray-500">Alta</span>
+                      <span className="text-gray-300 font-mono text-xs">{new Date(user.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-sm text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>Fecha de creación:</span>
-                      <span>{new Date(user.createdAt).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      <span>Tipo:</span>
-                      <span>{user.isPrimary ? "Administrador" : "Estándar"}</span>
-                    </div>
-                    <div className="flex justify-between mt-1">
-                      <span>Rol:</span>
-                      <span className="capitalize">{user.role || "No asignado"}</span>
-                    </div>
+
+                  <div className="flex gap-2 justify-end">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-400 hover:text-primary hover:bg-primary/10"
+                      onClick={() => handleEditUser(user)}
+                      title="Editar permisos"
+                    >
+                      <UserCog className="h-4 w-4" />
+                    </Button>
+
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-gray-400 hover:text-primary hover:bg-primary/10"
+                      onClick={() => handleChangePassword(user)}
+                      title="Cambiar contraseña"
+                    >
+                      <Key className="h-4 w-4" />
+                    </Button>
+
+                    {user.id !== currentUserId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                        onClick={() => {
+                          setDeleteUserId(user.id);
+                          setIsDeleteDialogOpen(true);
+                        }}
+                        title="Eliminar usuario"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))
           ) : (
-            <div className="col-span-full py-12 text-center">
-              <p className="text-xl font-medium mb-2">No se encontraron usuarios</p>
-              <p className="text-muted-foreground">
-                {searchTerm ? "No hay resultados para tu búsqueda" : "No hay usuarios en el sistema"}
+            <div className="col-span-full glass-panel-dark rounded-xl p-12 text-center border border-white/5">
+              <div className="inline-flex p-4 rounded-full bg-white/5 mb-4">
+                <Search className="w-8 h-8 text-gray-500" />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">
+                No se encontraron usuarios
+              </h3>
+              <p className="text-gray-500">
+                {searchTerm ? "Ajusta los parámetros de búsqueda." : "No hay personal registrado en el sistema."}
               </p>
             </div>
           )}
         </div>
       )}
-      
+
       {/* Dialog para crear usuario */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -490,7 +516,7 @@ const UserManagementPage = () => {
               Completa el formulario para crear un nuevo usuario, selecciona su rol y tipo
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
               <FormField
@@ -506,7 +532,7 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="username"
@@ -523,7 +549,7 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="password"
@@ -589,18 +615,18 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter className="pt-4">
-                <Button 
-                  variant="outline" 
-                  type="button" 
-                  onClick={() => setIsCreateDialogOpen(false)} 
+                <Button
+                  variant="outline"
+                  type="button"
+                  onClick={() => setIsCreateDialogOpen(false)}
                   disabled={createUserMutation.isPending}
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createUserMutation.isPending}
                 >
                   {createUserMutation.isPending ? (
@@ -625,7 +651,7 @@ const UserManagementPage = () => {
               Modifica los permisos y rol de {editingUser?.fullName}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4 py-4">
               <FormField
@@ -641,7 +667,7 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="username"
@@ -674,7 +700,7 @@ const UserManagementPage = () => {
                     <div className="space-y-1 leading-none">
                       <FormLabel>Usuario Administrador</FormLabel>
                       <FormDescription>
-                        {editingUser?.id === currentUserId 
+                        {editingUser?.id === currentUserId
                           ? "No puedes modificar tus propios permisos de administrador."
                           : "Acceso a todas las funciones del sistema, incluida la gestión de usuarios."
                         }
@@ -714,22 +740,22 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter className="pt-4">
-                <Button 
-                  variant="outline" 
-                  type="button" 
+                <Button
+                  variant="outline"
+                  type="button"
                   onClick={() => {
                     setIsEditDialogOpen(false);
                     setEditingUser(null);
                     editForm.reset();
-                  }} 
+                  }}
                   disabled={updateUserMutation.isPending}
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={updateUserMutation.isPending}
                 >
                   {updateUserMutation.isPending ? (
@@ -744,7 +770,7 @@ const UserManagementPage = () => {
           </Form>
         </DialogContent>
       </Dialog>
-      
+
       {/* Dialog para cambiar contraseña de usuario */}
       <Dialog open={isChangePasswordDialogOpen} onOpenChange={setIsChangePasswordDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -754,7 +780,7 @@ const UserManagementPage = () => {
               Cambiar la contraseña de {changePasswordUser?.fullName}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...changePasswordForm}>
             <form onSubmit={changePasswordForm.handleSubmit(onChangePasswordSubmit)} className="space-y-4">
               <FormField
@@ -764,10 +790,10 @@ const UserManagementPage = () => {
                   <FormItem>
                     <FormLabel>Nueva contraseña</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Nueva contraseña" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="Nueva contraseña"
+                        {...field}
                         autoComplete="new-password"
                       />
                     </FormControl>
@@ -775,7 +801,7 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={changePasswordForm.control}
                 name="confirmPassword"
@@ -783,10 +809,10 @@ const UserManagementPage = () => {
                   <FormItem>
                     <FormLabel>Confirmar contraseña</FormLabel>
                     <FormControl>
-                      <Input 
-                        type="password" 
-                        placeholder="Confirmar contraseña" 
-                        {...field} 
+                      <Input
+                        type="password"
+                        placeholder="Confirmar contraseña"
+                        {...field}
                         autoComplete="new-password"
                       />
                     </FormControl>
@@ -794,22 +820,22 @@ const UserManagementPage = () => {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter className="pt-4">
-                <Button 
-                  variant="outline" 
-                  type="button" 
+                <Button
+                  variant="outline"
+                  type="button"
                   onClick={() => {
                     setIsChangePasswordDialogOpen(false);
                     setChangePasswordUser(null);
                     changePasswordForm.reset();
-                  }} 
+                  }}
                   disabled={changePasswordMutation.isPending}
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={changePasswordMutation.isPending}
                 >
                   {changePasswordMutation.isPending ? (
@@ -824,7 +850,7 @@ const UserManagementPage = () => {
           </Form>
         </DialogContent>
       </Dialog>
-      
+
       {/* Confirmation dialog para eliminar usuario */}
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
@@ -837,7 +863,7 @@ const UserManagementPage = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteUserMutation.isPending}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteUserMutation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

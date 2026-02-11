@@ -3,12 +3,12 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
-import { 
-  CalendarIcon, 
-  Clock, 
-  PlusCircle, 
-  ListChecks, 
-  AlertCircle, 
+import {
+  CalendarIcon,
+  Clock,
+  PlusCircle,
+  ListChecks,
+  AlertCircle,
   Layout,
   BarChart4,
   Table,
@@ -18,7 +18,14 @@ import {
   ListFilter,
   Users,
   SlidersHorizontal,
-  Search
+  Search,
+  CheckCircle2,
+  LayoutDashboard,
+  Sparkles,
+  Filter,
+  MoreHorizontal,
+  Trash2,
+  Edit
 } from 'lucide-react';
 import {
   Dialog,
@@ -80,23 +87,22 @@ import { es } from 'date-fns/locale';
 // Importaciones para los componentes de Kanban
 import { TaskForm } from '@/components/tasks/task-form';
 import { CreateTaskDialog } from '@/components/tasks/create-task-dialog';
-import { 
-  DndContext, 
-  DragOverlay, 
-  closestCorners, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
   useSensors,
   DragStartEvent,
   DragEndEvent,
   DragOverEvent
 } from '@dnd-kit/core';
-import { 
+import {
   sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
 import { KanbanBoard } from '@/components/tasks/kanban-board';
-import { EnhancedKanbanBoard } from '@/components/tasks/enhanced-kanban-board';
 
 // Definir el esquema de validación para crear/editar tareas
 const taskSchema = z.object({
@@ -124,7 +130,7 @@ const TaskManager = () => {
   const [draggedTask, setDraggedTask] = useState<any>(null);
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // Configuración de sensores para drag and drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -199,8 +205,6 @@ const TaskManager = () => {
       });
     },
   });
-
-
 
   // Eliminar tarea
   const deleteTaskMutation = useMutation({
@@ -278,12 +282,12 @@ const TaskManager = () => {
   // Preparar el formulario para editar una tarea
   const handleEditTask = (task: any) => {
     setSelectedTask(task);
-    
+
     // Convertir la fecha a un objeto Date
-    const dueDateObj = task.dueDate 
+    const dueDateObj = task.dueDate
       ? new Date(task.dueDate)
       : null;
-    
+
     editForm.reset({
       title: task.title,
       description: task.description || "",
@@ -293,7 +297,7 @@ const TaskManager = () => {
       projectId: task.projectId,
       assignedToId: task.assignedToId,
     });
-    
+
     setIsEditTaskDialogOpen(true);
   };
 
@@ -322,13 +326,13 @@ const TaskManager = () => {
   const renderPriorityBadge = (priority: string) => {
     switch (priority) {
       case 'urgent':
-        return <Badge variant="destructive">Urgente</Badge>;
+        return <Badge className="bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30">Urgente</Badge>;
       case 'high':
-        return <Badge variant="default" className="bg-orange-500">Alta</Badge>;
+        return <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30 hover:bg-orange-500/30">Alta</Badge>;
       case 'medium':
-        return <Badge variant="default" className="bg-yellow-500">Media</Badge>;
+        return <Badge className="bg-yellow-500/20 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/30">Media</Badge>;
       case 'low':
-        return <Badge variant="default" className="bg-green-500">Baja</Badge>;
+        return <Badge className="bg-green-500/20 text-green-500 border-green-500/30 hover:bg-green-500/30">Baja</Badge>;
       default:
         return <Badge variant="outline">No definida</Badge>;
     }
@@ -338,111 +342,69 @@ const TaskManager = () => {
   const renderStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline">Pendiente</Badge>;
+        return <Badge variant="outline" className="border-white/20 text-gray-400">Pendiente</Badge>;
       case 'in_progress':
-        return <Badge variant="default" className="bg-blue-500">En progreso</Badge>;
+        return <Badge className="bg-blue-500/20 text-blue-500 border-blue-500/30 hover:bg-blue-500/30">En progreso</Badge>;
       case 'completed':
-        return <Badge variant="default" className="bg-green-600">Completada</Badge>;
+        return <Badge className="bg-green-500/20 text-green-500 border-green-500/30 hover:bg-green-500/30">Completada</Badge>;
       case 'cancelled':
-        return <Badge variant="default" className="bg-gray-500">Cancelada</Badge>;
+        return <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 hover:bg-gray-500/30">Cancelada</Badge>;
       default:
         return <Badge variant="outline">No definido</Badge>;
     }
   };
 
-  // Manejadores para las funcionalidades de arrastrar y soltar
-  const handleDragStart = (event: DragStartEvent) => {
-    const { active } = event;
-    const taskId = parseInt(active.id.toString().split('-')[1]);
-    const draggedTask = tasks.find((task: any) => task.id === taskId);
-    setDraggedTask(draggedTask);
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    // Manejo opcional para efectos visuales durante el arrastre
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
-    
-    const activeId = active.id.toString();
-    const overId = over.id.toString();
-    
-    // Si no ha cambiado la columna, no hacemos nada
-    if (activeId === overId) return;
-    
-    const taskId = parseInt(activeId.split('-')[1]);
-    let newStatus;
-    let newAssigneeId;
-    let newPriority;
-    
-    // Determinar qué propiedad actualizar según el groupBy
-    if (groupBy === 'status') {
-      newStatus = overId;
-    } else if (groupBy === 'assignee') {
-      if (overId === 'unassigned') {
-        newAssigneeId = null;
-      } else {
-        newAssigneeId = parseInt(overId.split('-')[1]);
-      }
-    } else if (groupBy === 'priority') {
-      newPriority = overId;
-    }
-    
-    const updateData: any = { id: taskId };
-    
-    if (newStatus) updateData.status = newStatus;
-    if (newAssigneeId !== undefined) updateData.assignedToId = newAssigneeId;
-    if (newPriority) updateData.priority = newPriority;
-    
-    // Actualizar la tarea en el servidor
-    updateTaskMutation.mutate(updateData);
-    
-    setDraggedTask(null);
-  };
-  
   // Filtrar tareas por estado
   const pendingTasks = tasks.filter((task: any) => task.status === 'pending');
   const inProgressTasks = tasks.filter((task: any) => task.status === 'in_progress');
   const completedTasks = tasks.filter((task: any) => task.status === 'completed');
 
   return (
-    <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-2">Gestor de Tareas</h1>
-      <p className="text-muted-foreground mb-6">
-        Administra las tareas de tus proyectos y mejora la productividad del equipo
-      </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
+          <ListChecks className="h-8 w-8 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-primary">/</span> GESTOR DE TAREAS
+          </h1>
+          <p className="text-gray-400 tracking-wide">
+            Control de misiones y objetivos operativos
+          </p>
+        </div>
+      </div>
 
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Select 
+      {/* Controls Section */}
+      <div className="glass-panel-dark p-4 rounded-xl border border-white/5 mb-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+            <Select
               value={selectedProject?.toString() || ""}
               onValueChange={(value) => setSelectedProject(parseInt(value))}
             >
-              <SelectTrigger className="w-[300px]">
+              <SelectTrigger className="w-full sm:w-[300px] bg-black/20 border-white/10 text-white">
                 <SelectValue placeholder="Selecciona un proyecto" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-black/90 border-white/10 text-white">
                 {projects.map((project: any) => (
-                  <SelectItem key={project.id} value={project.id.toString()}>
+                  <SelectItem key={project.id} value={project.id.toString()} className="focus:bg-primary/20 focus:text-white">
                     {project.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-  
+
             {selectedProject && (
               <CreateTaskDialog projectId={selectedProject}>
-                <Button variant="default">
+                <Button className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 uppercase tracking-wider font-bold w-full sm:w-auto">
                   <PlusCircle className="mr-2 h-4 w-4" />
                   Nueva Tarea
                 </Button>
               </CreateTaskDialog>
             )}
-  
+
             <Button
               variant="outline"
               onClick={() => {
@@ -451,129 +413,137 @@ const TaskManager = () => {
                 }
               }}
               disabled={!selectedProject || generateTasksMutation.isPending}
+              className="border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:text-purple-300 w-full sm:w-auto"
             >
-              <span className="mr-2">🧠</span>
-              Generar Tareas con IA
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generar con IA
             </Button>
           </div>
-          
-          {/* Controles de vista estilo Monday */}
-          <div className="flex items-center gap-2">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={activeView === 'kanban' ? 'default' : 'outline'} 
-                    size="icon" 
-                    onClick={() => setActiveView('kanban')}
-                  >
-                    <KanbanSquare className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Vista Kanban</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={activeView === 'list' ? 'default' : 'outline'} 
-                    size="icon" 
-                    onClick={() => setActiveView('list')}
-                  >
-                    <ListChecks className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Vista Lista</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant={activeView === 'table' ? 'default' : 'outline'} 
-                    size="icon" 
-                    onClick={() => setActiveView('table')}
-                  >
-                    <Table className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Vista Tabla</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            
-            <Separator orientation="vertical" className="h-6 mx-1" />
-            
+
+          {/* View Controls */}
+          <div className="flex items-center gap-2 w-full md:w-auto justify-end">
+            <div className="flex bg-black/20 p-1 rounded-lg border border-white/10">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setActiveView('kanban')}
+                      className={activeView === 'kanban' ? 'bg-primary/20 text-primary' : 'text-gray-400 hover:text-white'}
+                    >
+                      <KanbanSquare className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Vista Kanban</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setActiveView('list')}
+                      className={activeView === 'list' ? 'bg-primary/20 text-primary' : 'text-gray-400 hover:text-white'}
+                    >
+                      <ListChecks className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Vista Lista</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setActiveView('table')}
+                      className={activeView === 'table' ? 'bg-primary/20 text-primary' : 'text-gray-400 hover:text-white'}
+                    >
+                      <Table className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Vista Tabla</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <Separator orientation="vertical" className="h-6 mx-1 bg-white/10" />
+
             <Select
               value={groupBy}
               onValueChange={(value: 'status' | 'assignee' | 'priority') => setGroupBy(value)}
             >
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[140px] bg-black/20 border-white/10 text-white">
                 <div className="flex items-center">
-                  <ListFilter className="h-4 w-4 mr-2" />
+                  <Filter className="h-3 w-3 mr-2 text-primary" />
                   <SelectValue placeholder="Agrupar por" />
                 </div>
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="status">Estado</SelectItem>
-                <SelectItem value="assignee">Asignado a</SelectItem>
-                <SelectItem value="priority">Prioridad</SelectItem>
+              <SelectContent className="bg-black/90 border-white/10 text-white">
+                <SelectItem value="status" className="focus:bg-primary/20">Estado</SelectItem>
+                <SelectItem value="assignee" className="focus:bg-primary/20">Asignado a</SelectItem>
+                <SelectItem value="priority" className="focus:bg-primary/20">Prioridad</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
-        
+
         {tasks.length > 0 && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="outline" className="px-3 py-1">
-              <Users className="h-3 w-3 mr-1" />
+          <div className="flex items-center gap-2 flex-wrap mt-4 pt-4 border-t border-white/5">
+            <Badge variant="outline" className="px-3 py-1 border-white/10 bg-white/5 text-gray-300">
+              <Users className="h-3 w-3 mr-1 text-primary" />
               {users.filter(u => tasks.some((t: any) => t.assignedToId === u.id)).length} asignados
             </Badge>
-            
-            <Badge variant="outline" className="px-3 py-1">
-              <Clock className="h-3 w-3 mr-1" />
+
+            <Badge variant="outline" className="px-3 py-1 border-white/10 bg-white/5 text-gray-300">
+              <Clock className="h-3 w-3 mr-1 text-orange-400" />
               {tasks.filter((t: any) => t.dueDate).length} con fecha límite
             </Badge>
-            
-            <Badge variant="outline" className="px-3 py-1 bg-blue-50">
-              <span className="mr-1">🧠</span>
+
+            <Badge variant="outline" className="px-3 py-1 border-blue-500/30 bg-blue-500/10 text-blue-400">
+              <Sparkles className="h-3 w-3 mr-1" />
               {tasks.filter((t: any) => t.aiGenerated).length} generadas por IA
-            </Badge>
-            
-            <Badge variant="outline" className="px-3 py-1">
-              <Tag className="h-3 w-3 mr-1" />
-              {tasks.filter((t: any) => t.tags?.length).length} con etiquetas
             </Badge>
           </div>
         )}
       </div>
 
       {!selectedProject ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center">
-          <ListChecks className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-xl font-medium">Selecciona un proyecto</h3>
-          <p className="text-muted-foreground mt-1">
-            Elige un proyecto para ver y gestionar sus tareas
+        <div className="glass-panel-dark rounded-xl p-12 text-center border border-white/5 flex flex-col items-center justify-center min-h-[400px]">
+          <div className="bg-primary/10 p-6 rounded-full mb-6 animate-pulse">
+            <LayoutDashboard className="h-16 w-16 text-primary" />
+          </div>
+          <h3 className="text-2xl font-bold text-white mb-2">Selecciona una Misión</h3>
+          <p className="text-gray-400 max-w-md mx-auto">
+            Elige un proyecto del panel de control para visualizar y gestionar sus objetivos tácticos.
           </p>
         </div>
       ) : isLoadingTasks ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="flex justify-center py-24">
+          <div className="relative">
+            <div className="h-16 w-16 rounded-full border-4 border-primary/20 border-t-primary animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-primary/20 animate-pulse"></div>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="w-full">
           {/* Vista Kanban */}
           {activeView === 'kanban' && (
-            <div className="kanban-board h-[calc(100vh-250px)]">
-              <EnhancedKanbanBoard
+            <div className="kanban-board h-[calc(100vh-300px)]">
+              <KanbanBoard
                 tasks={tasks}
                 users={users}
                 onEdit={handleEditTask}
@@ -591,34 +561,34 @@ const TaskManager = () => {
               />
             </div>
           )}
-          
+
           {/* Vista Lista */}
           {activeView === 'list' && (
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="mb-6">
-                <TabsTrigger value="pending">
-                  Pendientes <Badge variant="outline" className="ml-2">{pendingTasks.length}</Badge>
+              <TabsList className="mb-6 bg-black/40 border border-white/10 p-1">
+                <TabsTrigger value="pending" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary text-gray-400">
+                  Pendientes <Badge variant="outline" className="ml-2 border-white/10 bg-white/5">{pendingTasks.length}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="in-progress">
-                  En Progreso <Badge variant="outline" className="ml-2">{inProgressTasks.length}</Badge>
+                <TabsTrigger value="in-progress" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-400 text-gray-400">
+                  En Progreso <Badge variant="outline" className="ml-2 border-white/10 bg-white/5">{inProgressTasks.length}</Badge>
                 </TabsTrigger>
-                <TabsTrigger value="completed">
-                  Completadas <Badge variant="outline" className="ml-2">{completedTasks.length}</Badge>
+                <TabsTrigger value="completed" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400 text-gray-400">
+                  Completadas <Badge variant="outline" className="ml-2 border-white/10 bg-white/5">{completedTasks.length}</Badge>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="pending" className="space-y-4">
                 {pendingTasks.length === 0 ? (
-                  <div className="text-center p-12 border rounded-lg bg-gray-50">
-                    <p className="text-muted-foreground">No hay tareas pendientes</p>
+                  <div className="text-center p-12 border border-white/5 rounded-xl bg-black/20">
+                    <p className="text-gray-400">No hay tareas pendientes</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {pendingTasks.map((task: any) => (
-                      <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onEdit={handleEditTask} 
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={handleEditTask}
                         onDelete={() => deleteTaskMutation.mutate(task.id)}
                         onStatusChange={handleStatusChange}
                         renderPriorityBadge={renderPriorityBadge}
@@ -632,16 +602,16 @@ const TaskManager = () => {
 
               <TabsContent value="in-progress" className="space-y-4">
                 {inProgressTasks.length === 0 ? (
-                  <div className="text-center p-12 border rounded-lg bg-gray-50">
-                    <p className="text-muted-foreground">No hay tareas en progreso</p>
+                  <div className="text-center p-12 border border-white/5 rounded-xl bg-black/20">
+                    <p className="text-gray-400">No hay tareas en progreso</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {inProgressTasks.map((task: any) => (
-                      <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onEdit={handleEditTask} 
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={handleEditTask}
                         onDelete={() => deleteTaskMutation.mutate(task.id)}
                         onStatusChange={handleStatusChange}
                         renderPriorityBadge={renderPriorityBadge}
@@ -655,16 +625,16 @@ const TaskManager = () => {
 
               <TabsContent value="completed" className="space-y-4">
                 {completedTasks.length === 0 ? (
-                  <div className="text-center p-12 border rounded-lg bg-gray-50">
-                    <p className="text-muted-foreground">No hay tareas completadas</p>
+                  <div className="text-center p-12 border border-white/5 rounded-xl bg-black/20">
+                    <p className="text-gray-400">No hay tareas completadas</p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {completedTasks.map((task: any) => (
-                      <TaskCard 
-                        key={task.id} 
-                        task={task} 
-                        onEdit={handleEditTask} 
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onEdit={handleEditTask}
                         onDelete={() => deleteTaskMutation.mutate(task.id)}
                         onStatusChange={handleStatusChange}
                         renderPriorityBadge={renderPriorityBadge}
@@ -677,90 +647,97 @@ const TaskManager = () => {
               </TabsContent>
             </Tabs>
           )}
-          
+
           {/* Vista Tabla */}
           {activeView === 'table' && (
-            <div className="overflow-auto rounded-md border">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">#</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Título</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Estado</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Prioridad</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Asignado a</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Fecha límite</th>
-                    <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className="p-4 text-center text-muted-foreground">
-                        No hay tareas disponibles
-                      </td>
+            <div className="glass-panel-dark rounded-xl border border-white/5 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-black/40 border-b border-white/10">
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">#</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">Título</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">Estado</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">Prioridad</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">Asignado a</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">Fecha límite</th>
+                      <th className="h-12 px-4 text-left align-middle font-medium text-gray-400 uppercase tracking-wider text-xs">Acciones</th>
                     </tr>
-                  ) : (
-                    tasks.map((task: any, index: number) => {
-                      const assignedUser = users.find(user => user.id === task.assignedToId);
-                      return (
-                        <tr key={task.id} className={index % 2 === 0 ? "bg-white" : "bg-muted/10"}>
-                          <td className="p-2 align-middle">{index + 1}</td>
-                          <td className="p-2 align-middle font-medium">
-                            <div className="flex items-center gap-2">
-                              {task.title}
-                              {task.aiGenerated && (
-                                <div className="text-xs font-medium text-blue-600 flex items-center gap-1">
-                                  <span>🧠</span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                          <td className="p-2 align-middle">{renderStatusBadge(task.status)}</td>
-                          <td className="p-2 align-middle">{renderPriorityBadge(task.priority)}</td>
-                          <td className="p-2 align-middle">
-                            {assignedUser ? (
+                  </thead>
+                  <tbody>
+                    {tasks.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center text-gray-500">
+                          No hay tareas disponibles
+                        </td>
+                      </tr>
+                    ) : (
+                      tasks.map((task: any, index: number) => {
+                        const assignedUser = users.find(user => user.id === task.assignedToId);
+                        return (
+                          <tr key={task.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                            <td className="p-4 align-middle text-gray-400">{index + 1}</td>
+                            <td className="p-4 align-middle font-medium text-white">
                               <div className="flex items-center gap-2">
-                                <Avatar className="h-6 w-6">
-                                  <AvatarFallback>{assignedUser.fullName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <span className="text-sm">{assignedUser.fullName}</span>
+                                {task.title}
+                                {task.aiGenerated && (
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger>
+                                        <Sparkles className="h-3 w-3 text-blue-400" />
+                                      </TooltipTrigger>
+                                      <TooltipContent>Generada por IA</TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                )}
                               </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">No asignado</span>
-                            )}
-                          </td>
-                          <td className="p-2 align-middle">
-                            {task.dueDate ? (
-                              <div className="flex items-center text-sm">
-                                <CalendarIcon className="h-3 w-3 mr-1" />
-                                {format(new Date(task.dueDate), "d 'de' MMM, yyyy", { locale: es })}
+                            </td>
+                            <td className="p-4 align-middle">{renderStatusBadge(task.status)}</td>
+                            <td className="p-4 align-middle">{renderPriorityBadge(task.priority)}</td>
+                            <td className="p-4 align-middle">
+                              {assignedUser ? (
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6 border border-white/10">
+                                    <AvatarFallback className="bg-primary/20 text-primary text-xs">{assignedUser.fullName.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm text-gray-300">{assignedUser.fullName}</span>
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-500">No asignado</span>
+                              )}
+                            </td>
+                            <td className="p-4 align-middle">
+                              {task.dueDate ? (
+                                <div className="flex items-center text-sm text-gray-300">
+                                  <CalendarIcon className="h-3 w-3 mr-2 text-primary" />
+                                  {format(new Date(task.dueDate), "d 'de' MMM, yyyy", { locale: es })}
+                                </div>
+                              ) : (
+                                <span className="text-sm text-gray-500">Sin fecha</span>
+                              )}
+                            </td>
+                            <td className="p-4 align-middle">
+                              <div className="flex items-center gap-2">
+                                <Button size="sm" variant="ghost" onClick={() => handleEditTask(task)} className="h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary">
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 hover:bg-red-500/20 hover:text-red-500 text-gray-500"
+                                  onClick={() => deleteTaskMutation.mutate(task.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
                               </div>
-                            ) : (
-                              <span className="text-sm text-muted-foreground">Sin fecha</span>
-                            )}
-                          </td>
-                          <td className="p-2 align-middle">
-                            <div className="flex items-center gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => handleEditTask(task)}>
-                                Editar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="ghost" 
-                                className="text-destructive" 
-                                onClick={() => deleteTaskMutation.mutate(task.id)}
-                              >
-                                Eliminar
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
@@ -768,14 +745,14 @@ const TaskManager = () => {
 
       {/* Diálogo para crear nueva tarea */}
       <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] glass-panel-dark border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Crear Nueva Tarea</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Crear Nueva Tarea</DialogTitle>
+            <DialogDescription className="text-gray-400">
               Crea una nueva tarea para el proyecto seleccionado
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
             <form onSubmit={form.handleSubmit((data) => createTaskMutation.mutate(data))} className="space-y-4">
               <FormField
@@ -783,50 +760,50 @@ const TaskManager = () => {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título</FormLabel>
+                    <FormLabel className="text-gray-300">Título</FormLabel>
                     <FormControl>
-                      <Input placeholder="Título de la tarea" {...field} />
+                      <Input placeholder="Título de la tarea" {...field} className="bg-black/40 border-white/10 text-white placeholder:text-gray-600" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descripción</FormLabel>
+                    <FormLabel className="text-gray-300">Descripción</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Descripción detallada de la tarea" 
-                        className="min-h-[100px]" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Descripción detallada de la tarea"
+                        className="min-h-[100px] bg-black/40 border-white/10 text-white placeholder:text-gray-600"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={form.control}
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prioridad</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <FormLabel className="text-gray-300">Prioridad</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-black/40 border-white/10 text-white">
                             <SelectValue placeholder="Selecciona prioridad" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="bg-black/90 border-white/10 text-white">
                           <SelectItem value="low">Baja</SelectItem>
                           <SelectItem value="medium">Media</SelectItem>
                           <SelectItem value="high">Alta</SelectItem>
@@ -837,21 +814,20 @@ const TaskManager = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Fecha límite</FormLabel>
+                      <FormLabel className="text-gray-300">Fecha límite</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
-                              className={`w-full text-left font-normal ${
-                                !field.value && "text-muted-foreground"
-                              }`}
+                              className={`w-full text-left font-normal bg-black/40 border-white/10 text-white hover:bg-white/5 hover:text-white ${!field.value && "text-gray-500"
+                                }`}
                             >
                               {field.value ? (
                                 format(field.value, "dd/MM/yyyy", { locale: es })
@@ -862,12 +838,13 @@ const TaskManager = () => {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 bg-black/90 border-white/10 text-white" align="start">
                           <CalendarComponent
                             mode="single"
                             selected={field.value || undefined}
                             onSelect={field.onChange}
                             initialFocus
+                            className="bg-black/90 text-white"
                           />
                         </PopoverContent>
                       </Popover>
@@ -876,23 +853,23 @@ const TaskManager = () => {
                   )}
                 />
               </div>
-              
+
               <FormField
                 control={form.control}
                 name="assignedToId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Asignar a</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
+                    <FormLabel className="text-gray-300">Asignar a</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
                       defaultValue={field.value?.toString()}
                     >
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-black/40 border-white/10 text-white">
                           <SelectValue placeholder="Asignar a un usuario" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-black/90 border-white/10 text-white">
                         {users.map((user: any) => (
                           <SelectItem key={user.id} value={user.id.toString()}>
                             {user.fullName}
@@ -904,21 +881,23 @@ const TaskManager = () => {
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsNewTaskDialogOpen(false)}
+                  className="border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={createTaskMutation.isPending}
+                  className="bg-primary hover:bg-primary/90 text-black font-bold"
                 >
                   {createTaskMutation.isPending && (
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-black rounded-full"></div>
                   )}
                   Crear Tarea
                 </Button>
@@ -930,14 +909,14 @@ const TaskManager = () => {
 
       {/* Diálogo para editar tarea */}
       <Dialog open={isEditTaskDialogOpen} onOpenChange={setIsEditTaskDialogOpen}>
-        <DialogContent className="sm:max-w-[550px]">
+        <DialogContent className="sm:max-w-[550px] glass-panel-dark border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle>Editar Tarea</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-white">Editar Tarea</DialogTitle>
+            <DialogDescription className="text-gray-400">
               Modifica los detalles de la tarea seleccionada
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit((data) => updateTaskMutation.mutate({ taskId: selectedTask.id, updates: data }))} className="space-y-4">
               <FormField
@@ -945,50 +924,50 @@ const TaskManager = () => {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Título</FormLabel>
+                    <FormLabel className="text-gray-300">Título</FormLabel>
                     <FormControl>
-                      <Input placeholder="Título de la tarea" {...field} />
+                      <Input placeholder="Título de la tarea" {...field} className="bg-black/40 border-white/10 text-white placeholder:text-gray-600" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={editForm.control}
                 name="description"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Descripción</FormLabel>
+                    <FormLabel className="text-gray-300">Descripción</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Descripción detallada de la tarea" 
-                        className="min-h-[100px]" 
-                        {...field} 
+                      <Textarea
+                        placeholder="Descripción detallada de la tarea"
+                        className="min-h-[100px] bg-black/40 border-white/10 text-white placeholder:text-gray-600"
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
                   name="priority"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Prioridad</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <FormLabel className="text-gray-300">Prioridad</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-black/40 border-white/10 text-white">
                             <SelectValue placeholder="Selecciona prioridad" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="bg-black/90 border-white/10 text-white">
                           <SelectItem value="low">Baja</SelectItem>
                           <SelectItem value="medium">Media</SelectItem>
                           <SelectItem value="high">Alta</SelectItem>
@@ -999,21 +978,20 @@ const TaskManager = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="dueDate"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Fecha límite</FormLabel>
+                      <FormLabel className="text-gray-300">Fecha límite</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
                             <Button
                               variant={"outline"}
-                              className={`w-full text-left font-normal ${
-                                !field.value && "text-muted-foreground"
-                              }`}
+                              className={`w-full text-left font-normal bg-black/40 border-white/10 text-white hover:bg-white/5 hover:text-white ${!field.value && "text-gray-500"
+                                }`}
                             >
                               {field.value ? (
                                 format(field.value, "dd/MM/yyyy", { locale: es })
@@ -1024,12 +1002,13 @@ const TaskManager = () => {
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
+                        <PopoverContent className="w-auto p-0 bg-black/90 border-white/10 text-white" align="start">
                           <CalendarComponent
                             mode="single"
                             selected={field.value || undefined}
                             onSelect={field.onChange}
                             initialFocus
+                            className="bg-black/90 text-white"
                           />
                         </PopoverContent>
                       </Popover>
@@ -1038,24 +1017,24 @@ const TaskManager = () => {
                   )}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField
                   control={editForm.control}
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Estado</FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
+                      <FormLabel className="text-gray-300">Estado</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-black/40 border-white/10 text-white">
                             <SelectValue placeholder="Selecciona estado" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="bg-black/90 border-white/10 text-white">
                           <SelectItem value="pending">Pendiente</SelectItem>
                           <SelectItem value="in_progress">En progreso</SelectItem>
                           <SelectItem value="completed">Completada</SelectItem>
@@ -1066,23 +1045,23 @@ const TaskManager = () => {
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={editForm.control}
                   name="assignedToId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Asignar a</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
+                      <FormLabel className="text-gray-300">Asignar a</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(value ? parseInt(value) : null)}
                         defaultValue={field.value?.toString()}
                       >
                         <FormControl>
-                          <SelectTrigger>
+                          <SelectTrigger className="bg-black/40 border-white/10 text-white">
                             <SelectValue placeholder="Asignar a un usuario" />
                           </SelectTrigger>
                         </FormControl>
-                        <SelectContent>
+                        <SelectContent className="bg-black/90 border-white/10 text-white">
                           {users.map((user: any) => (
                             <SelectItem key={user.id} value={user.id.toString()}>
                               {user.fullName}
@@ -1095,21 +1074,23 @@ const TaskManager = () => {
                   )}
                 />
               </div>
-              
+
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsEditTaskDialogOpen(false)}
+                  className="border-white/10 text-gray-300 hover:bg-white/5 hover:text-white"
                 >
                   Cancelar
                 </Button>
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   disabled={updateTaskMutation.isPending}
+                  className="bg-primary hover:bg-primary/90 text-black font-bold"
                 >
                   {updateTaskMutation.isPending && (
-                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-white rounded-full"></div>
+                    <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent border-black rounded-full"></div>
                   )}
                   Guardar Cambios
                 </Button>
@@ -1133,63 +1114,71 @@ interface TaskCardProps {
   users: any[];
 }
 
-const TaskCard = ({ 
-  task, 
-  onEdit, 
-  onDelete, 
+const TaskCard = ({
+  task,
+  onEdit,
+  onDelete,
   onStatusChange,
   renderPriorityBadge,
   renderStatusBadge,
   users
 }: TaskCardProps) => {
   const assignedUser = users.find(user => user.id === task.assignedToId);
-  
+
   return (
-    <Card className={task.aiGenerated ? 'border-blue-200 bg-blue-50' : ''}>
+    <Card className={`glass-panel-dark border-white/5 hover:border-primary/30 transition-all duration-300 group ${task.aiGenerated ? 'shadow-[0_0_15px_rgba(59,130,246,0.1)]' : ''}`}>
       <CardHeader className="pb-2">
-        <div className="flex justify-between">
-          <div className="flex gap-2">
+        <div className="flex justify-between items-start">
+          <div className="flex gap-2 flex-wrap">
             {renderPriorityBadge(task.priority)}
             {renderStatusBadge(task.status)}
           </div>
           {task.aiGenerated && (
-            <div className="text-xs font-medium text-blue-600 flex items-center gap-1">
-              <span>🧠</span> IA
-            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className="text-xs font-medium text-blue-400 flex items-center gap-1 bg-blue-500/10 px-2 py-1 rounded-full border border-blue-500/20">
+                    <Sparkles className="h-3 w-3" />
+                    <span className="hidden sm:inline">IA</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>Tarea generada por Inteligencia Artificial</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
-        <CardTitle className="text-lg">{task.title}</CardTitle>
+        <CardTitle className="text-lg text-white mt-3 leading-tight">{task.title}</CardTitle>
         {task.dueDate && (
-          <div className="flex items-center text-xs text-muted-foreground mt-1">
-            <CalendarIcon className="h-3 w-3 mr-1" />
+          <div className="flex items-center text-xs text-gray-400 mt-2">
+            <CalendarIcon className="h-3 w-3 mr-1 text-primary/70" />
             {format(new Date(task.dueDate), "d 'de' MMMM, yyyy", { locale: es })}
           </div>
         )}
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-gray-400 line-clamp-3">
           {task.description || "Sin descripción"}
         </p>
-        
+
         {assignedUser && (
-          <div className="mt-3 flex items-center">
-            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-              {assignedUser.fullName.charAt(0)}
-            </div>
-            <span className="text-xs ml-2">{assignedUser.fullName}</span>
+          <div className="mt-4 flex items-center pt-3 border-t border-white/5">
+            <Avatar className="h-6 w-6 border border-white/10">
+              <AvatarFallback className="bg-primary/20 text-primary text-xs">{assignedUser.fullName.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <span className="text-xs ml-2 text-gray-300">{assignedUser.fullName}</span>
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-between pt-0">
-        <div>
-          <Select 
+      <CardFooter className="flex justify-between pt-0 pb-4">
+        <div className="w-[140px]">
+          <Select
             defaultValue={task.status}
             onValueChange={(value) => onStatusChange(task.id, value)}
           >
-            <SelectTrigger className="h-8 text-xs border-dashed">
+            <SelectTrigger className="h-8 text-xs border-white/10 bg-black/20 text-gray-300">
               <SelectValue placeholder="Cambiar estado" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-black/90 border-white/10 text-white">
               <SelectItem value="pending">Pendiente</SelectItem>
               <SelectItem value="in_progress">En progreso</SelectItem>
               <SelectItem value="completed">Completada</SelectItem>
@@ -1197,12 +1186,12 @@ const TaskCard = ({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={() => onEdit(task)}>
-            Editar
+        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <Button size="sm" variant="ghost" onClick={() => onEdit(task)} className="h-8 w-8 p-0 hover:bg-primary/20 hover:text-primary text-gray-400">
+            <Edit className="h-4 w-4" />
           </Button>
-          <Button size="sm" variant="ghost" className="text-destructive" onClick={onDelete}>
-            Eliminar
+          <Button size="sm" variant="ghost" className="h-8 w-8 p-0 hover:bg-red-500/20 hover:text-red-500 text-gray-400" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </CardFooter>

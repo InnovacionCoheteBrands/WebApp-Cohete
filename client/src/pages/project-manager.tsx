@@ -7,19 +7,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { 
-  Plus, 
-  Search, 
-  Filter, 
-  Calendar, 
-  Users, 
-  CheckCircle2, 
-  Clock, 
-  AlertCircle, 
+import {
+  Plus,
+  Search,
+  Filter,
+  Calendar,
+  Users,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
   MoreHorizontal,
   Edit,
   Trash2,
-  FolderPlus
+  FolderPlus,
+  Rocket
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -68,20 +69,20 @@ interface TaskWithDetails {
 }
 
 const statusColors = {
-  pending: 'bg-gray-100 text-gray-800',
-  in_progress: 'bg-blue-100 text-blue-800',
-  review: 'bg-yellow-100 text-yellow-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-  blocked: 'bg-red-100 text-red-800',
-  deferred: 'bg-purple-100 text-purple-800'
+  pending: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+  in_progress: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  review: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  completed: 'bg-green-500/10 text-green-400 border-green-500/20',
+  cancelled: 'bg-red-500/10 text-red-400 border-red-500/20',
+  blocked: 'bg-red-500/10 text-red-400 border-red-500/20',
+  deferred: 'bg-purple-500/10 text-purple-400 border-purple-500/20'
 };
 
 const priorityColors = {
-  low: 'bg-gray-100 text-gray-800',
-  medium: 'bg-blue-100 text-blue-800',
-  high: 'bg-orange-100 text-orange-800',
-  urgent: 'bg-red-100 text-red-800'
+  low: 'bg-gray-500/10 text-gray-400 border-gray-500/20',
+  medium: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+  high: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  urgent: 'bg-red-500/10 text-red-400 border-red-500/20'
 };
 
 export default function ProjectManager() {
@@ -149,14 +150,14 @@ export default function ProjectManager() {
   });
 
   // Extraer todas las tareas de los grupos con validaciones
-  const allTasks = tasksData?.flatMap((group: any) => 
+  const allTasks = tasksData?.flatMap((group: any) =>
     group?.tasks?.map((task: any) => ({
       task,
       group: group.group,
-      project: { 
-        id: task.projectId, 
-        name: projects?.find((p: any) => p.id === task.projectId)?.name || 'Proyecto', 
-        client: projects?.find((p: any) => p.id === task.projectId)?.client || 'Cliente' 
+      project: {
+        id: task.projectId,
+        name: projects?.find((p: any) => p.id === task.projectId)?.name || 'Proyecto',
+        client: projects?.find((p: any) => p.id === task.projectId)?.client || 'Cliente'
       },
       assignee: task.assignee
     })) || []
@@ -165,8 +166,8 @@ export default function ProjectManager() {
   // Filtrar tareas
   const filteredTasks = allTasks.filter((item: any) => {
     const matchesSearch = item.task?.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.project?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.project?.client?.toLowerCase().includes(searchTerm.toLowerCase());
+      item.project?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.project?.client?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterStatus === 'all' || item.task?.status === filterStatus;
     const matchesProject = filterProject === 'all' || item.task?.projectId?.toString() === filterProject;
 
@@ -188,41 +189,51 @@ export default function ProjectManager() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed': return <CheckCircle2 className="w-4 h-4 text-green-600" />;
-      case 'in_progress': return <Clock className="w-4 h-4 text-blue-600" />;
-      case 'blocked': return <AlertCircle className="w-4 h-4 text-red-600" />;
-      default: return <Clock className="w-4 h-4 text-gray-600" />;
+      case 'completed': return <CheckCircle2 className="w-4 h-4 text-green-500" />;
+      case 'in_progress': return <Clock className="w-4 h-4 text-blue-500" />;
+      case 'blocked': return <AlertCircle className="w-4 h-4 text-red-500" />;
+      default: return <Clock className="w-4 h-4 text-gray-500" />;
     }
   };
 
   if (isLoading || !tasksData || !projects) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+        <div className="relative h-16 w-16">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+          <Rocket className="absolute inset-0 m-auto h-6 w-6 text-primary animate-pulse" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Gestor de Proyectos</h1>
-          <p className="text-gray-600 mt-2">
-            Gestiona todas las tareas de tus proyectos desde un solo lugar
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-primary">/</span> GESTOR DE PROYECTOS
+          </h1>
+          <p className="text-gray-400 tracking-wide mt-1">
+            Centro de control de tareas y operaciones
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 bg-black/40 p-1 rounded-lg border border-white/10">
           <Button
-            variant={viewMode === 'table' ? 'default' : 'outline'}
+            variant={viewMode === 'table' ? 'default' : 'ghost'}
             onClick={() => setViewMode('table')}
+            className={viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'text-gray-400 hover:text-white'}
+            size="sm"
           >
             Tabla
           </Button>
           <Button
-            variant={viewMode === 'board' ? 'default' : 'outline'}
+            variant={viewMode === 'board' ? 'default' : 'ghost'}
             onClick={() => setViewMode('board')}
+            className={viewMode === 'board' ? 'bg-primary text-primary-foreground' : 'text-gray-400 hover:text-white'}
+            size="sm"
           >
             Tablero
           </Button>
@@ -230,209 +241,200 @@ export default function ProjectManager() {
       </div>
 
       {/* Filtros y búsqueda */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex-1 min-w-[300px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Buscar tareas, proyectos o clientes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+      <div className="glass-panel-dark tech-border p-6 rounded-xl">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex-1 min-w-[300px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-primary w-4 h-4" />
+              <Input
+                placeholder="Buscar tareas, proyectos o clientes..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 bg-black/40 border-white/10 text-white placeholder:text-gray-500 focus:border-primary/50 focus:ring-primary/20"
+              />
             </div>
-
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="pending">Pendiente</SelectItem>
-                <SelectItem value="in_progress">En progreso</SelectItem>
-                <SelectItem value="review">Revisión</SelectItem>
-                <SelectItem value="completed">Completado</SelectItem>
-                <SelectItem value="blocked">Bloqueado</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filterProject} onValueChange={setFilterProject}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Proyecto" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los proyectos</SelectItem>
-                {projects.map((project: Project) => (
-                  <SelectItem key={project.id} value={project.id.toString()}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
-        </CardContent>
-      </Card>
+
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[180px] bg-black/40 border-white/10 text-white">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent className="bg-black/90 border-white/10 text-white">
+              <SelectItem value="all">Todos los estados</SelectItem>
+              <SelectItem value="pending">Pendiente</SelectItem>
+              <SelectItem value="in_progress">En progreso</SelectItem>
+              <SelectItem value="review">Revisión</SelectItem>
+              <SelectItem value="completed">Completado</SelectItem>
+              <SelectItem value="blocked">Bloqueado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterProject} onValueChange={setFilterProject}>
+            <SelectTrigger className="w-[180px] bg-black/40 border-white/10 text-white">
+              <SelectValue placeholder="Proyecto" />
+            </SelectTrigger>
+            <SelectContent className="bg-black/90 border-white/10 text-white">
+              <SelectItem value="all">Todos los proyectos</SelectItem>
+              {projects.map((project: Project) => (
+                <SelectItem key={project.id} value={project.id.toString()}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total de Tareas</p>
-                <p className="text-2xl font-bold">{allTasks.length}</p>
-              </div>
-              <FolderPlus className="w-8 h-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="glass-panel-dark p-4 rounded-xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <FolderPlus className="w-16 h-16 text-primary" />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Total de Tareas</p>
+            <p className="text-3xl font-bold text-white mt-1">{allTasks.length}</p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">En Progreso</p>
-                <p className="text-2xl font-bold">
-                  {allTasks.filter((t: any) => t.task?.status === 'in_progress').length}
-                </p>
-              </div>
-              <Clock className="w-8 h-8 text-orange-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="glass-panel-dark p-4 rounded-xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Clock className="w-16 h-16 text-blue-500" />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">En Progreso</p>
+            <p className="text-3xl font-bold text-blue-400 mt-1">
+              {allTasks.filter((t: any) => t.task?.status === 'in_progress').length}
+            </p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Completadas</p>
-                <p className="text-2xl font-bold">
-                  {allTasks.filter((t: any) => t.task?.status === 'completed').length}
-                </p>
-              </div>
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="glass-panel-dark p-4 rounded-xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <CheckCircle2 className="w-16 h-16 text-green-500" />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Completadas</p>
+            <p className="text-3xl font-bold text-green-400 mt-1">
+              {allTasks.filter((t: any) => t.task?.status === 'completed').length}
+            </p>
+          </div>
+        </div>
 
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Proyectos Activos</p>
-                <p className="text-2xl font-bold">{projects.length}</p>
-              </div>
-              <Users className="w-8 h-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="glass-panel-dark p-4 rounded-xl border border-white/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <Users className="w-16 h-16 text-purple-500" />
+          </div>
+          <div className="relative z-10">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Proyectos Activos</p>
+            <p className="text-3xl font-bold text-purple-400 mt-1">{projects.length}</p>
+          </div>
+        </div>
       </div>
 
       {/* Vista por proyectos */}
       <div className="space-y-6">
         {Object.values(tasksByProject).map((projectData: any) => (
-          <Card key={projectData.project.id}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-blue-600"></div>
-                    {projectData.project.name}
-                  </CardTitle>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Cliente: {projectData.project.client} • {projectData.tasks.length} tareas
-                  </p>
-                </div>
-                <Badge variant="outline">
-                  {projectData.project.status}
-                </Badge>
+          <div key={projectData.project.id} className="glass-panel-dark tech-border rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-lg text-white flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-primary shadow-[0_0_5px_rgba(var(--primary),0.8)]"></div>
+                  {projectData.project.name}
+                </h3>
+                <p className="text-xs text-gray-400 mt-1 uppercase tracking-wider">
+                  Cliente: {projectData.project.client} • {projectData.tasks.length} TAREAS
+                </p>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {projectData.tasks.map((item: TaskWithDetails) => (
-                  <div
-                    key={item.task.id}
-                    className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
-                  >
-                    <div className="flex items-center gap-3 flex-1">
+              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10">
+                {projectData.project.status}
+              </Badge>
+            </div>
+            <div className="p-4 space-y-2">
+              {projectData.tasks.map((item: TaskWithDetails) => (
+                <div
+                  key={item.task.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-white/5 bg-black/20 hover:bg-white/5 transition-all duration-200 group"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    <div className="p-2 rounded-full bg-white/5 text-gray-400 group-hover:text-primary group-hover:bg-primary/10 transition-colors">
                       {getStatusIcon(item.task.status)}
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.task.title}</h4>
-                        {item.task.description && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {item.task.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge className={statusColors[item.task.status]} variant="secondary">
-                            {item.task.status}
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-medium text-gray-200 group-hover:text-white transition-colors">{item.task.title}</h4>
+                      {item.task.description && (
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                          {item.task.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge className={`${statusColors[item.task.status]} text-[10px] uppercase tracking-wider font-bold`} variant="outline">
+                          {item.task.status.replace('_', ' ')}
+                        </Badge>
+                        <Badge className={`${priorityColors[item.task.priority]} text-[10px] uppercase tracking-wider font-bold`} variant="outline">
+                          {item.task.priority}
+                        </Badge>
+                        {item.task.tags?.map((tag, index) => (
+                          <Badge key={index} variant="outline" className="text-[10px] border-white/10 text-gray-400">
+                            {tag}
                           </Badge>
-                          <Badge className={priorityColors[item.task.priority]} variant="secondary">
-                            {item.task.priority}
-                          </Badge>
-                          {item.task.tags?.map((tag, index) => (
-                            <Badge key={index} variant="outline" className="text-xs">
-                              {tag}
-                            </Badge>
-                          )) || []}
-                        </div>
+                        )) || []}
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-4">
-                      {item.task.progress > 0 && (
-                        <div className="w-24">
-                          <Progress value={item.task.progress} className="h-2" />
-                          <p className="text-xs text-gray-600 mt-1">{item.task.progress}%</p>
-                        </div>
-                      )}
-
-                      {item.assignee && (
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={item.assignee.profileImage} />
-                          <AvatarFallback>
-                            {item.assignee.fullName.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-
-                      {item.task.dueDate && (
-                        <div className="text-sm text-gray-600">
-                          <Calendar className="w-4 h-4 inline mr-1" />
-                          {new Date(item.task.dueDate).toLocaleDateString()}
-                        </div>
-                      )}
-
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </div>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+
+                  <div className="flex items-center gap-6">
+                    {item.task.progress > 0 && (
+                      <div className="w-24 hidden md:block">
+                        <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                          <span>PROGRESO</span>
+                          <span>{item.task.progress}%</span>
+                        </div>
+                        <Progress value={item.task.progress} className="h-1.5 bg-white/10" />
+                      </div>
+                    )}
+
+                    {item.assignee && (
+                      <Avatar className="w-8 h-8 border border-white/10">
+                        <AvatarImage src={item.assignee.profileImage} />
+                        <AvatarFallback className="bg-primary/20 text-primary text-xs">
+                          {item.assignee.fullName.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+
+                    {item.task.dueDate && (
+                      <div className="text-xs text-gray-500 font-mono hidden sm:block">
+                        <Calendar className="w-3 h-3 inline mr-1" />
+                        {new Date(item.task.dueDate).toLocaleDateString()}
+                      </div>
+                    )}
+
+                    <Button variant="ghost" size="sm" className="text-gray-500 hover:text-white hover:bg-white/10">
+                      <MoreHorizontal className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         ))}
 
         {filteredTasks.length === 0 && (
-          <Card>
-            <CardContent className="p-8 text-center">
-              <FolderPlus className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No se encontraron tareas
-              </h3>
-              <p className="text-gray-600">
-                {searchTerm || filterStatus !== 'all' || filterProject !== 'all'
-                  ? 'Intenta ajustar tus filtros de búsqueda'
-                  : 'Crea tu primera tarea para comenzar'
-                }
-              </p>
-            </CardContent>
-          </Card>
+          <div className="glass-panel-dark rounded-xl p-12 text-center border border-white/5">
+            <div className="inline-flex p-4 rounded-full bg-white/5 mb-4">
+              <FolderPlus className="w-8 h-8 text-gray-500" />
+            </div>
+            <h3 className="text-lg font-bold text-white mb-2">
+              No se encontraron tareas
+            </h3>
+            <p className="text-gray-500">
+              {searchTerm || filterStatus !== 'all' || filterProject !== 'all'
+                ? 'Ajusta los parámetros de búsqueda para localizar objetivos.'
+                : 'Inicia una nueva misión creando tu primera tarea.'
+              }
+            </p>
+          </div>
         )}
       </div>
     </div>

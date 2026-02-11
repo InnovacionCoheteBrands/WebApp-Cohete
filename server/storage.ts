@@ -2,18 +2,19 @@
 // This file provides the database storage layer using Drizzle ORM
 // It interfaces with PostgreSQL through the configured database connection
 
-import { db } from "./db";
+import { db, isOffline } from "./db";
+import { MemStorage } from "./mem-storage";
 import { eq, asc, desc, and, or, sql, like, inArray, gt } from "drizzle-orm";
 import * as schema from "./schema";
-import type { 
-  User, 
-  Project, 
-  Task, 
-  AnalysisResult, 
-  Document, 
-  Schedule, 
-  ScheduleEntry, 
-  ChatMessage, 
+import type {
+  User,
+  Project,
+  Task,
+  AnalysisResult,
+  Document,
+  Schedule,
+  ScheduleEntry,
+  ChatMessage,
   Product,
   ProjectView,
   AutomationRule,
@@ -853,7 +854,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTags(projectId: number): Promise<Tag[]> {
     try {
-      return await db.select().from(schema.tags)        .where(eq(schema.tags.projectId, projectId))
+      return await db.select().from(schema.tags).where(eq(schema.tags.projectId, projectId))
         .orderBy(asc(schema.tags.name));
     } catch (error) {
       console.error('Error getting tags:', error);
@@ -1062,7 +1063,7 @@ export class DatabaseStorage implements IStorage {
     try {
       const schedule = await this.getSchedule(scheduleId);
       if (!schedule) return null;
-      
+
       const entries = await this.getScheduleEntries(scheduleId);
       return { ...schedule, entries };
     } catch (error) {
@@ -1086,4 +1087,5 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Create and export storage instance
-export const storage = new DatabaseStorage();
+// Create and export storage instance
+export const storage = isOffline ? new MemStorage() : new DatabaseStorage();

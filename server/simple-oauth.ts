@@ -99,7 +99,8 @@ export async function setupSimpleGoogleAuth(app: Express) {
   };
 
   // Dynamic callback URL based on current host
-  const currentHost = process.env.REPLIT_DOMAINS || 'localhost:5000';
+  const port = process.env.PORT || '5080';
+  const currentHost = process.env.REPLIT_DOMAINS || `localhost:${port}`;
   const callbackURL = currentHost.includes('localhost')
     ? `http://${currentHost}/api/auth/google/callback`
     : `https://${currentHost}/api/auth/google/callback`;

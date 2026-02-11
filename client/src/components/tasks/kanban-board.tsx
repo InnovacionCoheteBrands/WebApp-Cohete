@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  DndContext, 
-  DragOverlay, 
-  closestCorners, 
-  KeyboardSensor, 
-  PointerSensor, 
-  useSensor, 
+import {
+  DndContext,
+  DragOverlay,
+  closestCorners,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
   useSensors,
   DragStartEvent,
   DragEndEvent,
   DragOverEvent
 } from '@dnd-kit/core';
-import { 
+import {
   sortableKeyboardCoordinates
 } from '@dnd-kit/sortable';
 import { Badge } from '@/components/ui/badge';
@@ -111,7 +111,7 @@ export function KanbanBoard({
     const { active } = event;
     const taskId = Number(active.id.toString().replace('task-', ''));
     const task = tasks.find(t => t.id === taskId);
-    
+
     if (task) {
       setActiveTask(task);
     }
@@ -126,32 +126,32 @@ export function KanbanBoard({
   // Handle drag end event
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
+
     // Reset active task
     setActiveTask(null);
-    
+
     if (!over) return;
-    
+
     const taskId = Number(active.id.toString().replace('task-', ''));
     const task = tasks.find(t => t.id === taskId);
-    
+
     if (!task) return;
-    
+
     const targetColumnId = over.id.toString();
     const currentGroup = getGroupForTask(task);
-    
+
     // If the task was dropped in a different column
     if (currentGroup !== targetColumnId) {
       // Determine what changed based on groupBy
       let newStatus = task.status;
       let newGroup = (task as any).taskGroup;
-      
+
       if (groupBy === 'status') {
         newStatus = targetColumnId as any; // Cast to any to avoid type error
       } else if (groupBy === 'group') {
         newGroup = targetColumnId;
       }
-      
+
       // Call the move handler with the new values
       onTaskMove(task.id, newStatus, newGroup);
     }
@@ -159,29 +159,29 @@ export function KanbanBoard({
 
   // Render priority badges with appropriate colors
   const renderPriorityBadge = (priority: string) => {
-    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'outline';
-    
+    let className = "bg-gray-500/20 text-gray-400 border-gray-500/30";
+
     switch (priority) {
       case 'baja':
       case 'low':
-        variant = 'outline';
+        className = "bg-green-500/20 text-green-500 border-green-500/30 hover:bg-green-500/30";
         break;
       case 'media':
       case 'medium':
-        variant = 'secondary';
+        className = "bg-yellow-500/20 text-yellow-500 border-yellow-500/30 hover:bg-yellow-500/30";
         break;
       case 'alta':
       case 'high':
-        variant = 'default';
+        className = "bg-orange-500/20 text-orange-500 border-orange-500/30 hover:bg-orange-500/30";
         break;
       case 'urgente':
       case 'urgent':
-        variant = 'destructive';
+        className = "bg-red-500/20 text-red-500 border-red-500/30 hover:bg-red-500/30";
         break;
     }
-    
+
     return (
-      <Badge variant={variant} className="text-xs">
+      <Badge className={`${className} border`} variant="outline">
         {priority.charAt(0).toUpperCase() + priority.slice(1)}
       </Badge>
     );
@@ -189,29 +189,29 @@ export function KanbanBoard({
 
   // Render status badges
   const renderStatusBadge = (status: string) => {
-    let className = 'bg-gray-100 text-gray-800';
-    
+    let className = "bg-gray-500/20 text-gray-400 border-gray-500/30";
+
     switch (status) {
       case 'pendiente':
       case 'pending':
-        className = 'bg-gray-100 text-gray-800';
+        className = "bg-white/5 text-gray-400 border-white/10";
         break;
       case 'en_progreso':
       case 'in_progress':
-        className = 'bg-blue-100 text-blue-800';
+        className = "bg-blue-500/20 text-blue-500 border-blue-500/30 hover:bg-blue-500/30";
         break;
       case 'revision':
       case 'review':
-        className = 'bg-yellow-100 text-yellow-800';
+        className = "bg-purple-500/20 text-purple-500 border-purple-500/30 hover:bg-purple-500/30";
         break;
       case 'completada':
       case 'completed':
-        className = 'bg-green-100 text-green-800';
+        className = "bg-green-500/20 text-green-500 border-green-500/30 hover:bg-green-500/30";
         break;
     }
-    
+
     return (
-      <Badge className={`text-xs ${className}`} variant="outline">
+      <Badge className={`text-xs ${className} border`} variant="outline">
         {status.replace('_', ' ').charAt(0).toUpperCase() + status.replace('_', ' ').slice(1)}
       </Badge>
     );
@@ -247,8 +247,8 @@ export function KanbanBoard({
           <div className="w-full max-w-[350px]">
             <DraggableTaskCard
               task={activeTask}
-              onEdit={() => {}}
-              onDelete={() => {}}
+              onEdit={() => { }}
+              onDelete={() => { }}
               renderPriorityBadge={renderPriorityBadge}
               renderStatusBadge={renderStatusBadge}
               users={users}

@@ -390,6 +390,122 @@ export async function generateSchedule(
       APLICACIÓN: Refuerza la propuesta de valor diferenciando frente a estos jugadores.`;
     })();
 
+    // ===== NUEVAS SECCIONES PARA CALIDAD DE CONTENIDO =====
+
+    // Propuesta de Valor Única (UVP)
+    const uniqueValuePropositionSection = analysisInfo.uniqueValueProposition
+      ? `**PROPUESTA DE VALOR ÚNICA (UVP):** 
+      ${analysisInfo.uniqueValueProposition}
+
+      APLICACIÓN CRÍTICA: Esta es la DIFERENCIACIÓN CLAVE de la marca. Cada pieza de contenido debe reflejar este posicionamiento único. 
+      - Usa esta UVP para crear hooks que destaquen por qué esta marca es DIFERENTE.
+      - Incluye el beneficio tangible en CTAs y cierres.
+      - Evita contenido genérico que cualquier competidor podría publicar.`
+      : "";
+
+    // Voice of Customer - Frases reales
+    const customerQuotesArray = safeParseArray(analysisInfo.customerQuotes);
+    const voiceOfCustomerSection = (() => {
+      const parts: string[] = [];
+
+      if (customerQuotesArray.length > 0) {
+        const quotesText = customerQuotesArray
+          .map((q: any) => {
+            const quote = q?.quote || q;
+            const context = q?.context ? ` (${q.context})` : "";
+            return `"${quote}"${context}`;
+          })
+          .join('\n');
+        parts.push(`Frases reales de clientes:\n${quotesText}`);
+      }
+
+      if (analysisInfo.customerObjections) {
+        parts.push(`Objeciones frecuentes a resolver: ${analysisInfo.customerObjections}`);
+      }
+
+      if (analysisInfo.customerVocabulary) {
+        parts.push(`Vocabulario y jerga del público: ${analysisInfo.customerVocabulary}`);
+      }
+
+      if (parts.length === 0) return "";
+
+      return `**VOZ DEL CLIENTE (VoC) - LENGUAJE AUTÉNTICO:**
+      ${parts.join('\n\n')}
+
+      APLICACIÓN CRÍTICA: 
+      - Usa las FRASES LITERALES del cliente en hooks, headlines y testimonios.
+      - Resuelve las OBJECIONES directamente en el contenido educativo y CTA.
+      - Emplea el VOCABULARIO del público para que el contenido resuene naturalmente.`;
+    })();
+
+    // Content Pillars
+    const contentPillarsArray = safeParseArray(analysisInfo.contentPillars);
+    const contentPillarsSection = contentPillarsArray.length > 0
+      ? `**PILARES DE CONTENIDO ESTRATÉGICOS:**
+      ${contentPillarsArray
+        .map((pillar: any) => {
+          const name = pillar?.name || "Pilar";
+          const percentage = pillar?.percentage ? ` (${pillar.percentage}% del mix)` : "";
+          const description = pillar?.description ? `: ${pillar.description}` : "";
+          const keywords = pillar?.keywords ? ` | Keywords: ${pillar.keywords}` : "";
+          return `- ${name}${percentage}${description}${keywords}`;
+        })
+        .join('\n')}
+
+      APLICACIÓN: Distribuye el contenido proporcionalmente entre estos pilares. Cada publicación debe reforzar uno de estos temas para construir autoridad en el nicho.`
+      : "";
+
+    // Seasonal Calendar
+    const seasonalCalendarArray = safeParseArray(analysisInfo.seasonalCalendar);
+    const seasonalCalendarSection = (() => {
+      if (seasonalCalendarArray.length === 0) return "";
+
+      // Filter events relevant to the schedule period
+      const scheduleStart = parseISO(startDate);
+      const scheduleEnd = addDays(scheduleStart, durationDays);
+
+      const relevantEvents = seasonalCalendarArray.filter((event: any) => {
+        // For now, include all events for context awareness
+        return event?.eventName || event?.date;
+      });
+
+      if (relevantEvents.length === 0) return "";
+
+      const eventsText = relevantEvents
+        .map((event: any) => {
+          const date = event?.date || "";
+          const name = event?.eventName || "Evento";
+          const importance = event?.importance === "high" ? "🔴" : event?.importance === "medium" ? "🟡" : "🟢";
+          const ideas = event?.contentIdeas ? ` | Ideas: ${event.contentIdeas}` : "";
+          return `- ${importance} ${date}: ${name}${ideas}`;
+        })
+        .join('\n');
+
+      return `**CALENDARIO ESTACIONAL Y FECHAS CLAVE:**
+      ${eventsText}
+
+      APLICACIÓN: Integra referencias a fechas cercanas en el contenido. Planifica contenido preparatorio para eventos de alta importancia (🔴). El contenido debe sentirse contextualizado y oportuno, no genérico.`;
+    })();
+
+    // Structured Competitors (nueva versión mejorada)
+    const structuredCompetitorsArray = safeParseArray(analysisInfo.competitors);
+    const structuredCompetitorsSection = structuredCompetitorsArray.length > 0
+      ? `**ANÁLISIS DE COMPETENCIA ESTRUCTURADO:**
+      ${structuredCompetitorsArray
+        .map((comp: any) => {
+          const name = comp?.name || "Competidor";
+          const parts = [`**${name}**`];
+          if (comp?.strengths) parts.push(`  Fortalezas: ${comp.strengths}`);
+          if (comp?.weaknesses) parts.push(`  Debilidades: ${comp.weaknesses}`);
+          if (comp?.contentTopics) parts.push(`  Temas que cubren: ${comp.contentTopics}`);
+          if (comp?.ourAdvantage) parts.push(`  🎯 NUESTRA VENTAJA: ${comp.ourAdvantage}`);
+          return parts.join('\n');
+        })
+        .join('\n\n')}
+
+      APLICACIÓN: Crea contenido que DESTAQUE nuestras ventajas específicas vs cada competidor. Evita temas saturados por la competencia a menos que tengamos un ángulo único.`
+      : "";
+
     const keywordsText = analysisInfo.keywords
       ? typeof analysisInfo.keywords === "string"
         ? analysisInfo.keywords
@@ -422,6 +538,7 @@ export async function generateSchedule(
     ].join('\n');
 
     const projectContextSections = [
+      // Core sections
       communicationObjectivesSection,
       buyerPersonaSection,
       archetypesSection,
@@ -430,7 +547,13 @@ export async function generateSchedule(
       missionVisionValuesSection,
       responsePoliciesSection,
       competitorAnalysisSection,
-      initialProductsSection
+      initialProductsSection,
+      // NEW: Content quality enhancement sections
+      uniqueValuePropositionSection,
+      voiceOfCustomerSection,
+      contentPillarsSection,
+      seasonalCalendarSection,
+      structuredCompetitorsSection
     ].filter((section) => section && section.trim().length > 0);
 
     const projectContext = `
@@ -530,7 +653,7 @@ export async function generateSchedule(
 
       **ESTRUCTURA DE LAS PUBLICACIONES POR PLATAFORMA:**
       - TÍTULOS: Concisos, impactantes, con palabras potentes y gatillos emocionales.
-      - DESCRIPTION: Comienza con "Objetivo: [fase del funnel] | KPI sugerido: ..." seguido de la estrategia táctica.
+      - DESCRIPTION: Comienza con "Objetivo: [Awareness/Consideración/Conversión]" seguido de la estrategia. KPI esperado: [Métrica].
       - CONTENIDO PRINCIPAL: Desarrolla ideas con la secuencia Hook → Insight → CTA, resaltando beneficios tangibles.
       - COPY IN: Texto que aparecerá sobre la imagen/diseño, corto y memorable.
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
@@ -584,15 +707,37 @@ export async function generateSchedule(
     console.log("[CALENDAR] Generando cronograma con Gemini");
 
     // Modificamos el prompt para forzar una respuesta más estructurada y evitar errores de formato
-    const enhancedPrompt = `${prompt}\n\nCRÍTICO: Responde EXCLUSIVAMENTE con el objeto JSON solicitado. No incluyas texto extra, anotaciones, ni marcadores de código. Formato estricto requerido:
-    - Inicia con '{' y termina con '}'
-    - TODAS las propiedades entre comillas dobles: "propertyName"
-    - TODOS los valores string entre comillas dobles: "value"
-    - NO uses comillas simples
-    - NO incluyas campos como "Objetivo" - usa solo los campos especificados en el esquema
-    - Hora en formato "HH:MM" (ejemplo: "14:30")
-    - Fecha en formato "YYYY-MM-DD"
-    - JSON válido sin errores de sintaxis`;
+    const enhancedPrompt = `${prompt}
+
+    ⭐⭐⭐ GUÍA DE CALIDAD Y ESTILO 2025 (CRÍTICO) ⭐⭐⭐
+    Tu objetivo es crear contenido que DESTAQUE en un feed saturado.
+    
+    1. HOOKS (GANCHOS) VISUALES Y TEXTUALES:
+       - MALO: "¿Sabías que nuestros servicios son buenos?"
+       - BUENO: "3 errores que te están costando dinero hoy mismo" (Curiosidad + beneficio)
+       - BUENO: "Deja de hacer esto si quieres vender más" (Controversia/Negatividad)
+       - BUENO: "La estrategia secreta que nadie te cuenta" (Exclusividad)
+
+    2. ESTRUCTURA DE COPY (AIDA/PAS):
+       - Atención: Hook potente en la primera línea.
+       - Interés/Deseo: Desarrolla el problema/solución.
+       - Acción: CTA claro y directo (ej: "Comenta 'YO' y te envío la guía").
+
+    3. ADAPTACIÓN AL TONO:
+       - Si el tono es "Profesional/Corporativo": Usa datos, sintaxis impecable, autoridad.
+       - Si el tono es "Cercano/Divertido": Usa emojis, jerga apropiada, storytelling personal.
+
+    ⭐⭐⭐ FORMATO JSON ESTRICTO (CRÍTICO) ⭐⭐⭐
+    Responde EXCLUSIVAMENTE con el objeto JSON válido.
+    - NO incluyas markdown (\`\`\`json).
+    - NO incluyas texto introductorio ("Aquí está tu cronograma...").
+    - TODAS las claves y valores de tipo string deben usar COMILLAS DOBLES ("").
+    - NO uses comillas simples en el JSON.
+    - ESCAPA comillas dobles dentro de textos: "Dijo \\"Hola\\"".
+    - FORMATO DE FECHA: "YYYY-MM-DD".
+    - FORMATO DE HORA: "HH:MM".
+    - KEYS REQUERIDAS por entrada: "title", "description", "content", "copyIn", "copyOut", "designInstructions", "platform", "postDate", "postTime", "hashtags".
+`;
 
     // Incorporar instrucciones adicionales si existen
     let finalPrompt = enhancedPrompt;

@@ -1,168 +1,162 @@
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Clock, CalendarPlus, Calendar, ArrowRight } from "lucide-react";
+import { Clock, CalendarPlus, Calendar, ArrowRight, Rocket } from "lucide-react";
 
 export default function Calendars() {
   return (
-    <div className="space-y-6 hide-scrollbar">
+    <div className="space-y-8 hide-scrollbar">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <Calendar className="h-8 w-8 text-primary" />
+      <div className="flex items-center gap-4 mb-8">
+        <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.3)]">
+          <Calendar className="h-8 w-8 text-primary" />
+        </div>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Calendarios de Contenido</h1>
-          <p className="text-muted-foreground">
-            Elige el tipo de calendario que mejor se adapte a tus necesidades
+          <h1 className="text-3xl font-bold tracking-tight text-white">
+            <span className="text-primary">/</span> CALENDARIOS
+          </h1>
+          <p className="text-gray-400 tracking-wide">
+            Sistemas de planificación y cronogramas de misión
           </p>
         </div>
       </div>
 
       {/* Calendar Options */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         {/* Calendario Rápido */}
-        <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg dark:border-[#2a3349] dark:shadow-[0_5px_20px_rgba(0,0,0,0.3)] dark:bg-[#1a1d2d] relative before:absolute before:top-0 before:h-1 before:w-full before:bg-blue-500">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400 group-hover:scale-110 transition-transform duration-300">
-                <Clock className="h-7 w-7" />
+        <div className="glass-panel-dark tech-border group relative overflow-hidden rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.15)]">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+          <div className="p-8">
+            <div className="flex items-start gap-6 mb-6">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.2)] group-hover:scale-110 transition-transform duration-300">
+                <Clock className="h-8 w-8" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-2 dark:text-white">Calendario Rápido</h3>
-                <p className="text-sm text-muted-foreground dark:text-slate-400">
-                  Genera un calendario básico con pocas opciones en segundos
+                <h3 className="font-bold text-xl mb-2 text-white tracking-wide">CALENDARIO RÁPIDO</h3>
+                <p className="text-sm text-gray-400">
+                  Generación de cronogramas tácticos de corto alcance.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-6 mb-6 border-t border-white/10 pt-6">
               <div className="text-sm">
-                <div className="font-medium text-blue-700 dark:text-blue-400">Tiempo estimado</div>
-                <div className="text-muted-foreground dark:text-slate-400">1-2 minutos</div>
+                <div className="font-bold text-primary text-[10px] uppercase tracking-wider mb-1">Tiempo estimado</div>
+                <div className="text-gray-300 font-mono">1-2 MINUTOS</div>
               </div>
               <div className="text-sm">
-                <div className="font-medium text-blue-700 dark:text-blue-400">Opciones</div>
-                <div className="text-muted-foreground dark:text-slate-400">Básicas</div>
+                <div className="font-bold text-primary text-[10px] uppercase tracking-wider mb-1">Complejidad</div>
+                <div className="text-gray-300 font-mono">BÁSICA</div>
               </div>
             </div>
 
-            <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="font-medium text-blue-800 dark:text-blue-300 mb-2">Características:</div>
-              <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                <li>• Configuración automática</li>
-                <li>• Plantillas prediseñadas</li>
-                <li>• Ideal para comenzar rápidamente</li>
-                <li>• Perfecto para proyectos simples</li>
+            <div className="mb-8 p-4 bg-black/40 rounded-lg border border-white/5">
+              <div className="font-bold text-white text-xs uppercase tracking-wider mb-3">Capacidades:</div>
+              <ul className="text-sm text-gray-400 space-y-2">
+                <li className="flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full"></span>Configuración automática</li>
+                <li className="flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full"></span>Plantillas prediseñadas</li>
+                <li className="flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full"></span>Despliegue inmediato</li>
               </ul>
             </div>
 
             <Link href="/quick-calendar" className="block">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white relative overflow-hidden group">
-                <span className="relative z-10 flex items-center justify-center">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Crear Calendario Rápido
-                  <ArrowRight className="ml-2 h-4 w-4" />
+              <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold tracking-wider uppercase shadow-[0_0_20px_rgba(var(--primary),0.4)] transition-all duration-300 group-hover:translate-y-[-2px]">
+                <span className="flex items-center justify-center gap-2">
+                  INICIAR SISTEMA
+                  <ArrowRight className="h-4 w-4" />
                 </span>
-                <div className="absolute inset-0 translate-y-[100%] bg-blue-700 transition-transform duration-300 group-hover:translate-y-[0%]"></div>
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Calendario Avanzado */}
-        <Card className="group overflow-hidden transition-all duration-300 hover:shadow-lg dark:border-[#2a3349] dark:shadow-[0_5px_20px_rgba(0,0,0,0.3)] dark:bg-[#1a1d2d] relative before:absolute before:top-0 before:h-1 before:w-full before:bg-amber-500">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4 mb-4">
-              <div className="flex h-14 w-14 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300">
-                <CalendarPlus className="h-7 w-7" />
+        <div className="glass-panel-dark tech-border group relative overflow-hidden rounded-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(var(--primary),0.15)]">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+          <div className="p-8">
+            <div className="flex items-start gap-6 mb-6">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20 shadow-[0_0_15px_rgba(var(--primary),0.2)] group-hover:scale-110 transition-transform duration-300">
+                <CalendarPlus className="h-8 w-8" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-lg mb-2 dark:text-white">Calendario Avanzado</h3>
-                <p className="text-sm text-muted-foreground dark:text-slate-400">
-                  Control total sobre plataformas, tipos y distribución de contenido
+                <h3 className="font-bold text-xl mb-2 text-white tracking-wide">CALENDARIO AVANZADO</h3>
+                <p className="text-sm text-gray-400">
+                  Control total de parámetros de misión y distribución estratégica.
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-2 gap-6 mb-6 border-t border-white/10 pt-6">
               <div className="text-sm">
-                <div className="font-medium text-amber-700 dark:text-amber-400">Tiempo estimado</div>
-                <div className="text-muted-foreground dark:text-slate-400">5-10 minutos</div>
+                <div className="font-bold text-primary text-[10px] uppercase tracking-wider mb-1">Tiempo estimado</div>
+                <div className="text-gray-300 font-mono">5-10 MINUTOS</div>
               </div>
               <div className="text-sm">
-                <div className="font-medium text-amber-700 dark:text-amber-400">Opciones</div>
-                <div className="text-muted-foreground dark:text-slate-400">Avanzadas</div>
+                <div className="font-bold text-primary text-[10px] uppercase tracking-wider mb-1">Complejidad</div>
+                <div className="text-gray-300 font-mono">AVANZADA</div>
               </div>
             </div>
 
-            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-              <div className="font-medium text-amber-800 dark:text-amber-300 mb-2">Características:</div>
-              <ul className="text-sm text-amber-700 dark:text-amber-400 space-y-1">
-                <li>• Configuración personalizada por red social</li>
-                <li>• Control de tipos de contenido</li>
-                <li>• Distribución inteligente</li>
-                <li>• Especificaciones técnicas detalladas</li>
+            <div className="mb-8 p-4 bg-black/40 rounded-lg border border-white/5">
+              <div className="font-bold text-white text-xs uppercase tracking-wider mb-3">Capacidades:</div>
+              <ul className="text-sm text-gray-400 space-y-2">
+                <li className="flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full"></span>Control multiplataforma</li>
+                <li className="flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full"></span>Distribución inteligente</li>
+                <li className="flex items-center gap-2"><span className="w-1 h-1 bg-primary rounded-full"></span>Parámetros técnicos</li>
               </ul>
             </div>
 
             <Link href="/calendar-creator" className="block">
-              <Button className="w-full bg-amber-600 hover:bg-amber-700 text-white relative overflow-hidden group">
-                <span className="relative z-10 flex items-center justify-center">
-                  <CalendarPlus className="mr-2 h-4 w-4" />
-                  Crear Calendario Avanzado
-                  <ArrowRight className="ml-2 h-4 w-4" />
+              <Button className="w-full bg-transparent border border-primary text-primary hover:bg-primary/10 font-bold tracking-wider uppercase shadow-[0_0_10px_rgba(var(--primary),0.2)] transition-all duration-300">
+                <span className="flex items-center justify-center gap-2">
+                  CONFIGURAR SISTEMA
+                  <ArrowRight className="h-4 w-4" />
                 </span>
-                <div className="absolute inset-0 translate-y-[100%] bg-amber-700 transition-transform duration-300 group-hover:translate-y-[0%]"></div>
               </Button>
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Info Section */}
-      <Card className="dark:border-[#2a3349] dark:bg-[#1a1d2d]">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 text-primary dark:bg-[#65cef5]/10 dark:text-[#65cef5]">
-              <Calendar className="h-6 w-6" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-lg mb-4 dark:text-white">¿Cuál elegir?</h3>
-              <div className="grid md:grid-cols-2 gap-6">
-                <div>
-                  <div className="font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Calendario Rápido
-                  </div>
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                    <div className="font-medium text-blue-800 dark:text-blue-300 mb-1">Ideal para:</div>
-                    <ul className="text-sm text-blue-700 dark:text-blue-400 space-y-1">
-                      <li>• Resultados inmediatos</li>
-                      <li>• Proyectos simples</li>
-                      <li>• Soluciones automatizadas</li>
-                      <li>• Pruebas rápidas</li>
-                    </ul>
-                  </div>
+      <div className="glass-panel-dark rounded-xl p-8 border border-white/5">
+        <div className="flex items-start gap-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/5 text-gray-400 border border-white/10">
+            <Rocket className="h-6 w-6" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-lg mb-6 text-white uppercase tracking-wider">Protocolo de Selección</h3>
+            <div className="grid md:grid-cols-2 gap-8">
+              <div>
+                <div className="font-bold text-primary mb-3 flex items-center gap-2 uppercase text-xs tracking-wider">
+                  <Clock className="h-4 w-4" />
+                  Ruta Rápida
                 </div>
-                <div>
-                  <div className="font-medium text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2">
-                    <CalendarPlus className="h-4 w-4" />
-                    Calendario Avanzado
-                  </div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
-                    <div className="font-medium text-amber-800 dark:text-amber-300 mb-1">Ideal para:</div>
-                    <ul className="text-sm text-amber-700 dark:text-amber-400 space-y-1">
-                      <li>• Control total</li>
-                      <li>• Múltiples plataformas</li>
-                      <li>• Especificaciones técnicas</li>
-                      <li>• Proyectos complejos</li>
-                    </ul>
-                  </div>
+                <div className="bg-black/40 border border-white/5 rounded-lg p-4">
+                  <ul className="text-sm text-gray-400 space-y-2">
+                    <li className="flex items-center gap-2"><span className="w-1 h-1 bg-gray-600 rounded-full"></span>Resultados inmediatos</li>
+                    <li className="flex items-center gap-2"><span className="w-1 h-1 bg-gray-600 rounded-full"></span>Misiones simples</li>
+                    <li className="flex items-center gap-2"><span className="w-1 h-1 bg-gray-600 rounded-full"></span>Pruebas de concepto</li>
+                  </ul>
+                </div>
+              </div>
+              <div>
+                <div className="font-bold text-primary mb-3 flex items-center gap-2 uppercase text-xs tracking-wider">
+                  <CalendarPlus className="h-4 w-4" />
+                  Ruta Avanzada
+                </div>
+                <div className="bg-black/40 border border-white/5 rounded-lg p-4">
+                  <ul className="text-sm text-gray-400 space-y-2">
+                    <li className="flex items-center gap-2"><span className="w-1 h-1 bg-gray-600 rounded-full"></span>Control total de misión</li>
+                    <li className="flex items-center gap-2"><span className="w-1 h-1 bg-gray-600 rounded-full"></span>Campañas complejas</li>
+                    <li className="flex items-center gap-2"><span className="w-1 h-1 bg-gray-600 rounded-full"></span>Especificaciones técnicas</li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

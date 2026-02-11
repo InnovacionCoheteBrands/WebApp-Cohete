@@ -1,518 +1,564 @@
-// ===== CLIENT-SAFE SCHEMA TYPES =====
-// This file contains ONLY TypeScript type definitions
-// NO imports from server code or Drizzle ORM to prevent bundling Node.js modules in the client
+// ===== IMPORTACIONES DE DRIZZLE ORM =====
+// Drizzle ORM: Sistema de ORM tipo-seguro para PostgreSQL
+import { pgTable, text, serial, integer, boolean, varchar, timestamp, pgEnum, jsonb, numeric } from "drizzle-orm/pg-core";
+// Zod: Librería de validación de esquemas
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+// Relaciones entre tablas
+import { relations } from "drizzle-orm";
 
-// ===== USER TYPES =====
-export type User = {
-    id: string;
-    fullName: string;
-    username: string;
-    email: string | null;
-    password: string | null;
-    isPrimary: boolean;
-    role: "admin" | "project_manager" | "content_creator" | "designer" | "developer" | "stakeholder" | null;
-    bio: string | null;
-    profileImage: string | null;
-    coverImage: string | null;
-    nickname: string | null;
-    jobTitle: string | null;
-    department: string | null;
-    phoneNumber: string | null;
-    preferredLanguage: string | null;
-    theme: string | null;
-    customFields: any;
-    lastLogin: Date | null;
-    firstName: string | null;
-    lastName: string | null;
-    profileImageUrl: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// ===== DEFINICIÓN DE ENUMS =====
+// Los enums definen valores permitidos para ciertos campos de la base de datos
 
-export type InsertUser = Omit<User, "id" | "createdAt" | "updatedAt"> & {
-    id?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Roles de usuario en el sistema de gestión de proyectos
+export const userRoleEnum = pgEnum("user_role", ["admin", "project_manager", "content_creator", "designer", "developer", "stakeholder"]);
 
-// ===== PROJECT TYPES =====
-export type Project = {
-    id: number;
-    name: string;
-    client: string;
-    description: string | null;
-    startDate: Date | null;
-    endDate: Date | null;
-    status: "active" | "planning" | "completed" | "on_hold" | null;
-    createdBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// Estados posibles de un proyecto
+export const projectStatusEnum = pgEnum("project_status", ["active", "planning", "completed", "on_hold"]);
 
-export type InsertProject = Omit<Project, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Estados de las tareas individuales
+export const taskStatusEnum = pgEnum("task_status", ["pending", "in_progress", "completed", "cancelled", "blocked", "deferred"]);
 
-// ===== TASK TYPES =====
-export type Task = {
-    id: number;
-    projectId: number;
-    assignedToId: string | null;
-    createdById: string | null;
-    title: string;
-    description: string | null;
-    status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked" | "deferred";
-    priority: "low" | "medium" | "high" | "urgent" | "critical";
-    group: "todo" | "in_progress" | "completed" | "blocked" | "upcoming" | null;
-    position: number | null;
-    aiGenerated: boolean | null;
-    aiSuggestion: string | null;
-    tags: string[] | null;
-    dueDate: Date | null;
-    completedAt: Date | null;
-    estimatedHours: number | null;
-    dependencies: string[] | null;
-    parentTaskId: number | null;
-    progress: number | null;
-    attachments: any;
-    groupId: number | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// Niveles de prioridad para las tareas
+export const taskPriorityEnum = pgEnum("task_priority", ["low", "medium", "high", "urgent", "critical"]);
 
-export type InsertTask = Omit<Task, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Grupos de organización para tareas (tipo Kanban)
+export const taskGroupEnum = pgEnum("task_group", ["todo", "in_progress", "completed", "blocked", "upcoming"]);
 
-// ===== ANALYSIS RESULT TYPES =====
-export type AnalysisResult = {
-    id: number;
-    projectId: number;
-    mission: string | null;
-    vision: string | null;
-    coreValues: string | null;
-    objectives: string | null;
-    communicationObjectives: string | null;
-    buyerPersona: string | null;
-    targetAudience: string | null;
-    marketingStrategies: string | null;
-    archetypes: any;
-    brandCommunicationStyle: string | null;
-    brandTone: string | null;
-    socialNetworks: any;
-    responsePolicyPositive: string | null;
-    responsePolicyNegative: string | null;
-    keywords: string | null;
-    contentThemes: any;
-    competitorAnalysis: any;
-    projectDescription: string | null;
-    additionalNotes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// Tipos de notificaciones del sistema
+export const notificationTypeEnum = pgEnum("notification_type", ["info", "warning", "error", "success", "comment", "mention", "assignment"]);
 
-export type InsertAnalysisResult = Omit<AnalysisResult, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Tipos de vista para mostrar proyectos/tareas
+export const viewTypeEnum = pgEnum("view_type", ["list", "kanban", "calendar", "gantt", "table"]);
 
-// ===== DOCUMENT TYPES =====
-export type Document = {
-    id: number;
-    projectId: number;
-    name: string;
-    type: string;
-    content: string | null;
-    metadata: any;
-    uploadedBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// Tipos de columna para campos dinámicos
+export const columnTypeEnum = pgEnum("column_type", ["text", "number", "date", "status", "priority", "people", "checkbox", "dropdown"]);
 
-export type InsertDocument = Omit<Document, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Triggers para reglas de automatización
+export const automationTriggerEnum = pgEnum("automation_trigger", ["status_change", "assignment", "due_date", "creation", "completion"]);
 
-// ===== SCHEDULE TYPES =====
-export type Schedule = {
-    id: number;
-    projectId: number;
-    name: string;
-    description: string | null;
-    additionalInstructions: string | null;
-    createdBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// Acciones para reglas de automatización
+export const automationActionEnum = pgEnum("automation_action", ["notify", "assign", "move", "update_status", "create_task"]);
 
-export type InsertSchedule = Omit<Schedule, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Modelos de IA soportados por el sistema
+export const aiModelEnum = pgEnum("ai_model", ["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"]);
 
-// ===== SCHEDULE ENTRY TYPES =====
-export type ScheduleEntry = {
-    id: number;
-    scheduleId: number;
-    title: string;
-    description: string | null;
-    content: string | null;
-    copyIn: string | null;
-    copyOut: string | null;
-    designInstructions: string | null;
-    platform: string;
-    postDate: Date;
-    postTime: string;
-    hashtags: string | null;
-    comments: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// ===== DEFINICIÓN DE TABLAS =====
 
-export type InsertScheduleEntry = Omit<ScheduleEntry, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// ===== TABLA DE SESIONES =====
+// Almacena las sesiones de usuarios autenticados (para express-session)
+export const sessions = pgTable("sessions", {
+  sid: varchar("sid").primaryKey(), // ID único de la sesión
+  sess: jsonb("sess").notNull(), // Datos de la sesión en formato JSON
+  expire: timestamp("expire").notNull() // Fecha de expiración de la sesión
+});
 
-// ===== CHAT MESSAGE TYPES =====
-export type ChatMessage = {
-    id: number;
-    projectId: number;
-    userId: string | null;
-    message: string;
-    isAi: boolean | null;
-    aiModel: "gpt-4" | "gpt-3.5-turbo" | "gemini-1.5-pro" | null;
-    createdAt: Date;
-};
+// ===== TABLA DE USUARIOS =====
+// Información completa de los usuarios del sistema
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().notNull(), // ID único (compatible con OAuth)
+  fullName: text("full_name").notNull(), // Nombre completo del usuario
+  username: text("username").notNull().unique(), // Nombre de usuario único
+  email: text("email").unique(), // Email del usuario (único)
+  password: text("password"), // Contraseña encriptada (opcional para OAuth)
+  isPrimary: boolean("is_primary").default(false).notNull(), // Usuario administrador principal
+  role: userRoleEnum("role").default("content_creator"), // Rol del usuario en el sistema
+  bio: text("bio"), // Biografía del usuario
+  profileImage: text("profile_image"), // URL de la imagen de perfil
+  coverImage: text("cover_image"), // URL de la imagen de portada
+  nickname: text("nickname"), // Apodo o nombre corto
+  jobTitle: text("job_title"), // Título del trabajo
+  department: text("department"), // Departamento al que pertenece
+  phoneNumber: text("phone_number"), // Número de teléfono
+  preferredLanguage: text("preferred_language").default("es"), // Idioma preferido
+  theme: text("theme").default("light"), // Tema visual (claro/oscuro)
+  customFields: jsonb("custom_fields").default([]), // Campos personalizados
+  lastLogin: timestamp("last_login"), // Último inicio de sesión
+  firstName: text("first_name"), // Nombre
+  lastName: text("last_name"), // Apellido  
+  profileImageUrl: text("profile_image_url"), // URL alternativa de imagen de perfil
+  createdAt: timestamp("created_at").defaultNow().notNull(), // Fecha de creación
+  updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
+});
 
-export type InsertChatMessage = Omit<ChatMessage, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+// ===== TABLA DE PROYECTOS =====
+// Almacena información de proyectos de marketing y sus configuraciones
+export const projects = pgTable("projects", {
+  id: serial("id").primaryKey(), // ID único autoincremental
+  name: text("name").notNull(), // Nombre del proyecto
+  client: text("client").notNull(), // Nombre del cliente
+  description: text("description"), // Descripción del proyecto
+  startDate: timestamp("start_date"), // Fecha de inicio
+  endDate: timestamp("end_date"), // Fecha de finalización
+  status: projectStatusEnum("status").default("active"), // Estado actual del proyecto
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }), // Usuario que creó el proyecto
+  createdAt: timestamp("created_at").defaultNow().notNull(), // Fecha de creación
+  updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
+});
 
-// ===== CONTENT HISTORY TYPES =====
-export type ContentHistory = {
-    id: number;
-    scheduleEntryId: number;
-    version: number;
-    content: string;
-    changeDescription: string | null;
-    changedBy: string | null;
-    createdAt: Date;
-};
+// ===== TABLA DE TAREAS =====
+// Sistema de gestión de tareas con funcionalidades tipo Monday.com
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(), // ID único autoincremental
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(), // Proyecto al que pertenece la tarea
+  assignedToId: varchar("assigned_to_id").references(() => users.id, { onDelete: "set null" }), // Usuario asignado a la tarea
+  createdById: varchar("created_by_id").references(() => users.id, { onDelete: "set null" }), // Usuario que creó la tarea
+  title: text("title").notNull(), // Título de la tarea
+  description: text("description"), // Descripción detallada
+  status: taskStatusEnum("status").default("pending").notNull(), // Estado actual de la tarea
+  priority: taskPriorityEnum("priority").default("medium").notNull(), // Prioridad de la tarea
+  group: taskGroupEnum("group").default("todo"), // Grupo de organización (para vistas Kanban)
+  position: integer("position").default(0), // Posición para ordenamiento manual
+  aiGenerated: boolean("ai_generated").default(false), // Indica si fue generada por IA
+  aiSuggestion: text("ai_suggestion"), // Sugerencia de IA para la tarea
+  tags: text("tags").array(), // Etiquetas para categorización
+  dueDate: timestamp("due_date"), // Fecha límite
+  completedAt: timestamp("completed_at"), // Fecha de finalización
+  estimatedHours: integer("estimated_hours"), // Horas estimadas para completar
+  dependencies: text("dependencies").array(), // IDs de tareas de las que depende
+  parentTaskId: integer("parent_task_id"), // Tarea padre (para subtareas)
+  progress: integer("progress").default(0), // Porcentaje de progreso (0-100)
+  attachments: jsonb("attachments"), // Archivos adjuntos en formato JSON
+  groupId: integer("group_id"), // ID del grupo para organización adicional
+  createdAt: timestamp("created_at").defaultNow().notNull(), // Fecha de creación
+  updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
+});
 
-export type InsertContentHistory = Omit<ContentHistory, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+// Analysis Results table - Almacena todos los datos del formulario de proyecto para uso de IA
+export const analysisResults = pgTable("analysis_results", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
 
-// ===== TASK COMMENT TYPES =====
-export type TaskComment = {
-    id: number;
-    taskId: number;
-    userId: string;
-    content: string;
-    isInternal: boolean | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  // Pestaña MVV (Misión, Visión, Valores)
+  mission: text("mission"),
+  vision: text("vision"),
+  coreValues: text("core_values"),
 
-export type InsertTaskComment = Omit<TaskComment, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+  // Pestaña Objetivos
+  objectives: text("objectives"),
+  communicationObjectives: text("communication_objectives"),
 
-// ===== PRODUCT TYPES =====
-export type Product = {
-    id: number;
-    projectId: number;
-    name: string;
-    description: string | null;
-    imageUrl: string | null;
-    sku: string | null;
-    price: string | null;
-    createdBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  // Pestaña Persona
+  buyerPersona: text("buyer_persona"),
+  targetAudience: text("target_audience"),
 
-export type InsertProduct = Omit<Product, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+  // Pestaña Estrategias
+  marketingStrategies: text("marketing_strategies"),
+  archetypes: jsonb("archetypes"),
 
-// ===== PROJECT VIEW TYPES =====
-export type ProjectView = {
-    id: number;
-    projectId: number;
-    name: string;
-    type: "list" | "kanban" | "calendar" | "gantt" | "table";
-    config: any;
-    isDefault: boolean | null;
-    createdBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  // Pestaña Comunicación
+  brandCommunicationStyle: text("brand_communication_style"),
+  brandTone: text("brand_tone"),
+  socialNetworks: jsonb("social_networks"),
 
-export type InsertProjectView = Omit<ProjectView, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+  // Pestaña Políticas
+  responsePolicyPositive: text("response_policy_positive"),
+  responsePolicyNegative: text("response_policy_negative"),
 
-// ===== AUTOMATION RULE TYPES =====
-export type AutomationRule = {
-    id: number;
-    projectId: number;
-    name: string;
-    description: string | null;
-    trigger: "status_change" | "assignment" | "due_date" | "creation" | "completion";
-    triggerConditions: any;
-    action: "notify" | "assign" | "move" | "update_status" | "create_task";
-    actionConfig: any;
-    isActive: boolean | null;
-    createdBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  // Campos adicionales para contenido y análisis
+  keywords: text("keywords"),
+  contentThemes: jsonb("content_themes"),
+  competitorAnalysis: jsonb("competitor_analysis"),
 
-export type InsertAutomationRule = Omit<AutomationRule, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+  // Campos para datos generales del proyecto (de la pestaña General)
+  projectDescription: text("project_description"),
+  additionalNotes: text("additional_notes"),
 
-// ===== TIME ENTRY TYPES =====
-export type TimeEntry = {
-    id: number;
-    taskId: number;
-    userId: string;
-    description: string | null;
-    startTime: Date;
-    endTime: Date | null;
-    duration: number | null;
-    isRunning: boolean | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  // ===== NUEVOS CAMPOS PARA CALIDAD DE CONTENIDO (P0) =====
 
-export type InsertTimeEntry = Omit<TimeEntry, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+  // Propuesta de Valor Única (UVP) - Qué hace diferente a la marca
+  uniqueValueProposition: text("unique_value_proposition"),
 
-// ===== TAG TYPES =====
-export type Tag = {
-    id: number;
-    projectId: number;
-    name: string;
-    color: string | null;
-    createdBy: string | null;
-    createdAt: Date;
-};
+  // Voice of Customer (VoC) - Lenguaje real del cliente
+  customerQuotes: jsonb("customer_quotes"), // Array de frases literales del cliente
+  customerObjections: text("customer_objections"), // Objeciones frecuentes
+  customerVocabulary: text("customer_vocabulary"), // Jerga/vocabulario del público
 
-export type InsertTag = Omit<Tag, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+  // Calendario Estacional - Fechas clave para la marca
+  seasonalCalendar: jsonb("seasonal_calendar"), // Array de eventos con fecha y descripción
 
-// ===== COLLABORATIVE DOC TYPES =====
-export type CollaborativeDoc = {
-    id: number;
-    projectId: number;
-    title: string;
-    content: string | null;
-    contentJson: any;
-    lastEditedBy: string | null;
-    createdBy: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-};
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export type InsertCollaborativeDoc = Omit<CollaborativeDoc, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Documents table
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  type: text("type").notNull(),
+  content: text("content"),
+  metadata: jsonb("metadata"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-// ===== NOTIFICATION TYPES =====
-export type Notification = {
-    id: number;
-    userId: string;
-    type: "info" | "warning" | "error" | "success" | "comment" | "mention" | "assignment";
-    title: string | null;
-    message: string;
-    relatedEntityType: string | null;
-    relatedEntityId: string | null;
-    isRead: boolean | null;
-    createdAt: Date;
-};
+// Schedules table
+export const schedules = pgTable("schedules", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  additionalInstructions: text("additional_instructions"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export type InsertNotification = Omit<Notification, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+// Schedule Entries table
+export const scheduleEntries = pgTable("schedule_entries", {
+  id: serial("id").primaryKey(),
+  scheduleId: integer("schedule_id").references(() => schedules.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  content: text("content"),
+  copyIn: text("copy_in"),
+  copyOut: text("copy_out"),
+  designInstructions: text("design_instructions"),
+  platform: text("platform").notNull(),
+  postDate: timestamp("post_date").notNull(),
+  postTime: text("post_time").notNull(),
+  hashtags: text("hashtags"),
+  comments: text("comments"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-// ===== TASK DEPENDENCY TYPES =====
-export type TaskDependency = {
-    id: number;
-    taskId: number;
-    dependsOnTaskId: number;
-    createdAt: Date;
-};
+// Chat Messages table
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  message: text("message").notNull(),
+  isAi: boolean("is_ai").default(false),
+  aiModel: aiModelEnum("ai_model"),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-export type InsertTaskDependency = Omit<TaskDependency, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+// Content History table
+export const contentHistory = pgTable("content_history", {
+  id: serial("id").primaryKey(),
+  scheduleEntryId: integer("schedule_entry_id").references(() => scheduleEntries.id, { onDelete: "cascade" }).notNull(),
+  version: integer("version").notNull(),
+  content: text("content").notNull(),
+  changeDescription: text("change_description"),
+  changedBy: varchar("changed_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-// ===== PROJECT MEMBER TYPES =====
-export type ProjectMember = {
-    id: number;
-    projectId: number;
-    userId: string;
-    role: string | null;
-    permissions: any;
-    joinedAt: Date;
-};
+// Task Comments table
+export const taskComments = pgTable("task_comments", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  content: text("content").notNull(),
+  isInternal: boolean("is_internal").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export type InsertProjectMember = Omit<ProjectMember, "id" | "joinedAt"> & {
-    id?: number;
-    joinedAt?: Date;
-};
+// Products table
+export const products = pgTable("products", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  sku: text("sku"),
+  price: numeric("price", { precision: 10, scale: 2 }),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-// ===== PROJECT ASSIGNMENT TYPES =====
-export type ProjectAssignment = {
-    id: number;
-    projectId: number;
-    userId: string;
-    assignedAt: Date;
-};
+// Project Views table
+export const projectViews = pgTable("project_views", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  type: viewTypeEnum("type").default("list").notNull(),
+  config: jsonb("config").default({}),
+  isDefault: boolean("is_default").default(false),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-// ===== ADDITIONAL TYPES =====
-export type TaskGroup = {
-    id: number;
-    projectId: number;
-    name: string;
-    color: string | null;
-    position: number | null;
-    createdAt: Date;
-};
+// Automation Rules table
+export const automationRules = pgTable("automation_rules", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  description: text("description"),
+  trigger: automationTriggerEnum("trigger").notNull(),
+  triggerConditions: jsonb("trigger_conditions"),
+  action: automationActionEnum("action").notNull(),
+  actionConfig: jsonb("action_config"),
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export type InsertTaskGroup = Omit<TaskGroup, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+// Time Entries table
+export const timeEntries = pgTable("time_entries", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  description: text("description"),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  duration: integer("duration"),
+  isRunning: boolean("is_running").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export type ProjectColumnSetting = {
-    id: number;
-    projectId: number;
-    columnName: string;
-    columnType: "text" | "number" | "date" | "status" | "priority" | "people" | "checkbox" | "dropdown";
-    isVisible: boolean | null;
-    position: number | null;
-    config: any;
-    createdAt: Date;
-};
+// Tags table
+export const tags = pgTable("tags", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  color: text("color").default("#3498db"),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-export type InsertProjectColumnSetting = Omit<ProjectColumnSetting, "id" | "createdAt"> & {
-    id?: number;
-    createdAt?: Date;
-};
+// Collaborative Docs table
+export const collaborativeDocs = pgTable("collaborative_docs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  content: text("content"),
+  contentJson: jsonb("content_json"),
+  lastEditedBy: varchar("last_edited_by").references(() => users.id, { onDelete: "set null" }),
+  createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export type TaskColumnValue = {
-    id: number;
-    taskId: number;
-    columnId: number;
-    valueText: string | null;
-    valueNumber: string | null;
-    valueDate: Date | null;
-    valueBool: boolean | null;
-    valueJson: any;
-    createdAt: Date;
-    updatedAt: Date;
-};
+// Notifications table
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  type: notificationTypeEnum("type").notNull(),
+  title: text("title"),
+  message: text("message").notNull(),
+  relatedEntityType: text("related_entity_type"),
+  relatedEntityId: text("related_entity_id"),
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-export type InsertTaskColumnValue = Omit<TaskColumnValue, "id" | "createdAt" | "updatedAt"> & {
-    id?: number;
-    createdAt?: Date;
-    updatedAt?: Date;
-};
+// Task Dependencies table
+export const taskDependencies = pgTable("task_dependencies", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  dependsOnTaskId: integer("depends_on_task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-// ===== AI MODEL TYPE =====
-export type AIModelType = "gpt-4" | "gpt-3.5-turbo" | "gemini-1.5-pro";
+// Project Members table
+export const projectMembers = pgTable("project_members", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").default("member"),
+  permissions: jsonb("permissions").default([]),
+  joinedAt: timestamp("joined_at").defaultNow().notNull()
+});
 
-// ===== UPDATE PROFILE TYPE =====
-export type UpdateProfile = {
-    fullName?: string;
-    bio?: string;
-    jobTitle?: string;
-    department?: string;
-    phoneNumber?: string;
-    preferredLanguage?: string;
-    theme?: string;
-    profileImage?: string;
-    coverImage?: string;
-    nickname?: string;
-    firstName?: string;
-    lastName?: string;
-};
+// Project Assignments table
+export const projectAssignments = pgTable("project_assignments", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull()
+});
 
-// ===== ENUM VALUES (for runtime use) =====
-// These are plain objects, not Drizzle ORM enums, to avoid bundling Node.js modules
+// Task Groups table
+export const taskGroups = pgTable("task_groups", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  name: text("name").notNull(),
+  color: text("color").default("#3498db"),
+  position: integer("position").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-export const viewTypeEnum = {
-    enumValues: ["list", "kanban", "calendar", "gantt", "table"] as const
-};
+// Project Column Settings table
+export const projectColumnSettings = pgTable("project_column_settings", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
+  columnName: text("column_name").notNull(),
+  columnType: columnTypeEnum("column_type").notNull(),
+  isVisible: boolean("is_visible").default(true),
+  position: integer("position").default(0),
+  config: jsonb("config").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-export const taskStatusEnum = {
-    enumValues: ["pending", "in_progress", "completed", "cancelled", "blocked", "deferred"] as const
-};
+// Task Column Values table
+export const taskColumnValues = pgTable("task_column_values", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  columnId: integer("column_id").references(() => projectColumnSettings.id, { onDelete: "cascade" }).notNull(),
+  valueText: text("value_text"),
+  valueNumber: numeric("value_number", { precision: 10, scale: 2 }),
+  valueDate: timestamp("value_date"),
+  valueBool: boolean("value_bool"),
+  valueJson: jsonb("value_json"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export const taskPriorityEnum = {
-    enumValues: ["low", "medium", "high", "urgent", "critical"] as const
-};
+// Task Assignees table
+export const taskAssignees = pgTable("task_assignees", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  assignedBy: varchar("assigned_by").references(() => users.id, { onDelete: "set null" }),
+  assignedAt: timestamp("assigned_at").defaultNow().notNull()
+});
 
-export const taskGroupEnum = {
-    enumValues: ["todo", "in_progress", "completed", "blocked", "upcoming"] as const
-};
+// Task Attachments table
+export const taskAttachments = pgTable("task_attachments", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }).notNull(),
+  fileName: text("file_name").notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileSize: integer("file_size"),
+  mimeType: text("mime_type"),
+  uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
 
-export const userRoleEnum = {
-    enumValues: ["admin", "project_manager", "content_creator", "designer", "developer", "stakeholder"] as const
-};
+// Activity Log table
+export const activityLog = pgTable("activity_log", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "cascade" }),
+  action: text("action").notNull(),
+  description: text("description"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export const projectStatusEnum = {
-    enumValues: ["active", "planning", "completed", "on_hold"] as const
-};
+// Password Reset Tokens table
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
 
-export const notificationTypeEnum = {
-    enumValues: ["info", "warning", "error", "success", "comment", "mention", "assignment"] as const
-};
+// User Settings table
+export const userSettings = pgTable("user_settings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull().unique(),
+  emailNotifications: boolean("email_notifications").default(true),
+  pushNotifications: boolean("push_notifications").default(true),
+  weeklyDigest: boolean("weekly_digest").default(true),
+  timezone: text("timezone").default("UTC"),
+  dateFormat: text("date_format").default("MM/DD/YYYY"),
+  timeFormat: text("time_format").default("12h"),
+  language: text("language").default("en"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
 
-export const columnTypeEnum = {
-    enumValues: ["text", "number", "date", "status", "priority", "people", "checkbox", "dropdown"] as const
-};
+// Define all types
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = typeof tasks.$inferInsert;
+export type AnalysisResult = typeof analysisResults.$inferSelect;
+export type InsertAnalysisResult = typeof analysisResults.$inferInsert;
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
+export type Schedule = typeof schedules.$inferSelect;
+export type InsertSchedule = typeof schedules.$inferInsert;
+export type ScheduleEntry = typeof scheduleEntries.$inferSelect;
+export type InsertScheduleEntry = typeof scheduleEntries.$inferInsert;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertChatMessage = typeof chatMessages.$inferInsert;
+export type ContentHistory = typeof contentHistory.$inferSelect;
+export type InsertContentHistory = typeof contentHistory.$inferInsert;
+export type TaskComment = typeof taskComments.$inferSelect;
+export type InsertTaskComment = typeof taskComments.$inferInsert;
+export type Product = typeof products.$inferSelect;
+export type InsertProduct = typeof products.$inferInsert;
+export type ProjectView = typeof projectViews.$inferSelect;
+export type InsertProjectView = typeof projectViews.$inferInsert;
+export type AutomationRule = typeof automationRules.$inferSelect;
+export type InsertAutomationRule = typeof automationRules.$inferInsert;
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = typeof timeEntries.$inferInsert;
+export type Tag = typeof tags.$inferSelect;
+export type InsertTag = typeof tags.$inferInsert;
+export type CollaborativeDoc = typeof collaborativeDocs.$inferSelect;
+export type InsertCollaborativeDoc = typeof collaborativeDocs.$inferInsert;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+export type TaskDependency = typeof taskDependencies.$inferSelect;
+export type InsertTaskDependency = typeof taskDependencies.$inferInsert;
+export type ProjectMember = typeof projectMembers.$inferSelect;
+export type InsertProjectMember = typeof projectMembers.$inferInsert;
+export type ProjectAssignment = typeof projectAssignments.$inferSelect;
 
-export const automationTriggerEnum = {
-    enumValues: ["status_change", "assignment", "due_date", "creation", "completion"] as const
-};
+// Define schemas for validation
+// import { createInsertSchema } from "drizzle-zod";
+// ...
+export const insertUserSchema = createInsertSchema(users);
+export const insertProjectSchema = createInsertSchema(projects);
+export const insertTaskSchema = createInsertSchema(tasks);
+export const insertAnalysisResultsSchema = createInsertSchema(analysisResults);
+export const insertDocumentSchema = createInsertSchema(documents);
+export const insertScheduleSchema = createInsertSchema(schedules);
+export const insertScheduleEntrySchema = createInsertSchema(scheduleEntries);
+export const insertChatMessageSchema = createInsertSchema(chatMessages);
+export const insertContentHistorySchema = createInsertSchema(contentHistory);
+export const insertTaskCommentSchema = createInsertSchema(taskComments);
+export const insertProductSchema = createInsertSchema(products);
+export const insertProjectViewSchema = createInsertSchema(projectViews);
+export const insertAutomationRuleSchema = createInsertSchema(automationRules);
+export const insertTimeEntrySchema = createInsertSchema(timeEntries);
+export const insertTagSchema = createInsertSchema(tags);
+export const insertCollaborativeDocSchema = createInsertSchema(collaborativeDocs);
+export const insertNotificationSchema = createInsertSchema(notifications);
+export const insertTaskDependencySchema = createInsertSchema(taskDependencies);
+export const insertProjectMemberSchema = createInsertSchema(projectMembers);
+export const insertTaskGroupSchema = createInsertSchema(taskGroups);
+export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings);
+export const insertTaskColumnValueSchema = createInsertSchema(taskColumnValues);
 
-export const automationActionEnum = {
-    enumValues: ["notify", "assign", "move", "update_status", "create_task"] as const
-};
+// Esquemas adicionales para autenticación
+export const loginSchema = z.object({
+  identifier: z.string().min(1, "Se requiere nombre de usuario o email"),
+  password: z.string().min(1, "Se requiere contraseña")
+});
 
-export const aiModelEnum = {
-    enumValues: ["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"] as const
-};
+export const updateProfileSchema = z.object({
+  fullName: z.string().optional(),
+  bio: z.string().optional(),
+  jobTitle: z.string().optional(),
+  department: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  preferredLanguage: z.string().optional(),
+  theme: z.string().optional(),
+  profileImage: z.string().optional(),
+  coverImage: z.string().optional(),
+  nickname: z.string().optional(),
+  firstName: z.string().optional(),
+  lastName: z.string().optional()
+});
+
+// Export enum types
+export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"]);
+export type AIModelType = z.infer<typeof AIModel>;

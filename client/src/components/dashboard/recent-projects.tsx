@@ -52,21 +52,25 @@ export default function RecentProjects() {
   const recentProjects = projects.slice(0, 3);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FolderOpen className="h-5 w-5" />
-          Proyectos Recientes
+    <Card className="glass-panel-dark tech-border h-full">
+      <CardHeader className="border-b border-white/5 pb-4">
+        <CardTitle className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10 border border-primary/20 text-primary">
+            <FolderOpen className="h-5 w-5" />
+          </div>
+          <span className="text-xl font-bold text-white tracking-tight">Proyectos Recientes</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-6">
         {recentProjects.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <FolderOpen className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>No hay proyectos recientes</p>
-            <Button 
-              variant="outline" 
-              className="mt-4"
+          <div className="text-center py-12 text-muted-foreground">
+            <div className="relative mx-auto mb-4 h-16 w-16 opacity-20">
+              <FolderOpen className="h-16 w-16" />
+            </div>
+            <p className="text-lg font-medium text-gray-400 mb-2">No hay proyectos recientes</p>
+            <p className="text-sm text-gray-500 mb-6">Comienza creando tu primera campaña</p>
+            <Button
+              className="btn-amber-glow font-bold"
               onClick={() => setLocation("/projects")}
             >
               Crear Primer Proyecto
@@ -75,19 +79,21 @@ export default function RecentProjects() {
         ) : (
           <div className="space-y-4">
             {recentProjects.map((project) => (
-              <div 
+              <div
                 key={project.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                className="group flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-primary/30 transition-all duration-300 cursor-pointer"
+                onClick={() => setLocation(`/projects/${project.id}`)}
               >
                 <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium">{project.name}</h4>
-                    <Badge className={getStatusColor(project.status)}>
+                  <div className="flex items-center gap-3 mb-2">
+                    <h4 className="font-bold text-white group-hover:text-primary transition-colors">{project.name}</h4>
+                    <Badge className={`${getStatusColor(project.status)} border-0 font-bold tracking-wide uppercase text-[10px]`}>
                       {getStatusText(project.status)}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>Cliente: {project.client}</span>
+                  <div className="flex items-center gap-4 text-xs text-gray-400 font-medium uppercase tracking-wider">
+                    <span>{project.client}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-600"></span>
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3 w-3" />
                       {formatDate(project.createdAt)}
@@ -96,17 +102,17 @@ export default function RecentProjects() {
                 </div>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={() => setLocation(`/projects/${project.id}`)}
+                  size="icon"
+                  className="text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all"
                 >
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-5 w-5" />
                 </Button>
               </div>
             ))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full"
+
+            <Button
+              variant="outline"
+              className="w-full mt-2 border-white/10 bg-transparent hover:bg-primary/10 hover:text-primary hover:border-primary/50 transition-all duration-300 uppercase text-xs font-bold tracking-widest h-10"
               onClick={() => setLocation("/projects")}
             >
               Ver Todos los Proyectos

@@ -1,7 +1,7 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 type Theme = "dark" | "light" | "system";
-type ColorScheme = "amber" | "blue" | "green" | "purple" | "red";
+type ColorScheme = "brand" | "blue" | "green" | "purple" | "red" | "amber";
 type FontSize = "small" | "medium" | "large";
 
 interface ThemeOptions {
@@ -34,7 +34,7 @@ interface ThemeContextType {
 
 const initialState: ThemeContextType = {
   theme: "system",
-  colorScheme: "blue",
+  colorScheme: "brand",
   fontSize: "medium",
   reducedAnimations: false,
   highContrastMode: false,
@@ -60,7 +60,12 @@ export function ThemeProvider({
   );
 
   const [colorScheme, setColorSchemeState] = useState<ColorScheme>(
-    () => (localStorage.getItem(`${storageKey}-colorScheme`) as ColorScheme) || "blue"
+    () => {
+      const stored = localStorage.getItem(`${storageKey}-colorScheme`) as ColorScheme;
+      // Force migration to brand if blue or undefined
+      if (!stored || stored === "blue") return "brand";
+      return stored;
+    }
   );
 
   const [fontSize, setFontSizeState] = useState<FontSize>(
@@ -108,16 +113,18 @@ export function ThemeProvider({
     const root = window.document.documentElement;
 
     // Eliminar clases de esquemas de color anteriores
-    root.classList.remove("color-amber", "color-blue", "color-green", "color-purple", "color-red");
+    root.classList.remove("color-amber", "color-blue", "color-green", "color-purple", "color-red", "color-brand");
 
     // Aplicar el nuevo esquema de color
     root.classList.add(`color-${colorScheme}`);
 
     // Actualizar variables CSS para el esquema de color
-    if (colorScheme === "amber") {
+    if (colorScheme === "brand") {
+      document.documentElement.style.setProperty('--primary', '38 92% 50%'); // Rocket Gold
+    } else if (colorScheme === "amber") {
       document.documentElement.style.setProperty('--primary', '45 93% 47%');
     } else if (colorScheme === "blue") {
-      document.documentElement.style.setProperty('--primary', '210 40% 80%');
+      document.documentElement.style.setProperty('--primary', '38 92% 50%'); // Fallback to Gold even for blue
     } else if (colorScheme === "green") {
       document.documentElement.style.setProperty('--primary', '142 71% 45%');
     } else if (colorScheme === "purple") {

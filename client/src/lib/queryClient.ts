@@ -44,11 +44,33 @@ async function throwIfResNotOk(res: Response) {
 
 // ===== FUNCIÓN PARA REALIZAR PETICIONES API =====
 // Función utilitaria centralizada para todas las peticiones HTTP del cliente
+// Supports two call patterns:
+// 1. apiRequest(method, url, data?) - legacy pattern
+// 2. apiRequest(url, options?) - modern pattern with { method, body }
 export async function apiRequest(
-  method: "GET" | "POST" | "PATCH" | "DELETE",
-  url: string,
+  methodOrUrl: "GET" | "POST" | "PATCH" | "DELETE" | string,
+  urlOrOptions?: string | { method?: string; body?: string },
   data?: any
 ): Promise<Response> {
+  let method: string;
+  let url: string;
+  let body: string | undefined;
+
+  // Detect call pattern
+  if (typeof urlOrOptions === 'string') {
+    // Pattern 1: apiRequest(method, url, data?)
+    method = methodOrUrl;
+    url = urlOrOptions;
+    body = data ? JSON.stringify(data) : undefined;
+  } else if (typeof urlOrOptions === 'object' || urlOrOptions === undefined) {
+    // Pattern 2: apiRequest(url, options?)
+    url = methodOrUrl;
+    method = urlOrOptions?.method || 'GET';
+    body = urlOrOptions?.body;
+  } else {
+    throw new Error('Invalid apiRequest call pattern');
+  }
+
   console.log(`Requesting URL: ${url}`);
 
   const config: RequestInit = {
@@ -59,8 +81,8 @@ export async function apiRequest(
     credentials: "include",
   };
 
-  if (data) {
-    config.body = JSON.stringify(data);
+  if (body) {
+    config.body = body;
   }
 
   try {
@@ -116,67 +138,64 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    // Convert queryKey to a URL string
-    let url: string;
+    async ({ queryKey }) => {
+      // Convert queryKey to a URL string
+      let url: string;
 
-    if (typeof queryKey[0] === 'string' && queryKey[0].startsWith('/api/')) {
-      // First element is already the base URL
-      if (queryKey.length > 1) {
-        // If we have additional segments, append them properly
-        const baseUrl = queryKey[0] as string;
-        const additionalSegments = queryKey.slice(1)
+      if (typeof queryKey[0] === 'string' && queryKey[0].startsWith('/api/')) {
+        // First element is already the base URL
+        if (queryKey.length > 1) {
+          // If we have additional segments, append them properly
+          const baseUrl = queryKey[0] as string;
+          const additionalSegments = queryKey.slice(1)
+            .filter(segment => segment !== undefined && segment !== null)
+            .map(segment => encodeURIComponent(String(segment)));
+
+          // Join with proper separators
+          url = additionalSegments.length > 0
+            ? `${baseUrl}/${additionalSegments.join('/')}`
+            : baseUrl;
+        } else {
+          // Just use the base URL
+          url = queryKey[0] as string;
+        }
+      } else if (Array.isArray(queryKey)) {
+        // Convert array path segments to URL string
+        url = queryKey
           .filter(segment => segment !== undefined && segment !== null)
-          .map(segment => encodeURIComponent(String(segment)));
+          .map(segment => encodeURIComponent(String(segment)))
+          .join('/');
 
-        // Join with proper separators
-        url = additionalSegments.length > 0 
-          ? `${baseUrl}/${additionalSegments.join('/')}` 
-          : baseUrl;
+        // Ensure we have a leading slash
+        if (!url.startsWith('/')) {
+          url = '/' + url;
+        }
       } else {
-        // Just use the base URL
-        url = queryKey[0] as string;
+        // Just use first element as string
+        url = String(queryKey[0]);
       }
-    } else if (Array.isArray(queryKey)) {
-      // Convert array path segments to URL string
-      url = queryKey
-        .filter(segment => segment !== undefined && segment !== null)
-        .map(segment => encodeURIComponent(String(segment)))
-        .join('/');
 
-      // Ensure we have a leading slash
-      if (!url.startsWith('/')) {
-        url = '/' + url;
+      console.log('Requesting URL:', url);
+
+      const res = await fetch(url, {
+        credentials: "include",
+      });
+
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
       }
-    } else {
-      // Just use first element as string
-      url = String(queryKey[0]);
-    }
 
-    console.log('Requesting URL:', url);
+      try {
+        await throwIfResNotOk(res);
+        const data = await res.json();
+        console.log('Successful response data:', url, data);
+        return data;
+      } catch (error) {
+        console.error('Error in query execution:', url, error);
+        throw error;
+      }
+    };
 
-    const res = await fetch(url, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
-
-    try {
-      await throwIfResNotOk(res);
-      const data = await res.json();
-      console.log('Successful response data:', url, data);
-      return data;
-    } catch (error) {
-      console.error('Error in query execution:', url, error);
-      throw error;
-    }
-  };
-
-// ===== IMPORTACIONES =====
-// React Query: Librería para gestión de estado del servidor y cache
-import { QueryClient } from "@tanstack/react-query";
 
 // ===== INTERFACES =====
 // Interfaz para errores de la API
@@ -226,8 +245,8 @@ export const queryClient = new QueryClient({
         }
         // Retry on database connection issues
         if (error?.message?.includes('Control plane request failed') ||
-            error?.message?.includes('Too many database connection attempts') ||
-            error?.status === 500) {
+          error?.message?.includes('Too many database connection attempts') ||
+          error?.status === 500) {
           return failureCount < 5;
         }
         return failureCount < 3;

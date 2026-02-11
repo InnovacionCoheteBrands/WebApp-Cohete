@@ -1,13 +1,13 @@
 import React from 'react';
-import { 
-  Card, 
+import {
+  Card,
   CardContent,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useDroppable } from '@dnd-kit/core';
-import { 
+import {
   SortableContext,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable';
@@ -42,20 +42,20 @@ export function KanbanColumn({
   });
 
   return (
-    <Card className={`flex flex-col h-full ${className || ''}`}>
-      <CardHeader className="py-3 px-4 border-b bg-muted/20">
+    <Card className={`flex flex-col h-full glass-panel-dark border-white/5 ${className || ''}`}>
+      <CardHeader className="py-3 px-4 border-b border-white/10 bg-white/5">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-md font-medium">
+          <CardTitle className="text-md font-medium text-white">
             {title}
           </CardTitle>
-          <Badge variant="outline" className="ml-2">
+          <Badge variant="outline" className="ml-2 border-white/10 bg-white/5 text-gray-300">
             {tasks.length}
           </Badge>
         </div>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto p-3" ref={setNodeRef}>
-        <SortableContext 
-          items={tasks.map(task => `task-${task.id}`)} 
+        <SortableContext
+          items={tasks.map(task => `task-${task.id}`)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-3">
@@ -65,7 +65,7 @@ export function KanbanColumn({
               </div>
             ) : (
               tasks.map(task => (
-                <DraggableTaskCard 
+                <DraggableTaskCard
                   key={task.id}
                   task={task}
                   onEdit={() => onEdit(task)}

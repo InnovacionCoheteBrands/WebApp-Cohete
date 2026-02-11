@@ -64,6 +64,7 @@ async function initializePdfParse() {
 }
 import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
 import { generateSchedule } from "./ai-scheduler";
+import { generateConcepts } from "./ai-scheduler-concepts";
 import { geminiService } from "./gemini-integration";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -762,9 +763,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If analysis data is provided, create analysis result
       if (req.body.analysisResults) {
+        // Map new frontend fields to DB columns if legacy ones aren't provided
+        const analysisPayload = { ...req.body.analysisResults };
+
+        // Map contentPillars -> contentThemes
+        if (analysisPayload.contentPillars && !analysisPayload.contentThemes) {
+          analysisPayload.contentThemes = analysisPayload.contentPillars;
+        }
+
+        // Map competitors -> competitorAnalysis
+        if (analysisPayload.competitors && !analysisPayload.competitorAnalysis) {
+          analysisPayload.competitorAnalysis = analysisPayload.competitors;
+        }
+
         const analysisData = {
           projectId: newProject.id,
-          ...req.body.analysisResults
+          ...analysisPayload
         };
 
         await global.storage.createAnalysisResult(analysisData);
@@ -897,9 +911,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid project ID" });
       }
 
+      // Map new frontend fields to DB columns for PATCH request
+      const requestBody = { ...req.body };
+
+      // Map contentPillars -> contentThemes
+      if (requestBody.contentPillars && !requestBody.contentThemes) {
+        requestBody.contentThemes = requestBody.contentPillars;
+      }
+
+      // Map competitors -> competitorAnalysis
+      if (requestBody.competitors && !requestBody.competitorAnalysis) {
+        requestBody.competitorAnalysis = requestBody.competitors;
+      }
+
       const analysisData = insertAnalysisResultsSchema.parse({
         projectId,
-        ...req.body
+        ...requestBody
       });
 
       // Check if analysis exists for this project
@@ -1122,6 +1149,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error applying document analysis:", error);
       res.status(500).json({ message: "Failed to apply document analysis" });
+    }
+  });
+
+  // Endpoint para generar ideas/conceptos previos al cronograma
+  app.post("/api/projects/:projectId/schedule/concepts", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+
+      const { amount, additionalInstructions } = req.body;
+
+      const project = await global.storage.getProjectWithAnalysis(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const concepts = await generateConcepts(
+        project.name,
+        {
+          client: project.client,
+          ...project.analysis
+        },
+        amount || 10,
+        additionalInstructions
+      );
+
+      res.json(concepts);
+    } catch (error) {
+      console.error("Error generating concepts:", error);
+      res.status(500).json({ message: "Failed to generate concepts" });
     }
   });
 
