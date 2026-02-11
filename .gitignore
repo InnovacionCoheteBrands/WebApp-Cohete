@@ -23,6 +23,7 @@ server_error_2.log
 .gemini/
 
 # Backup & Temp
+README.md
 client/src/components/tasks/create-task-dialog-DESKTOP-8KFIU26.tsx
 migrate-content-quality.cjs
 server/ai-scheduler-concepts.ts
