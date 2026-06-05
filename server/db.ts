@@ -10,8 +10,7 @@ if (!process.env.DATABASE_URL) {
 
 // Configurar conexión con pooling mejorado y retry logic
 const sql = neon(process.env.DATABASE_URL!, {
-  fetchConnectionCache: true,
-  fetchEndpoint: (host) => `https://${host}/sql`,
+  fetchEndpoint: (host: string) => `https://${host}/sql`,
 });
 
 export const db = drizzle(sql, { 

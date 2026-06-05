@@ -57,13 +57,23 @@ function updateUserSession(
 async function upsertUser(
   claims: any,
 ) {
+  const email = claims["email"] || "";
+  const firstName = claims["first_name"] || "";
+  const lastName = claims["last_name"] || "";
+  const fullName = claims["name"] || `${firstName} ${lastName}` || "Replit User";
+  let username = claims["username"] || email.split('@')[0] || firstName.toLowerCase() || `user_${claims["sub"]}`;
+
   // Create a user with the OAuth data
   const userData = {
-    id: claims["sub"],
-    email: claims["email"],
-    firstName: claims["first_name"],
-    lastName: claims["last_name"],
-    profileImageUrl: claims["profile_image_url"],
+    id: String(claims["sub"]),
+    email: email,
+    fullName: fullName,
+    username: username,
+    firstName: firstName,
+    lastName: lastName,
+    profileImageUrl: claims["profile_image_url"] || "",
+    isPrimary: false,
+    role: "content_creator" as const,
   };
   
   await storage.upsertUser(userData);

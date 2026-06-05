@@ -55,8 +55,8 @@ if (process.env.PORT) {
   process.env.NODE_ENV = 'production';
   console.log(`🚀 REPLIT DEPLOYMENT MODE: Using PORT ${port}`);
 } else {
-  // DESARROLLO/WORKSPACE: Siempre puerto 5000
-  port = 5000;
+  // DESARROLLO/WORKSPACE: Puerto cambiado a 5001 para evitar conflictos
+  port = 5001;
   console.log(`🔧 REPLIT WORKSPACE MODE: Using port ${port}`);
 }
 

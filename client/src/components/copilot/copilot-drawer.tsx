@@ -18,6 +18,11 @@ interface ChatMessage {
   createdAt?: Date;
 }
 
+interface ChatResponse extends ChatMessage {
+  auditWarning?: string;
+  runId?: number;
+}
+
 interface CopilotDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -70,9 +75,19 @@ export default function CopilotDrawer({ isOpen, onClose }: CopilotDrawerProps) {
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { message: string; projectId: number }) => {
       const response = await apiRequest("POST", "/api/chat", data);
-      return await response.json();
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.message || "Error al enviar mensaje");
+      }
+      return payload as ChatResponse;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      if (response.auditWarning) {
+        toast({
+          title: "Advertencia del auditor",
+          description: response.auditWarning,
+        });
+      }
       queryClient.invalidateQueries({ 
         queryKey: ['/api/projects', selectedProject, 'chat'] 
       });

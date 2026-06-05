@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 // Hook para navegación
 import { useLocation } from "wouter";
+import type { AssetPreviewItem } from "@shared/schema";
 // Componente personalizado para entrada de fechas
 import { DateInput } from "@/components/ui/date-input";
 
@@ -107,6 +108,11 @@ interface Project {
   client: string;
 }
 
+interface AssetPreviewResponse {
+  summary: string;
+  items: AssetPreviewItem[];
+}
+
 // Define supported platforms and content types
 const PLATFORMS = [
   { id: 'instagram', name: 'Instagram', color: 'bg-pink-500', 
@@ -166,7 +172,6 @@ const formSchema = z.object({
   periodType: z.enum(["quincenal", "mensual"]).default("quincenal"),
   specifications: z.string().optional(),
   additionalInstructions: z.string().optional(), // Nuevo campo de instrucciones adicionales
-  aiModel: z.enum(["grok"]).default("grok"), // Forzamos siempre a usar Grok
   advanced: z.object({
     includeCopyIn: z.boolean().default(true),
     includeCopyOut: z.boolean().default(true),
@@ -188,6 +193,7 @@ export default function CalendarCreator() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [selectedTab, setSelectedTab] = useState("general");
+  const [assetPreview, setAssetPreview] = useState<AssetPreviewResponse | null>(null);
   
   // Estados para las preferencias avanzadas de distribución
   const [planificationType, setPlanificationType] = useState("auto");
@@ -254,6 +260,30 @@ export default function CalendarCreator() {
     },
   });
 
+  const assetPreviewMutation = useMutation({
+    mutationFn: async (values: FormValues) => {
+      const response = await apiRequest("POST", `/api/projects/${values.projectId}/asset-preview`, values);
+      if (!response.ok) {
+        throw new Error("No se pudo generar la vista previa de activos");
+      }
+      return response.json() as Promise<AssetPreviewResponse>;
+    },
+    onSuccess: (data) => {
+      setAssetPreview(data);
+      toast({
+        title: "Vista previa generada",
+        description: "Ya puedes revisar propuestas visuales antes de crear el calendario.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error al generar vista previa",
+        description: error instanceof Error ? error.message : "No se pudo generar la vista previa de activos.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create form with default values
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -262,7 +292,6 @@ export default function CalendarCreator() {
       specifications: "",
       additionalInstructions: "", // Valor por defecto para instrucciones adicionales
       periodType: "quincenal", // Por defecto usamos periodo quincenal
-      aiModel: "grok", // Forzamos el uso de Grok
       advanced: {
         includeCopyIn: true,
         includeCopyOut: true,
@@ -387,6 +416,21 @@ export default function CalendarCreator() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleGenerateAssetPreview = async () => {
+    const isValid = await form.trigger(["projectId", "name", "platforms"]);
+    if (!isValid) {
+      toast({
+        title: "Completa los datos mínimos",
+        description: "Selecciona proyecto, nombre y al menos una plataforma antes de generar la vista previa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const values = form.getValues();
+    assetPreviewMutation.mutate(values);
   };
 
   // Handle platform selection
@@ -1210,6 +1254,85 @@ export default function CalendarCreator() {
                                 </div>
                               </div>
                               
+                              <div className="bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d]">
+                                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                                  <div>
+                                    <h4 className="font-medium text-sm flex items-center gap-2 dark:text-white">
+                                      <Sparkles className="h-4 w-4 text-amber-500" />
+                                      Vista previa de activos IA
+                                    </h4>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                      Genera conceptos visuales antes de crear el calendario para validar tono, enfoque y formato.
+                                    </p>
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="gap-2"
+                                    onClick={handleGenerateAssetPreview}
+                                    disabled={assetPreviewMutation.isPending}
+                                  >
+                                    {assetPreviewMutation.isPending ? (
+                                      <>
+                                        <Sparkles className="h-4 w-4 animate-pulse" />
+                                        Generando preview...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="h-4 w-4" />
+                                        Previsualizar activos
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+
+                                {assetPreview ? (
+                                  <div className="mt-4 space-y-4">
+                                    <Alert className="bg-slate-50 border-slate-200 dark:bg-slate-900/20 dark:border-slate-700/40">
+                                      <Sparkles className="h-4 w-4 text-amber-500" />
+                                      <AlertTitle>Resumen creativo</AlertTitle>
+                                      <AlertDescription>{assetPreview.summary}</AlertDescription>
+                                    </Alert>
+
+                                    <div className="grid gap-4 xl:grid-cols-3">
+                                      {assetPreview.items.map((item, index) => (
+                                        <Card key={`${item.platform}-${index}`} className="overflow-hidden">
+                                          <div className="aspect-[4/3] bg-slate-100 dark:bg-slate-900/40">
+                                            <img
+                                              src={item.previewUrl}
+                                              alt={item.title}
+                                              className="h-full w-full object-cover"
+                                            />
+                                          </div>
+                                          <CardContent className="space-y-3 p-4">
+                                            <div className="flex items-center justify-between gap-2">
+                                              <Badge variant="outline">{item.platform}</Badge>
+                                              <span className="text-xs text-slate-500 dark:text-slate-400">{item.assetType}</span>
+                                            </div>
+                                            <div>
+                                              <p className="font-medium text-sm dark:text-white">{item.title}</p>
+                                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.creativeAngle}</p>
+                                            </div>
+                                            <div className="rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-900/30">
+                                              <p className="font-medium mb-1">Hook</p>
+                                              <p className="text-slate-600 dark:text-slate-300">{item.copyHook}</p>
+                                            </div>
+                                            <div className="rounded-md border p-3 text-xs dark:border-slate-700">
+                                              <p className="font-medium mb-1">Prompt visual</p>
+                                              <p className="text-slate-600 dark:text-slate-300 max-h-24 overflow-hidden">{item.prompt}</p>
+                                            </div>
+                                          </CardContent>
+                                        </Card>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="mt-4 rounded-lg border border-dashed p-6 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                                    Aún no hay conceptos generados. Usa la previsualización para validar la dirección visual antes de lanzar el cronograma.
+                                  </div>
+                                )}
+                              </div>
+
                               {/* Opciones avanzadas de distribución */}
                               <div className={`bg-white border rounded-lg p-4 shadow-sm dark:bg-[#1e293b] dark:border-[#3e4a6d] ${form.watch('followSpecsDistribution') ? 'opacity-60 pointer-events-none' : ''}`}>
                                 <h4 className="font-medium mb-3 text-sm flex items-center gap-2 dark:text-white">
@@ -2266,7 +2389,12 @@ export default function CalendarCreator() {
                 <TabsContent value="advanced" className="space-y-6 p-1">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-5">
-                      {/* La sección de selección de modelo de IA ha sido eliminada */}
+                      <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/60">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <AlertDescription className="text-sm text-amber-900 dark:text-amber-200">
+                          Este calendario se genera exclusivamente con Grok y usa la estrategia de marca del proyecto para alinear tono, buyer persona y UVP.
+                        </AlertDescription>
+                      </Alert>
                       
                       <div className="flex items-center gap-2">
                         <Sparkles className="h-5 w-5 text-amber-500" />

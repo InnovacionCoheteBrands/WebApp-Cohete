@@ -5,6 +5,9 @@ import axios from 'axios';
 import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 
+export const DEFAULT_MODEL = "grok-3-mini";
+export const DEFAULT_VISION_MODEL = "grok-vision-beta";
+
 // ===== INTERFACES PARA STREAMING =====
 /**
  * Callbacks para manejar respuestas de streaming de IA
@@ -58,12 +61,12 @@ export class GrokService {
   initWebSocketServer(server: Server) {
     try {
       console.log('[GROK-WS] Inicializando servidor WebSocket para streaming de IA...');
-      this.wss = new WebSocket.WebSocketServer({ server });
+      this.wss = new WebSocketServer({ server });
       
       this.wss.on('connection', (ws: WebSocket) => {
         console.log('[GROK-WS] Nueva conexión WebSocket establecida');
         
-        ws.on('message', async (message: WebSocket.Data) => {
+        ws.on('message', async (message: any) => {
           try {
             const data = JSON.parse(message.toString());
             console.log('[GROK-WS] Mensaje recibido:', JSON.stringify(data).substring(0, 200) + '...');
@@ -145,12 +148,12 @@ export class GrokService {
     } = {}
   ): Promise<void> {
     console.log(`[GROK-STREAM] Iniciando generación de texto en streaming con Grok AI`);
-    console.log(`[GROK-STREAM] Modelo: ${options.model || 'grok-3-mini-beta'}, Temperatura: ${options.temperature || 0.7}`);
+    console.log(`[GROK-STREAM] Modelo: ${options.model || DEFAULT_MODEL}, Temperatura: ${options.temperature || 0.7}`);
     
     try {
       // Preparar el payload
       const requestPayload: any = {
-        model: options.model || 'grok-3-mini-beta',
+        model: options.model || DEFAULT_MODEL,
         messages: [
           {
             role: 'user',
@@ -278,7 +281,7 @@ export class GrokService {
     let lastError: any = null;
     
     // Información para log
-    console.log(`Iniciando solicitud a Grok AI. Modelo: ${options.model || 'grok-3-mini-beta'}, Temperatura: ${options.temperature || 0.7}, Max tokens: ${options.maxTokens || 2000}${options.responseFormat ? ', Formato: ' + options.responseFormat : ''}`);
+    console.log(`Iniciando solicitud a Grok AI. Modelo: ${options.model || DEFAULT_MODEL}, Temperatura: ${options.temperature || 0.7}, Max tokens: ${options.maxTokens || 2000}${options.responseFormat ? ', Formato: ' + options.responseFormat : ''}`);
     
     // Intentar varias veces si se especificaron reintentos
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -306,7 +309,7 @@ export class GrokService {
         
         // Payload minimalista - solo lo que Grok definitivamente soporta
         requestPayload = {
-          model: options.model || 'grok-3-mini-beta',
+          model: options.model || DEFAULT_MODEL,
           messages: [
             {
               role: 'user',
@@ -486,7 +489,7 @@ export class GrokService {
       const response = await axios.post(
         `${this.baseURL}/chat/completions`,
         {
-          model: options.model || 'grok-3-mini-beta', // Cambiado a grok-3-mini-beta según solicitud
+          model: options.model || DEFAULT_VISION_MODEL,
           messages: [
             {
               role: 'user',

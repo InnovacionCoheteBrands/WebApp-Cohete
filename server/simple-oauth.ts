@@ -81,6 +81,7 @@ export async function setupSimpleGoogleAuth(app: Express) {
     ? `http://${currentHost}/api/auth/google/callback`
     : `https://${currentHost}/api/auth/google/callback`;
 
+  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID!,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
@@ -149,6 +150,7 @@ export async function setupSimpleGoogleAuth(app: Express) {
       return done(error, false);
     }
   }));
+}
 
   passport.serializeUser((user: any, cb) => cb(null, user.id));
 

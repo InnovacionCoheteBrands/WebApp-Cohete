@@ -1,8 +1,12 @@
 // ===== IMPORTACIONES PARA PROGRAMACIÓN DE CONTENIDO =====
 // date-fns: Librería para manejo y formateo de fechas
 import { format, parseISO, addDays } from "date-fns";
+import { eq } from "drizzle-orm";
 // Servicio de integración con Grok AI
-import { grokService } from "./grok-integration";
+import { DEFAULT_MODEL, grokService } from "./grok-integration";
+import { buildAssetBundleFromEntry } from "./ai-runtime/marketing-orchestrator";
+import { db } from "./db";
+import { analysisResults, products, projects } from "./schema";
 
 // ===== CONFIGURACIÓN DE IA =====
 // Integración exclusiva con Grok para todas las funcionalidades de IA
@@ -23,6 +27,11 @@ export interface ContentScheduleEntry {
   postDate: string; // Fecha de publicación en formato ISO
   postTime: string; // Hora de publicación en formato HH:MM
   hashtags: string; // Hashtags relevantes para la publicación
+  uvpAlignmentScore?: number; // Puntaje de alineación con la UVP (0-100)
+  uvpAlignmentReason?: string; // Explicación breve de la alineación estratégica
+  referenceImagePrompt?: string; // Prompt para generar un activo visual
+  referenceImageUrl?: string; // Vista previa conceptual del activo visual
+  assetBrief?: Record<string, unknown>; // Brief resumido del activo para la UI
 }
 
 /**
@@ -33,6 +42,159 @@ export interface ContentSchedule {
   name: string; // Nombre del cronograma
   entries: ContentScheduleEntry[]; // Array de todas las publicaciones programadas
   additionalInstructions?: string; // Instrucciones adicionales o especiales
+}
+
+const STRATEGIC_STOPWORDS = new Set([
+  "para", "como", "desde", "esta", "este", "estos", "estas", "sobre", "entre", "hasta",
+  "porque", "donde", "cuando", "marca", "cliente", "valor", "propuesta", "producto",
+  "servicio", "social", "contenido", "with", "from", "that", "this", "your", "their"
+]);
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function normalizeAlignmentScore(value: unknown): number | undefined {
+  if (typeof value === "boolean") {
+    return value ? 100 : 0;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.min(100, Math.round(parsed)));
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractStrategicKeywords(text: string, limit = 8): string[] {
+  const seen = new Set<string>();
+  const keywords: string[] = [];
+
+  for (const token of normalizeForComparison(text).split(" ")) {
+    if (token.length < 4 || STRATEGIC_STOPWORDS.has(token) || seen.has(token)) {
+      continue;
+    }
+
+    seen.add(token);
+    keywords.push(token);
+
+    if (keywords.length >= limit) {
+      break;
+    }
+  }
+
+  return keywords;
+}
+
+function computeUvpAlignmentScore(entry: ContentScheduleEntry, uvp?: string): number | undefined {
+  const normalizedUvp = readString(uvp);
+  if (!normalizedUvp) {
+    return undefined;
+  }
+
+  const uvpKeywords = extractStrategicKeywords(normalizedUvp);
+  if (uvpKeywords.length === 0) {
+    return 60;
+  }
+
+  const entryText = normalizeForComparison(
+    [entry.title, entry.description, entry.content, entry.copyOut].filter(Boolean).join(" ")
+  );
+
+  const matches = uvpKeywords.filter((keyword) => entryText.includes(keyword));
+  const ratio = matches.length / uvpKeywords.length;
+
+  return Math.max(25, Math.min(100, Math.round(ratio * 100)));
+}
+
+function buildUvpAlignmentReason(entry: ContentScheduleEntry, projectData: Record<string, any>, score: number): string {
+  const uvp = readString(projectData.uvp);
+  if (!uvp) {
+    return "No se encontrÃ³ una UVP registrada; el score refleja coherencia general con la estrategia de marca disponible.";
+  }
+
+  const matchedKeywords = extractStrategicKeywords(uvp).filter((keyword) =>
+    normalizeForComparison([entry.title, entry.description, entry.content, entry.copyOut].join(" ")).includes(keyword)
+  );
+
+  if (matchedKeywords.length > 0) {
+    return `Se alinea con la UVP porque enfatiza ${matchedKeywords.slice(0, 3).join(", ")}, conectando el mensaje con el diferencial de la marca.`;
+  }
+
+  if (score >= 70) {
+    return "La pieza mantiene una alineaciÃ³n estratÃ©gica aceptable con la UVP, aunque podrÃ­a hacer mÃ¡s explÃ­cito el diferenciador principal.";
+  }
+
+  return `La pieza necesita reforzar de forma mÃ¡s explÃ­cita la UVP registrada: ${uvp.substring(0, 140)}${uvp.length > 140 ? "..." : ""}`;
+}
+
+function normalizeScheduleEntry(entry: any, projectData: Record<string, any>, fallbackDate: string): ContentScheduleEntry {
+  const normalizedEntry: ContentScheduleEntry = {
+    title: readString(entry.title) || "PublicaciÃ³n estratÃ©gica",
+    description: readString(entry.description) || "",
+    content: readString(entry.content) || "",
+    copyIn: readString(entry.copyIn) || "",
+    copyOut: readString(entry.copyOut) || "",
+    designInstructions: readString(entry.designInstructions) || "",
+    platform: readString(entry.platform) || "Instagram",
+    postDate: readString(entry.postDate) || fallbackDate,
+    postTime: readString(entry.postTime) || "12:00",
+    hashtags: readString(entry.hashtags) || "",
+  };
+
+  const modelScore = normalizeAlignmentScore(entry.uvpAlignmentScore ?? entry.uvp_alignment_score);
+  const heuristicScore = computeUvpAlignmentScore(normalizedEntry, projectData.uvp);
+  const finalScore = modelScore !== undefined && heuristicScore !== undefined
+    ? Math.round((modelScore + heuristicScore) / 2)
+    : (modelScore ?? heuristicScore ?? 50);
+
+  normalizedEntry.uvpAlignmentScore = finalScore;
+  normalizedEntry.uvpAlignmentReason =
+    readString(entry.uvpAlignmentReason ?? entry.uvp_alignment_reason) ||
+    buildUvpAlignmentReason(normalizedEntry, projectData, finalScore);
+
+  const assetBundle = buildAssetBundleFromEntry(normalizedEntry, projectData);
+  normalizedEntry.referenceImagePrompt =
+    readString(entry.referenceImagePrompt ?? entry.reference_image_prompt) || assetBundle.prompt;
+  normalizedEntry.referenceImageUrl =
+    readString(entry.referenceImageUrl ?? entry.reference_image_url) || assetBundle.previewUrl;
+  normalizedEntry.assetBrief =
+    (entry.assetBrief && typeof entry.assetBrief === "object" ? entry.assetBrief : undefined) ||
+    assetBundle.assetBrief;
+
+  return normalizedEntry;
+}
+
+function createFallbackEntry(projectName: string, fallbackDate: string, projectData: Record<string, any>): ContentScheduleEntry {
+  return normalizeScheduleEntry({
+    title: "Publicación principal para redes sociales",
+    description: "Este es un cronograma básico para comenzar. Por favor regenera para obtener más opciones.",
+    content: `Contenido detallado para la red social principal del proyecto ${projectName}.`,
+    copyIn: "Texto integrado para diseño",
+    copyOut: "Texto para descripción en redes sociales",
+    designInstructions: "Diseño basado en la identidad visual del proyecto",
+    platform: "Instagram",
+    postDate: fallbackDate,
+    postTime: "12:00",
+    hashtags: "#marketing #contenido #socialmedia"
+  }, projectData, fallbackDate);
 }
 
 /**
@@ -64,13 +226,14 @@ export async function generateSchedule(
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
+    const projectData = typeof projectDetails === 'object' ? projectDetails : {};
     console.log(`[CALENDAR] Periodo del calendario: ${formattedDate} hasta ${endDate}`);
 
     // Extract social networks with monthly post frequency data
     let socialNetworksSection = "";
     try {
       console.log(`[CALENDAR] Procesando datos de redes sociales del proyecto`);
-      const socialNetworks = projectDetails?.analysisResults?.socialNetworks || [];
+      const socialNetworks = projectData.socialNetworks || projectDetails?.analysisResults?.socialNetworks || [];
       const selectedNetworks = socialNetworks
         .filter((network: any) => network.selected && typeof network.postsPerMonth === 'number')
         .map((network: any) => {
@@ -150,128 +313,75 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
     }
 
-    // Obtener información completa del proyecto y análisis existente
-    const projectInfo = await db.query.projects.findFirst({
-      where: eq(projects.id, projectId),
-      with: {
-        // Aquí podrías incluir relaciones si las tienes definidas
-      }
-    });
+    const numericProjectId =
+      typeof projectData.id === "number" && !Number.isNaN(projectData.id)
+        ? projectData.id
+        : undefined;
 
-    const analysisInfo = await db.query.analysisResults.findFirst({
-      where: eq(analysisResults.projectId, projectId)
-    });
+    let projectInfo: { client?: string | null; description?: string | null } | null = null;
+    let analysisInfo: Record<string, unknown> | null = null;
+    let productsInfo: { name: string; description: string | null }[] = [];
 
-    const productsInfo = await db.query.products.findMany({
-      where: eq(products.projectId, projectId)
-    });
+    if (numericProjectId !== undefined) {
+      projectInfo = (await db.query.projects.findFirst({
+        where: eq(projects.id, numericProjectId),
+      })) ?? null;
 
-    // Preparar secciones detalladas del proyecto
-    const communicationObjectivesSection = analysisInfo.communicationObjectives 
-      ? `**OBJETIVOS DE COMUNICACIÓN:**
-      ${analysisInfo.communicationObjectives}
+      analysisInfo = (await db.query.analysisResults.findFirst({
+        where: eq(analysisResults.projectId, numericProjectId),
+      })) ?? null;
 
-      APLICACIÓN: Todo el contenido debe alinearse con estos objetivos específicos.`
-      : "";
+      productsInfo = await db.query.products.findMany({
+        where: eq(products.projectId, numericProjectId),
+      });
+    }
 
-    const buyerPersonaSection = analysisInfo.buyerPersona 
-      ? `**BUYER PERSONA:**
-      ${analysisInfo.buyerPersona}
-
-      APLICACIÓN: Adapta el tono, contenido y mensajes para resonar con este perfil específico.`
-      : "";
-
-    const archetypesSection = analysisInfo.archetypes && analysisInfo.archetypes.length > 0
-      ? `**ARQUETIPOS DE MARCA:**
-      ${analysisInfo.archetypes.map((arch: any) => `
-      - ${arch.name || "Sin nombre"}: ${arch.profile || "Sin perfil"}
-      `).join('\n')}
-
-      APLICACIÓN: Utiliza estos arquetipos para dar personalidad y consistencia a la comunicación.`
-      : "";
-
-    const marketingStrategiesSection = analysisInfo.marketingStrategies
-      ? `**ESTRATEGIAS DE MARKETING:**
-      ${analysisInfo.marketingStrategies}
-
-      APLICACIÓN: Cada publicación debe reforzar al menos una de estas estrategias.`
-      : "";
-
-    const brandCommunicationStyleSection = analysisInfo.brandCommunicationStyle
-      ? `**ESTILO DE COMUNICACIÓN DE MARCA:**
-      ${analysisInfo.brandCommunicationStyle}
-
-      APLICACIÓN: Mantén este estilo consistentemente en todas las publicaciones.`
-      : "";
-
-    const missionVisionValuesSection = (analysisInfo.mission || analysisInfo.vision || analysisInfo.coreValues)
-      ? `**MISIÓN, VISIÓN Y VALORES (MVV):**
-      ${analysisInfo.mission ? `Misión: ${analysisInfo.mission}` : ""}
-      ${analysisInfo.vision ? `Visión: ${analysisInfo.vision}` : ""}
-      ${analysisInfo.coreValues ? `Valores Centrales: ${analysisInfo.coreValues}` : ""}
-
-      APLICACIÓN: Asegura que el contenido refleje y promueva estos elementos fundamentales.`
-      : "";
-
-    const responsePoliciesSection = (analysisInfo.responsePolicyPositive || analysisInfo.responsePolicyNegative)
-      ? `**POLÍTICAS DE RESPUESTA:**
-      ${analysisInfo.responsePolicyPositive ? `Respuesta Positiva: ${analysisInfo.responsePolicyPositive}` : ""}
-      ${analysisInfo.responsePolicyNegative ? `Respuesta Negativa: ${analysisInfo.responsePolicyNegative}` : ""}
-
-      APLICACIÓN: Considera estas políticas al crear contenido que pueda generar interacciones.`
-      : "";
-
-    const initialProductsSection = productsInfo && productsInfo.length > 0
-      ? `**PRODUCTOS/SERVICIOS PRINCIPALES:**
-      ${productsInfo.map((product: any) => `
-      - ${product.name || "Sin nombre"}: ${product.description || "Sin descripción"}
-      `).join('\n')}
-
-      APLICACIÓN: Crea contenido que destaque estos productos/servicios de manera estratégica.`
-      : "";
-
-    const projectContext = analysisInfo ? `
+    const projectContext = analysisInfo
+      ? `
     INFORMACIÓN COMPLETA DEL PROYECTO:
     - Cliente: ${projectInfo?.client}
-    - Descripción: ${projectInfo?.description || analysisInfo.projectDescription || 'No especificada'}
+    - Descripción: ${projectInfo?.description || (analysisInfo.projectDescription as string) || "No especificada"}
 
     MISIÓN, VISIÓN Y VALORES:
-    - Misión: ${analysisInfo.mission || 'No especificada'}
-    - Visión: ${analysisInfo.vision || 'No especificada'}
-    - Valores fundamentales: ${analysisInfo.coreValues || 'No especificados'}
+    - Misión: ${(analysisInfo.mission as string) || "No especificada"}
+    - Visión: ${(analysisInfo.vision as string) || "No especificada"}
+    - Valores fundamentales: ${(analysisInfo.coreValues as string) || "No especificados"}
 
     OBJETIVOS:
-    - Objetivos generales: ${analysisInfo.objectives || 'No especificados'}
-    - Objetivos de comunicación: ${analysisInfo.communicationObjectives || 'No especificados'}
+    - Objetivos generales: ${(analysisInfo.objectives as string) || "No especificados"}
+    - Objetivos de comunicación: ${(analysisInfo.communicationObjectives as string) || "No especificados"}
 
     AUDIENCIA Y PERSONA:
-    - Buyer Persona: ${analysisInfo.buyerPersona || 'No especificada'}
-    - Audiencia objetivo: ${analysisInfo.targetAudience || 'No especificada'}
+    - Buyer Persona: ${(analysisInfo.buyerPersona as string) || "No especificada"}
+    - Audiencia objetivo: ${(analysisInfo.targetAudience as string) || "No especificada"}
+    - UVP: ${(analysisInfo.uvp as string) || "No especificada"}
+    - VoC: ${(analysisInfo.voiceOfCustomer as string) || "No especificada"}
 
     ESTRATEGIAS DE MARKETING:
-    - Estrategias principales: ${analysisInfo.marketingStrategies || 'No especificadas'}
-    - Arquetipos de marca: ${analysisInfo.archetypes ? JSON.stringify(analysisInfo.archetypes) : 'No especificados'}
+    - Estrategias principales: ${(analysisInfo.marketingStrategies as string) || "No especificadas"}
+    - Arquetipos de marca: ${analysisInfo.archetypes ? JSON.stringify(analysisInfo.archetypes) : "No especificados"}
 
     COMUNICACIÓN Y TONO:
-    - Estilo de comunicación: ${analysisInfo.brandCommunicationStyle || 'No especificado'}
-    - Tono de marca: ${analysisInfo.brandTone || 'No especificado'}
-    - Redes sociales objetivo: ${analysisInfo.socialNetworks ? JSON.stringify(analysisInfo.socialNetworks) : 'No especificadas'}
+    - Estilo de comunicación: ${(analysisInfo.brandCommunicationStyle as string) || "No especificado"}
+    - Tono de marca: ${(analysisInfo.brandTone as string) || "No especificado"}
+    - Redes sociales objetivo: ${analysisInfo.socialNetworks ? JSON.stringify(analysisInfo.socialNetworks) : "No especificadas"}
 
     POLÍTICAS DE RESPUESTA:
-    - Política para comentarios positivos: ${analysisInfo.responsePolicyPositive || 'No especificada'}
-    - Política para comentarios negativos: ${analysisInfo.responsePolicyNegative || 'No especificada'}
+    - Política para comentarios positivos: ${(analysisInfo.responsePolicyPositive as string) || "No especificada"}
+    - Política para comentarios negativos: ${(analysisInfo.responsePolicyNegative as string) || "No especificada"}
 
     CONTENIDO ADICIONAL:
-    - Palabras clave: ${analysisInfo.keywords || 'No especificadas'}
-    - Temas de contenido: ${analysisInfo.contentThemes ? JSON.stringify(analysisInfo.contentThemes) : 'No especificados'}
-    - Notas adicionales: ${analysisInfo.additionalNotes || 'Ninguna'}
+    - Palabras clave: ${(analysisInfo.keywords as string) || "No especificadas"}
+    - Temas de contenido: ${analysisInfo.contentThemes ? JSON.stringify(analysisInfo.contentThemes) : "No especificados"}
+    - Notas adicionales: ${(analysisInfo.additionalNotes as string) || "Ninguna"}
 
     PRODUCTOS:
-    ${productsInfo.length > 0 ? productsInfo.map(product => `- ${product.name}: ${product.description || 'Sin descripción'}`).join('\n    ') : '- No hay productos registrados'}
-    ` : `
+    ${productsInfo.length > 0 ? productsInfo.map((product) => `- ${product.name}: ${product.description || "Sin descripción"}`).join("\n    ") : "- No hay productos registrados"}
+    `
+      : `
     INFORMACIÓN DEL PROYECTO:
-    - Cliente: ${projectInfo?.client}
-    - Descripción: ${projectInfo?.description || 'No especificada'}
+    - Cliente: ${projectInfo?.client ?? (projectData.client as string) ?? "No especificado"}
+    - Descripción: ${projectInfo?.description ?? (projectData.description as string) ?? "No especificada"}
     `;
 
     const prompt = `
@@ -302,6 +412,8 @@ export async function generateSchedule(
       5. PRODUCTOS/SERVICIOS: Integra naturalmente los productos/servicios en el contenido sin ser excesivamente promocional.
 
       **DIRECTRICES PARA CREACIÓN DE CONTENIDO DE ALTA CALIDAD 2025:**
+      6. UVP ALIGNMENT: Cada entrada debe incluir un puntaje de alineaciÃ³n con la UVP (0-100) y una explicaciÃ³n breve del porquÃ©.
+      7. VALIDACIÃ“N ESTRATÃ‰GICA: Si una idea no se alinea con la UVP, con el buyer persona o con el tono de marca, reemplÃ¡zala por otra mejor alineada.
       1. STORYTELLING - Utiliza narrativas emocionales y personales que conecten con la audiencia.
       2. VALOR PRÁCTICO - Cada publicación debe ofrecer insights, consejos, o soluciones reales.
       3. LLAMADAS A LA ACCIÓN - Incluye CTAs claros y persuasivos que inciten al compromiso.
@@ -400,7 +512,9 @@ export async function generateSchedule(
             "platform": "Instagram",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "#hashtag1 #hashtag2 #hashtag3"
+            "hashtags": "#hashtag1 #hashtag2 #hashtag3",
+            "uvp_alignment_score": 85,
+            "uvp_alignment_reason": "Explicación breve de por qué esta idea se alinea con la UVP"
           }
         ]
       }
@@ -421,13 +535,20 @@ export async function generateSchedule(
     - JSON válido sin errores de sintaxis`;
 
     // Incorporar instrucciones adicionales si existen
-    let finalPrompt = enhancedPrompt;
+    const strategicValidationPrompt = `${enhancedPrompt}
+    - Incluye SIEMPRE "uvp_alignment_score" como entero entre 0 y 100
+    - Incluye SIEMPRE "uvp_alignment_reason" como explicación breve y concreta`;
+    let finalPrompt = strategicValidationPrompt;
     if (additionalInstructions) {
       finalPrompt = `${enhancedPrompt}\n\n⚠️ **INSTRUCCIONES OBLIGATORIAS DEL USUARIO - PRIORIDAD MÁXIMA:**\n${additionalInstructions}\n\n⚠️ ESTAS INSTRUCCIONES SON CRÍTICAS Y DEBEN APLICARSE EXACTAMENTE. NO LAS IGNORES.\n⚠️ GENERA MÍNIMO 7 ENTRADAS COMPLETAS - NO MENOS.\n⚠️ SI SE ESPECIFICAN ÁREAS CONCRETAS, MODIFICA SOLO ESAS ÁREAS.\n⚠️ RESPETA CADA INSTRUCCIÓN ESPECÍFICA AL PIE DE LA LETRA.`;
       console.log(`[CALENDAR] Se añadieron instrucciones críticas del usuario: "${additionalInstructions.substring(0, 200)}${additionalInstructions.length > 200 ? '...' : ''}"`);
     }
 
     // Usamos Grok con configuración optimizada para generación consistente
+    if (additionalInstructions) {
+      finalPrompt = `${strategicValidationPrompt}\n\n${finalPrompt.slice(enhancedPrompt.length).trimStart()}`;
+    }
+
     const scheduleText = await grokService.generateText(finalPrompt, {
       // Reducimos temperatura para respuestas más consistentes y estructuradas
       temperature: 0.8,
@@ -436,7 +557,7 @@ export async function generateSchedule(
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
       // Utilizamos exclusivamente el modelo Grok 3 mini beta como solicitado
-      model: 'grok-3-mini-beta'
+      model: DEFAULT_MODEL
     });
 
     // Registramos una versión truncada para debug
@@ -510,19 +631,24 @@ export async function generateSchedule(
             } else {
               console.log(`[CALENDAR] Verificando campos requeridos en las entradas`);
               // Verificar que las entradas tengan los campos requeridos mínimos
-              const validEntries = parsedContent.entries.filter((entry: any) => 
-                entry.title && entry.platform && entry.postDate && 
-                typeof entry.title === 'string' &&
-                typeof entry.platform === 'string' &&
-                typeof entry.postDate === 'string'
-              );
+              const validEntries = parsedContent.entries
+                .filter((entry: any) =>
+                  entry.title && entry.platform && entry.postDate &&
+                  typeof entry.title === 'string' &&
+                  typeof entry.platform === 'string' &&
+                  typeof entry.postDate === 'string'
+                )
+                .map((entry: any) => normalizeScheduleEntry(entry, projectData, formattedDate));
 
               console.log(`[CALENDAR] Entradas con todos los campos requeridos: ${validEntries.length}/${parsedContent.entries.length}`);
 
               if (validEntries.length === parsedContent.entries.length) {
                 // Todas las entradas son válidas
                 console.log(`[CALENDAR] ÉXITO: Estrategia 1 exitosa. Devolviendo cronograma con ${validEntries.length} entradas`);
-                return parsedContent;
+                return {
+                  name: parsedContent.name || `Cronograma para ${projectName}`,
+                  entries: validEntries
+                };
               } else {
                 // Algunas entradas son inválidas, pero tenemos suficientes
                 if (validEntries.length > 0) {
@@ -655,9 +781,9 @@ export async function generateSchedule(
             if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
               console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
               // Verificar entradas válidas
-              const validEntries = parsedContent.entries.filter((entry: any) => 
-                entry.title && entry.platform && entry.postDate
-              );
+              const validEntries = parsedContent.entries
+                .filter((entry: any) => entry.title && entry.platform && entry.postDate)
+                .map((entry: any) => normalizeScheduleEntry(entry, projectData, formattedDate));
 
               if (validEntries.length > 0) {
                 return {
@@ -789,19 +915,7 @@ export async function generateSchedule(
                     }
 
                     if (entry.title && entry.platform && entry.postDate) {
-                      const completeEntry: ContentScheduleEntry = {
-                        title: entry.title,
-                        description: entry.description || "",
-                        content: entry.content || "",
-                        copyIn: entry.copyIn || "",
-                        copyOut: entry.copyOut || "",
-                        designInstructions: entry.designInstructions || "",
-                        platform: entry.platform,
-                        postDate: entry.postDate,
-                        postTime: entry.postTime || "12:00",
-                        hashtags: entry.hashtags || ""
-                      };
-                      validEntries.push(completeEntry);
+                      validEntries.push(normalizeScheduleEntry(entry, projectData, formattedDate));
                     }
                   } catch (innerError) {
                     console.warn(`Error procesando entrada ${i}:`, innerError);
@@ -847,9 +961,9 @@ export async function generateSchedule(
 
               if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
                 console.log(`JSON reparado correctamente con ${parsedContent.entries.length} entradas`);
-                const validEntries = parsedContent.entries.filter((entry: any) => 
-                  entry.title && entry.platform && entry.postDate
-                );
+                const validEntries = parsedContent.entries
+                  .filter((entry: any) => entry.title && entry.platform && entry.postDate)
+                  .map((entry: any) => normalizeScheduleEntry(entry, projectData, formattedDate));
 
                 if (validEntries.length > 0) {
                   return {
@@ -897,7 +1011,7 @@ export async function generateSchedule(
                   postTime: entry.postTime || "12:00",
                   hashtags: entry.hashtags || ""
                 };
-                validEntries.push(completeEntry);
+                validEntries.push(normalizeScheduleEntry(completeEntry, projectData, formattedDate));
                 console.log(`Entrada válida para ${entry.platform} en fecha ${entry.postDate}`);
               }
             } catch (parseError) {
@@ -921,7 +1035,7 @@ export async function generateSchedule(
                     postTime: entry.postTime || "12:00",
                     hashtags: entry.hashtags || ""
                   };
-                  validEntries.push(completeEntry);
+                  validEntries.push(normalizeScheduleEntry(completeEntry, projectData, formattedDate));
                   console.log(`Entrada reparada válida para ${entry.platform} en fecha ${entry.postDate}`);
                 }
               } catch (repairError) {
@@ -989,7 +1103,7 @@ export async function generateSchedule(
             // Si ya teníamos una entrada en construcción con datos suficientes, guardémosla
             if (currentEntry && currentEntry.title && currentEntry.platform && currentEntry.postDate) {
               // Asegurar que todos los campos requeridos estén presentes
-              entries.push({
+              entries.push(normalizeScheduleEntry({
                 title: currentEntry.title,
                 description: currentEntry.description || "",
                 content: currentEntry.content || "",
@@ -1000,7 +1114,7 @@ export async function generateSchedule(
                 postDate: currentEntry.postDate,
                 postTime: currentEntry.postTime || "12:00",
                 hashtags: currentEntry.hashtags || ""
-              });
+              }, projectData, formattedDate));
             }
 
             // Iniciar una nueva entrada
@@ -1071,7 +1185,7 @@ export async function generateSchedule(
             currentEntry.postDate = formattedDate;
           }
 
-          entries.push({
+          entries.push(normalizeScheduleEntry({
             title: currentEntry.title,
             description: currentEntry.description || "",
             content: currentEntry.content || "",
@@ -1082,7 +1196,7 @@ export async function generateSchedule(
             postDate: currentEntry.postDate,
             postTime: currentEntry.postTime || "12:00",
             hashtags: currentEntry.hashtags || ""
-          });
+          }, projectData, formattedDate));
         }
 
         if (entries.length > 0) {
@@ -1112,7 +1226,9 @@ export async function generateSchedule(
             platform: "Instagram",
             postDate: formattedDate,
             postTime: "12:00",
-            hashtags: "#marketing #contenido #socialmedia"
+            hashtags: "#marketing #contenido #socialmedia",
+            uvpAlignmentScore: 50,
+            uvpAlignmentReason: buildUvpAlignmentReason(createFallbackEntry(projectName, formattedDate, projectData), projectData, 50)
           }
         ]
       };
@@ -1132,7 +1248,9 @@ export async function generateSchedule(
             platform: "Instagram",
             postDate: formattedDate,
             postTime: "12:00",
-            hashtags: "#marketing #contenido #socialmedia"
+            hashtags: "#marketing #contenido #socialmedia",
+            uvpAlignmentScore: 50,
+            uvpAlignmentReason: buildUvpAlignmentReason(createFallbackEntry(projectName, formattedDate, projectData), projectData, 50)
           }
         ]
       };

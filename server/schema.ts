@@ -1,6 +1,6 @@
 // ===== IMPORTACIONES DE DRIZZLE ORM =====
 // Drizzle ORM: Sistema de ORM tipo-seguro para PostgreSQL
-import { pgTable, text, serial, integer, boolean, varchar, timestamp, pgEnum, jsonb, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, varchar, timestamp, pgEnum, jsonb, numeric, type AnyPgColumn } from "drizzle-orm/pg-core";
 // Zod: Librería de validación de esquemas
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -41,7 +41,16 @@ export const automationTriggerEnum = pgEnum("automation_trigger", ["status_chang
 export const automationActionEnum = pgEnum("automation_action", ["notify", "assign", "move", "update_status", "create_task"]);
 
 // Modelos de IA soportados por el sistema
-export const aiModelEnum = pgEnum("ai_model", ["gpt-4", "gpt-3.5-turbo", "grok-beta"]);
+export const aiModelEnum = pgEnum("ai_model", [
+  "gpt-4",
+  "gpt-3.5-turbo",
+  "grok-beta",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+  "moonshotai/kimi-k2-instruct-0905",
+  "qwen/qwen3-32b",
+  "openai/gpt-oss-safeguard-20b"
+]);
 
 // ===== DEFINICIÓN DE TABLAS =====
 
@@ -81,6 +90,15 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow().notNull() // Fecha de última actualización
 });
 
+// ===== TABLA DE TOKENS DE RECUPERACIÓN DE CONTRASEÑA =====
+export const passwordResetTokens = pgTable("password_reset_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  token: varchar("token", { length: 255 }).notNull().unique(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
 // ===== TABLA DE PROYECTOS =====
 // Almacena información de proyectos de marketing y sus configuraciones
 export const projects = pgTable("projects", {
@@ -116,7 +134,7 @@ export const tasks = pgTable("tasks", {
   completedAt: timestamp("completed_at"), // Fecha de finalización
   estimatedHours: integer("estimated_hours"), // Horas estimadas para completar
   dependencies: text("dependencies").array(), // IDs de tareas de las que depende
-  parentTaskId: integer("parent_task_id"), // Tarea padre (para subtareas)
+  parentTaskId: integer("parent_task_id").references((): AnyPgColumn => tasks.id, { onDelete: "set null" }), // Tarea padre (para subtareas)
   progress: integer("progress").default(0), // Porcentaje de progreso (0-100)
   attachments: jsonb("attachments"), // Archivos adjuntos en formato JSON
   groupId: integer("group_id"), // ID del grupo para organización adicional
@@ -141,6 +159,8 @@ export const analysisResults = pgTable("analysis_results", {
   // Pestaña Persona
   buyerPersona: text("buyer_persona"),
   targetAudience: text("target_audience"),
+  uvp: text("uvp"),
+  voiceOfCustomer: text("voice_of_customer"),
   
   // Pestaña Estrategias
   marketingStrategies: text("marketing_strategies"),
@@ -158,6 +178,15 @@ export const analysisResults = pgTable("analysis_results", {
   // Campos adicionales para contenido y análisis
   keywords: text("keywords"),
   contentThemes: jsonb("content_themes"),
+  brandPillars: jsonb("brand_pillars").default([]),
+  proofPoints: jsonb("proof_points").default([]),
+  targetChannels: jsonb("target_channels").default([]),
+  visualStyleGuidelines: text("visual_style_guidelines"),
+  brandGuidelines: text("brand_guidelines"),
+  forbiddenTerms: jsonb("forbidden_terms").default([]),
+  performanceInsights: jsonb("performance_insights").default([]),
+  recommendedNextActions: jsonb("recommended_next_actions").default([]),
+  lastFeedbackAppliedAt: timestamp("last_feedback_applied_at"),
   competitorAnalysis: jsonb("competitor_analysis"),
   
   // Campos para datos generales del proyecto (de la pestaña General)
@@ -172,13 +201,15 @@ export const analysisResults = pgTable("analysis_results", {
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  name: text("name").notNull(),
-  type: text("type").notNull(),
-  content: text("content"),
-  metadata: jsonb("metadata"),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  extractedText: text("extracted_text"),
+  analysisStatus: text("analysis_status").default("pending"),
+  analysisResults: jsonb("analysis_results"),
+  analysisError: text("analysis_error"),
   uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull()
+  createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
 // Schedules table
@@ -187,6 +218,9 @@ export const schedules = pgTable("schedules", {
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  specifications: text("specifications"),
   additionalInstructions: text("additional_instructions"),
   createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -207,6 +241,11 @@ export const scheduleEntries = pgTable("schedule_entries", {
   postDate: timestamp("post_date").notNull(),
   postTime: text("post_time").notNull(),
   hashtags: text("hashtags"),
+  uvpAlignmentScore: integer("uvp_alignment_score"),
+  uvpAlignmentReason: text("uvp_alignment_reason"),
+  referenceImagePrompt: text("reference_image_prompt"),
+  referenceImageUrl: text("reference_image_url"),
+  assetBrief: jsonb("asset_brief").default({}),
   comments: text("comments"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
@@ -217,8 +256,10 @@ export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
-  message: text("message").notNull(),
-  isAi: boolean("is_ai").default(false),
+  content: text("content"),
+  role: text("role"),
+  legacyMessage: text("message"),
+  legacyIsAi: boolean("is_ai").default(false),
   aiModel: aiModelEnum("ai_model"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -226,11 +267,51 @@ export const chatMessages = pgTable("chat_messages", {
 // Content History table
 export const contentHistory = pgTable("content_history", {
   id: serial("id").primaryKey(),
-  scheduleEntryId: integer("schedule_entry_id").references(() => scheduleEntries.id, { onDelete: "cascade" }).notNull(),
-  version: integer("version").notNull(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   content: text("content").notNull(),
-  changeDescription: text("change_description"),
-  changedBy: varchar("changed_by").references(() => users.id, { onDelete: "set null" }),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  title: varchar("title", { length: 255 }),
+  platform: varchar("platform", { length: 50 }),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Agent Runs table
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  entrypoint: text("entrypoint").notNull(),
+  status: text("status").notNull(),
+  route: text("route"),
+  finalAgent: text("final_agent"),
+  provider: text("provider"),
+  model: text("model"),
+  estimatedTokens: integer("estimated_tokens"),
+  actualTokens: integer("actual_tokens"),
+  error: text("error"),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  finishedAt: timestamp("finished_at")
+});
+
+// Agent Artifacts table
+export const agentArtifacts = pgTable("agent_artifacts", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => agentRuns.id, { onDelete: "cascade" }).notNull(),
+  agent: text("agent").notNull(),
+  artifactType: text("artifact_type").notNull(),
+  payloadJson: jsonb("payload_json").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Model Routes table
+export const modelRoutes = pgTable("model_routes", {
+  id: serial("id").primaryKey(),
+  entrypoint: text("entrypoint").notNull(),
+  agent: text("agent").notNull(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  reasoningMode: text("reasoning_mode"),
+  isActive: boolean("is_active").default(true).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
 
@@ -448,13 +529,42 @@ export const userSettings = pgTable("user_settings", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
+// Teams table
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  domain: text("domain").notNull().unique(),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  settings: jsonb("settings").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Team Members table
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").default("member"),
+  joinedAt: timestamp("joined_at").defaultNow().notNull()
+});
+
 // Define all types
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = typeof teams.$inferInsert;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = typeof teamMembers.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = typeof projects.$inferInsert;
 export type Task = typeof tasks.$inferSelect;
 export type InsertTask = typeof tasks.$inferInsert;
+export type TaskGroup = typeof taskGroups.$inferSelect;
+export type InsertTaskGroup = typeof taskGroups.$inferInsert;
+export type ProjectColumnSetting = typeof projectColumnSettings.$inferSelect;
+export type InsertProjectColumnSetting = typeof projectColumnSettings.$inferInsert;
 export type AnalysisResult = typeof analysisResults.$inferSelect;
 export type InsertAnalysisResult = typeof analysisResults.$inferInsert;
 export type Document = typeof documents.$inferSelect;
@@ -467,6 +577,12 @@ export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
 export type ContentHistory = typeof contentHistory.$inferSelect;
 export type InsertContentHistory = typeof contentHistory.$inferInsert;
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertAgentRun = typeof agentRuns.$inferInsert;
+export type AgentArtifact = typeof agentArtifacts.$inferSelect;
+export type InsertAgentArtifact = typeof agentArtifacts.$inferInsert;
+export type ModelRoute = typeof modelRoutes.$inferSelect;
+export type InsertModelRoute = typeof modelRoutes.$inferInsert;
 export type TaskComment = typeof taskComments.$inferSelect;
 export type InsertTaskComment = typeof taskComments.$inferInsert;
 export type Product = typeof products.$inferSelect;
@@ -490,7 +606,9 @@ export type InsertProjectMember = typeof projectMembers.$inferInsert;
 export type ProjectAssignment = typeof projectAssignments.$inferSelect;
 
 // Define schemas for validation
-export const insertUserSchema = createInsertSchema(users);
+export const insertUserSchema = createInsertSchema(users).extend({
+  id: z.string().optional()
+});
 export const insertProjectSchema = createInsertSchema(projects);
 export const insertTaskSchema = createInsertSchema(tasks);
 export const insertAnalysisResultsSchema = createInsertSchema(analysisResults);
@@ -499,6 +617,9 @@ export const insertScheduleSchema = createInsertSchema(schedules);
 export const insertScheduleEntrySchema = createInsertSchema(scheduleEntries);
 export const insertChatMessageSchema = createInsertSchema(chatMessages);
 export const insertContentHistorySchema = createInsertSchema(contentHistory);
+export const insertAgentRunSchema = createInsertSchema(agentRuns);
+export const insertAgentArtifactSchema = createInsertSchema(agentArtifacts);
+export const insertModelRouteSchema = createInsertSchema(modelRoutes);
 export const insertTaskCommentSchema = createInsertSchema(taskComments);
 export const insertProductSchema = createInsertSchema(products);
 export const insertProjectViewSchema = createInsertSchema(projectViews);
@@ -509,31 +630,103 @@ export const insertCollaborativeDocSchema = createInsertSchema(collaborativeDocs
 export const insertNotificationSchema = createInsertSchema(notifications);
 export const insertTaskDependencySchema = createInsertSchema(taskDependencies);
 export const insertProjectMemberSchema = createInsertSchema(projectMembers);
-export const insertTaskGroupSchema = createInsertSchema(taskGroups);
-export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings);
+export const insertTeamSchema = createInsertSchema(teams);
+export const insertTeamMemberSchema = createInsertSchema(teamMembers);
+export const insertTaskGroupSchema = createInsertSchema(taskGroups).omit({
+  id: true,
+  createdAt: true,
+});
+export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings).omit({
+  id: true,
+  createdAt: true,
+});
 export const insertTaskColumnValueSchema = createInsertSchema(taskColumnValues);
 
-// Esquemas adicionales para autenticación
+export const socialMetricSchema = z.object({
+  platform: z.string().min(1),
+  format: z.string().optional(),
+  title: z.string().optional(),
+  publishedAt: z.string().optional(),
+  impressions: z.number().nonnegative().optional(),
+  reach: z.number().nonnegative().optional(),
+  engagement: z.number().nonnegative().optional(),
+  engagementRate: z.number().nonnegative().optional(),
+  clicks: z.number().nonnegative().optional(),
+  saves: z.number().nonnegative().optional(),
+  shares: z.number().nonnegative().optional(),
+  comments: z.number().nonnegative().optional(),
+  conversions: z.number().nonnegative().optional(),
+});
+export type SocialMetric = z.infer<typeof socialMetricSchema>;
+
+export const assetPreviewItemSchema = z.object({
+  title: z.string(),
+  platform: z.string(),
+  creativeAngle: z.string(),
+  assetType: z.string(),
+  copyHook: z.string(),
+  prompt: z.string(),
+  previewUrl: z.string(),
+});
+export type AssetPreviewItem = z.infer<typeof assetPreviewItemSchema>;
+
+export const feedbackLoopInsightSchema = z.object({
+  summary: z.string(),
+  highPerformingPatterns: z.array(z.string()).default([]),
+  lowPerformingPatterns: z.array(z.string()).default([]),
+  recommendedActions: z.array(z.string()).default([]),
+  contentOpportunities: z.array(z.string()).default([]),
+});
+export type FeedbackLoopInsight = z.infer<typeof feedbackLoopInsightSchema>;
+
+// Export enum types
+export const AIModel = z.enum([
+  "gpt-4",
+  "gpt-3.5-turbo",
+  "grok-beta",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+  "moonshotai/kimi-k2-instruct-0905",
+  "qwen/qwen3-32b",
+  "openai/gpt-oss-safeguard-20b"
+]);
+export type AIModelType = z.infer<typeof AIModel>;
+
 export const loginSchema = z.object({
-  identifier: z.string().min(1, "Se requiere nombre de usuario o email"),
-  password: z.string().min(1, "Se requiere contraseña")
+  identifier: z.string().min(1),
+  password: z.string().min(1),
 });
 
 export const updateProfileSchema = z.object({
-  fullName: z.string().optional(),
+  fullName: z.string().min(1, "El nombre completo es requerido").optional(),
+  username: z.string().min(3, "El nombre de usuario debe tener al menos 3 caracteres").optional(),
+  email: z.string().email("Email inválido").optional(),
   bio: z.string().optional(),
+  profileImage: z.string().optional(),
+  coverImage: z.string().optional(),
   jobTitle: z.string().optional(),
   department: z.string().optional(),
   phoneNumber: z.string().optional(),
   preferredLanguage: z.string().optional(),
+  timezone: z.string().optional(),
   theme: z.string().optional(),
-  profileImage: z.string().optional(),
-  coverImage: z.string().optional(),
-  nickname: z.string().optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional()
+  customFields: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    value: z.string(),
+    type: z.enum(["text", "email", "url", "tel"]),
+  })).optional(),
+  notificationSettings: z.object({
+    email: z.boolean(),
+    push: z.boolean(),
+    marketing: z.boolean(),
+    projects: z.boolean(),
+    tasks: z.boolean(),
+  }).optional(),
+  privacySettings: z.object({
+    profileVisible: z.boolean(),
+    showEmail: z.boolean(),
+    showPhone: z.boolean(),
+  }).optional(),
 });
-
-// Export enum types
-export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "grok-beta"]);
-export type AIModelType = z.infer<typeof AIModel>;
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
