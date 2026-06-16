@@ -1,11 +1,15 @@
 // ===== IMPORTACIONES PARA PROGRAMACIÓN DE CONTENIDO =====
 // date-fns: Librería para manejo y formateo de fechas
 import { format, parseISO, addDays } from "date-fns";
-// Servicio de integración con Gemini AI
+import { eq } from "drizzle-orm";
+// Servicio de integración con Gemini
 import { geminiService } from "./gemini-integration";
+import { buildAssetBundleFromEntry } from "./ai-runtime/marketing-orchestrator";
+import { db } from "./db";
+import { analysisResults, products, projects } from "./schema";
 
 // ===== CONFIGURACIÓN DE IA =====
-// Integración exclusiva con Gemini para todas las funcionalidades de IA
+// Integración exclusiva con Grok para todas las funcionalidades de IA
 
 // ===== INTERFACES PARA CRONOGRAMA DE CONTENIDO =====
 /**
@@ -23,6 +27,11 @@ export interface ContentScheduleEntry {
   postDate: string; // Fecha de publicación en formato ISO
   postTime: string; // Hora de publicación en formato HH:MM
   hashtags: string; // Hashtags relevantes para la publicación
+  uvpAlignmentScore?: number; // Puntaje de alineación con la UVP (0-100)
+  uvpAlignmentReason?: string; // Explicación breve de la alineación estratégica
+  referenceImagePrompt?: string; // Prompt para generar un activo visual
+  referenceImageUrl?: string; // Vista previa conceptual del activo visual
+  assetBrief?: Record<string, unknown>; // Brief resumido del activo para la UI
 }
 
 /**
@@ -35,9 +44,162 @@ export interface ContentSchedule {
   additionalInstructions?: string; // Instrucciones adicionales o especiales
 }
 
+const STRATEGIC_STOPWORDS = new Set([
+  "para", "como", "desde", "esta", "este", "estos", "estas", "sobre", "entre", "hasta",
+  "porque", "donde", "cuando", "marca", "cliente", "valor", "propuesta", "producto",
+  "servicio", "social", "contenido", "with", "from", "that", "this", "your", "their"
+]);
+
+function readString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+}
+
+function normalizeAlignmentScore(value: unknown): number | undefined {
+  if (typeof value === "boolean") {
+    return value ? 100 : 0;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.min(100, Math.round(value)));
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.min(100, Math.round(parsed)));
+    }
+  }
+
+  return undefined;
+}
+
+function normalizeForComparison(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function extractStrategicKeywords(text: string, limit = 8): string[] {
+  const seen = new Set<string>();
+  const keywords: string[] = [];
+
+  for (const token of normalizeForComparison(text).split(" ")) {
+    if (token.length < 4 || STRATEGIC_STOPWORDS.has(token) || seen.has(token)) {
+      continue;
+    }
+
+    seen.add(token);
+    keywords.push(token);
+
+    if (keywords.length >= limit) {
+      break;
+    }
+  }
+
+  return keywords;
+}
+
+function computeUvpAlignmentScore(entry: ContentScheduleEntry, uvp?: string): number | undefined {
+  const normalizedUvp = readString(uvp);
+  if (!normalizedUvp) {
+    return undefined;
+  }
+
+  const uvpKeywords = extractStrategicKeywords(normalizedUvp);
+  if (uvpKeywords.length === 0) {
+    return 60;
+  }
+
+  const entryText = normalizeForComparison(
+    [entry.title, entry.description, entry.content, entry.copyOut].filter(Boolean).join(" ")
+  );
+
+  const matches = uvpKeywords.filter((keyword) => entryText.includes(keyword));
+  const ratio = matches.length / uvpKeywords.length;
+
+  return Math.max(25, Math.min(100, Math.round(ratio * 100)));
+}
+
+function buildUvpAlignmentReason(entry: ContentScheduleEntry, projectData: Record<string, any>, score: number): string {
+  const uvp = readString(projectData.uvp);
+  if (!uvp) {
+    return "No se encontrÃ³ una UVP registrada; el score refleja coherencia general con la estrategia de marca disponible.";
+  }
+
+  const matchedKeywords = extractStrategicKeywords(uvp).filter((keyword) =>
+    normalizeForComparison([entry.title, entry.description, entry.content, entry.copyOut].join(" ")).includes(keyword)
+  );
+
+  if (matchedKeywords.length > 0) {
+    return `Se alinea con la UVP porque enfatiza ${matchedKeywords.slice(0, 3).join(", ")}, conectando el mensaje con el diferencial de la marca.`;
+  }
+
+  if (score >= 70) {
+    return "La pieza mantiene una alineaciÃ³n estratÃ©gica aceptable con la UVP, aunque podrÃ­a hacer mÃ¡s explÃ­cito el diferenciador principal.";
+  }
+
+  return `La pieza necesita reforzar de forma mÃ¡s explÃ­cita la UVP registrada: ${uvp.substring(0, 140)}${uvp.length > 140 ? "..." : ""}`;
+}
+
+function normalizeScheduleEntry(entry: any, projectData: Record<string, any>, fallbackDate: string): ContentScheduleEntry {
+  const normalizedEntry: ContentScheduleEntry = {
+    title: readString(entry.title) || "PublicaciÃ³n estratÃ©gica",
+    description: readString(entry.description) || "",
+    content: readString(entry.content) || "",
+    copyIn: readString(entry.copyIn) || "",
+    copyOut: readString(entry.copyOut) || "",
+    designInstructions: readString(entry.designInstructions) || "",
+    platform: readString(entry.platform) || "Instagram",
+    postDate: readString(entry.postDate) || fallbackDate,
+    postTime: readString(entry.postTime) || "12:00",
+    hashtags: readString(entry.hashtags) || "",
+  };
+
+  const modelScore = normalizeAlignmentScore(entry.uvpAlignmentScore ?? entry.uvp_alignment_score);
+  const heuristicScore = computeUvpAlignmentScore(normalizedEntry, projectData.uvp);
+  const finalScore = modelScore !== undefined && heuristicScore !== undefined
+    ? Math.round((modelScore + heuristicScore) / 2)
+    : (modelScore ?? heuristicScore ?? 50);
+
+  normalizedEntry.uvpAlignmentScore = finalScore;
+  normalizedEntry.uvpAlignmentReason =
+    readString(entry.uvpAlignmentReason ?? entry.uvp_alignment_reason) ||
+    buildUvpAlignmentReason(normalizedEntry, projectData, finalScore);
+
+  const assetBundle = buildAssetBundleFromEntry(normalizedEntry, projectData);
+  normalizedEntry.referenceImagePrompt =
+    readString(entry.referenceImagePrompt ?? entry.reference_image_prompt) || assetBundle.prompt;
+  normalizedEntry.referenceImageUrl =
+    readString(entry.referenceImageUrl ?? entry.reference_image_url) || assetBundle.previewUrl;
+  normalizedEntry.assetBrief =
+    (entry.assetBrief && typeof entry.assetBrief === "object" ? entry.assetBrief : undefined) ||
+    assetBundle.assetBrief;
+
+  return normalizedEntry;
+}
+
+function createFallbackEntry(projectName: string, fallbackDate: string, projectData: Record<string, any>): ContentScheduleEntry {
+  return normalizeScheduleEntry({
+    title: "Publicación principal para redes sociales",
+    description: "Este es un cronograma básico para comenzar. Por favor regenera para obtener más opciones.",
+    content: `Contenido detallado para la red social principal del proyecto ${projectName}.`,
+    copyIn: "Texto integrado para diseño",
+    copyOut: "Texto para descripción en redes sociales",
+    designInstructions: "Diseño basado en la identidad visual del proyecto",
+    platform: "Instagram",
+    postDate: fallbackDate,
+    postTime: "12:00",
+    hashtags: "#marketing #contenido #socialmedia"
+  }, projectData, fallbackDate);
+}
+
 /**
  * ===== FUNCIÓN PRINCIPAL DE GENERACIÓN DE CRONOGRAMA =====
- * Genera un cronograma de contenido para redes sociales usando exclusivamente Gemini
+ * Genera un cronograma de contenido para redes sociales usando exclusivamente Grok AI
  * Tiene en cuenta la frecuencia mensual de publicaciones definida para cada red social
  * @param projectName - Nombre del proyecto
  * @param projectDetails - Detalles y análisis del proyecto
@@ -61,141 +223,36 @@ export async function generateSchedule(
   console.log(`[CALENDAR] Parámetros: startDate=${startDate}, durationDays=${durationDays}, prevContent.length=${previousContent.length}`);
 
   try {
-    const safeParseArray = (value: unknown): any[] => {
-      if (Array.isArray(value)) {
-        return value;
-      }
-
-      if (typeof value === "string") {
-        const trimmed = value.trim();
-        if (!trimmed) {
-          return [];
-        }
-
-        try {
-          const parsed = JSON.parse(trimmed);
-          if (Array.isArray(parsed)) {
-            return parsed;
-          }
-          if (parsed && typeof parsed === "object") {
-            return [parsed];
-          }
-        } catch {
-          return trimmed
-            .split(/[\n,;]+/)
-            .map((item) => item.trim())
-            .filter(Boolean);
-        }
-      }
-
-      if (value && typeof value === "object") {
-        return [value];
-      }
-
-      return [];
-    };
-
-    const toSentenceList = (value: unknown): string => {
-      const arrayValue = safeParseArray(value);
-      return arrayValue.length > 0
-        ? arrayValue
-          .map((item) => {
-            if (typeof item === "string") {
-              return item.trim();
-            }
-            if (item && typeof item === "object") {
-              if ("name" in item && typeof (item as any).name === "string") {
-                const name = ((item as any).name as string).trim();
-                const count = Number((item as any).count ?? (item as any).posts ?? (item as any).frequency ?? 0);
-                return count > 0 ? `${name} (${count})` : name;
-              }
-              return JSON.stringify(item);
-            }
-            return String(item);
-          })
-          .filter(Boolean)
-          .join(", ")
-        : typeof value === "string"
-          ? value
-          : "";
-    };
-
     // Format the start date using date-fns
     const formattedDate = format(parseISO(startDate), 'yyyy-MM-dd');
     const endDate = format(addDays(parseISO(startDate), durationDays), 'yyyy-MM-dd');
+    const projectData = typeof projectDetails === 'object' ? projectDetails : {};
     console.log(`[CALENDAR] Periodo del calendario: ${formattedDate} hasta ${endDate}`);
 
     // Extract social networks with monthly post frequency data
     let socialNetworksSection = "";
     try {
       console.log(`[CALENDAR] Procesando datos de redes sociales del proyecto`);
-      const rawSocialNetworksSources = [
-        projectDetails?.analysisResults?.socialNetworks,
-        projectDetails?.analysis?.socialNetworks,
-        projectDetails?.socialNetworks
-      ];
-
-      const socialNetworksRaw = rawSocialNetworksSources.reduce<any[]>((acc, candidate) => {
-        const parsed = safeParseArray(candidate);
-        if (parsed.length) {
-          return acc.concat(parsed);
-        }
-        return acc;
-      }, []);
-
-      const normalizedNetworks = socialNetworksRaw.map((network: any) => {
-        const postsPerMonth =
-          typeof network?.postsPerMonth === "number"
-            ? network.postsPerMonth
-            : Number(network?.postsPerMonth ?? network?.frequency ?? network?.monthlyPosts ?? 0);
-
-        const contentTypeDetailsRaw = safeParseArray(network?.contentTypeDetails);
-        const contentTypeDetails = contentTypeDetailsRaw.map((detail: any) => {
-          if (typeof detail === "string") {
-            const match = detail.match(/(.+?)\s*\((\d+)/);
-            if (match) {
-              return { name: match[1].trim(), count: Number(match[2]) };
-            }
-            return { name: detail.trim(), count: 0 };
-          }
-
-          return {
-            name: detail?.name || detail?.type || detail?.title || "Formato",
-            count: Number(detail?.count ?? detail?.posts ?? detail?.quantity ?? 0)
-          };
-        });
-
-        const contentTypes = safeParseArray(network?.contentTypes).map((type: any) => {
-          if (typeof type === "string") {
-            return type.trim();
-          }
-          return type?.name || type?.type || JSON.stringify(type);
-        });
-
-        return {
-          name: network?.name || network?.platform || "Red social",
-          selected: network?.selected ?? postsPerMonth > 0,
-          postsPerMonth,
-          contentTypes,
-          contentTypeDetails
-        };
-      });
-
-      const selectedNetworks = normalizedNetworks
-        .filter((network) => network.selected && network.postsPerMonth > 0)
-        .map((network) => {
+      const socialNetworks = projectData.socialNetworks || projectDetails?.analysisResults?.socialNetworks || [];
+      const selectedNetworks = socialNetworks
+        .filter((network: any) => network.selected && typeof network.postsPerMonth === 'number')
+        .map((network: any) => {
           // Calculate posts per period based on monthly frequency
-          const postsForPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
+          const postsPerPeriod = Math.ceil(network.postsPerMonth * (durationDays / 30));
 
           // Extraer tipos de contenido con sus cantidades específicas
-          const selectedContentTypes = network.contentTypeDetails
-            .filter((type: any) => Number(type.count) > 0)
+          const contentTypeDetails = network.contentTypeDetails || [];
+          const selectedContentTypes = contentTypeDetails
+            .filter((type: any) => type.count > 0)
             .map((type: any) => `${type.name} (${type.count} posts)`);
 
           return {
-            ...network,
-            postsForPeriod,
-            selectedContentTypes
+            name: network.name,
+            postsPerMonth: network.postsPerMonth,
+            postsForPeriod: postsPerPeriod,
+            contentTypes: network.contentTypes || [],
+            selectedContentTypes: selectedContentTypes,
+            contentTypeDetails: contentTypeDetails
           };
         });
 
@@ -256,311 +313,76 @@ export async function generateSchedule(
       console.log(`[CALENDAR] Muestra del primer elemento: "${previousContent[0].substring(0, 50)}..."`);
     }
 
-    const analysisInfo: any =
-      projectDetails?.analysisResults ??
-      projectDetails?.analysis ??
-      projectDetails ??
-      {};
+    const numericProjectId =
+      typeof projectData.id === "number" && !Number.isNaN(projectData.id)
+        ? projectData.id
+        : undefined;
 
-    const clientName =
-      (projectDetails && (projectDetails as any).client && String((projectDetails as any).client).trim()) ||
-      (analysisInfo.client && String(analysisInfo.client).trim()) ||
-      "Cliente sin nombre definido";
+    let projectInfo: { client?: string | null; description?: string | null } | null = null;
+    let analysisInfo: Record<string, unknown> | null = null;
+    let productsInfo: { name: string; description: string | null }[] = [];
 
-    const projectDescription =
-      (projectDetails && (projectDetails as any).description && String((projectDetails as any).description).trim()) ||
-      (analysisInfo.projectDescription && String(analysisInfo.projectDescription).trim()) ||
-      (analysisInfo.description && String(analysisInfo.description).trim()) ||
-      "No especificada";
+    if (numericProjectId !== undefined) {
+      projectInfo = (await db.query.projects.findFirst({
+        where: eq(projects.id, numericProjectId),
+      })) ?? null;
 
-    const normalizedProducts = safeParseArray((projectDetails as any)?.initialProducts).map((product: any) => ({
-      name: product?.name || product?.title || "Producto/Servicio",
-      description: product?.description || product?.valueProposal || "Sin descripción definida",
-      differentiator: product?.differentiator || product?.keyBenefit || ""
-    }));
+      analysisInfo = (await db.query.analysisResults.findFirst({
+        where: eq(analysisResults.projectId, numericProjectId),
+      })) ?? null;
 
-    const initialProductsSection = normalizedProducts.length
-      ? `**PRODUCTOS/SERVICIOS PRINCIPALES:**
-      ${normalizedProducts
-        .map(
-          (product: any) =>
-            `- ${product.name}: ${product.description}${product.differentiator ? ` | Diferenciador clave: ${product.differentiator}` : ""
-            }`
-        )
-        .join('\n')}
-
-      APLICACIÓN: Destaca estos productos enlazando beneficios con los dolores y motivadores del buyer persona en cada pieza.`
-      : "";
-
-    const communicationObjectivesSection = analysisInfo.communicationObjectives
-      ? `**OBJETIVOS DE COMUNICACIÓN:**
-      ${analysisInfo.communicationObjectives}
-
-      APLICACIÓN: Cada publicación debe reforzar estos objetivos con un ángulo claro y accionable.`
-      : "";
-
-    const buyerPersonaSection = analysisInfo.buyerPersona
-      ? `**RETRATO DEL BUYER PERSONA:**
-      ${analysisInfo.buyerPersona}
-
-      APLICACIÓN: Ajusta el lenguaje, ejemplos, pain points y CTA a este perfil específico.`
-      : "";
-
-    const archetypesArray = safeParseArray(analysisInfo.archetypes);
-    const archetypesSection = archetypesArray.length
-      ? `**ARQUETIPOS DE MARCA:**
-      ${archetypesArray
-        .map(
-          (arch: any) =>
-            `- ${arch?.name || arch?.title || "Arquetipo"}: ${arch?.profile || arch?.description || "Sin perfil definido"}`
-        )
-        .join('\n')}
-
-      APLICACIÓN: Usa estos arquetipos para asegurar consistencia narrativa, tono y estética.`
-      : "";
-
-    const marketingStrategiesSection = analysisInfo.marketingStrategies
-      ? `**ESTRATEGIAS DE MARKETING PRIORITARIAS:**
-      ${typeof analysisInfo.marketingStrategies === "string"
-        ? analysisInfo.marketingStrategies
-        : toSentenceList(analysisInfo.marketingStrategies)
-      }
-
-      APLICACIÓN: Alinea CTA, métricas y micro-mensajes a estas estrategias prioritarias.`
-      : "";
-
-    const brandCommunicationStyleSection = (analysisInfo.brandCommunicationStyle || analysisInfo.brandTone)
-      ? `**VOZ Y ESTILO DE MARCA:**
-      ${analysisInfo.brandCommunicationStyle || analysisInfo.brandTone}
-
-      APLICACIÓN: Mantén vocabulario, ritmo y emociones coherentes con este tono en todas las piezas.`
-      : "";
-
-    const missionVisionValuesSection =
-      analysisInfo.mission || analysisInfo.vision || analysisInfo.coreValues
-        ? `**MISIÓN, VISIÓN Y VALORES (MVV):**
-      ${analysisInfo.mission ? `Misión: ${analysisInfo.mission}` : ""}
-      ${analysisInfo.vision ? `Visión: ${analysisInfo.vision}` : ""}
-      ${analysisInfo.coreValues ? `Valores: ${analysisInfo.coreValues}` : ""}
-
-      APLICACIÓN: Refuerza estos pilares en storytelling, beneficios y llamados a la acción.`.trim()
-        : "";
-
-    const responsePoliciesSection =
-      analysisInfo.responsePolicyPositive || analysisInfo.responsePolicyNegative
-        ? `**POLÍTICAS DE RESPUESTA Y COMMUNITY CARE:**
-      ${analysisInfo.responsePolicyPositive
-            ? `Guía para casos positivos: ${analysisInfo.responsePolicyPositive}`
-            : ""
-          }
-      ${analysisInfo.responsePolicyNegative
-            ? `Gestión de crisis/comentarios negativos: ${analysisInfo.responsePolicyNegative}`
-            : ""
-          }
-
-      APLICACIÓN: Ajusta tono, disclaimers y CTA para fortalecer la interacción comunitaria bajo estas reglas.`.trim()
-        : "";
-
-    const competitorAnalysisSection = (() => {
-      const competitors = safeParseArray(analysisInfo.competitorAnalysis);
-      if (competitors.length === 0) {
-        if (typeof analysisInfo.competitorAnalysis === "string" && analysisInfo.competitorAnalysis.trim()) {
-          return `**ANÁLISIS DE COMPETENCIA:**
-      ${analysisInfo.competitorAnalysis}
-
-      APLICACIÓN: Destaca diferenciadores frente a estos competidores en cada narrativa.`;
-        }
-        return "";
-      }
-
-      const competitorLines = competitors
-        .map((competitor: any) => {
-          if (typeof competitor === "string") {
-            return `- ${competitor}`;
-          }
-          const name = competitor?.name || competitor?.brand || "Competidor";
-          const differentiator = competitor?.advantage || competitor?.differentiator || competitor?.insight || "";
-          return differentiator ? `- ${name}: ${differentiator}` : `- ${name}`;
-        })
-        .join('\n');
-
-      return `**ANÁLISIS DE COMPETENCIA:**
-      ${competitorLines}
-
-      APLICACIÓN: Refuerza la propuesta de valor diferenciando frente a estos jugadores.`;
-    })();
-
-    // ===== NUEVAS SECCIONES PARA CALIDAD DE CONTENIDO =====
-
-    // Propuesta de Valor Única (UVP)
-    const uniqueValuePropositionSection = analysisInfo.uniqueValueProposition
-      ? `**PROPUESTA DE VALOR ÚNICA (UVP):** 
-      ${analysisInfo.uniqueValueProposition}
-
-      APLICACIÓN CRÍTICA: Esta es la DIFERENCIACIÓN CLAVE de la marca. Cada pieza de contenido debe reflejar este posicionamiento único. 
-      - Usa esta UVP para crear hooks que destaquen por qué esta marca es DIFERENTE.
-      - Incluye el beneficio tangible en CTAs y cierres.
-      - Evita contenido genérico que cualquier competidor podría publicar.`
-      : "";
-
-    // Voice of Customer - Frases reales
-    const customerQuotesArray = safeParseArray(analysisInfo.customerQuotes);
-    const voiceOfCustomerSection = (() => {
-      const parts: string[] = [];
-
-      if (customerQuotesArray.length > 0) {
-        const quotesText = customerQuotesArray
-          .map((q: any) => {
-            const quote = q?.quote || q;
-            const context = q?.context ? ` (${q.context})` : "";
-            return `"${quote}"${context}`;
-          })
-          .join('\n');
-        parts.push(`Frases reales de clientes:\n${quotesText}`);
-      }
-
-      if (analysisInfo.customerObjections) {
-        parts.push(`Objeciones frecuentes a resolver: ${analysisInfo.customerObjections}`);
-      }
-
-      if (analysisInfo.customerVocabulary) {
-        parts.push(`Vocabulario y jerga del público: ${analysisInfo.customerVocabulary}`);
-      }
-
-      if (parts.length === 0) return "";
-
-      return `**VOZ DEL CLIENTE (VoC) - LENGUAJE AUTÉNTICO:**
-      ${parts.join('\n\n')}
-
-      APLICACIÓN CRÍTICA: 
-      - Usa las FRASES LITERALES del cliente en hooks, headlines y testimonios.
-      - Resuelve las OBJECIONES directamente en el contenido educativo y CTA.
-      - Emplea el VOCABULARIO del público para que el contenido resuene naturalmente.`;
-    })();
-
-    // Content Pillars
-    const contentPillarsArray = safeParseArray(analysisInfo.contentPillars);
-    const contentPillarsSection = contentPillarsArray.length > 0
-      ? `**PILARES DE CONTENIDO ESTRATÉGICOS:**
-      ${contentPillarsArray
-        .map((pillar: any) => {
-          const name = pillar?.name || "Pilar";
-          const percentage = pillar?.percentage ? ` (${pillar.percentage}% del mix)` : "";
-          const description = pillar?.description ? `: ${pillar.description}` : "";
-          const keywords = pillar?.keywords ? ` | Keywords: ${pillar.keywords}` : "";
-          return `- ${name}${percentage}${description}${keywords}`;
-        })
-        .join('\n')}
-
-      APLICACIÓN: Distribuye el contenido proporcionalmente entre estos pilares. Cada publicación debe reforzar uno de estos temas para construir autoridad en el nicho.`
-      : "";
-
-    // Seasonal Calendar
-    const seasonalCalendarArray = safeParseArray(analysisInfo.seasonalCalendar);
-    const seasonalCalendarSection = (() => {
-      if (seasonalCalendarArray.length === 0) return "";
-
-      // Filter events relevant to the schedule period
-      const scheduleStart = parseISO(startDate);
-      const scheduleEnd = addDays(scheduleStart, durationDays);
-
-      const relevantEvents = seasonalCalendarArray.filter((event: any) => {
-        // For now, include all events for context awareness
-        return event?.eventName || event?.date;
+      productsInfo = await db.query.products.findMany({
+        where: eq(products.projectId, numericProjectId),
       });
+    }
 
-      if (relevantEvents.length === 0) return "";
-
-      const eventsText = relevantEvents
-        .map((event: any) => {
-          const date = event?.date || "";
-          const name = event?.eventName || "Evento";
-          const importance = event?.importance === "high" ? "🔴" : event?.importance === "medium" ? "🟡" : "🟢";
-          const ideas = event?.contentIdeas ? ` | Ideas: ${event.contentIdeas}` : "";
-          return `- ${importance} ${date}: ${name}${ideas}`;
-        })
-        .join('\n');
-
-      return `**CALENDARIO ESTACIONAL Y FECHAS CLAVE:**
-      ${eventsText}
-
-      APLICACIÓN: Integra referencias a fechas cercanas en el contenido. Planifica contenido preparatorio para eventos de alta importancia (🔴). El contenido debe sentirse contextualizado y oportuno, no genérico.`;
-    })();
-
-    // Structured Competitors (nueva versión mejorada)
-    const structuredCompetitorsArray = safeParseArray(analysisInfo.competitors);
-    const structuredCompetitorsSection = structuredCompetitorsArray.length > 0
-      ? `**ANÁLISIS DE COMPETENCIA ESTRUCTURADO:**
-      ${structuredCompetitorsArray
-        .map((comp: any) => {
-          const name = comp?.name || "Competidor";
-          const parts = [`**${name}**`];
-          if (comp?.strengths) parts.push(`  Fortalezas: ${comp.strengths}`);
-          if (comp?.weaknesses) parts.push(`  Debilidades: ${comp.weaknesses}`);
-          if (comp?.contentTopics) parts.push(`  Temas que cubren: ${comp.contentTopics}`);
-          if (comp?.ourAdvantage) parts.push(`  🎯 NUESTRA VENTAJA: ${comp.ourAdvantage}`);
-          return parts.join('\n');
-        })
-        .join('\n\n')}
-
-      APLICACIÓN: Crea contenido que DESTAQUE nuestras ventajas específicas vs cada competidor. Evita temas saturados por la competencia a menos que tengamos un ángulo único.`
-      : "";
-
-    const keywordsText = analysisInfo.keywords
-      ? typeof analysisInfo.keywords === "string"
-        ? analysisInfo.keywords
-        : toSentenceList(analysisInfo.keywords)
-      : "No especificadas";
-
-    const contentThemesText = (() => {
-      const themes = safeParseArray(analysisInfo.contentThemes);
-      if (themes.length === 0) {
-        return "No especificados";
-      }
-      return themes
-        .map((theme: any) =>
-          typeof theme === "string"
-            ? theme
-            : theme?.name || theme?.title || theme?.theme || JSON.stringify(theme)
-        )
-        .join(", ");
-    })();
-
-    const baseProjectSummary = [
-      `- Cliente: ${clientName}`,
-      `- Descripción del proyecto: ${projectDescription}`,
-      `- Objetivos generales: ${analysisInfo.objectives || "No especificados"}`,
-      `- Buyer persona principal: ${analysisInfo.buyerPersona || "No especificada"}`,
-      `- Audiencia objetivo: ${analysisInfo.targetAudience || "No especificada"}`,
-      `- Palabras clave estratégicas: ${keywordsText}`,
-      `- Temas/pilares de contenido: ${contentThemesText}`,
-      `- Notas adicionales: ${analysisInfo.additionalNotes || "Ninguna observación adicional"}`
-    ].join('\n');
-
-    const projectContextSections = [
-      // Core sections
-      communicationObjectivesSection,
-      buyerPersonaSection,
-      archetypesSection,
-      marketingStrategiesSection,
-      brandCommunicationStyleSection,
-      missionVisionValuesSection,
-      responsePoliciesSection,
-      competitorAnalysisSection,
-      initialProductsSection,
-      // NEW: Content quality enhancement sections
-      uniqueValuePropositionSection,
-      voiceOfCustomerSection,
-      contentPillarsSection,
-      seasonalCalendarSection,
-      structuredCompetitorsSection
-    ].filter((section) => section && section.trim().length > 0);
-
-    const projectContext = `
+    const projectContext = analysisInfo
+      ? `
     INFORMACIÓN COMPLETA DEL PROYECTO:
-    ${baseProjectSummary}
-    ${projectContextSections.length ? `\n\n${projectContextSections.join('\n\n')}` : ""}
-    `.trim();
+    - Cliente: ${projectInfo?.client}
+    - Descripción: ${projectInfo?.description || (analysisInfo.projectDescription as string) || "No especificada"}
+
+    MISIÓN, VISIÓN Y VALORES:
+    - Misión: ${(analysisInfo.mission as string) || "No especificada"}
+    - Visión: ${(analysisInfo.vision as string) || "No especificada"}
+    - Valores fundamentales: ${(analysisInfo.coreValues as string) || "No especificados"}
+
+    OBJETIVOS:
+    - Objetivos generales: ${(analysisInfo.objectives as string) || "No especificados"}
+    - Objetivos de comunicación: ${(analysisInfo.communicationObjectives as string) || "No especificados"}
+
+    AUDIENCIA Y PERSONA:
+    - Buyer Persona: ${(analysisInfo.buyerPersona as string) || "No especificada"}
+    - Audiencia objetivo: ${(analysisInfo.targetAudience as string) || "No especificada"}
+    - UVP: ${(analysisInfo.uvp as string) || "No especificada"}
+    - VoC: ${(analysisInfo.voiceOfCustomer as string) || "No especificada"}
+
+    ESTRATEGIAS DE MARKETING:
+    - Estrategias principales: ${(analysisInfo.marketingStrategies as string) || "No especificadas"}
+    - Arquetipos de marca: ${analysisInfo.archetypes ? JSON.stringify(analysisInfo.archetypes) : "No especificados"}
+
+    COMUNICACIÓN Y TONO:
+    - Estilo de comunicación: ${(analysisInfo.brandCommunicationStyle as string) || "No especificado"}
+    - Tono de marca: ${(analysisInfo.brandTone as string) || "No especificado"}
+    - Redes sociales objetivo: ${analysisInfo.socialNetworks ? JSON.stringify(analysisInfo.socialNetworks) : "No especificadas"}
+
+    POLÍTICAS DE RESPUESTA:
+    - Política para comentarios positivos: ${(analysisInfo.responsePolicyPositive as string) || "No especificada"}
+    - Política para comentarios negativos: ${(analysisInfo.responsePolicyNegative as string) || "No especificada"}
+
+    CONTENIDO ADICIONAL:
+    - Palabras clave: ${(analysisInfo.keywords as string) || "No especificadas"}
+    - Temas de contenido: ${analysisInfo.contentThemes ? JSON.stringify(analysisInfo.contentThemes) : "No especificados"}
+    - Notas adicionales: ${(analysisInfo.additionalNotes as string) || "Ninguna"}
+
+    PRODUCTOS:
+    ${productsInfo.length > 0 ? productsInfo.map((product) => `- ${product.name}: ${product.description || "Sin descripción"}`).join("\n    ") : "- No hay productos registrados"}
+    `
+      : `
+    INFORMACIÓN DEL PROYECTO:
+    - Cliente: ${projectInfo?.client ?? (projectData.client as string) ?? "No especificado"}
+    - Descripción: ${projectInfo?.description ?? (projectData.description as string) ?? "No especificada"}
+    `;
 
     const prompt = `
       Crea un cronograma avanzado de contenido para redes sociales para el proyecto "${projectName}". Actúa como un experto profesional en marketing digital con especialización en contenidos de alto impacto, branding y narrativa de marca. Tu objetivo es crear contenido estratégico, persuasivo y memorable que genere engagement.
@@ -590,6 +412,8 @@ export async function generateSchedule(
       5. PRODUCTOS/SERVICIOS: Integra naturalmente los productos/servicios en el contenido sin ser excesivamente promocional.
 
       **DIRECTRICES PARA CREACIÓN DE CONTENIDO DE ALTA CALIDAD 2025:**
+      6. UVP ALIGNMENT: Cada entrada debe incluir un puntaje de alineaciÃ³n con la UVP (0-100) y una explicaciÃ³n breve del porquÃ©.
+      7. VALIDACIÃ“N ESTRATÃ‰GICA: Si una idea no se alinea con la UVP, con el buyer persona o con el tono de marca, reemplÃ¡zala por otra mejor alineada.
       1. STORYTELLING - Utiliza narrativas emocionales y personales que conecten con la audiencia.
       2. VALOR PRÁCTICO - Cada publicación debe ofrecer insights, consejos, o soluciones reales.
       3. LLAMADAS A LA ACCIÓN - Incluye CTAs claros y persuasivos que inciten al compromiso.
@@ -608,14 +432,6 @@ export async function generateSchedule(
          - LinkedIn: 3-5 posts/semana en horario laboral
          - TikTok: 3-5 posts/semana
          - YouTube: Consistencia semanal según capacidad
-      9. MEDICIÓN - Define para cada publicación la fase del embudo (Awareness, Consideración, Conversión o Fidelización) y plantea el KPI esperado.
-
-      **CHECKLIST DE CONTENT MARKETING PREMIUM:**
-      - Declara el objetivo del funnel en el campo "description" iniciando con "Objetivo: ...".
-      - Estructura el campo "content" con la secuencia Hook → Insight → CTA, separando claramente cada parte.
-      - Integra datos, prueba social o storytelling que refuerce la propuesta de valor del proyecto.
-      - Finaliza con un CTA accionable, medible y coherente con el objetivo declarado.
-      - Resalta diferenciadores competitivos y mantén consistencia con el tono/valores definidos.
 
       **ESPECIFICACIONES TÉCNICAS POR FORMATO 2025:**
 
@@ -653,8 +469,7 @@ export async function generateSchedule(
 
       **ESTRUCTURA DE LAS PUBLICACIONES POR PLATAFORMA:**
       - TÍTULOS: Concisos, impactantes, con palabras potentes y gatillos emocionales.
-      - DESCRIPTION: Comienza con "Objetivo: [Awareness/Consideración/Conversión]" seguido de la estrategia. KPI esperado: [Métrica].
-      - CONTENIDO PRINCIPAL: Desarrolla ideas con la secuencia Hook → Insight → CTA, resaltando beneficios tangibles.
+      - CONTENIDO PRINCIPAL: Desarrolla ideas completas con narrativa estructurada (problema-solución-beneficio).
       - COPY IN: Texto que aparecerá sobre la imagen/diseño, corto y memorable.
       - COPY OUT: Descripción completa que acompaña a la publicación, escrito en formato conversacional, personal y persuasivo.
       - HASHTAGS: 
@@ -697,56 +512,43 @@ export async function generateSchedule(
             "platform": "Instagram",
             "postDate": "YYYY-MM-DD",
             "postTime": "HH:MM",
-            "hashtags": "#hashtag1 #hashtag2 #hashtag3"
+            "hashtags": "#hashtag1 #hashtag2 #hashtag3",
+            "uvp_alignment_score": 85,
+            "uvp_alignment_reason": "Explicación breve de por qué esta idea se alinea con la UVP"
           }
         ]
       }
     `;
 
-    // Usamos exclusivamente Gemini para generar el cronograma
-    console.log("[CALENDAR] Generando cronograma con Gemini");
+    // Usamos exclusivamente Grok AI para generar el cronograma
+    console.log("[CALENDAR] Generando cronograma con Grok AI");
 
     // Modificamos el prompt para forzar una respuesta más estructurada y evitar errores de formato
-    const enhancedPrompt = `${prompt}
-
-    ⭐⭐⭐ GUÍA DE CALIDAD Y ESTILO 2025 (CRÍTICO) ⭐⭐⭐
-    Tu objetivo es crear contenido que DESTAQUE en un feed saturado.
-    
-    1. HOOKS (GANCHOS) VISUALES Y TEXTUALES:
-       - MALO: "¿Sabías que nuestros servicios son buenos?"
-       - BUENO: "3 errores que te están costando dinero hoy mismo" (Curiosidad + beneficio)
-       - BUENO: "Deja de hacer esto si quieres vender más" (Controversia/Negatividad)
-       - BUENO: "La estrategia secreta que nadie te cuenta" (Exclusividad)
-
-    2. ESTRUCTURA DE COPY (AIDA/PAS):
-       - Atención: Hook potente en la primera línea.
-       - Interés/Deseo: Desarrolla el problema/solución.
-       - Acción: CTA claro y directo (ej: "Comenta 'YO' y te envío la guía").
-
-    3. ADAPTACIÓN AL TONO:
-       - Si el tono es "Profesional/Corporativo": Usa datos, sintaxis impecable, autoridad.
-       - Si el tono es "Cercano/Divertido": Usa emojis, jerga apropiada, storytelling personal.
-
-    ⭐⭐⭐ FORMATO JSON ESTRICTO (CRÍTICO) ⭐⭐⭐
-    Responde EXCLUSIVAMENTE con el objeto JSON válido.
-    - NO incluyas markdown (\`\`\`json).
-    - NO incluyas texto introductorio ("Aquí está tu cronograma...").
-    - TODAS las claves y valores de tipo string deben usar COMILLAS DOBLES ("").
-    - NO uses comillas simples en el JSON.
-    - ESCAPA comillas dobles dentro de textos: "Dijo \\"Hola\\"".
-    - FORMATO DE FECHA: "YYYY-MM-DD".
-    - FORMATO DE HORA: "HH:MM".
-    - KEYS REQUERIDAS por entrada: "title", "description", "content", "copyIn", "copyOut", "designInstructions", "platform", "postDate", "postTime", "hashtags".
-`;
+    const enhancedPrompt = `${prompt}\n\nCRÍTICO: Responde EXCLUSIVAMENTE con el objeto JSON solicitado. No incluyas texto extra, anotaciones, ni marcadores de código. Formato estricto requerido:
+    - Inicia con '{' y termina con '}'
+    - TODAS las propiedades entre comillas dobles: "propertyName"
+    - TODOS los valores string entre comillas dobles: "value"
+    - NO uses comillas simples
+    - NO incluyas campos como "Objetivo" - usa solo los campos especificados en el esquema
+    - Hora en formato "HH:MM" (ejemplo: "14:30")
+    - Fecha en formato "YYYY-MM-DD"
+    - JSON válido sin errores de sintaxis`;
 
     // Incorporar instrucciones adicionales si existen
-    let finalPrompt = enhancedPrompt;
+    const strategicValidationPrompt = `${enhancedPrompt}
+    - Incluye SIEMPRE "uvp_alignment_score" como entero entre 0 y 100
+    - Incluye SIEMPRE "uvp_alignment_reason" como explicación breve y concreta`;
+    let finalPrompt = strategicValidationPrompt;
     if (additionalInstructions) {
       finalPrompt = `${enhancedPrompt}\n\n⚠️ **INSTRUCCIONES OBLIGATORIAS DEL USUARIO - PRIORIDAD MÁXIMA:**\n${additionalInstructions}\n\n⚠️ ESTAS INSTRUCCIONES SON CRÍTICAS Y DEBEN APLICARSE EXACTAMENTE. NO LAS IGNORES.\n⚠️ GENERA MÍNIMO 7 ENTRADAS COMPLETAS - NO MENOS.\n⚠️ SI SE ESPECIFICAN ÁREAS CONCRETAS, MODIFICA SOLO ESAS ÁREAS.\n⚠️ RESPETA CADA INSTRUCCIÓN ESPECÍFICA AL PIE DE LA LETRA.`;
       console.log(`[CALENDAR] Se añadieron instrucciones críticas del usuario: "${additionalInstructions.substring(0, 200)}${additionalInstructions.length > 200 ? '...' : ''}"`);
     }
 
-    // Usamos Gemini con configuración optimizada para generación consistente
+    // Usamos Grok con configuración optimizada para generación consistente
+    if (additionalInstructions) {
+      finalPrompt = `${strategicValidationPrompt}\n\n${finalPrompt.slice(enhancedPrompt.length).trimStart()}`;
+    }
+
     const scheduleText = await geminiService.generateText(finalPrompt, {
       // Reducimos temperatura para respuestas más consistentes y estructuradas
       temperature: 0.8,
@@ -754,8 +556,8 @@ export async function generateSchedule(
       maxTokens: 6000,
       // Aumentamos los reintentos para casos de red inestable
       retryCount: 3,
-      // Utilizamos el modelo solicitado (Gemini 3 Pro Preview)
-      model: 'gemini-3-pro-preview'
+      model: "gemini-1.5-pro",
+      responseFormat: "json"
     });
 
     // Registramos una versión truncada para debug
@@ -768,7 +570,7 @@ export async function generateSchedule(
     // Dividir respuesta en chunks de 1000 caracteres para evitar truncamiento en logs
     const chunkSize = 1000;
     for (let i = 0; i < scheduleText.length; i += chunkSize) {
-      console.log(scheduleText.substring(i, i + chunkSize));
+        console.log(scheduleText.substring(i, i + chunkSize));
     }
     console.log(`[CALENDAR] RESPUESTA COMPLETA DE GEMINI (fin)`);
 
@@ -829,26 +631,31 @@ export async function generateSchedule(
             } else {
               console.log(`[CALENDAR] Verificando campos requeridos en las entradas`);
               // Verificar que las entradas tengan los campos requeridos mínimos
-              const validEntries = parsedContent.entries.filter((entry: any) =>
-                entry.title && entry.platform && entry.postDate &&
-                typeof entry.title === 'string' &&
-                typeof entry.platform === 'string' &&
-                typeof entry.postDate === 'string'
-              );
+              const validEntries = parsedContent.entries
+                .filter((entry: any) =>
+                  entry.title && entry.platform && entry.postDate &&
+                  typeof entry.title === 'string' &&
+                  typeof entry.platform === 'string' &&
+                  typeof entry.postDate === 'string'
+                )
+                .map((entry: any) => normalizeScheduleEntry(entry, projectData, formattedDate));
 
               console.log(`[CALENDAR] Entradas con todos los campos requeridos: ${validEntries.length}/${parsedContent.entries.length}`);
 
               if (validEntries.length === parsedContent.entries.length) {
                 // Todas las entradas son válidas
                 console.log(`[CALENDAR] ÉXITO: Estrategia 1 exitosa. Devolviendo cronograma con ${validEntries.length} entradas`);
-                return parsedContent;
+                return {
+                  name: parsedContent.name || `Cronograma para ${projectName}`,
+                  entries: validEntries
+                };
               } else {
                 // Algunas entradas son inválidas, pero tenemos suficientes
                 if (validEntries.length > 0) {
                   console.log(`[CALENDAR] Se filtraron ${parsedContent.entries.length - validEntries.length} entradas inválidas`);
                   // Mostrar la primera entrada inválida para diagnóstico
                   if (parsedContent.entries.length > validEntries.length) {
-                    const invalidEntry = parsedContent.entries.find((entry: any) =>
+                    const invalidEntry = parsedContent.entries.find((entry: any) => 
                       !entry.title || !entry.platform || !entry.postDate ||
                       typeof entry.title !== 'string' ||
                       typeof entry.platform !== 'string' ||
@@ -965,7 +772,7 @@ export async function generateSchedule(
           // Asegurar que todas las propiedades tengan comillas dobles
           jsonContent = jsonContent.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
 
-          console.log("JSON limpiado (primeros 100 caracteres):",
+          console.log("JSON limpiado (primeros 100 caracteres):", 
             jsonContent.substring(0, 100) + "... [truncado]");
 
           try {
@@ -974,9 +781,9 @@ export async function generateSchedule(
             if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
               console.log(`Cronograma limpiado y parseado con ${parsedContent.entries.length} entradas`);
               // Verificar entradas válidas
-              const validEntries = parsedContent.entries.filter((entry: any) =>
-                entry.title && entry.platform && entry.postDate
-              );
+              const validEntries = parsedContent.entries
+                .filter((entry: any) => entry.title && entry.platform && entry.postDate)
+                .map((entry: any) => normalizeScheduleEntry(entry, projectData, formattedDate));
 
               if (validEntries.length > 0) {
                 return {
@@ -1108,19 +915,7 @@ export async function generateSchedule(
                     }
 
                     if (entry.title && entry.platform && entry.postDate) {
-                      const completeEntry: ContentScheduleEntry = {
-                        title: entry.title,
-                        description: entry.description || "",
-                        content: entry.content || "",
-                        copyIn: entry.copyIn || "",
-                        copyOut: entry.copyOut || "",
-                        designInstructions: entry.designInstructions || "",
-                        platform: entry.platform,
-                        postDate: entry.postDate,
-                        postTime: entry.postTime || "12:00",
-                        hashtags: entry.hashtags || ""
-                      };
-                      validEntries.push(completeEntry);
+                      validEntries.push(normalizeScheduleEntry(entry, projectData, formattedDate));
                     }
                   } catch (innerError) {
                     console.warn(`Error procesando entrada ${i}:`, innerError);
@@ -1166,9 +961,9 @@ export async function generateSchedule(
 
               if (parsedContent && parsedContent.entries && Array.isArray(parsedContent.entries) && parsedContent.entries.length > 0) {
                 console.log(`JSON reparado correctamente con ${parsedContent.entries.length} entradas`);
-                const validEntries = parsedContent.entries.filter((entry: any) =>
-                  entry.title && entry.platform && entry.postDate
-                );
+                const validEntries = parsedContent.entries
+                  .filter((entry: any) => entry.title && entry.platform && entry.postDate)
+                  .map((entry: any) => normalizeScheduleEntry(entry, projectData, formattedDate));
 
                 if (validEntries.length > 0) {
                   return {
@@ -1216,7 +1011,7 @@ export async function generateSchedule(
                   postTime: entry.postTime || "12:00",
                   hashtags: entry.hashtags || ""
                 };
-                validEntries.push(completeEntry);
+                validEntries.push(normalizeScheduleEntry(completeEntry, projectData, formattedDate));
                 console.log(`Entrada válida para ${entry.platform} en fecha ${entry.postDate}`);
               }
             } catch (parseError) {
@@ -1240,7 +1035,7 @@ export async function generateSchedule(
                     postTime: entry.postTime || "12:00",
                     hashtags: entry.hashtags || ""
                   };
-                  validEntries.push(completeEntry);
+                  validEntries.push(normalizeScheduleEntry(completeEntry, projectData, formattedDate));
                   console.log(`Entrada reparada válida para ${entry.platform} en fecha ${entry.postDate}`);
                 }
               } catch (repairError) {
@@ -1293,8 +1088,8 @@ export async function generateSchedule(
           if (!line) continue;
 
           // Buscar plataformas
-          const platformFound = potentialPlatforms.find(platform =>
-            line.includes(platform) ||
+          const platformFound = potentialPlatforms.find(platform => 
+            line.includes(platform) || 
             line.toLowerCase().includes(platform.toLowerCase())
           );
 
@@ -1308,7 +1103,7 @@ export async function generateSchedule(
             // Si ya teníamos una entrada en construcción con datos suficientes, guardémosla
             if (currentEntry && currentEntry.title && currentEntry.platform && currentEntry.postDate) {
               // Asegurar que todos los campos requeridos estén presentes
-              entries.push({
+              entries.push(normalizeScheduleEntry({
                 title: currentEntry.title,
                 description: currentEntry.description || "",
                 content: currentEntry.content || "",
@@ -1319,7 +1114,7 @@ export async function generateSchedule(
                 postDate: currentEntry.postDate,
                 postTime: currentEntry.postTime || "12:00",
                 hashtags: currentEntry.hashtags || ""
-              });
+              }, projectData, formattedDate));
             }
 
             // Iniciar una nueva entrada
@@ -1340,10 +1135,10 @@ export async function generateSchedule(
               // Usar esta línea como título si parece un título (no demasiado largo)
               if (line.length < 100) {
                 currentEntry.title = line;
-              }
+              } 
               // O intenta ver si la siguiente línea podría ser un título
-              else if (i + 1 < lines.length && lines[i + 1].length < 100) {
-                currentEntry.title = lines[i + 1].trim();
+              else if (i+1 < lines.length && lines[i+1].length < 100) {
+                currentEntry.title = lines[i+1].trim();
               }
             }
           }
@@ -1371,8 +1166,8 @@ export async function generateSchedule(
             }
 
             // Si no tenemos título y esta línea parece un buen candidato, úsala
-            if (!currentEntry.title && line.length > 5 && line.length < 100 &&
-              !line.includes(':') && !line.includes('{') && !line.includes('}')) {
+            if (!currentEntry.title && line.length > 5 && line.length < 100 && 
+                !line.includes(':') && !line.includes('{') && !line.includes('}')) {
               currentEntry.title = line;
             }
 
@@ -1390,7 +1185,7 @@ export async function generateSchedule(
             currentEntry.postDate = formattedDate;
           }
 
-          entries.push({
+          entries.push(normalizeScheduleEntry({
             title: currentEntry.title,
             description: currentEntry.description || "",
             content: currentEntry.content || "",
@@ -1401,7 +1196,7 @@ export async function generateSchedule(
             postDate: currentEntry.postDate,
             postTime: currentEntry.postTime || "12:00",
             hashtags: currentEntry.hashtags || ""
-          });
+          }, projectData, formattedDate));
         }
 
         if (entries.length > 0) {
@@ -1431,7 +1226,9 @@ export async function generateSchedule(
             platform: "Instagram",
             postDate: formattedDate,
             postTime: "12:00",
-            hashtags: "#marketing #contenido #socialmedia"
+            hashtags: "#marketing #contenido #socialmedia",
+            uvpAlignmentScore: 50,
+            uvpAlignmentReason: buildUvpAlignmentReason(createFallbackEntry(projectName, formattedDate, projectData), projectData, 50)
           }
         ]
       };
@@ -1451,7 +1248,9 @@ export async function generateSchedule(
             platform: "Instagram",
             postDate: formattedDate,
             postTime: "12:00",
-            hashtags: "#marketing #contenido #socialmedia"
+            hashtags: "#marketing #contenido #socialmedia",
+            uvpAlignmentScore: 50,
+            uvpAlignmentReason: buildUvpAlignmentReason(createFallbackEntry(projectName, formattedDate, projectData), projectData, 50)
           }
         ]
       };
@@ -1465,9 +1264,9 @@ export async function generateSchedule(
     let errorMessage = "";
 
     // Loggeamos información detallada del error
-    console.log("[CALENDAR ERROR] Detalles completos:", {
-      message: error.message,
-      type: error.errorType,
+    console.log("[CALENDAR ERROR] Detalles completos:", { 
+      message: error.message, 
+      type: error.errorType, 
       stack: error.stack,
       originalError: error
     });

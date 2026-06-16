@@ -41,7 +41,17 @@ export const automationTriggerEnum = pgEnum("automation_trigger", ["status_chang
 export const automationActionEnum = pgEnum("automation_action", ["notify", "assign", "move", "update_status", "create_task"]);
 
 // Modelos de IA soportados por el sistema
-export const aiModelEnum = pgEnum("ai_model", ["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"]);
+export const aiModelEnum = pgEnum("ai_model", [
+  "gpt-4",
+  "gpt-3.5-turbo",
+  "grok-beta",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+  "moonshotai/kimi-k2-instruct-0905",
+  "qwen/qwen3-32b",
+  "openai/gpt-oss-safeguard-20b",
+  "gemini-1.5-pro"
+]);
 
 // ===== DEFINICIÓN DE TABLAS =====
 
@@ -141,6 +151,8 @@ export const analysisResults = pgTable("analysis_results", {
   // Pestaña Persona
   buyerPersona: text("buyer_persona"),
   targetAudience: text("target_audience"),
+  uvp: text("uvp"),
+  voiceOfCustomer: text("voice_of_customer"),
 
   // Pestaña Estrategias
   marketingStrategies: text("marketing_strategies"),
@@ -158,6 +170,15 @@ export const analysisResults = pgTable("analysis_results", {
   // Campos adicionales para contenido y análisis
   keywords: text("keywords"),
   contentThemes: jsonb("content_themes"),
+  brandPillars: jsonb("brand_pillars").default([]),
+  proofPoints: jsonb("proof_points").default([]),
+  targetChannels: jsonb("target_channels").default([]),
+  visualStyleGuidelines: text("visual_style_guidelines"),
+  brandGuidelines: text("brand_guidelines"),
+  forbiddenTerms: jsonb("forbidden_terms").default([]),
+  performanceInsights: jsonb("performance_insights").default([]),
+  recommendedNextActions: jsonb("recommended_next_actions").default([]),
+  lastFeedbackAppliedAt: timestamp("last_feedback_applied_at"),
   competitorAnalysis: jsonb("competitor_analysis"),
 
   // Campos para datos generales del proyecto (de la pestaña General)
@@ -165,15 +186,12 @@ export const analysisResults = pgTable("analysis_results", {
   additionalNotes: text("additional_notes"),
 
   // ===== NUEVOS CAMPOS PARA CALIDAD DE CONTENIDO (P0) =====
-
   // Propuesta de Valor Única (UVP) - Qué hace diferente a la marca
   uniqueValueProposition: text("unique_value_proposition"),
-
   // Voice of Customer (VoC) - Lenguaje real del cliente
   customerQuotes: jsonb("customer_quotes"), // Array de frases literales del cliente
   customerObjections: text("customer_objections"), // Objeciones frecuentes
   customerVocabulary: text("customer_vocabulary"), // Jerga/vocabulario del público
-
   // Calendario Estacional - Fechas clave para la marca
   seasonalCalendar: jsonb("seasonal_calendar"), // Array de eventos con fecha y descripción
 
@@ -200,6 +218,9 @@ export const schedules = pgTable("schedules", {
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   name: text("name").notNull(),
   description: text("description"),
+  startDate: timestamp("start_date"),
+  endDate: timestamp("end_date"),
+  specifications: text("specifications"),
   additionalInstructions: text("additional_instructions"),
   createdBy: varchar("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -220,6 +241,11 @@ export const scheduleEntries = pgTable("schedule_entries", {
   postDate: timestamp("post_date").notNull(),
   postTime: text("post_time").notNull(),
   hashtags: text("hashtags"),
+  uvpAlignmentScore: integer("uvp_alignment_score"),
+  uvpAlignmentReason: text("uvp_alignment_reason"),
+  referenceImagePrompt: text("reference_image_prompt"),
+  referenceImageUrl: text("reference_image_url"),
+  assetBrief: jsonb("asset_brief").default({}),
   comments: text("comments"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
@@ -230,8 +256,10 @@ export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
-  message: text("message").notNull(),
-  isAi: boolean("is_ai").default(false),
+  content: text("content"),
+  role: text("role"),
+  legacyMessage: text("message"),
+  legacyIsAi: boolean("is_ai").default(false),
   aiModel: aiModelEnum("ai_model"),
   createdAt: timestamp("created_at").defaultNow().notNull()
 });
@@ -239,12 +267,73 @@ export const chatMessages = pgTable("chat_messages", {
 // Content History table
 export const contentHistory = pgTable("content_history", {
   id: serial("id").primaryKey(),
-  scheduleEntryId: integer("schedule_entry_id").references(() => scheduleEntries.id, { onDelete: "cascade" }).notNull(),
-  version: integer("version").notNull(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
   content: text("content").notNull(),
-  changeDescription: text("change_description"),
-  changedBy: varchar("changed_by").references(() => users.id, { onDelete: "set null" }),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  title: varchar("title", { length: 255 }),
+  platform: varchar("platform", { length: 50 }),
   createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Agent Runs table
+export const agentRuns = pgTable("agent_runs", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  entrypoint: text("entrypoint").notNull(),
+  status: text("status").notNull(),
+  route: text("route"),
+  finalAgent: text("final_agent"),
+  provider: text("provider"),
+  model: text("model"),
+  estimatedTokens: integer("estimated_tokens"),
+  actualTokens: integer("actual_tokens"),
+  error: text("error"),
+  startedAt: timestamp("started_at").defaultNow().notNull(),
+  finishedAt: timestamp("finished_at")
+});
+
+// Agent Artifacts table
+export const agentArtifacts = pgTable("agent_artifacts", {
+  id: serial("id").primaryKey(),
+  runId: integer("run_id").references(() => agentRuns.id, { onDelete: "cascade" }).notNull(),
+  agent: text("agent").notNull(),
+  artifactType: text("artifact_type").notNull(),
+  payloadJson: jsonb("payload_json").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Model Routes table
+export const modelRoutes = pgTable("model_routes", {
+  id: serial("id").primaryKey(),
+  entrypoint: text("entrypoint").notNull(),
+  agent: text("agent").notNull(),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  reasoningMode: text("reasoning_mode"),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull()
+});
+
+// Teams table
+export const teams = pgTable("teams", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  domain: text("domain").notNull().unique(),
+  description: text("description"),
+  isDefault: boolean("is_default").default(false),
+  settings: jsonb("settings").default({}),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull()
+});
+
+// Team Members table
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => teams.id, { onDelete: "cascade" }).notNull(),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+  role: text("role").default("member"),
+  joinedAt: timestamp("joined_at").defaultNow().notNull()
 });
 
 // Task Comments table
@@ -512,9 +601,18 @@ export type ProjectMember = typeof projectMembers.$inferSelect;
 export type InsertProjectMember = typeof projectMembers.$inferInsert;
 export type ProjectAssignment = typeof projectAssignments.$inferSelect;
 
+export type Team = typeof teams.$inferSelect;
+export type InsertTeam = typeof teams.$inferInsert;
+export type TeamMember = typeof teamMembers.$inferSelect;
+export type InsertTeamMember = typeof teamMembers.$inferInsert;
+export type AgentRun = typeof agentRuns.$inferSelect;
+export type InsertAgentRun = typeof agentRuns.$inferInsert;
+export type AgentArtifact = typeof agentArtifacts.$inferSelect;
+export type InsertAgentArtifact = typeof agentArtifacts.$inferInsert;
+export type ModelRoute = typeof modelRoutes.$inferSelect;
+export type InsertModelRoute = typeof modelRoutes.$inferInsert;
+
 // Define schemas for validation
-// import { createInsertSchema } from "drizzle-zod";
-// ...
 export const insertUserSchema = createInsertSchema(users);
 export const insertProjectSchema = createInsertSchema(projects);
 export const insertTaskSchema = createInsertSchema(tasks);
@@ -537,6 +635,11 @@ export const insertProjectMemberSchema = createInsertSchema(projectMembers);
 export const insertTaskGroupSchema = createInsertSchema(taskGroups);
 export const insertProjectColumnSettingSchema = createInsertSchema(projectColumnSettings);
 export const insertTaskColumnValueSchema = createInsertSchema(taskColumnValues);
+export const insertTeamSchema = createInsertSchema(teams);
+export const insertTeamMemberSchema = createInsertSchema(teamMembers);
+export const insertAgentRunSchema = createInsertSchema(agentRuns);
+export const insertAgentArtifactSchema = createInsertSchema(agentArtifacts);
+export const insertModelRouteSchema = createInsertSchema(modelRoutes);
 
 // Esquemas adicionales para autenticación
 export const loginSchema = z.object({
@@ -559,6 +662,54 @@ export const updateProfileSchema = z.object({
   lastName: z.string().optional()
 });
 
+// Zod schemas y tipos adicionales para marketing
+export const socialMetricSchema = z.object({
+  platform: z.string().min(1),
+  format: z.string().optional(),
+  title: z.string().optional(),
+  publishedAt: z.string().optional(),
+  impressions: z.number().nonnegative().optional(),
+  reach: z.number().nonnegative().optional(),
+  engagement: z.number().nonnegative().optional(),
+  engagementRate: z.number().nonnegative().optional(),
+  clicks: z.number().nonnegative().optional(),
+  saves: z.number().nonnegative().optional(),
+  shares: z.number().nonnegative().optional(),
+  comments: z.number().nonnegative().optional(),
+  conversions: z.number().nonnegative().optional(),
+});
+export type SocialMetric = z.infer<typeof socialMetricSchema>;
+
+export const assetPreviewItemSchema = z.object({
+  title: z.string(),
+  platform: z.string(),
+  creativeAngle: z.string(),
+  assetType: z.string(),
+  copyHook: z.string(),
+  prompt: z.string(),
+  previewUrl: z.string(),
+});
+export type AssetPreviewItem = z.infer<typeof assetPreviewItemSchema>;
+
+export const feedbackLoopInsightSchema = z.object({
+  summary: z.string(),
+  highPerformingPatterns: z.array(z.string()).default([]),
+  lowPerformingPatterns: z.array(z.string()).default([]),
+  recommendedActions: z.array(z.string()).default([]),
+  contentOpportunities: z.array(z.string()).default([]),
+});
+export type FeedbackLoopInsight = z.infer<typeof feedbackLoopInsightSchema>;
+
 // Export enum types
-export const AIModel = z.enum(["gpt-4", "gpt-3.5-turbo", "gemini-1.5-pro"]);
+export const AIModel = z.enum([
+  "gpt-4",
+  "gpt-3.5-turbo",
+  "grok-beta",
+  "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
+  "moonshotai/kimi-k2-instruct-0905",
+  "qwen/qwen3-32b",
+  "openai/gpt-oss-safeguard-20b",
+  "gemini-1.5-pro"
+]);
 export type AIModelType = z.infer<typeof AIModel>;

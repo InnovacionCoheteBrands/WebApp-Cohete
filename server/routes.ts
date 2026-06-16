@@ -1,6 +1,7 @@
 // ===== IMPORTACIONES DE EXPRESS Y TIPOS =====
 // Tipos de Express para tipado TypeScript
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Response, NextFunction } from "express";
+type Request = any;
 // Servidor HTTP de Node.js
 import { createServer, type Server } from "http";
 
@@ -10,7 +11,7 @@ import { setupSimpleGoogleAuth, isAuthenticated } from "./simple-oauth";
 
 // ===== IMPORTACIONES DE BASE DE DATOS =====
 // Capa de abstracción para almacenamiento de datos
-import { storage } from "./storage";
+import { storage, type DatabaseStorage } from "./storage";
 
 // ===== IMPORTACIONES DE LIBRERÍAS =====
 // Express framework
@@ -62,9 +63,11 @@ async function initializePdfParse() {
   }
   return pdfParse;
 }
-import { analyzeDocument, analyzeMarketingImage, processChatMessage } from "./ai-analyzer";
+import { analyzeDocument, analyzeMarketingImage, analyzeSocialPerformance, parseSocialMetricsCsv, processChatMessage } from "./ai-analyzer";
+import { ProjectChatRuntimeError, runProjectChatRuntime } from "./ai-runtime/chat-runtime";
+import { buildAssetBundleFromEntry, generateMarketingAssetPreviews } from "./ai-runtime/marketing-orchestrator";
 import { generateSchedule } from "./ai-scheduler";
-import { generateConcepts } from "./ai-scheduler-concepts";
+// Servicio de integración con Gemini
 import { geminiService } from "./gemini-integration";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -73,10 +76,10 @@ import { db } from "./db";
 import { eq, asc, desc, and, or, sql, like, inArray } from "drizzle-orm";
 import * as htmlPdf from 'html-pdf-node';
 import { jsPDF } from 'jspdf';
-import { AIModel } from "../shared/schema";
-import * as schema from "../shared/schema";
+import * as schema from "@shared/schema";
 import { format } from "date-fns";
 import {
+  feedbackLoopInsightSchema,
   insertProjectSchema,
   insertAnalysisResultsSchema,
   insertScheduleSchema,
@@ -89,19 +92,56 @@ import {
   insertTimeEntrySchema,
   insertTagSchema,
   insertCollaborativeDocSchema,
+  socialMetricSchema,
   updateProfileSchema,
   scheduleEntries,
   Product
-} from "../shared/schema";
+} from "@shared/schema";
 import { WebSocketServer } from "ws";
 
 // Global declaration for storage
 declare global {
-  var storage: any;
+  var storage: DatabaseStorage;
 }
 
 // Initialize global storage
 global.storage = storage as any;
+
+function buildStrategicProjectContext(project: {
+  name: string;
+  client?: string | null;
+  description?: string | null;
+  analysis?: Record<string, unknown> | null;
+}) {
+  return {
+    name: project.name,
+    client: project.client ?? undefined,
+    description: project.description ?? undefined,
+    analysisResults: project.analysis ?? undefined,
+    ...(project.analysis ?? {})
+  };
+}
+
+const assetPreviewRequestSchema = z.object({
+  projectId: z.union([z.string(), z.number()]).optional(),
+  name: z.string().min(1),
+  periodType: z.enum(["quincenal", "mensual"]).optional(),
+  specifications: z.string().optional(),
+  additionalInstructions: z.string().optional(),
+  platforms: z.array(z.object({
+    platformId: z.string(),
+    contentTypes: z.array(z.object({
+      type: z.string(),
+      quantity: z.number().optional(),
+    })).default([]),
+    customInstructions: z.string().optional(),
+  })).default([]),
+});
+
+const feedbackLoopRequestSchema = z.object({
+  metrics: z.array(socialMetricSchema).optional(),
+  csvText: z.string().optional(),
+});
 
 // Obtener directorio actual compatible con ESM
 import { fileURLToPath } from 'url';
@@ -129,7 +169,7 @@ const multerStorage = multer.diskStorage({
 });
 
 // Configuración de multer para documentos (PDF, DOCX, TXT)
-const documentUpload = multer({
+const documentUpload = multer({ 
   storage: multerStorage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
   fileFilter: (req, file, cb) => {
@@ -175,7 +215,7 @@ const marketingImageUpload = multer({
   storage: multerStorage,
   limits: { fileSize: 8 * 1024 * 1024 }, // 8MB limit para imágenes de marketing (algunas pueden ser de mayor calidad)
   fileFilter: (req, file, cb) => {
-    // Aceptar solo formatos de imagen que funcionen bien con Gemini Vision
+    // Aceptar solo formatos de imagen que funcionen bien con Grok Vision
     const allowedTypes = [
       'image/jpeg',
       'image/jpg',
@@ -227,8 +267,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/create-primary-account", async (req: Request, res: Response) => {
     try {
-      console.log("Creating primary account request:", {
-        body: { ...req.body, password: '[REDACTED]', secretKey: '[REDACTED]' }
+      console.log("Creating primary account request:", { 
+        body: { ...req.body, password: '[REDACTED]', secretKey: '[REDACTED]' } 
       });
 
       const { fullName, username, password, secretKey } = req.body;
@@ -255,6 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crear usuario primario
       const hashedPassword = await hashPassword(password);
       const newUser = await global.storage.createUser({
+        id: Math.random().toString(36).substring(2, 15),
         fullName,
         username,
         password: hashedPassword,
@@ -311,9 +352,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // El valor de isPrimary vendrá directamente desde el frontend
 
       // Crear usuario
+      if (!userData.password) {
+        return res.status(400).json({ message: "La contraseña es requerida" });
+      }
       const hashedPassword = await hashPassword(userData.password);
       const newUser = await global.storage.createUser({
         ...userData,
+        id: userData.id || Math.random().toString(36).substring(2, 15),
         password: hashedPassword,
       });
 
@@ -443,7 +488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tasksCompleted = tasks.filter(task => task.status === 'completed').length;
       const totalSchedules = allSchedules.length;
       const totalCollaborations = projects.reduce((count, project) => {
-        return count + (project.members?.length || 0);
+        return count + ((project as any).members?.length || 0);
       }, 0);
 
       // Calcular completitud del perfil
@@ -495,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Crear lista de actividades
-      const activities = [];
+      const activities: any[] = [];
 
       // Agregar proyectos recientes
       recentProjects.slice(0, 3).forEach(project => {
@@ -717,9 +762,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Actualizar contraseña
       await global.storage.updateUser(userId, { password: hashedPassword });
 
-      res.json({
+      res.json({ 
         message: "Contraseña actualizada correctamente",
-        targetUser: user.fullName
+        targetUser: user.fullName 
       });
     } catch (error) {
       console.error("Error changing user password:", error);
@@ -763,22 +808,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If analysis data is provided, create analysis result
       if (req.body.analysisResults) {
-        // Map new frontend fields to DB columns if legacy ones aren't provided
-        const analysisPayload = { ...req.body.analysisResults };
-
-        // Map contentPillars -> contentThemes
-        if (analysisPayload.contentPillars && !analysisPayload.contentThemes) {
-          analysisPayload.contentThemes = analysisPayload.contentPillars;
-        }
-
-        // Map competitors -> competitorAnalysis
-        if (analysisPayload.competitors && !analysisPayload.competitorAnalysis) {
-          analysisPayload.competitorAnalysis = analysisPayload.competitors;
-        }
-
         const analysisData = {
           projectId: newProject.id,
-          ...analysisPayload
+          ...req.body.analysisResults
         };
 
         await global.storage.createAnalysisResult(analysisData);
@@ -818,7 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
+      const hasAccess = await global.storage.checkUserProjectAccess(String(req.user.id), projectId);
 
       console.log(`User ${req.user.id} access to project ${projectId}: ${hasAccess}`);
 
@@ -849,9 +881,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       res.json(safeProject);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error detallado al obtener proyecto:", error);
-      res.status(500).json({
+      res.status(500).json({ 
         message: "Error al cargar el proyecto",
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -911,22 +943,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid project ID" });
       }
 
-      // Map new frontend fields to DB columns for PATCH request
-      const requestBody = { ...req.body };
-
-      // Map contentPillars -> contentThemes
-      if (requestBody.contentPillars && !requestBody.contentThemes) {
-        requestBody.contentThemes = requestBody.contentPillars;
-      }
-
-      // Map competitors -> competitorAnalysis
-      if (requestBody.competitors && !requestBody.competitorAnalysis) {
-        requestBody.competitorAnalysis = requestBody.competitors;
-      }
-
       const analysisData = insertAnalysisResultsSchema.parse({
         projectId,
-        ...requestBody
+        ...req.body
       });
 
       // Check if analysis exists for this project
@@ -951,7 +970,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Análisis de Imágenes de Marketing con Gemini Vision
+  // Análisis de Imágenes de Marketing con Grok Vision
   app.post("/api/projects/:projectId/analyze-image", isAuthenticated, marketingImageUpload.single('image'), async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
@@ -981,9 +1000,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Tipo de análisis inválido. Debe ser 'brand', 'content' o 'audience'" });
       }
 
-      // Realizar análisis de la imagen con Gemini Vision
-      const analysisResult = await analyzeMarketingImage(req.file.path, analysisType);
-
+      // Realizar análisis de la imagen con Grok Vision
+      const projectForImage = await global.storage.getProjectWithAnalysis(projectId);
+      const analysisResult = await analyzeMarketingImage(
+        req.file.path,
+        analysisType,
+        projectForImage ? buildStrategicProjectContext(projectForImage) : undefined
+      );
       // Devolver el resultado del análisis
       res.json({
         success: true,
@@ -999,9 +1022,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     } catch (error) {
       console.error("Error analizando imagen de marketing:", error);
-      res.status(500).json({
-        message: "Error al analizar la imagen",
-        error: (error as Error).message
+      res.status(500).json({ 
+        message: "Error al analizar la imagen", 
+        error: (error as Error).message 
       });
     }
   });
@@ -1016,10 +1039,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
-
+      const hasAccess = await global.storage.checkUserProjectAccess(String(req.user.id), projectId);
+      
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
+      }
+
+      const project = await global.storage.getProjectWithAnalysis(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
       }
 
       if (!req.file) {
@@ -1046,7 +1074,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const dataBuffer = fs.readFileSync(req.file.path);
           const pdfData = await parser(dataBuffer);
           extractedText = pdfData.text;
-        } catch (error) {
+        } catch (error: any) {
           console.warn("PDF parsing failed, using filename as fallback:", error.message);
           extractedText = `PDF document: ${req.file.originalname}`;
         }
@@ -1065,7 +1093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Process with AI in the background
       console.log(`Starting AI analysis for document ${document.id}`);
-      analyzeDocument(extractedText)
+      analyzeDocument(extractedText, buildStrategicProjectContext(project))
         .then(async (analysis) => {
           console.log(`AI analysis completed successfully for document ${document.id}`);
           await global.storage.updateDocument(document.id, {
@@ -1152,35 +1180,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Endpoint para generar ideas/conceptos previos al cronograma
-  app.post("/api/projects/:projectId/schedule/concepts", isAuthenticated, async (req: Request, res: Response) => {
+  app.post("/api/projects/:projectId/feedback-loop", isAuthenticated, async (req: Request, res: Response) => {
     try {
       const projectId = parseInt(req.params.projectId);
       if (isNaN(projectId)) {
         return res.status(400).json({ message: "Invalid project ID" });
       }
 
-      const { amount, additionalInstructions } = req.body;
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this project" });
+      }
 
-      const project = await global.storage.getProjectWithAnalysis(projectId);
+      const payload = feedbackLoopRequestSchema.parse(req.body);
+      const metrics = payload.metrics?.length
+        ? payload.metrics.map((metric) => socialMetricSchema.parse(metric))
+        : (payload.csvText ? parseSocialMetricsCsv(payload.csvText) : []);
+
+      if (metrics.length === 0) {
+        return res.status(400).json({ message: "No metrics were provided for the feedback loop" });
+      }
+
+      const project = await global.storage.getProjectBrandBrain(projectId);
       if (!project) {
         return res.status(404).json({ message: "Project not found" });
       }
 
-      const concepts = await generateConcepts(
-        project.name,
-        {
-          client: project.client,
-          ...project.analysis
-        },
-        amount || 10,
-        additionalInstructions
-      );
+      const insight = await analyzeSocialPerformance(metrics, buildStrategicProjectContext(project));
+      const parsedInsight = feedbackLoopInsightSchema.parse(insight);
+      const nextAnalysisPayload = {
+        performanceInsights: parsedInsight.highPerformingPatterns.map((pattern) => ({ pattern })),
+        recommendedNextActions: parsedInsight.recommendedActions,
+        lastFeedbackAppliedAt: new Date(),
+      };
 
-      res.json(concepts);
+      const existingAnalysis = await global.storage.getAnalysisResult(projectId);
+      if (existingAnalysis) {
+        await global.storage.updateAnalysisResult(projectId, nextAnalysisPayload);
+      } else {
+        await global.storage.createAnalysisResult({
+          projectId,
+          ...nextAnalysisPayload,
+        });
+      }
+
+      const run = await global.storage.createAgentRun({
+        projectId,
+        userId: String(req.user.id),
+        entrypoint: "feedback_loop",
+        status: "completed",
+        route: "social_metrics_review",
+        finalAgent: "performance_analyst",
+        provider: "groq",
+        model: "qwen/qwen3-32b",
+        estimatedTokens: Math.ceil(JSON.stringify(metrics).length / 4),
+        actualTokens: 0,
+        startedAt: new Date(),
+        finishedAt: new Date(),
+      });
+
+      await global.storage.createAgentArtifact({
+        runId: run.id,
+        agent: "performance_analyst",
+        artifactType: "feedback_loop_insight",
+        payloadJson: {
+          metricsCount: metrics.length,
+          insight: parsedInsight,
+        },
+      });
+
+      return res.json({
+        runId: run.id,
+        metricsCount: metrics.length,
+        insight: parsedInsight,
+      });
     } catch (error) {
-      console.error("Error generating concepts:", error);
-      res.status(500).json({ message: "Failed to generate concepts" });
+      console.error("Error running feedback loop:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Failed to analyze social performance" });
     }
   });
 
@@ -1207,19 +1286,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate required data
-      const { startDate, specifications, periodType, additionalInstructions, durationDays } = req.body;
+      const { startDate, specifications, periodType, additionalInstructions } = req.body;
       if (!startDate) {
         return res.status(400).json({ message: "Start date is required" });
       }
 
-      // Forzamos el uso de Gemini como único modelo de IA disponible
-
-      // Determinar el número de días según el tipo de periodo o duración específica
+      // Determinar el número de días según el tipo de periodo
       let periodDays = 15; // Valor predeterminado: quincenal (15 días)
-
-      if (durationDays) {
-        periodDays = parseInt(durationDays);
-      } else if (periodType === "mensual") {
+      if (periodType === "mensual") {
         periodDays = 31; // Periodo mensual: 31 días
       }
 
@@ -1237,7 +1311,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const products = await global.storage.listProductsByProject(projectId);
       console.log(`[CALENDAR] Productos encontrados para el proyecto: ${products.length}`);
 
-      // Generate schedule using Gemini, passing previous content
+      // Generate schedule using Grok AI, passing previous content
       console.log("[CALENDAR] Iniciando generación de cronograma");
       console.log("[CALENDAR] Instrucciones adicionales: ", additionalInstructions || "Ninguna");
 
@@ -1245,9 +1319,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedSchedule = await generateSchedule(
         project.name,
         {
-          client: project.client,
-          description: project.description,
-          ...project.analysis,
+          id: project.id,
+          ...buildStrategicProjectContext(project),
+          startDate: project.startDate,
+          endDate: project.endDate,
+          status: project.status,
           // Incluir productos en formato esperado por el AI scheduler
           initialProducts: products.map(p => ({
             name: p.name,
@@ -1276,6 +1352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Save schedule entries without generating images automatically
       const entryPromises = generatedSchedule.entries.map(async (entry) => {
+        const assetBundle = buildAssetBundleFromEntry(entry, buildStrategicProjectContext(project));
+
         // 1. Crear la entrada en la base de datos
         const savedEntry = await global.storage.createScheduleEntry({
           scheduleId: schedule.id,
@@ -1288,7 +1366,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           platform: entry.platform,
           postDate: new Date(entry.postDate),
           postTime: entry.postTime,
-          hashtags: entry.hashtags
+          hashtags: entry.hashtags,
+          uvpAlignmentScore: entry.uvpAlignmentScore,
+          uvpAlignmentReason: entry.uvpAlignmentReason,
+          referenceImagePrompt: entry.referenceImagePrompt || assetBundle.prompt,
+          referenceImageUrl: entry.referenceImageUrl || assetBundle.previewUrl,
+          assetBrief: entry.assetBrief || assetBundle.assetBrief
         });
 
         // 2. Guardar el contenido en el historial para evitar repeticiones
@@ -1304,10 +1387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.error(`Error saving content history for entry ${savedEntry.id}:`, historyError);
           // Continuamos aunque no se pueda guardar el historial
         }
-
-        // Ya no generamos imágenes automáticamente para evitar problemas con las APIs
-        // El usuario podrá generar las imágenes manualmente desde la interfaz cuando sea necesario
-
+        // Ya no generamos imágenes automáticamente; el usuario puede generar vistas previas desde la UI cuando lo necesite.
         return savedEntry;
       });
 
@@ -1329,24 +1409,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`[CALENDAR ROUTE] Error tipo: ${errorType}, Mensaje: ${errorMessage}`);
 
       // Mensajes de error específicos basados en el tipo de error
-      if (errorType === "NETWORK" || errorMessage.includes("connect") || errorMessage.includes("Servicio de Gemini temporalmente no disponible")) {
-        // Error de conexión o disponibilidad de Gemini
-        return res.status(503).json({
-          message: "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.",
+      if (errorType === "NETWORK" || errorMessage.includes("connect") || errorMessage.includes("Servicio de Grok AI temporalmente no disponible")) {
+        // Error de conexión o disponibilidad de Grok API
+        return res.status(503).json({ 
+          message: "Servicio de IA temporalmente no disponible. Por favor intenta nuevamente en unos minutos.", 
           error: errorMessage,
           errorType: "SERVICIO_NO_DISPONIBLE"
         });
       } else if (errorType === "RATE_LIMIT" || errorMessage.includes("límite de peticiones")) {
         // Error de límite de peticiones
-        return res.status(429).json({
-          message: "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.",
+        return res.status(429).json({ 
+          message: "Hemos alcanzado el límite de generaciones. Por favor espera unos minutos antes de intentar crear otro calendario.", 
           error: errorMessage,
           errorType: "LIMITE_EXCEDIDO"
         });
       } else if (errorType === "AUTH" || errorMessage.includes("autenticación") || errorMessage.includes("authentication")) {
         // Error de autenticación con la API
-        return res.status(401).json({
-          message: "Error en la configuración del servicio de IA. Por favor contacta al administrador.",
+        return res.status(401).json({ 
+          message: "Error en la configuración del servicio de IA. Por favor contacta al administrador.", 
           error: errorMessage,
           errorType: "ERROR_AUTENTICACION"
         });
@@ -1367,11 +1447,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Errores generales
-      res.status(500).json({
-        message: "Ocurrió un error al crear el calendario. Por favor intenta con menos plataformas o en otro momento.",
+      res.status(500).json({ 
+        message: "Ocurrió un error al crear el calendario. Por favor intenta con menos plataformas o en otro momento.", 
         error: errorMessage,
         errorType: "ERROR_GENERAL"
       });
+    }
+  });
+
+  app.post("/api/projects/:projectId/asset-preview", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const projectId = parseInt(req.params.projectId);
+      if (isNaN(projectId)) {
+        return res.status(400).json({ message: "Invalid project ID" });
+      }
+
+      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this project" });
+      }
+
+      const payload = assetPreviewRequestSchema.parse(req.body);
+      const project = await global.storage.getProjectBrandBrain(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const previews = await generateMarketingAssetPreviews({
+        projectName: payload.name,
+        projectContext: buildStrategicProjectContext(project),
+        specifications: payload.specifications,
+        additionalInstructions: payload.additionalInstructions,
+        periodType: payload.periodType,
+        platforms: payload.platforms.map((platform) => platform.platformId),
+      }, global.storage);
+
+      return res.json(previews);
+    } catch (error) {
+      console.error("Error generating asset preview:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: fromZodError(error).message });
+      }
+      return res.status(500).json({ message: "Failed to generate asset previews" });
     }
   });
 
@@ -1486,6 +1603,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/schedule-entries/:entryId/generate-image", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const entryId = parseInt(req.params.entryId);
+      if (isNaN(entryId)) {
+        return res.status(400).json({ message: "Invalid schedule entry ID" });
+      }
+
+      const entry = await global.storage.getScheduleEntry(entryId);
+      if (!entry) {
+        return res.status(404).json({ message: "Schedule entry not found" });
+      }
+
+      const schedule = await global.storage.getSchedule(entry.scheduleId);
+      if (!schedule) {
+        return res.status(404).json({ message: "Schedule not found" });
+      }
+
+      const hasAccess = await global.storage.checkUserProjectAccess(String(req.user.id), schedule.projectId);
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have access to this schedule entry" });
+      }
+
+      const project = await global.storage.getProjectBrandBrain(schedule.projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+
+      const assetBundle = buildAssetBundleFromEntry(entry, buildStrategicProjectContext(project));
+      const updatedEntry = await global.storage.updateScheduleEntry(entryId, {
+        referenceImagePrompt: assetBundle.prompt,
+        referenceImageUrl: assetBundle.previewUrl,
+        assetBrief: assetBundle.assetBrief,
+      });
+
+      return res.json(updatedEntry);
+    } catch (error) {
+      console.error("Error generating schedule image preview:", error);
+      return res.status(500).json({ message: "Failed to generate schedule image preview" });
+    }
+  });
   // Endpoint para actualizar las instrucciones adicionales de un cronograma
   app.patch("/api/schedules/:id/additional-instructions", isAuthenticated, async (req: Request, res: Response) => {
     try {
@@ -1579,10 +1736,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .map(([area, _]) => {
             const areaNames = {
               titles: "títulos",
-              descriptions: "descripciones",
+              descriptions: "descripciones", 
               content: "contenido",
               copyIn: "texto integrado (copyIn)",
-              copyOut: "texto descripción (copyOut)",
+              copyOut: "texto descripción (copyOut)", 
               designInstructions: "instrucciones de diseño",
               platforms: "plataformas",
               hashtags: "hashtags"
@@ -1601,7 +1758,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             if (selected && specificInstructions[area] && specificInstructions[area].trim()) {
               const areaNames = {
                 titles: "TÍTULOS",
-                descriptions: "DESCRIPCIONES",
+                descriptions: "DESCRIPCIONES", 
                 content: "CONTENIDO",
                 copyIn: "TEXTO INTEGRADO (copyIn)",
                 copyOut: "TEXTO DESCRIPCIÓN (copyOut)",
@@ -1673,7 +1830,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           const editedContentText = await geminiService.generateText(editPrompt, {
             temperature: 0.7,
             maxTokens: 2000,
-            model: 'gemini-1.5-pro'
+            model: "gemini-1.5-pro",
+            responseFormat: "json"
           });
 
           console.log(`[REGENERATE] Respuesta de edición para entrada ${i + 1}:`, editedContentText.substring(0, 200));
@@ -1737,9 +1895,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       res.json(updatedSchedule);
     } catch (error) {
       console.error("Error al regenerar cronograma:", error);
-      res.status(500).json({
-        message: "Error al regenerar cronograma",
-        error: (error as Error).message
+      res.status(500).json({ 
+        message: "Error al regenerar cronograma", 
+        error: (error as Error).message 
       });
     }
   });
@@ -1857,8 +2015,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         worksheet.getCell('A4').alignment = { horizontal: 'right' };
 
         worksheet.mergeCells('C4:D4');
-        worksheet.getCell('C4').value = new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', {
-          day: '2-digit', month: '2-digit', year: 'numeric'
+        worksheet.getCell('C4').value = new Date(schedule.startDate || new Date()).toLocaleDateString('es-ES', { 
+          day: '2-digit', month: '2-digit', year: 'numeric' 
         });
 
         worksheet.mergeCells('E4:F4');
@@ -1867,7 +2025,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         worksheet.getCell('E4').alignment = { horizontal: 'right' };
 
         worksheet.mergeCells('G4:J4');
-        worksheet.getCell('G4').value = new Date().toLocaleDateString('es-ES', {
+        worksheet.getCell('G4').value = new Date().toLocaleDateString('es-ES', { 
           day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
@@ -1895,8 +2053,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         // Agregar encabezados manualmente a la fila correspondiente
         const headerRow = worksheet.getRow(headerRowIndex);
         headerRow.values = [
-          'Fecha', 'Hora', 'Plataforma', 'Formato', 'Título',
-          'Copy In (texto en diseño)', 'Copy Out (descripción)',
+          'Fecha', 'Hora', 'Plataforma', 'Formato', 'Título', 
+          'Copy In (texto en diseño)', 'Copy Out (descripción)', 
           'Hashtags', 'Instrucciones de Diseño', 'URL de Imagen'
         ];
 
@@ -1922,8 +2080,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         sortedEntries.forEach((entry, index) => {
           const rowIndex = headerRowIndex + index + 1;
           const row = worksheet.addRow({
-            postDate: entry.postDate ? new Date(entry.postDate).toLocaleDateString('es-ES', {
-              day: '2-digit', month: '2-digit', year: 'numeric'
+            postDate: entry.postDate ? new Date(entry.postDate).toLocaleDateString('es-ES', { 
+              day: '2-digit', month: '2-digit', year: 'numeric' 
             }) : 'Sin fecha',
             postTime: entry.postTime || 'Sin hora',
             platform: entry.platform,
@@ -1952,8 +2110,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             };
 
             // Ajustar texto para celdas con mucho contenido
-            cell.alignment = {
-              vertical: 'top',
+            cell.alignment = { 
+              vertical: 'top', 
               wrapText: true,
               shrinkToFit: false // Deshabilitar la reducción del tamaño de texto
             };
@@ -1963,7 +2121,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           const platformCell = row.getCell(3);
           let platformColor = '4F46E5'; // Color por defecto (indigo)
 
-          switch (entry.platform) {
+          switch(entry.platform) {
             case 'Instagram':
               platformColor = 'E1306C'; // Rosa Instagram
               break;
@@ -2086,10 +2244,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           });
 
           // Definir colores mejorados
-          const primaryColor = [79 / 255, 70 / 255, 229 / 255]; // #4F46E5 en RGB
-          const primaryLightColor = [224 / 255, 231 / 255, 255 / 255]; // #E0E7FF en RGB
-          const grayColor = [107 / 255, 114 / 255, 128 / 255]; // #6B7280 en RGB
-          const accentColor = [245 / 255, 158 / 255, 11 / 255]; // #F59E0B en RGB - Amber
+          const primaryColor = [79/255, 70/255, 229/255]; // #4F46E5 en RGB
+          const primaryLightColor = [224/255, 231/255, 255/255]; // #E0E7FF en RGB
+          const grayColor = [107/255, 114/255, 128/255]; // #6B7280 en RGB
+          const accentColor = [245/255, 158/255, 11/255]; // #F59E0B en RGB - Amber
 
           // Añadir imágenes y diseños
 
@@ -2123,12 +2281,12 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             { title: 'PROYECTO', value: project.name },
             { title: 'CLIENTE', value: project.client },
             { title: 'TOTAL PUBLICACIONES', value: sortedEntries.length.toString() },
-            {
-              title: 'FECHA DE INICIO',
-              value: schedule.startDate
-                ? new Date(schedule.startDate).toLocaleDateString('es-ES', {
-                  day: '2-digit', month: '2-digit', year: 'numeric'
-                })
+            { 
+              title: 'FECHA DE INICIO', 
+              value: schedule.startDate 
+                ? new Date(schedule.startDate).toLocaleDateString('es-ES', { 
+                    day: '2-digit', month: '2-digit', year: 'numeric' 
+                  })
                 : 'No definida'
             }
           ];
@@ -2168,9 +2326,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           doc.setFont('helvetica', 'normal');
           doc.setFontSize(8);
           doc.setTextColor(grayColor[0], grayColor[1], grayColor[2]);
-          const currentDate = new Date().toLocaleDateString('es-ES', {
-            day: '2-digit', month: '2-digit', year: 'numeric',
-            hour: '2-digit', minute: '2-digit'
+          const currentDate = new Date().toLocaleDateString('es-ES', { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit' 
           });
           doc.text(`Generado el: ${currentDate}`, 260, 55, { align: 'right' });
 
@@ -2269,10 +2427,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
             }
 
             // Formatear fecha
-            const dateFormatted = entry.postDate
+            const dateFormatted = entry.postDate 
               ? new Date(entry.postDate).toLocaleDateString('es-ES', {
-                day: '2-digit', month: '2-digit', year: 'numeric'
-              })
+                  day: '2-digit', month: '2-digit', year: 'numeric'
+                })
               : 'Sin fecha';
 
             // Convertir color de plataforma
@@ -2373,7 +2531,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           res.setHeader('Content-Type', 'application/pdf');
           res.setHeader('Content-Disposition', `attachment; filename="${safeFileName}.pdf"`);
           res.send(Buffer.from(pdfBuffer));
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error generando PDF:", error);
           res.status(500).json({ message: "Error al generar el PDF", details: error.message });
         }
@@ -2395,64 +2553,67 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
     try {
       const { message, projectId } = req.body;
 
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       if (!message) {
         return res.status(400).json({ message: "Message is required" });
       }
 
       if (projectId) {
-        // Check if user has access to project
-        const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
+        const hasAccess = await global.storage.checkUserProjectAccess(String(req.user.id), projectId);
 
         if (!hasAccess) {
           return res.status(403).json({ message: "You don't have access to this project" });
         }
 
-        // Get project with analysis
         const project = await global.storage.getProjectWithAnalysis(projectId);
         if (!project) {
           return res.status(404).json({ message: "Project not found" });
         }
 
-        // Get context from previous messages
         const previousMessages = await global.storage.getChatMessages(projectId);
 
-        // Convertir los mensajes anteriores al formato requerido por Gemini
-        const formattedMessages = previousMessages.map(msg => {
-          // En el schema tenemos 'role' pero la API necesita 'user' o 'assistant'
-          return {
-            role: msg.role === 'user' ? 'user' : 'assistant',
-            content: msg.content
-          };
-        });
-
-        // Use AI to process message with project context
-        const response = await processChatMessage(
-          message,
-          {
-            name: project.name,
-            client: project.client,
-            description: project.description,
-            ...(project.analysis || {})
-          },
-          formattedMessages
-        );
-
-        // Save user message
         await global.storage.createChatMessage({
           projectId,
-          userId: req.user.id,
+          userId: String(req.user.id),
           content: message,
           role: 'user'
         });
 
-        // Save AI response
+        const runtimeResponse = await runProjectChatRuntime(
+          {
+            projectId,
+            userId: String(req.user.id),
+            message,
+            projectContext: {
+              name: project.name,
+              client: project.client,
+              description: project.description || null,
+              analysis: project.analysis || {},
+            },
+            chatHistory: previousMessages.map((msg) => ({
+              role: msg.role === "user" ? "user" : "assistant",
+              content: msg.content,
+            })),
+          },
+          global.storage,
+        );
+
         const savedResponse = await global.storage.createChatMessage({
           projectId,
-          content: response,
-          role: 'assistant'
+          content: runtimeResponse.content,
+          role: 'assistant',
+          aiModel: runtimeResponse.finalModel as any,
+          legacyIsAi: true,
         });
 
-        res.json(savedResponse);
+        res.json({
+          ...savedResponse,
+          auditWarning: runtimeResponse.auditWarning,
+          runId: runtimeResponse.runId,
+        });
       } else {
         // General chat without project context
         // Use AI to process message
@@ -2466,20 +2627,26 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
     } catch (error) {
       console.error("Error processing chat message:", error);
+      if (error instanceof ProjectChatRuntimeError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
       res.status(500).json({ message: "Failed to process chat message" });
     }
   });
 
   app.get("/api/projects/:projectId/chat", isAuthenticated, async (req: Request, res: Response) => {
     try {
+      if (!req.user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
       const projectId = parseInt(req.params.projectId);
       if (isNaN(projectId)) {
         return res.status(400).json({ message: "Invalid project ID" });
       }
 
       // Check if user has access to project
-      const hasAccess = await global.storage.checkUserProjectAccess(req.user.id, projectId);
-
+      const hasAccess = await global.storage.checkUserProjectAccess(String(req.user.id), projectId);
       if (!hasAccess) {
         return res.status(403).json({ message: "You don't have access to this project" });
       }
@@ -2886,6 +3053,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         sampleTasks.map(async (taskData) => {
           return await global.storage.createTask({
             ...taskData,
+            status: taskData.status as any,
+            priority: taskData.priority as any,
             projectId,
             createdById: req.user.id
           });
@@ -3046,7 +3215,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       if (req.body.name) updateData.name = req.body.name;
       if (req.body.description !== undefined) updateData.description = req.body.description || null;
       if (req.body.sku !== undefined) updateData.sku = req.body.sku || null;
-      if (req.body.price !== undefined) updateData.price = req.body.price ? parseFloat(req.body.price) : null;
+      if (req.body.price !== undefined) updateData.price = req.body.price ? String(req.body.price) : null;
 
       // Si hay una nueva imagen
       if (req.file) {
@@ -3137,7 +3306,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       // Actualizar los comentarios
       await global.storage.updateScheduleEntry(entryId, { comments });
 
-      res.status(200).json({
+      res.status(200).json({ 
         message: "Comentarios actualizados correctamente",
         entryId
       });
@@ -3477,7 +3646,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
       }
 
-      const timeEntries = await global.storage.listTimeEntriesByTask(taskId);
+      const timeEntries = await global.storage.getTimeEntries(taskId);
       res.json(timeEntries);
     } catch (error) {
       console.error("Error al obtener registros de tiempo:", error);
@@ -3595,7 +3764,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
       }
 
-      const tags = await global.storage.listTags(projectId);
+      const tags = await global.storage.getTags(projectId);
       res.json(tags);
     } catch (error) {
       console.error("Error al obtener etiquetas:", error);
@@ -3715,7 +3884,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(403).json({ message: "No tienes acceso a este proyecto" });
       }
 
-      const docs = await global.storage.listCollaborativeDocs(projectId);
+      const docs = await global.storage.getCollaborativeDocs(projectId);
       res.json(docs);
     } catch (error) {
       console.error("Error al obtener documentos colaborativos:", error);
@@ -3900,8 +4069,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       const comment = await global.storage.createTaskComment({
         taskId,
         userId: req.user.id,
-        content,
-        mentionedUsers
+        content
       });
 
       // Crear notificaciones para usuarios mencionados
@@ -3909,11 +4077,11 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         for (const userId of mentionedUsers) {
           await global.storage.createNotification({
             userId,
-            type: 'mentioned_in_comment',
+            type: 'mention',
             title: 'Te mencionaron en un comentario',
             message: `${req.user.fullName} te mencionó en un comentario`,
-            relatedTaskId: taskId,
-            relatedCommentId: comment.id
+            relatedEntityType: 'task_comment',
+            relatedEntityId: String(comment.id)
           });
         }
       }
@@ -3932,7 +4100,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
 
-      const notifications = await global.storage.getUserNotifications(req.user.id);
+      const notifications = await global.storage.getNotifications(req.user.id);
       res.json(notifications);
     } catch (error) {
       console.error('Error obteniendo notificaciones:', error);
@@ -3949,7 +4117,12 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         return res.status(401).json({ message: "Usuario no autenticado" });
       }
 
-      await global.storage.markNotificationAsRead(notificationId, req.user.id);
+      const notification = await global.storage.getNotification(notificationId);
+      if (!notification || notification.userId !== req.user.id) {
+        return res.status(404).json({ message: "Notificación no encontrada" });
+      }
+
+      await global.storage.updateNotification(notificationId, { isRead: true });
       res.json({ success: true });
     } catch (error) {
       console.error('Error marcando notificación:', error);
@@ -4048,12 +4221,12 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       }
 
       const userTeams = await db.select({
-        team: teams,
-        membership: teamMembers
+        team: schema.teams,
+        membership: schema.teamMembers
       })
-        .from(teamMembers)
-        .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-        .where(eq(teamMembers.userId, req.user.id));
+      .from(schema.teamMembers)
+      .innerJoin(schema.teams, eq(schema.teamMembers.teamId, schema.teams.id))
+      .where(eq(schema.teamMembers.userId, req.user.id));
 
       res.json(userTeams);
     } catch (error) {
@@ -4073,10 +4246,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
       // Verificar que el usuario pertenece al equipo
       const [membership] = await db.select()
-        .from(teamMembers)
+        .from(schema.teamMembers)
         .where(and(
-          eq(teamMembers.teamId, teamId),
-          eq(teamMembers.userId, req.user.id)
+          eq(schema.teamMembers.teamId, teamId),
+          eq(schema.teamMembers.userId, req.user.id)
         ));
 
       if (!membership) {
@@ -4085,21 +4258,21 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
       const members = await db.select({
         user: {
-          id: users.id,
-          fullName: users.fullName,
-          username: users.username,
-          email: users.email,
-          profileImage: users.profileImage,
-          role: users.role
+          id: schema.users.id,
+          fullName: schema.users.fullName,
+          username: schema.users.username,
+          email: schema.users.email,
+          profileImage: schema.users.profileImage,
+          role: schema.users.role
         },
         membership: {
-          role: teamMembers.role,
-          joinedAt: teamMembers.joinedAt
+          role: schema.teamMembers.role,
+          joinedAt: schema.teamMembers.joinedAt
         }
       })
-        .from(teamMembers)
-        .innerJoin(users, eq(teamMembers.userId, users.id))
-        .where(eq(teamMembers.teamId, teamId));
+      .from(schema.teamMembers)
+      .innerJoin(schema.users, eq(schema.teamMembers.userId, schema.users.id))
+      .where(eq(schema.teamMembers.teamId, teamId));
 
       res.json(members);
     } catch (error) {
@@ -4117,7 +4290,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
 
       const { name, domain, description } = req.body;
 
-      const [newTeam] = await db.insert(teams)
+      const [newTeam] = await db.insert(schema.teams)
         .values({
           name,
           domain,
@@ -4128,7 +4301,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         .returning();
 
       // Agregar al creador como owner del equipo
-      await db.insert(teamMembers)
+      await db.insert(schema.teamMembers)
         .values({
           teamId: newTeam.id,
           userId: req.user.id,
@@ -4170,6 +4343,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       // Log activity
       if (req.user && req.user.id) {
         await db.insert(schema.activityLog).values({
+          action: "update_task",
           description: `Tarea actualizada: ${updatedTask[0].title}`,
           taskId: taskId,
           projectId: updatedTask[0].projectId,
@@ -4196,7 +4370,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       const attachments = await db.select()
         .from(schema.taskAttachments)
         .where(eq(schema.taskAttachments.taskId, taskId))
-        .orderBy(desc(schema.taskAttachments.uploadedAt));
+        .orderBy(desc(schema.taskAttachments.createdAt));
 
       res.json(attachments);
     } catch (error) {
@@ -4222,7 +4396,8 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       const attachment = await db.insert(schema.taskAttachments).values({
         fileName: req.file.originalname,
         fileUrl: `/uploads/${req.file.filename}`,
-        taskId: taskId
+        taskId: taskId,
+        uploadedBy: req.user.id
       }).returning();
 
       // Log activity
@@ -4230,6 +4405,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         const task = await db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).limit(1);
         if (task.length > 0) {
           await db.insert(schema.activityLog).values({
+            action: "upload_attachment",
             description: `Archivo adjunto añadido: ${req.file.originalname}`,
             taskId: taskId,
             projectId: task[0].projectId,
@@ -4270,10 +4446,10 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           username: schema.users.username
         }
       })
-        .from(schema.tasks)
-        .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
-        .where(eq(schema.tasks.id, taskId))
-        .limit(1);
+      .from(schema.tasks)
+      .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
+      .where(eq(schema.tasks.id, taskId))
+      .limit(1);
 
       if (taskWithDetails.length === 0) {
         return res.status(404).json({ message: "Tarea no encontrada" });
@@ -4573,9 +4749,9 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           role: schema.users.role,
         }
       })
-        .from(schema.taskAssignees)
-        .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
-        .where(eq(schema.taskAssignees.taskId, taskId));
+      .from(schema.taskAssignees)
+      .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
+      .where(eq(schema.taskAssignees.taskId, taskId));
 
       res.json(assignees);
     } catch (error) {
@@ -4627,7 +4803,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       const tasks = await db.select().from(schema.tasks).orderBy(asc(schema.tasks.id));
 
       // Get task groups separately - handle missing table gracefully
-      let taskGroups = [];
+      let taskGroups: any[] = [];
       try {
         taskGroups = await db.select().from(schema.taskGroups);
       } catch (error) {
@@ -4649,13 +4825,13 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
           'completed': { id: 'completed', name: 'Completadas', color: '#10b981', position: 2 }
         };
 
-        const group = taskGroups.find(g => g.id === task.groupId) ||
-          defaultGroups[task.group] ||
-          defaultGroups['todo'];
+        const group = taskGroups.find(g => g.id === task.groupId) || 
+                     (task.group && defaultGroups[task.group as keyof typeof defaultGroups]) || 
+                     defaultGroups['todo'];
 
         const project = projects.find(p => p.id === task.projectId);
-        const assignee = users.find(u => u.id === task.assignedToId) ||
-          users.find(u => u.id === task.createdById);
+        const assignee = users.find(u => u.id === task.assignedToId) || 
+                        users.find(u => u.id === task.createdById);
 
         return {
           task: {
@@ -4716,856 +4892,5 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
       res.status(500).json({ error: 'Failed to fetch tasks with groups' });
     }
   });
-
-  // ============ NUEVOS ENDPOINTS PARA SISTEMA DE COLABORACIÓN ============
-
-  // Obtener comentarios de una tarea
-  app.get('/api/tasks/:taskId/comments', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const comments = await global.storage.getTaskComments(taskId);
-      res.json(comments);
-    } catch (error) {
-      console.error('Error obteniendo comentarios:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Crear comentario en una tarea
-  app.post('/api/tasks/:taskId/comments', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const { content, mentionedUsers = [] } = req.body;
-
-      const comment = await global.storage.createTaskComment({
-        taskId,
-        userId: req.user.id,
-        content,
-        mentionedUsers
-      });
-
-      // Crear notificaciones para usuarios mencionados
-      if (mentionedUsers && mentionedUsers.length > 0) {
-        for (const userId of mentionedUsers) {
-          await global.storage.createNotification({
-            userId,
-            type: 'mentioned_in_comment',
-            title: 'Te mencionaron en un comentario',
-            message: `${req.user.fullName} te mencionó en un comentario`,
-            relatedTaskId: taskId,
-            relatedCommentId: comment.id
-          });
-        }
-      }
-
-      res.status(201).json(comment);
-    } catch (error) {
-      console.error('Error creando comentario:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Obtener notificaciones del usuario
-  app.get('/api/notifications', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const notifications = await global.storage.getUserNotifications(req.user.id);
-      res.json(notifications);
-    } catch (error) {
-      console.error('Error obteniendo notificaciones:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Marcar notificación como leída
-  app.patch('/api/notifications/:id/read', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const notificationId = parseInt(req.params.id);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      await global.storage.markNotificationAsRead(notificationId, req.user.id);
-      res.json({ success: true });
-    } catch (error) {
-      console.error('Error marcando notificación:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Obtener miembros de un proyecto
-  app.get('/api/projects/:projectId/members', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const members = await global.storage.getProjectMembers(projectId);
-      res.json(members);
-    } catch (error) {
-      console.error('Error obteniendo miembros:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Agregar miembro a un proyecto
-  app.post('/api/projects/:projectId/members', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const { userId, role = 'member' } = req.body;
-
-      const member = await global.storage.addProjectMember({
-        projectId,
-        userId,
-        role
-      });
-
-      res.status(201).json(member);
-    } catch (error) {
-      console.error('Error agregando miembro:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Obtener dependencias de una tarea
-  app.get('/api/tasks/:taskId/dependencies', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const dependencies = await global.storage.getTaskDependencies(taskId);
-      res.json(dependencies);
-    } catch (error) {
-      console.error('Error obteniendo dependencias:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Crear dependencia entre tareas
-  app.post('/api/tasks/:taskId/dependencies', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const { dependsOnTaskId } = req.body;
-
-      const dependency = await global.storage.createTaskDependency({
-        taskId,
-        dependsOnTaskId
-      });
-
-      res.status(201).json(dependency);
-    } catch (error) {
-      console.error('Error creando dependencia:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // ============ ENDPOINTS PARA GESTIÓN DE EQUIPOS ============
-
-  // Obtener equipos del usuario
-  app.get('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const userTeams = await db.select({
-        team: teams,
-        membership: teamMembers
-      })
-        .from(teamMembers)
-        .innerJoin(teams, eq(teamMembers.teamId, teams.id))
-        .where(eq(teamMembers.userId, req.user.id));
-
-      res.json(userTeams);
-    } catch (error) {
-      console.error('Error obteniendo equipos:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Obtener miembros de un equipo
-  app.get('/api/teams/:teamId/members', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const teamId = parseInt(req.params.teamId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      // Verificar que el usuario pertenece al equipo
-      const [membership] = await db.select()
-        .from(teamMembers)
-        .where(and(
-          eq(teamMembers.teamId, teamId),
-          eq(teamMembers.userId, req.user.id)
-        ));
-
-      if (!membership) {
-        return res.status(403).json({ message: "No tienes acceso a este equipo" });
-      }
-
-      const members = await db.select({
-        user: {
-          id: users.id,
-          fullName: users.fullName,
-          username: users.username,
-          email: users.email,
-          profileImage: users.profileImage,
-          role: users.role
-        },
-        membership: {
-          role: teamMembers.role,
-          joinedAt: teamMembers.joinedAt
-        }
-      })
-        .from(teamMembers)
-        .innerJoin(users, eq(teamMembers.userId, users.id))
-        .where(eq(teamMembers.teamId, teamId));
-
-      res.json(members);
-    } catch (error) {
-      console.error('Error obteniendo miembros del equipo:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Crear nuevo equipo (solo admins)
-  app.post('/api/teams', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      if (!req.user || req.user.role !== 'admin') {
-        return res.status(403).json({ message: "Solo los administradores pueden crear equipos" });
-      }
-
-      const { name, domain, description } = req.body;
-
-      const [newTeam] = await db.insert(teams)
-        .values({
-          name,
-          domain,
-          description,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
-
-      // Agregar al creador como owner del equipo
-      await db.insert(teamMembers)
-        .values({
-          teamId: newTeam.id,
-          userId: req.user.id,
-          role: 'owner',
-          joinedAt: new Date(),
-        });
-
-      res.status(201).json(newTeam);
-    } catch (error) {
-      console.error('Error creando equipo:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Update a specific task
-  app.patch('/api/tasks/:taskId', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const updates = req.body;
-
-      // Update task in database
-      const updatedTask = await db.update(schema.tasks)
-        .set({
-          ...updates,
-          updatedAt: new Date()
-        })
-        .where(eq(schema.tasks.id, taskId))
-        .returning();
-
-      if (updatedTask.length === 0) {
-        return res.status(404).json({ message: "Tarea no encontrada" });
-      }
-
-      // Log activity
-      if (req.user && req.user.id) {
-        await db.insert(schema.activityLog).values({
-          description: `Tarea actualizada: ${updatedTask[0].title}`,
-          taskId: taskId,
-          projectId: updatedTask[0].projectId,
-          userId: req.user.id
-        });
-      }
-
-      res.json(updatedTask[0]);
-    } catch (error) {
-      console.error('Error actualizando tarea:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Get task attachments
-  app.get('/api/tasks/:taskId/attachments', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const attachments = await db.select()
-        .from(schema.taskAttachments)
-        .where(eq(schema.taskAttachments.taskId, taskId))
-        .orderBy(desc(schema.taskAttachments.uploadedAt));
-
-      res.json(attachments);
-    } catch (error) {
-      console.error('Error obteniendo archivos adjuntos:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Upload task attachment
-  app.post('/api/tasks/:taskId/attachments', isAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      if (!req.file) {
-        return res.status(400).json({ message: "No se proporcionó archivo" });
-      }
-
-      // Save attachment to database
-      const attachment = await db.insert(schema.taskAttachments).values({
-        fileName: req.file.originalname,
-        fileUrl: `/uploads/${req.file.filename}`,
-        taskId: taskId
-      }).returning();
-
-      // Log activity
-      if (req.user && req.user.id) {
-        const task = await db.select().from(schema.tasks).where(eq(schema.tasks.id, taskId)).limit(1);
-        if (task.length > 0) {
-          await db.insert(schema.activityLog).values({
-            description: `Archivo adjunto añadido: ${req.file.originalname}`,
-            taskId: taskId,
-            projectId: task[0].projectId,
-            userId: req.user.id
-          });
-        }
-      }
-
-      res.status(201).json(attachment[0]);
-    } catch (error) {
-      console.error('Error subiendo archivo:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // Get single task with details
-  app.get('/api/tasks/:taskId', isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const taskWithDetails = await db.select({
-        id: schema.tasks.id,
-        title: schema.tasks.title,
-        description: schema.tasks.description,
-        status: schema.tasks.status,
-        priority: schema.tasks.priority,
-        assignedToId: schema.tasks.assignedToId,
-        dueDate: schema.tasks.dueDate,
-        createdAt: schema.tasks.createdAt,
-        updatedAt: schema.tasks.updatedAt,
-        assignedTo: {
-          id: schema.users.id,
-          fullName: schema.users.fullName,
-          username: schema.users.username
-        }
-      })
-        .from(schema.tasks)
-        .leftJoin(schema.users, eq(schema.tasks.assignedToId, schema.users.id))
-        .where(eq(schema.tasks.id, taskId))
-        .limit(1);
-
-      if (taskWithDetails.length === 0) {
-        return res.status(404).json({ message: "Tarea no encontrada" });
-      }
-
-      res.json(taskWithDetails[0]);
-    } catch (error) {
-      console.error('Error obteniendo tarea:', error);
-      res.status(500).json({ message: "Error interno del servidor" });
-    }
-  });
-
-  // ============ NUEVOS ENDPOINTS PARA SISTEMA MONDAY.COM ============
-
-  // Project Tasks API
-  app.get("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-
-      // Get tasks for the specific project
-      const tasks = await db.select().from(schema.tasks)
-        .where(eq(schema.tasks.projectId, projectId))
-        .orderBy(asc(schema.tasks.id));
-
-      res.json(tasks);
-    } catch (error) {
-      console.error('Error fetching project tasks:', error);
-      res.status(500).json({ error: 'Failed to fetch project tasks' });
-    }
-  });
-
-  app.post("/api/projects/:projectId/tasks", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const taskData = {
-        ...req.body,
-        projectId,
-        createdById: req.user.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      const [task] = await db.insert(schema.tasks)
-        .values(taskData)
-        .returning();
-
-      res.status(201).json(task);
-    } catch (error) {
-      console.error('Error creating task:', error);
-      res.status(500).json({ error: 'Failed to create task' });
-    }
-  });
-
-  app.patch("/api/tasks/:taskId", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-
-      if (!req.user) {
-        return res.status(401).json({ message: "Usuario no autenticado" });
-      }
-
-      const updateData = {
-        ...req.body,
-        updatedAt: new Date(),
-      };
-
-      const [updatedTask] = await db.update(schema.tasks)
-        .set(updateData)
-        .where(eq(schema.tasks.id, taskId))
-        .returning();
-
-      if (!updatedTask) {
-        return res.status(404).json({ error: 'Task not found' });
-      }
-
-      res.json(updatedTask);
-    } catch (error) {
-      console.error('Error updating task:', error);
-      res.status(500).json({ error: 'Failed to update task' });
-    }
-  });
-
-  // Task Groups CRUD
-  app.get("/api/projects/:projectId/task-groups", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const taskGroups = await db.select().from(schema.taskGroups)
-        .where(eq(schema.taskGroups.projectId, projectId))
-        .orderBy(schema.taskGroups.position);
-
-      res.json(taskGroups);
-    } catch (error) {
-      console.error('Error fetching task groups:', error);
-      res.status(500).json({ error: 'Failed to fetch task groups' });
-    }
-  });
-
-  app.post("/api/projects/:projectId/task-groups", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const taskGroupData = schema.insertTaskGroupSchema.parse({
-        ...req.body,
-        projectId,
-        createdBy: req.user?.id,
-      });
-
-      const [taskGroup] = await db.insert(schema.taskGroups)
-        .values(taskGroupData)
-        .returning();
-
-      res.status(201).json(taskGroup);
-    } catch (error) {
-      console.error('Error creating task group:', error);
-      res.status(500).json({ error: 'Failed to create task group' });
-    }
-  });
-
-  app.patch("/api/task-groups/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const groupId = parseInt(req.params.id);
-      const updates = req.body;
-
-      const [updatedGroup] = await db.update(schema.taskGroups)
-        .set({ ...updates, updatedAt: new Date() })
-        .where(eq(schema.taskGroups.id, groupId))
-        .returning();
-
-      if (!updatedGroup) {
-        return res.status(404).json({ error: 'Task group not found' });
-      }
-
-      res.json(updatedGroup);
-    } catch (error) {
-      console.error('Error updating task group:', error);
-      res.status(500).json({ error: 'Failed to update task group' });
-    }
-  });
-
-  app.delete("/api/task-groups/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const groupId = parseInt(req.params.id);
-
-      await db.delete(schema.taskGroups)
-        .where(eq(schema.taskGroups.id, groupId));
-
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting task group:', error);
-      res.status(500).json({ error: 'Failed to delete task group' });
-    }
-  });
-
-  // Project Column Settings CRUD
-  app.get("/api/projects/:projectId/columns", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const columns = await db.select().from(schema.projectColumnSettings)
-        .where(eq(schema.projectColumnSettings.projectId, projectId))
-        .orderBy(schema.projectColumnSettings.position);
-
-      res.json(columns);
-    } catch (error) {
-      console.error('Error fetching project columns:', error);
-      res.status(500).json({ error: 'Failed to fetch project columns' });
-    }
-  });
-
-  app.post("/api/projects/:projectId/columns", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const projectId = parseInt(req.params.projectId);
-      const columnData = schema.insertProjectColumnSettingSchema.parse({
-        ...req.body,
-        projectId,
-        createdBy: req.user?.id,
-      });
-
-      const [column] = await db.insert(schema.projectColumnSettings)
-        .values(columnData)
-        .returning();
-
-      res.status(201).json(column);
-    } catch (error) {
-      console.error('Error creating project column:', error);
-      res.status(500).json({ error: 'Failed to create project column' });
-    }
-  });
-
-  app.patch("/api/project-columns/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const columnId = parseInt(req.params.id);
-      const updates = req.body;
-
-      const [updatedColumn] = await db.update(schema.projectColumnSettings)
-        .set({ ...updates, updatedAt: new Date() })
-        .where(eq(schema.projectColumnSettings.id, columnId))
-        .returning();
-
-      if (!updatedColumn) {
-        return res.status(404).json({ error: 'Project column not found' });
-      }
-
-      res.json(updatedColumn);
-    } catch (error) {
-      console.error('Error updating project column:', error);
-      res.status(500).json({ error: 'Failed to update project column' });
-    }
-  });
-
-  app.delete("/api/project-columns/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const columnId = parseInt(req.params.id);
-
-      await db.delete(schema.projectColumnSettings)
-        .where(eq(schema.projectColumnSettings.id, columnId));
-
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error deleting project column:', error);
-      res.status(500).json({ error: 'Failed to delete project column' });
-    }
-  });
-
-  // Task Column Values CRUD
-  app.get("/api/tasks/:taskId/column-values", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-      const columnValues = await db.select().from(schema.taskColumnValues)
-        .where(eq(schema.taskColumnValues.taskId, taskId));
-
-      res.json(columnValues);
-    } catch (error) {
-      console.error('Error fetching task column values:', error);
-      res.status(500).json({ error: 'Failed to fetch task column values' });
-    }
-  });
-
-  app.post("/api/tasks/:taskId/column-values", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-      const valueData = schema.insertTaskColumnValueSchema.parse({
-        ...req.body,
-        taskId,
-      });
-
-      const [columnValue] = await db.insert(schema.taskColumnValues)
-        .values(valueData)
-        .returning();
-
-      res.status(201).json(columnValue);
-    } catch (error) {
-      console.error('Error creating task column value:', error);
-      res.status(500).json({ error: 'Failed to create task column value' });
-    }
-  });
-
-  app.patch("/api/task-column-values/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const valueId = parseInt(req.params.id);
-      const updates = req.body;
-
-      const [updatedValue] = await db.update(schema.taskColumnValues)
-        .set({ ...updates, updatedAt: new Date() })
-        .where(eq(schema.taskColumnValues.id, valueId))
-        .returning();
-
-      if (!updatedValue) {
-        return res.status(404).json({ error: 'Task column value not found' });
-      }
-
-      res.json(updatedValue);
-    } catch (error) {
-      console.error('Error updating task column value:', error);
-      res.status(500).json({ error: 'Failed to update task column value' });
-    }
-  });
-
-  // Task Assignees CRUD
-  app.get("/api/tasks/:taskId/assignees", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-      const assignees = await db.select({
-        id: schema.taskAssignees.id,
-        taskId: schema.taskAssignees.taskId,
-        userId: schema.taskAssignees.userId,
-        assignedBy: schema.taskAssignees.assignedBy,
-        assignedAt: schema.taskAssignees.assignedAt,
-        user: {
-          id: schema.users.id,
-          fullName: schema.users.fullName,
-          username: schema.users.username,
-          profileImage: schema.users.profileImage,
-          role: schema.users.role,
-        }
-      })
-        .from(schema.taskAssignees)
-        .innerJoin(schema.users, eq(schema.taskAssignees.userId, schema.users.id))
-        .where(eq(schema.taskAssignees.taskId, taskId));
-
-      res.json(assignees);
-    } catch (error) {
-      console.error('Error fetching task assignees:', error);
-      res.status(500).json({ error: 'Failed to fetch task assignees' });
-    }
-  });
-
-  app.post("/api/tasks/:taskId/assignees", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const taskId = parseInt(req.params.taskId);
-      const { userId } = req.body;
-
-      const assigneeData = {
-        taskId,
-        userId,
-        assignedBy: req.user?.id,
-      };
-
-      const [assignee] = await db.insert(schema.taskAssignees)
-        .values(assigneeData)
-        .returning();
-
-      res.status(201).json(assignee);
-    } catch (error) {
-      console.error('Error assigning task:', error);
-      res.status(500).json({ error: 'Failed to assign task' });
-    }
-  });
-
-  app.delete("/api/task-assignees/:id", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      const assigneeId = parseInt(req.params.id);
-
-      await db.delete(schema.taskAssignees)
-        .where(eq(schema.taskAssignees.id, assigneeId));
-
-      res.status(204).send();
-    } catch (error) {
-      console.error('Error removing task assignee:', error);
-      res.status(500).json({ error: 'Failed to remove task assignee' });
-    }
-  });
-
-  // Enhanced Tasks endpoint with groups and assignees
-  app.get("/api/tasks-with-groups", isAuthenticated, async (req: Request, res: Response) => {
-    try {
-      // Get tasks from all projects with safe column selection
-      const tasks = await db.select().from(schema.tasks).orderBy(asc(schema.tasks.id));
-
-      // Get task groups separately - handle missing table gracefully
-      let taskGroups = [];
-      try {
-        taskGroups = await db.select().from(schema.taskGroups);
-      } catch (error) {
-        console.warn('Task groups table not found, continuing without groups');
-      }
-
-      // Get projects separately
-      const projects = await db.select().from(schema.projects);
-
-      // Get users separately
-      const users = await db.select().from(schema.users);
-
-      // Combine data in JavaScript to avoid SQL type conflicts
-      const tasksWithDetails = tasks.map(task => {
-        // Crear grupos por defecto basados en el enum task.group
-        const defaultGroups = {
-          'todo': { id: 'todo', name: 'Por hacer', color: '#6b7280', position: 0 },
-          'in_progress': { id: 'in_progress', name: 'En progreso', color: '#3b82f6', position: 1 },
-          'completed': { id: 'completed', name: 'Completadas', color: '#10b981', position: 2 }
-        };
-
-        const group = taskGroups.find(g => g.id === task.groupId) ||
-          defaultGroups[task.group] ||
-          defaultGroups['todo'];
-
-        const project = projects.find(p => p.id === task.projectId);
-        const assignee = users.find(u => u.id === task.assignedToId) ||
-          users.find(u => u.id === task.createdById);
-
-        return {
-          task: {
-            id: task.id,
-            projectId: task.projectId,
-            title: task.title || 'Sin título',
-            description: task.description || '',
-            status: task.status || 'pending',
-            priority: task.priority || 'medium',
-            progress: task.progress || 0,
-            dueDate: task.dueDate,
-            tags: task.tags || [],
-            group: task.group,
-            groupId: task.groupId || task.group,
-            createdById: task.createdById,
-            assignedToId: task.assignedToId,
-            createdAt: task.createdAt,
-            updatedAt: task.updatedAt,
-          },
-          group: group,
-          project: project ? {
-            id: project.id,
-            name: project.name,
-            client: project.client,
-          } : null,
-          assignee: assignee ? {
-            id: assignee.id,
-            fullName: assignee.fullName,
-            username: assignee.username,
-            profileImage: assignee.profileImage,
-          } : null
-        };
-      });
-
-      // Group tasks by task group
-      const groupedTasks = tasksWithDetails.reduce((acc, item) => {
-        const groupId = item.group?.id || 'ungrouped';
-        if (!acc[groupId]) {
-          acc[groupId] = {
-            group: item.group,
-            tasks: []
-          };
-        }
-
-        const task = {
-          ...item.task,
-          assignee: item.assignee,
-          additionalAssignees: []
-        };
-
-        acc[groupId].tasks.push(task);
-        return acc;
-      }, {} as any);
-
-      res.json(Object.values(groupedTasks));
-    } catch (error) {
-      console.error('Error fetching tasks with groups:', error);
-      res.status(500).json({ error: 'Failed to fetch tasks with groups' });
-    }
-  });
-
   return httpServer;
 }

@@ -2,19 +2,22 @@
 // This file provides the database storage layer using Drizzle ORM
 // It interfaces with PostgreSQL through the configured database connection
 
-import { db, isOffline } from "./db";
-import { MemStorage } from "./mem-storage";
+import { db } from "./db";
 import { eq, asc, desc, and, or, sql, like, inArray, gt } from "drizzle-orm";
 import * as schema from "./schema";
-import type {
-  User,
-  Project,
-  Task,
-  AnalysisResult,
-  Document,
-  Schedule,
-  ScheduleEntry,
+import type { 
+  User, 
+  Project, 
+  Task, 
+  AnalysisResult, 
+  Document, 
+  Schedule, 
+  ScheduleEntry, 
   ChatMessage,
+  ContentHistory,
+  AgentRun,
+  AgentArtifact,
+  ModelRoute,
   Product,
   ProjectView,
   AutomationRule,
@@ -22,7 +25,9 @@ import type {
   Tag,
   CollaborativeDoc,
   Notification,
-  TaskComment
+  TaskComment,
+  ProjectMember,
+  TaskDependency
 } from "./schema";
 
 // Type definitions for insert operations
@@ -34,6 +39,10 @@ type InsertDocument = typeof schema.documents.$inferInsert;
 type InsertSchedule = typeof schema.schedules.$inferInsert;
 type InsertScheduleEntry = typeof schema.scheduleEntries.$inferInsert;
 type InsertChatMessage = typeof schema.chatMessages.$inferInsert;
+type InsertContentHistory = typeof schema.contentHistory.$inferInsert;
+type InsertAgentRun = typeof schema.agentRuns.$inferInsert;
+type InsertAgentArtifact = typeof schema.agentArtifacts.$inferInsert;
+type InsertModelRoute = typeof schema.modelRoutes.$inferInsert;
 type InsertProduct = typeof schema.products.$inferInsert;
 type InsertProjectView = typeof schema.projectViews.$inferInsert;
 type InsertAutomationRule = typeof schema.automationRules.$inferInsert;
@@ -41,7 +50,14 @@ type InsertTimeEntry = typeof schema.timeEntries.$inferInsert;
 type InsertTag = typeof schema.tags.$inferInsert;
 type InsertCollaborativeDoc = typeof schema.collaborativeDocs.$inferInsert;
 type InsertNotification = typeof schema.notifications.$inferInsert;
+type InsertProjectMember = typeof schema.projectMembers.$inferInsert;
+type InsertTaskDependency = typeof schema.taskDependencies.$inferInsert;
 type InsertTaskComment = typeof schema.taskComments.$inferInsert;
+
+type NormalizedChatMessage = ChatMessage & {
+  content: string;
+  role: string;
+};
 
 // Storage interface definition
 export interface IStorage {
@@ -58,12 +74,13 @@ export interface IStorage {
   // Project management
   getProject(id: number): Promise<Project | null>;
   getProjectWithAnalysis(id: number): Promise<(Project & { analysis: AnalysisResult | null }) | null>;
+  getProjectBrandBrain(id: number): Promise<(Project & { analysis: AnalysisResult | null }) | null>;
   getProjects(): Promise<Project[]>;
   getProjectsByUser(userId: string): Promise<Project[]>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: number, updates: Partial<InsertProject>): Promise<Project | null>;
   deleteProject(id: number): Promise<void>;
-  checkUserProjectAccess(userId: string, projectId: number): Promise<boolean>;
+  checkUserProjectAccess(userId: string, projectId: number, isPrimary?: boolean): Promise<boolean>;
 
   // Task management
   getTask(id: number): Promise<Task | null>;
@@ -90,6 +107,7 @@ export interface IStorage {
   // Schedule management
   getSchedule(id: number): Promise<Schedule | null>;
   getSchedules(projectId: number): Promise<Schedule[]>;
+  getScheduleWithEntries(id: number): Promise<(Schedule & { entries: ScheduleEntry[] }) | null>;
   createSchedule(schedule: InsertSchedule): Promise<Schedule>;
   updateSchedule(id: number, updates: Partial<InsertSchedule>): Promise<Schedule | null>;
   deleteSchedule(id: number): Promise<void>;
@@ -97,14 +115,22 @@ export interface IStorage {
   // Schedule entries
   getScheduleEntry(id: number): Promise<ScheduleEntry | null>;
   getScheduleEntries(scheduleId: number): Promise<ScheduleEntry[]>;
-  getScheduleWithEntries(scheduleId: number): Promise<Schedule & { entries: ScheduleEntry[] } | null>;
   createScheduleEntry(entry: InsertScheduleEntry): Promise<ScheduleEntry>;
   updateScheduleEntry(id: number, updates: Partial<InsertScheduleEntry>): Promise<ScheduleEntry | null>;
   deleteScheduleEntry(id: number): Promise<void>;
 
   // Chat messages
-  getChatMessages(projectId: number): Promise<ChatMessage[]>;
-  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  getChatMessages(projectId: number): Promise<NormalizedChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<NormalizedChatMessage>;
+
+  // Agent runtime
+  getAgentRun(id: number): Promise<AgentRun | null>;
+  createAgentRun(run: InsertAgentRun): Promise<AgentRun>;
+  updateAgentRun(id: number, updates: Partial<InsertAgentRun>): Promise<AgentRun | null>;
+  createAgentArtifact(artifact: InsertAgentArtifact): Promise<AgentArtifact>;
+  getAgentArtifacts(runId: number): Promise<AgentArtifact[]>;
+  getActiveModelRoute(entrypoint: string, agent: string): Promise<ModelRoute | null>;
+  createModelRoute(route: InsertModelRoute): Promise<ModelRoute>;
 
   // Product management
   getProduct(id: number): Promise<Product | null>;
@@ -168,14 +194,33 @@ export interface IStorage {
   deleteTaskComment(id: number): Promise<void>;
 
   // Content history
-  getContentHistory(projectId: number): Promise<any[]>;
-  createContentHistory(data: any): Promise<any>;
+  getContentHistory(projectId: number): Promise<ContentHistory[]>;
+  createContentHistory(entry: InsertContentHistory): Promise<ContentHistory>;
 
   // Password reset
   getUserByIdentifier(identifier: string): Promise<User | null>;
-  createPasswordResetToken(userId: number | string): Promise<{ token: string; expiresAt: Date }>;
-  getPasswordResetToken(token: string): Promise<{ userId: number; expiresAt: Date } | null>;
+  createPasswordResetToken(userId: string): Promise<{ token: string; expiresAt: Date }>;
+  getPasswordResetToken(token: string): Promise<{ userId: string; expiresAt: Date } | null>;
   deletePasswordResetToken(token: string): Promise<void>;
+
+  // Project Members
+  getProjectMembers(projectId: number): Promise<ProjectMember[]>;
+  addProjectMember(member: InsertProjectMember): Promise<ProjectMember>;
+
+  // Task Dependencies
+  getTaskDependencies(taskId: number): Promise<TaskDependency[]>;
+  createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency>;
+}
+
+function normalizeChatMessage(message: ChatMessage): NormalizedChatMessage {
+  const role = message.role || (message.legacyIsAi ? "assistant" : "user");
+  const content = message.content || message.legacyMessage || "";
+
+  return {
+    ...message,
+    role,
+    content,
+  };
 }
 
 // Database storage implementation
@@ -233,14 +278,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createPasswordResetToken(userId: number | string): Promise<{ token: string; expiresAt: Date }> {
+  async createPasswordResetToken(userId: string): Promise<{ token: string; expiresAt: Date }> {
     try {
       // Generar token aleatorio
       const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hora
 
-      // For now, just return the token since passwordResetTokens table doesn't exist
-      // In the future, implement proper password reset token storage
+      // Guardar en la base de datos
+      await db.insert(schema.passwordResetTokens).values({
+        userId,
+        token,
+        expiresAt,
+        createdAt: new Date()
+      });
+
       return { token, expiresAt };
     } catch (error) {
       console.error("Error creating password reset token:", error);
@@ -248,11 +299,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPasswordResetToken(token: string): Promise<{ userId: number; expiresAt: Date } | null> {
+  async getPasswordResetToken(token: string): Promise<{ userId: string; expiresAt: Date } | null> {
     try {
-      // For now, return null since passwordResetTokens table doesn't exist
-      // In the future, implement proper password reset token retrieval
-      return null;
+      const rows = await db.select().from(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token)).limit(1);
+      const row = rows[0];
+      if (!row) return null;
+      if (row.expiresAt < new Date()) return null;
+      return { userId: row.userId, expiresAt: row.expiresAt };
     } catch (error) {
       console.error("Error getting password reset token:", error);
       throw error;
@@ -261,8 +314,7 @@ export class DatabaseStorage implements IStorage {
 
   async deletePasswordResetToken(token: string): Promise<void> {
     try {
-      // For now, do nothing since passwordResetTokens table doesn't exist
-      // In the future, implement proper password reset token deletion
+      await db.delete(schema.passwordResetTokens).where(eq(schema.passwordResetTokens.token, token));
     } catch (error) {
       console.error("Error deleting password reset token:", error);
       throw error;
@@ -346,6 +398,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getProjectBrandBrain(id: number): Promise<(Project & { analysis: AnalysisResult | null }) | null> {
+    return this.getProjectWithAnalysis(id);
+  }
+
   async getProjects(): Promise<Project[]> {
     try {
       return await db.select().from(schema.projects).orderBy(desc(schema.projects.createdAt));
@@ -388,7 +444,7 @@ export class DatabaseStorage implements IStorage {
     await db.delete(schema.projects).where(eq(schema.projects.id, id));
   }
 
-  async checkUserProjectAccess(userId: string, projectId: number): Promise<boolean> {
+  async checkUserProjectAccess(userId: string, projectId: number, isPrimary?: boolean): Promise<boolean> {
     try {
       const project = await this.getProject(projectId);
       if (!project) return false;
@@ -571,6 +627,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getScheduleWithEntries(id: number): Promise<(Schedule & { entries: ScheduleEntry[] }) | null> {
+    try {
+      const schedule = await this.getSchedule(id);
+      if (!schedule) {
+        return null;
+      }
+
+      const entries = await this.getScheduleEntries(id);
+      return { ...schedule, entries };
+    } catch (error) {
+      console.error('Error getting schedule with entries:', error);
+      return null;
+    }
+  }
+
   async createSchedule(schedule: InsertSchedule): Promise<Schedule> {
     const result = await db.insert(schema.schedules).values(schedule).returning();
     return result[0];
@@ -638,19 +709,95 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Chat messages methods
-  async getChatMessages(projectId: number): Promise<ChatMessage[]> {
+  async getChatMessages(projectId: number): Promise<NormalizedChatMessage[]> {
     try {
-      return await db.select().from(schema.chatMessages)
+      const messages = await db.select().from(schema.chatMessages)
         .where(eq(schema.chatMessages.projectId, projectId))
         .orderBy(asc(schema.chatMessages.createdAt));
+      return messages.map(normalizeChatMessage);
     } catch (error) {
       console.error('Error getting chat messages:', error);
       return [];
     }
   }
 
-  async createChatMessage(message: InsertChatMessage): Promise<ChatMessage> {
-    const result = await db.insert(schema.chatMessages).values(message).returning();
+  async createChatMessage(message: InsertChatMessage): Promise<NormalizedChatMessage> {
+    const normalizedContent = message.content || message.legacyMessage || "";
+    const normalizedRole = message.role || (message.legacyIsAi ? "assistant" : "user");
+    const result = await db.insert(schema.chatMessages).values({
+      ...message,
+      content: normalizedContent,
+      role: normalizedRole,
+      legacyMessage: message.legacyMessage || normalizedContent,
+      legacyIsAi: message.legacyIsAi ?? normalizedRole !== "user",
+    }).returning();
+    return normalizeChatMessage(result[0]);
+  }
+
+  // Agent runtime methods
+  async getAgentRun(id: number): Promise<AgentRun | null> {
+    try {
+      const result = await db.select().from(schema.agentRuns).where(eq(schema.agentRuns.id, id)).limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error getting agent run:', error);
+      return null;
+    }
+  }
+
+  async createAgentRun(run: InsertAgentRun): Promise<AgentRun> {
+    const result = await db.insert(schema.agentRuns).values(run).returning();
+    return result[0];
+  }
+
+  async updateAgentRun(id: number, updates: Partial<InsertAgentRun>): Promise<AgentRun | null> {
+    try {
+      const result = await db.update(schema.agentRuns)
+        .set(updates)
+        .where(eq(schema.agentRuns.id, id))
+        .returning();
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error updating agent run:', error);
+      return null;
+    }
+  }
+
+  async createAgentArtifact(artifact: InsertAgentArtifact): Promise<AgentArtifact> {
+    const result = await db.insert(schema.agentArtifacts).values(artifact).returning();
+    return result[0];
+  }
+
+  async getAgentArtifacts(runId: number): Promise<AgentArtifact[]> {
+    try {
+      return await db.select().from(schema.agentArtifacts)
+        .where(eq(schema.agentArtifacts.runId, runId))
+        .orderBy(asc(schema.agentArtifacts.createdAt));
+    } catch (error) {
+      console.error('Error getting agent artifacts:', error);
+      return [];
+    }
+  }
+
+  async getActiveModelRoute(entrypoint: string, agent: string): Promise<ModelRoute | null> {
+    try {
+      const result = await db.select().from(schema.modelRoutes)
+        .where(and(
+          eq(schema.modelRoutes.entrypoint, entrypoint),
+          eq(schema.modelRoutes.agent, agent),
+          eq(schema.modelRoutes.isActive, true)
+        ))
+        .orderBy(desc(schema.modelRoutes.createdAt))
+        .limit(1);
+      return result[0] || null;
+    } catch (error) {
+      console.error('Error getting active model route:', error);
+      return null;
+    }
+  }
+
+  async createModelRoute(route: InsertModelRoute): Promise<ModelRoute> {
+    const result = await db.insert(schema.modelRoutes).values(route).returning();
     return result[0];
   }
 
@@ -854,7 +1001,7 @@ export class DatabaseStorage implements IStorage {
 
   async getTags(projectId: number): Promise<Tag[]> {
     try {
-      return await db.select().from(schema.tags).where(eq(schema.tags.projectId, projectId))
+      return await db.select().from(schema.tags)        .where(eq(schema.tags.projectId, projectId))
         .orderBy(asc(schema.tags.name));
     } catch (error) {
       console.error('Error getting tags:', error);
@@ -1017,25 +1164,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Content history methods
-  async getContentHistory(projectId: number): Promise<any[]> {
+  async getContentHistory(projectId: number): Promise<ContentHistory[]> {
     try {
-      // For now, return empty array since this is just for backward compatibility
-      // In the future, this could return actual content history from the contentHistory table
-      return [];
+      return await db.select().from(schema.contentHistory)
+        .where(eq(schema.contentHistory.projectId, projectId))
+        .orderBy(desc(schema.contentHistory.createdAt));
     } catch (error) {
       console.error('Error getting content history:', error);
       return [];
     }
   }
 
-  async createContentHistory(data: any): Promise<any> {
-    try {
-      // For now, just return the data since this is for backward compatibility
-      return data;
-    } catch (error) {
-      console.error('Error creating content history:', error);
-      return data;
-    }
+  async createContentHistory(entry: InsertContentHistory): Promise<ContentHistory> {
+    const result = await db.insert(schema.contentHistory).values(entry).returning();
+    return result[0];
   }
 
   // Additional methods for routes.ts compatibility
@@ -1059,17 +1201,36 @@ export class DatabaseStorage implements IStorage {
     return this.getAutomationRules(projectId);
   }
 
-  async getScheduleWithEntries(scheduleId: number): Promise<Schedule & { entries: ScheduleEntry[] } | null> {
+  // Project Members
+  async getProjectMembers(projectId: number): Promise<ProjectMember[]> {
     try {
-      const schedule = await this.getSchedule(scheduleId);
-      if (!schedule) return null;
-
-      const entries = await this.getScheduleEntries(scheduleId);
-      return { ...schedule, entries };
+      return await db.select().from(schema.projectMembers)
+        .where(eq(schema.projectMembers.projectId, projectId));
     } catch (error) {
-      console.error('Error getting schedule with entries:', error);
-      return null;
+      console.error('Error getting project members:', error);
+      return [];
     }
+  }
+
+  async addProjectMember(member: InsertProjectMember): Promise<ProjectMember> {
+    const result = await db.insert(schema.projectMembers).values(member).returning();
+    return result[0];
+  }
+
+  // Task Dependencies
+  async getTaskDependencies(taskId: number): Promise<TaskDependency[]> {
+    try {
+      return await db.select().from(schema.taskDependencies)
+        .where(eq(schema.taskDependencies.taskId, taskId));
+    } catch (error) {
+      console.error('Error getting task dependencies:', error);
+      return [];
+    }
+  }
+
+  async createTaskDependency(dependency: InsertTaskDependency): Promise<TaskDependency> {
+    const result = await db.insert(schema.taskDependencies).values(dependency).returning();
+    return result[0];
   }
 
   async updateOtherViewsDefaultStatus(projectId: number, excludeId: number): Promise<void> {
@@ -1087,5 +1248,4 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Create and export storage instance
-// Create and export storage instance
-export const storage = isOffline ? new MemStorage() : new DatabaseStorage();
+export const storage = new DatabaseStorage();

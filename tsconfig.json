@@ -16,11 +16,7 @@
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
     "module": "ESNext",
-    "strict": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "strictFunctionTypes": true,
-    "strictBindCallApply": true,
+    "strict": true,
     "lib": [
       "esnext",
       "dom",
@@ -40,7 +36,7 @@
         "./client/src/*"
       ],
       "@shared/*": [
-        "./client/src/shared/*"
+        "./shared/*"
       ],
       "*": [
         "./types/*"

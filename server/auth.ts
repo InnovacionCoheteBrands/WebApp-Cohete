@@ -19,9 +19,10 @@ declare global {
 type AppUser = {
   id: string; // Changed to string to match database VARCHAR
   username: string;
-  password: string;
+  password?: string | null;
   fullName: string;
   isPrimary: boolean;
+  role: string;
   createdAt: Date;
 };
 

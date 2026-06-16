@@ -18,6 +18,11 @@ interface ChatMessage {
   createdAt: string;
 }
 
+interface ChatResponse extends ChatMessage {
+  auditWarning?: string;
+  runId?: number;
+}
+
 interface ProjectChatProps {
   projectId: number;
 }
@@ -46,10 +51,20 @@ export default function ProjectChat({ projectId }: ProjectChatProps) {
         message: content,
         projectId
       });
-      return await res.json();
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to send message");
+      }
+      return data as ChatResponse;
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
       setMessage("");
+      if (response.auditWarning) {
+        toast({
+          title: "Advertencia del auditor",
+          description: response.auditWarning,
+        });
+      }
       refetch();
     },
     onError: (error) => {
