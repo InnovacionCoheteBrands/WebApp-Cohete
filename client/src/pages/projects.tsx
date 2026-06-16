@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge"; // Badges para estados
 import { Eye, Pencil, Plus, Rocket } from "lucide-react"; // Iconos de acciones
 import NewProjectModal from "@/components/projects/new-project-modal"; // Modal para crear proyecto
 import { formatRelative } from "date-fns"; // Formateo de fechas
+import { cn } from "@/lib/utils";
 
 // ===== COMPONENTE DE BADGE DE ESTADO =====
 // Componente que muestra el estado del proyecto con colores específicos

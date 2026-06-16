@@ -546,18 +546,22 @@ const TaskManager = () => {
               <KanbanBoard
                 tasks={tasks}
                 users={users}
-                onEdit={handleEditTask}
-                onDelete={(taskId: number) => {
+                onEditTask={handleEditTask}
+                onDeleteTask={(taskId: number) => {
                   if (confirm('¿Estás seguro de que deseas eliminar esta tarea?')) {
                     deleteTaskMutation.mutate(taskId);
                   }
                 }}
-                onUpdateTaskStatus={(taskId: number, newStatus: string) => {
+                onTaskMove={(taskId: number, newStatus: string, newGroup: string) => {
                   updateTaskMutation.mutate({
                     taskId,
-                    updates: { status: newStatus }
+                    updates: { 
+                      status: newStatus as any, 
+                      group: newGroup as any 
+                    }
                   });
                 }}
+                groupBy={groupBy === 'assignee' ? 'assignee' : groupBy === 'priority' ? 'priority' : 'status'}
               />
             </div>
           )}
