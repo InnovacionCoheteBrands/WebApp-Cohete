@@ -199,14 +199,17 @@ export const analysisResults = pgTable("analysis_results", {
   updatedAt: timestamp("updated_at").defaultNow().notNull()
 });
 
-// Documents table
+// Documents table (using Pruebas schema for AI document analysis)
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   projectId: integer("project_id").references(() => projects.id, { onDelete: "cascade" }).notNull(),
-  name: text("name").notNull(),
-  type: text("type").notNull(),
-  content: text("content"),
-  metadata: jsonb("metadata"),
+  filename: text("filename").notNull(),
+  originalName: text("original_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  extractedText: text("extracted_text"),
+  analysisStatus: text("analysis_status").default("pending"),
+  analysisResults: jsonb("analysis_results"),
+  analysisError: text("analysis_error"),
   uploadedBy: varchar("uploaded_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull()
@@ -561,23 +564,180 @@ export const userSettings = pgTable("user_settings", {
 });
 
 // Define all types
-export type User = typeof users.$inferSelect;
-export type InsertUser = typeof users.$inferInsert;
-export type Project = typeof projects.$inferSelect;
-export type InsertProject = typeof projects.$inferInsert;
-export type Task = typeof tasks.$inferSelect;
-export type InsertTask = typeof tasks.$inferInsert;
+export type User = {
+  id: string;
+  fullName: string;
+  username: string;
+  email: string | null;
+  password: string | null;
+  isPrimary: boolean;
+  role: string | null;
+  bio: string | null;
+  profileImage: string | null;
+  coverImage: string | null;
+  nickname: string | null;
+  jobTitle: string | null;
+  department: string | null;
+  phoneNumber: string | null;
+  preferredLanguage: string | null;
+  theme: string | null;
+  customFields: any;
+  lastLogin: Date | null;
+  firstName: string | null;
+  lastName: string | null;
+  profileImageUrl: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type InsertUser = Omit<User, "createdAt" | "updatedAt"> & {
+  id?: string;
+  fullName?: string;
+  username?: string;
+  email?: string | null;
+  password?: string | null;
+  isPrimary?: boolean;
+  role?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type Project = {
+  id: number;
+  name: string;
+  client: string;
+  description: string | null;
+  startDate: Date | null;
+  endDate: Date | null;
+  status: string | null;
+  createdBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type InsertProject = Omit<Project, "id" | "createdAt" | "updatedAt"> & {
+  id?: number;
+  name?: string;
+  client?: string;
+  description?: string | null;
+  startDate?: Date | null;
+  endDate?: Date | null;
+  status?: string | null;
+  createdBy?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
+export type Task = {
+  id: number;
+  projectId: number;
+  assignedToId: string | null;
+  createdById: string | null;
+  title: string;
+  description: string | null;
+  status: "pending" | "in_progress" | "completed" | "cancelled" | "blocked" | "deferred";
+  priority: "low" | "medium" | "high" | "urgent" | "critical";
+  group: "todo" | "in_progress" | "completed" | "blocked" | "upcoming" | null;
+  position: number | null;
+  aiGenerated: boolean | null;
+  aiSuggestion: string | null;
+  tags: string[] | null;
+  dueDate: Date | null;
+  completedAt: Date | null;
+  estimatedHours: number | null;
+  dependencies: string[] | null;
+  parentTaskId: number | null;
+  progress: number | null;
+  attachments: any;
+  groupId: number | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type InsertTask = Omit<Task, "id" | "createdAt" | "updatedAt"> & {
+  id?: number;
+  assignedToId?: string | null;
+  createdById?: string | null;
+  title?: string;
+  status?: "pending" | "in_progress" | "completed" | "cancelled" | "blocked" | "deferred";
+  priority?: "low" | "medium" | "high" | "urgent" | "critical";
+  group?: "todo" | "in_progress" | "completed" | "blocked" | "upcoming" | null;
+  position?: number | null;
+  aiGenerated?: boolean | null;
+  aiSuggestion?: string | null;
+  tags?: string[] | null;
+  dueDate?: Date | null;
+  completedAt?: Date | null;
+  estimatedHours?: number | null;
+  dependencies?: string[] | null;
+  parentTaskId?: number | null;
+  progress?: number | null;
+  attachments?: any;
+  groupId?: number | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 export type AnalysisResult = typeof analysisResults.$inferSelect;
 export type InsertAnalysisResult = typeof analysisResults.$inferInsert;
-export type Document = typeof documents.$inferSelect;
-export type InsertDocument = typeof documents.$inferInsert;
+
+export type Document = {
+  id: number;
+  projectId: number;
+  filename: string;
+  originalName: string;
+  mimeType: string;
+  extractedText: string | null;
+  analysisStatus: string | null;
+  analysisResults: any;
+  analysisError: string | null;
+  uploadedBy: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type InsertDocument = Omit<Document, "id" | "createdAt" | "updatedAt"> & {
+  id?: number;
+  filename?: string;
+  originalName?: string;
+  mimeType?: string;
+  extractedText?: string | null;
+  analysisStatus?: string | null;
+  analysisResults?: any;
+  analysisError?: string | null;
+  uploadedBy?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 export type Schedule = typeof schedules.$inferSelect;
 export type InsertSchedule = typeof schedules.$inferInsert;
 export type ScheduleEntry = typeof scheduleEntries.$inferSelect;
 export type InsertScheduleEntry = typeof scheduleEntries.$inferInsert;
-export type ChatMessage = typeof chatMessages.$inferSelect;
-export type InsertChatMessage = typeof chatMessages.$inferInsert;
-export type ContentHistory = typeof contentHistory.$inferSelect;
+
+export type ChatMessage = {
+  id: number;
+  projectId: number;
+  userId: string | null;
+  content: string | null;
+  role: string | null;
+  legacyMessage: string | null;
+  legacyIsAi: boolean | null;
+  aiModel: string | null;
+  createdAt: Date;
+};
+
+export type InsertChatMessage = Omit<ChatMessage, "id" | "createdAt"> & {
+  id?: number;
+  projectId?: number;
+  userId?: string | null;
+  content?: string | null;
+  role?: string | null;
+  legacyMessage?: string | null;
+  legacyIsAi?: boolean | null;
+  aiModel?: string | null;
+  createdAt?: Date;
+};
 export type InsertContentHistory = typeof contentHistory.$inferInsert;
 export type TaskComment = typeof taskComments.$inferSelect;
 export type InsertTaskComment = typeof taskComments.$inferInsert;
