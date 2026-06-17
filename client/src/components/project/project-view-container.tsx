@@ -106,7 +106,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
         name: "",
         type: "list",
         isDefault: false,
-        configuration: {},
+        config: {},
       });
     },
     onError: (error: Error) => {
@@ -332,7 +332,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
                 <input
                   type="checkbox"
                   id="isDefault"
-                  checked={formData.isDefault}
+                  checked={formData.isDefault || false}
                   onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
                   className="h-4 w-4"
                 />
@@ -394,7 +394,7 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
                 <input
                   type="checkbox"
                   id="edit-isDefault"
-                  checked={formData.isDefault}
+                  checked={formData.isDefault || false}
                   onChange={(e) => setFormData({ ...formData, isDefault: e.target.checked })}
                   className="h-4 w-4"
                 />
@@ -425,8 +425,8 @@ export default function ProjectViewContainer({ projectId: propProjectId }: Proje
           {activeView.type === "kanban" && <ProjectKanbanView projectId={parseInt(projectId!)} viewId={activeView.id} />}
           {activeView.type === "gantt" && <ProjectGanttView projectId={parseInt(projectId!)} viewId={activeView.id} />}
           {activeView.type === "calendar" && <ProjectCalendarView projectId={parseInt(projectId!)} viewId={activeView.id} />}
-          {activeView.type === "timeline" && <div className="p-6 text-center text-muted-foreground">Vista de línea de tiempo (En desarrollo)</div>}
-          {activeView.type === "board" && <ProjectBoardView projectId={parseInt(projectId!)} viewId={activeView.id} />}
+          {(activeView.type as string) === "timeline" && <div className="p-6 text-center text-muted-foreground">Vista de línea de tiempo (En desarrollo)</div>}
+          {(activeView.type as string) === "board" && <ProjectBoardView projectId={parseInt(projectId!)} viewId={activeView.id} />}
         </div>
       ) : (
         <div className="border border-border rounded-lg p-8 text-center bg-card">

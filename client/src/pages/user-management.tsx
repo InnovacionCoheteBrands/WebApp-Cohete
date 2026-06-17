@@ -83,7 +83,7 @@ type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
 
 // Types for users
 type User = {
-  id: number;
+  id: string;
   fullName: string;
   username: string;
   isPrimary: boolean;
@@ -95,7 +95,7 @@ const UserManagementPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [deleteUserId, setDeleteUserId] = useState<number | null>(null);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -183,7 +183,7 @@ const UserManagementPage = () => {
 
   // Mutation for updating users
   const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, data }: { userId: number, data: Partial<CreateUserFormValues> }) => {
+    mutationFn: async ({ userId, data }: { userId: string, data: Partial<CreateUserFormValues> }) => {
       const res = await apiRequest("PATCH", `/api/admin/users/${userId}`, data);
       if (!res.ok) {
         const errorData = await res.json();
@@ -212,7 +212,7 @@ const UserManagementPage = () => {
 
   // Mutation for deleting users
   const deleteUserMutation = useMutation({
-    mutationFn: async (userId: number) => {
+    mutationFn: async (userId: string) => {
       const res = await apiRequest("DELETE", `/api/admin/users/${userId}`);
       if (!res.ok) {
         const errorData = await res.json();
@@ -241,7 +241,7 @@ const UserManagementPage = () => {
 
   // Mutation for changing user password
   const changePasswordMutation = useMutation({
-    mutationFn: async ({ userId, newPassword }: { userId: number, newPassword: string }) => {
+    mutationFn: async ({ userId, newPassword }: { userId: string, newPassword: string }) => {
       const res = await apiRequest("POST", `/api/admin/users/${userId}/change-password`, { newPassword });
       if (!res.ok) {
         const errorData = await res.json();
@@ -279,7 +279,7 @@ const UserManagementPage = () => {
       fullName: user.fullName,
       username: user.username,
       isPrimary: user.isPrimary,
-      role: user.role || "content_creator",
+      role: (user.role || "content_creator") as any,
     });
     setIsEditDialogOpen(true);
   };

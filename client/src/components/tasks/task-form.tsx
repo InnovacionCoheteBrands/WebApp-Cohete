@@ -42,7 +42,7 @@ const taskFormSchema = z.object({
   status: z.enum(["pending", "in_progress", "review", "completed", "cancelled"]).optional(),
   dueDate: z.date().optional().nullable(),
   projectId: z.number(),
-  assignedToId: z.number().optional().nullable(),
+  assignedToId: z.string().optional().nullable(),
   taskGroup: z.enum(["planificacion", "creacion", "revision", "publicacion"]).optional(),
 });
 
@@ -71,8 +71,8 @@ export function TaskForm({
     defaultValues: {
       title: task?.title || "",
       description: task?.description || "",
-      priority: task?.priority || "medium",
-      status: task?.status || "pending",
+      priority: (task?.priority as any) || "medium",
+      status: (task?.status as any) || "pending",
       dueDate: task?.dueDate ? new Date(task.dueDate) : null,
       projectId: task?.projectId || project?.id,
       assignedToId: task?.assignedToId || null,

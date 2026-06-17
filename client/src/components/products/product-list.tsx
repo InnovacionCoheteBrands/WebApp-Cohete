@@ -92,12 +92,19 @@ export default function ProductList({ projectId }: ProductListProps) {
   // Mutación para crear productos
   const createProductMutation = useMutation({
     mutationFn: async (data: FormData) => {
-      const response = await apiRequest(
-        'POST',
+      const response = await fetch(
         `/api/projects/${projectId}/products`,
-        data,
-        { isFormData: true }
+        {
+          method: 'POST',
+          body: data,
+        }
       );
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/auth";
+        }
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
       return response.json();
     },
     onSuccess: () => {
@@ -122,12 +129,19 @@ export default function ProductList({ projectId }: ProductListProps) {
   // Mutación para actualizar productos
   const updateProductMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: FormData }) => {
-      const response = await apiRequest(
-        'PATCH',
+      const response = await fetch(
         `/api/products/${id}`,
-        data,
-        { isFormData: true }
+        {
+          method: 'PATCH',
+          body: data,
+        }
       );
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.location.href = "/auth";
+        }
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
       return response.json();
     },
     onSuccess: () => {

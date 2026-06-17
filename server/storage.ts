@@ -7,52 +7,50 @@ import { eq, asc, desc, and, or, sql, like, inArray, gt } from "drizzle-orm";
 import * as schema from "./schema";
 import type { 
   User, 
+  InsertUser,
   Project, 
+  InsertProject,
   Task, 
+  InsertTask,
   AnalysisResult, 
+  InsertAnalysisResult,
   Document, 
+  InsertDocument,
   Schedule, 
+  InsertSchedule,
   ScheduleEntry, 
+  InsertScheduleEntry,
   ChatMessage,
+  InsertChatMessage,
   ContentHistory,
+  InsertContentHistory,
   AgentRun,
+  InsertAgentRun,
   AgentArtifact,
+  InsertAgentArtifact,
   ModelRoute,
+  InsertModelRoute,
   Product,
+  InsertProduct,
   ProjectView,
+  InsertProjectView,
   AutomationRule,
+  InsertAutomationRule,
   TimeEntry,
+  InsertTimeEntry,
   Tag,
+  InsertTag,
   CollaborativeDoc,
+  InsertCollaborativeDoc,
   Notification,
+  InsertNotification,
   TaskComment,
+  InsertTaskComment,
   ProjectMember,
-  TaskDependency
+  InsertProjectMember,
+  TaskDependency,
+  InsertTaskDependency
 } from "./schema";
-
-// Type definitions for insert operations
-type InsertUser = typeof schema.users.$inferInsert;
-type InsertProject = typeof schema.projects.$inferInsert;
-type InsertTask = typeof schema.tasks.$inferInsert;
-type InsertAnalysisResult = typeof schema.analysisResults.$inferInsert;
-type InsertDocument = typeof schema.documents.$inferInsert;
-type InsertSchedule = typeof schema.schedules.$inferInsert;
-type InsertScheduleEntry = typeof schema.scheduleEntries.$inferInsert;
-type InsertChatMessage = typeof schema.chatMessages.$inferInsert;
-type InsertContentHistory = typeof schema.contentHistory.$inferInsert;
-type InsertAgentRun = typeof schema.agentRuns.$inferInsert;
-type InsertAgentArtifact = typeof schema.agentArtifacts.$inferInsert;
-type InsertModelRoute = typeof schema.modelRoutes.$inferInsert;
-type InsertProduct = typeof schema.products.$inferInsert;
-type InsertProjectView = typeof schema.projectViews.$inferInsert;
-type InsertAutomationRule = typeof schema.automationRules.$inferInsert;
-type InsertTimeEntry = typeof schema.timeEntries.$inferInsert;
-type InsertTag = typeof schema.tags.$inferInsert;
-type InsertCollaborativeDoc = typeof schema.collaborativeDocs.$inferInsert;
-type InsertNotification = typeof schema.notifications.$inferInsert;
-type InsertProjectMember = typeof schema.projectMembers.$inferInsert;
-type InsertTaskDependency = typeof schema.taskDependencies.$inferInsert;
-type InsertTaskComment = typeof schema.taskComments.$inferInsert;
 
 type NormalizedChatMessage = ChatMessage & {
   content: string;

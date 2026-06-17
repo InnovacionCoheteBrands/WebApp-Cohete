@@ -86,7 +86,7 @@ export default function Projects() {
   const itemsPerPage = 5;
 
   // Fetch projects
-  const { data: projects, isLoading, error } = useQuery({
+  const { data: projects, isLoading, error } = useQuery<any[]>({
     queryKey: ["/api/projects"],
     staleTime: 60000,
   });

@@ -53,9 +53,9 @@ export default function TaskAssignment({
   const [isAssigning, setIsAssigning] = useState(false);
 
   // Obtener usuarios disponibles
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
-  });
+  }) as any;
 
   // Mutación para asignar usuario principal
   const assignUserMutation = useMutation({

@@ -95,7 +95,12 @@ import {
   socialMetricSchema,
   updateProfileSchema,
   scheduleEntries,
-  Product
+  Product,
+  InsertUser,
+  InsertProject,
+  InsertTask,
+  InsertAutomationRule,
+  InsertTimeEntry
 } from "@shared/schema";
 import { WebSocketServer } from "ws";
 
@@ -340,7 +345,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint para crear usuarios (solo para usuarios primarios)
   app.post("/api/admin/users", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
+      const userData = insertUserSchema.parse(req.body) as InsertUser;
 
       // Verificar si el usuario ya existe
       const existingUser = await global.storage.getUserByUsername(userData.username);
@@ -477,7 +482,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       // Obtener cronogramas de todos los proyectos del usuario
-      const allSchedules = [];
+      const allSchedules: any[] = [];
       for (const project of projects) {
         const schedules = await storage.getSchedules(project.id);
         allSchedules.push(...schedules);
@@ -533,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       ]);
 
       // Obtener cronogramas de todos los proyectos del usuario
-      const allRecentSchedules = [];
+      const allRecentSchedules: any[] = [];
       for (const project of recentProjects) {
         const schedules = await storage.getSchedules(project.id);
         allRecentSchedules.push(...schedules);
@@ -799,7 +804,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Projects API
   app.post("/api/projects", isAuthenticated, isPrimaryUser, async (req: Request, res: Response) => {
     try {
-      const projectData = insertProjectSchema.parse(req.body);
+      const projectData = insertProjectSchema.parse(req.body) as InsertProject;
 
       // Set created by to current user
       projectData.createdBy = req.user.id;
@@ -1528,7 +1533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userProjects = await global.storage.getProjectsByUser(req.user.id);
 
       // Obtener schedules de todos los proyectos del usuario
-      const recentSchedules = [];
+      const recentSchedules: any[] = [];
       for (const project of userProjects) {
         const schedules = await global.storage.getSchedules(project.id);
         recentSchedules.push(...schedules);
@@ -1543,7 +1548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Verificar que el usuario tenga acceso a los proyectos de los schedules
-      const accessibleSchedules = [];
+      const accessibleSchedules: any[] = [];
       for (const schedule of limitedSchedules) {
         try {
           if (!schedule || !schedule.projectId) {
@@ -2700,7 +2705,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         projectId,
         ...req.body,
         createdById: req.user.id
-      });
+      }) as InsertTask;
 
       const task = await global.storage.createTask(taskData);
       res.status(201).json(task);
@@ -3542,7 +3547,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         ...req.body,
         projectId,
         createdBy: req.user.id
-      });
+      }) as InsertAutomationRule;
 
       const newRule = await global.storage.createAutomationRule(ruleData);
       res.status(201).json(newRule);
@@ -3682,7 +3687,7 @@ IMPORTANTE: Si un área NO está seleccionada para modificación, mantén el val
         ...req.body,
         taskId,
         userId: req.user.id
-      });
+      }) as InsertTimeEntry;
 
       const newTimeEntry = await global.storage.createTimeEntry(timeEntryData);
       res.status(201).json(newTimeEntry);

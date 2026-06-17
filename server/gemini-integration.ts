@@ -56,10 +56,10 @@ export class GeminiService {
       console.log("[GEMINI-WS] Inicializando servidor WebSocket para streaming de IA...");
       this.wss = new WebSocketServer({ server });
 
-      this.wss.on("connection", (ws: WebSocket) => {
+      this.wss.on("connection", (ws: any) => {
         console.log("[GEMINI-WS] Nueva conexión WebSocket establecida");
 
-        ws.on("message", async (message: WebSocket.Data) => {
+        ws.on("message", async (message: any) => {
           try {
             const data = JSON.parse(message.toString());
             console.log(

@@ -48,16 +48,16 @@ export default function TaskComments({ taskId, isOpen, onClose }: TaskCommentsPr
   const [cursorPosition, setCursorPosition] = useState(0);
 
   // Obtener comentarios de la tarea
-  const { data: comments = [], isLoading } = useQuery({
+  const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: ['/api/tasks', taskId, 'comments'],
     enabled: isOpen && !!taskId,
-  });
+  }) as any;
 
   // Obtener usuarios para menciones
-  const { data: users = [] } = useQuery({
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
     enabled: isOpen,
-  });
+  }) as any;
 
   // Mutación para crear comentario
   const createCommentMutation = useMutation({

@@ -5,8 +5,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 // Módulo para configurar Vite en desarrollo y servir archivos estáticos
 import { setupVite, serveStatic, log } from "./vite";
-// Servicio de integración con Grok AI para generación de contenido
-import { grokService } from "./grok-integration";
 // CORS: Middleware para manejar políticas de mismo origen
 import cors from 'cors';
 // Utilitarios para manejo de rutas de archivos
@@ -352,7 +350,7 @@ app.use((req, res, next) => {
         path.join(process.cwd(), 'client/dist')      // absolute client build
       ];
       
-      let staticPath = null;
+      let staticPath: string | null = null;
       for (const testPath of possiblePaths) {
         if (fs.existsSync(testPath) && fs.existsSync(path.join(testPath, 'index.html'))) {
           staticPath = testPath;

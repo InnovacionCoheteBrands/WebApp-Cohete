@@ -397,12 +397,7 @@ const TaskManager = () => {
             </Select>
 
             {selectedProject && (
-              <CreateTaskDialog projectId={selectedProject}>
-                <Button className="bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30 uppercase tracking-wider font-bold w-full sm:w-auto">
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Nueva Tarea
-                </Button>
-              </CreateTaskDialog>
+              <CreateTaskDialog />
             )}
 
             <Button

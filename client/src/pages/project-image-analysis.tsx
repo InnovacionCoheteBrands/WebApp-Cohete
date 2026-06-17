@@ -18,7 +18,7 @@ export default function ProjectImageAnalysisPage() {
   const { projectId } = useParams<{ projectId: string }>();
   
   // Obtener información del proyecto
-  const { data: project, isLoading, error } = useQuery({
+  const { data: project, isLoading, error } = useQuery<{ id: number; name: string; [key: string]: unknown }>({
     queryKey: ['/api/projects', parseInt(projectId || '0')],
     enabled: !!projectId,
   });

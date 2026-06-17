@@ -22,7 +22,7 @@ type AppUser = {
   password?: string | null;
   fullName: string;
   isPrimary: boolean;
-  role: string;
+  role?: string | null;
   createdAt: Date;
 };
 

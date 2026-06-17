@@ -15,7 +15,6 @@ export function useProfile() {
     mutationFn: async (data: UpdateProfile) => {
       const res = await apiRequest("/api/user/profile", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!res.ok) {
@@ -46,7 +45,6 @@ export function useProfile() {
     mutationFn: async ({ currentPassword, newPassword }: { currentPassword: string; newPassword: string }) => {
       const res = await apiRequest("/api/profile/change-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ currentPassword, newPassword }),
       });
       if (!res.ok) {

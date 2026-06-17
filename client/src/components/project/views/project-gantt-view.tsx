@@ -51,7 +51,7 @@ export default function ProjectGanttView({ projectId, viewId }: ProjectGanttView
 
   // Función para generar un array de fechas entre start y end
   function getDaysArray(start: Date, end: Date) {
-    const arr = [];
+    const arr: Date[] = [];
     const dt = new Date(start);
     
     while (dt <= end) {

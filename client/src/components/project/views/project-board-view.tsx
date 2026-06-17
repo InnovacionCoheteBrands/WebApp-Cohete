@@ -429,9 +429,7 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
     if (newGroupName.trim()) {
       createGroupMutation.mutate({
         name: newGroupName.trim(),
-        description: '',
         color: '#4285f4',
-        type: 'custom',
         position: (taskGroups?.length || 0),
       });
     }
@@ -504,12 +502,12 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
           <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns.length}, 1fr)` }}>
             {columns.map((column) => (
               <div key={column.id} className="text-sm font-medium flex items-center text-[#f8fafc]">
-                {column.columnType === 'person' && <Users className="h-4 w-4 mr-1" />}
-                {column.columnType === 'date' && <Calendar className="h-4 w-4 mr-1" />}
-                {column.columnType === 'dropdown' && <Flag className="h-4 w-4 mr-1" />}
-                {column.columnType === 'progress' && <BarChart3 className="h-4 w-4 mr-1" />}
-                {column.columnType === 'tags' && <Tag className="h-4 w-4 mr-1" />}
-                {column.name}
+                {(column.columnType as string) === 'person' && <Users className="h-4 w-4 mr-1" />}
+                {(column.columnType as string) === 'date' && <Calendar className="h-4 w-4 mr-1" />}
+                {(column.columnType as string) === 'dropdown' && <Flag className="h-4 w-4 mr-1" />}
+                {(column.columnType as string) === 'progress' && <BarChart3 className="h-4 w-4 mr-1" />}
+                {(column.columnType as string) === 'tags' && <Tag className="h-4 w-4 mr-1" />}
+                {column.columnName}
               </div>
             ))}
           </div>
@@ -544,11 +542,6 @@ export default function ProjectBoardView({ projectId, viewId }: ProjectBoardView
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </div>
-                  {groupData.group?.description && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {groupData.group.description}
-                    </p>
-                  )}
                 </div>
 
                 {/* Lista de tareas */}

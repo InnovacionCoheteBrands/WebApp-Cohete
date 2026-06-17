@@ -58,13 +58,11 @@ const analysisSchema = z.object({
   // Strategy
   objectives: z.string().optional(),
   marketingStrategies: z.string().optional(),
-  competitorAnalysis: z.string().optional(), // Using string for text area input, could be JSON later
 
   // Communication
   brandTone: z.string().optional(),
   brandCommunicationStyle: z.string().optional(),
   keywords: z.string().optional(),
-  contentThemes: z.string().optional(), // JSON in DB, string here for simple edit
 
   // Policies
   responsePolicyPositive: z.string().optional(),

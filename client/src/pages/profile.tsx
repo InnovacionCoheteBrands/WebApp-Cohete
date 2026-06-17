@@ -269,7 +269,7 @@ export default function ProfilePage() {
         formData.append('profileImage', file);
 
         // Hacer la petición al endpoint con autenticación usando uploadFile
-        const response = await uploadFile('/api/user/profile-image', formData);
+        const response = await uploadFile('/api/user/profile-image', formData) as any;
 
         if (response.profileImage) {
           // Invalidar cache y actualizar UI
@@ -910,7 +910,7 @@ export default function ProfilePage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => document.querySelector('input[type="file"]')?.click()}
+                            onClick={() => (document.querySelector('input[type="file"]') as HTMLElement)?.click()}
                           >
                             <Camera className="h-4 w-4 mr-2" />
                             Cambiar Foto
@@ -1017,7 +1017,7 @@ export default function ProfilePage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => document.querySelectorAll('input[type="file"]')[1]?.click()}
+                          onClick={() => (document.querySelectorAll('input[type="file"]')[1] as HTMLElement)?.click()}
                         >
                           <Camera className="h-4 w-4 mr-2" />
                           Cambiar Portada
@@ -1057,7 +1057,7 @@ export default function ProfilePage() {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              setCoverImagePreview(null);
+                              setCoverImagePreview("");
                               setCoverImageFile(null);
                               // Aquí puedes agregar lógica para eliminar la imagen de portada del servidor
                               toast({

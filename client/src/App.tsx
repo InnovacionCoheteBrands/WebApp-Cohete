@@ -121,8 +121,7 @@ function App() {
                     <ProtectedRoute>
                       <MainLayout>
                         <ScheduleDetail
-                          projectId={parseInt(params.id)}
-                          scheduleId={parseInt(params.scheduleId)}
+                          id={parseInt(params.scheduleId)}
                         />
                       </MainLayout>
                     </ProtectedRoute>
@@ -131,11 +130,11 @@ function App() {
 
                 {/* Página de análisis de imágenes para un proyecto específico */}
                 {/* Permite analizar imágenes de marketing usando IA */}
-                <Route path="/projects/:id/image-analysis">
-                  {(params) => (
+                <Route path="/projects/:projectId/image-analysis">
+                  {() => (
                     <ProtectedRoute>
                       <MainLayout>
-                        <ProjectImageAnalysisPage projectId={parseInt(params.id)} />
+                        <ProjectImageAnalysisPage />
                       </MainLayout>
                     </ProtectedRoute>
                   )}

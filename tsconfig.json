@@ -19,7 +19,7 @@
     "target": "ES2022",
     "strict": false,
     "noImplicitAny": false,
-    "strictNullChecks": false,
+    "strictNullChecks": true,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
     "lib": [
@@ -42,6 +42,9 @@
       ],
       "@shared/*": [
         "./shared/*"
+      ],
+      "openid-client/passport": [
+        "./node_modules/openid-client/build/passport.d.ts"
       ],
       "*": [
         "./types/*"

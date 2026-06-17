@@ -17,16 +17,9 @@ export default function Dashboard() {
       return res.json();
     },
     retry: 1,
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los datos del usuario",
-        variant: "destructive",
-      });
-    },
   });
 
-  const { data: projects, error: projectsError } = useQuery({
+  const { error: projectsError } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
       const res = await fetch('/api/projects');
@@ -34,16 +27,9 @@ export default function Dashboard() {
       return res.json();
     },
     retry: 1,
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los proyectos",
-        variant: "destructive",
-      });
-    },
   });
 
-  const { data: schedules, error: schedulesError } = useQuery({
+  const { error: schedulesError } = useQuery({
     queryKey: ['schedules'],
     queryFn: async () => {
       const res = await fetch('/api/schedules');
@@ -51,13 +37,6 @@ export default function Dashboard() {
       return res.json();
     },
     retry: 1,
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los cronogramas",
-        variant: "destructive",
-      });
-    },
   });
 
   if (userError || projectsError || schedulesError) {
@@ -77,9 +56,9 @@ export default function Dashboard() {
       <QuickActions />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <CreateScheduleSection />
-        <RecentProjects projects={projects} />
+        <RecentProjects />
       </div>
-      <RecentSchedules schedules={schedules} />
+      <RecentSchedules />
     </div>
   );
 }
